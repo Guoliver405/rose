@@ -1,4 +1,4 @@
-# Session 2026-07-05 — Phase 0 + 1: Fundament und Admin-Portal
+# Session 2026-07-05 — Phase 0 + 1 + 2: Fundament, Admin-Portal, Gastportal
 
 ## Kontext
 
@@ -84,6 +84,43 @@ Console-Errors. tsc/lint/build grün.
 - Browser-Test: `button[type=submit]` matcht auch den **Abmelden-Button im
   Header** (Logout ist ein Form) — der vermeintliche Session-Verlust beim
   ersten Testlauf war ein selbst ausgelöster Logout.
+
+## Phase 2 — Gastportal
+
+Neue Dateien:
+
+- [src/utils/guest.ts](../src/utils/guest.ts) — `getGuestContext()`: Cookie
+  `rose_guest` (= `stays.session_token`) → aktiver Stay → Zimmer/Signal/
+  Hotelname. Anonym, alles über Admin-Client serverseitig.
+- [src/app/guest/actions.ts](../src/app/guest/actions.ts) —
+  `guestLoginAction` (Zimmer via QR-Token ODER Nummer; **generische
+  Fehlermeldung** verrät nie, ob Zimmer existiert/belegt ist; Rate-Limit
+  5 Fehlversuche → 15 min Sperre auf dem Stay; Erfolg setzt httpOnly-Cookie
+  + Reset der Zähler), `setGuestSignalAction` (none/please_clean/dnd,
+  Audit-Source 'guest'), `guestLogoutAction`.
+- [src/app/guest/layout.tsx](../src/app/guest/layout.tsx) — Gastportal ist
+  designgewollt **immer dark** via `data-theme="dark"`-Wrapper (CSS-Vars
+  kaskadieren, HotCord-Pattern), mobile Spalte max-w-md.
+- [src/app/guest/page.tsx](../src/app/guest/page.tsx) — Baseline-Einstieg:
+  Zimmernummer + PIN. Bei gültigem Cookie → redirect `/guest/status`.
+- [src/app/guest/r/[token]/page.tsx](../src/app/guest/r/%5Btoken%5D/page.tsx)
+  — QR-Deep-Link: Token → Zimmer vorbestimmt, nur PIN-Eingabe; ungültiger
+  Token zeigt Fehler-Card mit Verweis auf die Baseline.
+- [src/app/guest/status/](../src/app/guest/status/) — Status-Seite mit zwei
+  großen Toggle-Buttons (Reinigen amber / DND rose, aktive Option nochmal
+  tippen = zurücknehmen), „Reinigung läuft"-Banner bei `cleaning_by`,
+  Abmelden-Link. **15-s-Polling statt Realtime** — Gäste haben kein
+  Auth-Token, RLS würde Realtime-Events blocken.
+
+Verifikation (Browser, End-to-End): Check-in 102 → PIN 7802 abgelesen →
+falsche PIN generisch abgewiesen → richtige PIN → Status-Seite →
+„Zimmer reinigen" → Admin-KPI „1 zu reinigen" + Kachel amber → DND ersetzt
+please_clean (ein Signal-Feld) → Check-out im Admin → `/guest/status`
+redirectet sofort zur Anmeldung → alte PIN tot → ungültiger Deep-Link zeigt
+Fehler-Card. Keine Console-Errors, Build grün.
+
+Bewusst: `room_guest_tokens` wird erst mit den QR-Druckseiten (Phase 5)
+befüllt — die Route existiert und handhabt fehlende Tokens sauber.
 
 ## Offen / bewusst nicht
 
