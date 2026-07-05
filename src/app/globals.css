@@ -1,26 +1,587 @@
 @import "tailwindcss";
 
+/* Markdown-Files (CLAUDE.md, docs) aus dem Tailwind-Content-Scan ausschließen.
+   Tailwind 4 scannt sonst alle Text-Files und pickt Klassen-Pattern aus
+   Doku-Prosa als reale Utilities auf — gefährlich bei Beispielen mit
+   Arbitrary-Value-Klammern, die kein gültiges CSS sind. */
+@source not "../../CLAUDE.md";
+@source not "../../docs/*.md";
+@source not "../../Supabase_sql/*.sql";
+
+/* ─────────────────────────────────────────────────────────────────
+   PRIMITIVE — Rohe Farb-Werte. Niemals direkt in Komponenten.
+   Portiert aus HotCord (Token-System feature-complete), Präfix --rs-.
+   ───────────────────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --rs-emerald-50:   #ecfdf5;
+  --rs-emerald-100:  #d1fae5;
+  --rs-emerald-200:  #a7f3d0;
+  --rs-emerald-300:  #6ee7b7;
+  --rs-emerald-400:  #34d399;
+  --rs-emerald-500:  #10b981;
+  --rs-emerald-600:  #059669;
+  --rs-emerald-700:  #047857;
+  --rs-emerald-900:  #064e3b;
+
+  --rs-sky-50:       #f0f9ff;
+  --rs-sky-100:      #e0f2fe;
+  --rs-sky-200:      #bae6fd;
+  --rs-sky-300:      #7dd3fc;
+  --rs-sky-400:      #38bdf8;
+  --rs-sky-500:      #0ea5e9;
+  --rs-sky-700:      #0369a1;
+  --rs-sky-900:      #0c4a6e;
+
+  --rs-amber-50:     #fffbeb;
+  --rs-amber-100:    #fef3c7;
+  --rs-amber-200:    #fde68a;
+  --rs-amber-300:    #fcd34d;
+  --rs-amber-400:    #fbbf24;
+  --rs-amber-500:    #f59e0b;
+  --rs-amber-700:    #b45309;
+  --rs-amber-900:    #78350f;
+
+  --rs-orange-50:    #fff7ed;
+  --rs-orange-100:   #ffedd5;
+  --rs-orange-200:   #fed7aa;
+  --rs-orange-300:   #fdba74;
+  --rs-orange-400:   #fb923c;
+  --rs-orange-500:   #f97316;
+  --rs-orange-700:   #c2410c;
+  --rs-orange-900:   #7c2d12;
+
+  --rs-rose-50:      #fff1f2;
+  --rs-rose-100:     #ffe4e6;
+  --rs-rose-200:     #fecdd3;
+  --rs-rose-300:     #fda4af;
+  --rs-rose-400:     #fb7185;
+  --rs-rose-500:     #f43f5e;
+  --rs-rose-700:     #be123c;
+  --rs-rose-900:     #881337;
+
+  --rs-red-50:       #fef2f2;
+  --rs-red-100:      #fee2e2;
+  --rs-red-200:      #fecaca;
+  --rs-red-300:      #fca5a5;
+  --rs-red-400:      #f87171;
+  --rs-red-500:      #ef4444;
+  --rs-red-700:      #b91c1c;
+  --rs-red-900:      #7f1d1d;
+
+  --rs-fuchsia-50:   #fdf4ff;
+  --rs-fuchsia-100:  #fae8ff;
+  --rs-fuchsia-200:  #f5d0fe;
+  --rs-fuchsia-300:  #f0abfc;
+  --rs-fuchsia-500:  #d946ef;
+  --rs-fuchsia-600:  #c026d3;
+  --rs-fuchsia-700:  #a21caf;
+  --rs-fuchsia-900:  #701a75;
+
+  /* Brand / Action — primäre Aktions-Buttons + sekundärer Akzent. */
+  --rs-blue-50:      #eff6ff;
+  --rs-blue-100:     #dbeafe;
+  --rs-blue-200:     #bfdbfe;
+  --rs-blue-300:     #93c5fd;
+  --rs-blue-400:     #60a5fa;
+  --rs-blue-600:     #2563eb;
+  --rs-blue-700:     #1d4ed8;
+  --rs-blue-900:     #1e3a8a;
+  --rs-violet-50:    #f5f3ff;
+  --rs-violet-100:   #ede9fe;
+  --rs-violet-200:   #ddd6fe;
+  --rs-violet-300:   #c4b5fd;
+  --rs-violet-500:   #8b5cf6;
+  --rs-violet-600:   #7c3aed;
+  --rs-violet-700:   #6d28d9;
+  --rs-violet-900:   #4c1d95;
+
+  --rs-slate-50:     #f8fafc;
+  --rs-slate-100:    #f1f5f9;
+  --rs-slate-200:    #e2e8f0;
+  --rs-slate-300:    #cbd5e1;
+  --rs-slate-400:    #94a3b8;
+  --rs-slate-500:    #64748b;
+  --rs-slate-600:    #475569;
+  --rs-slate-700:    #334155;
+  --rs-slate-800:    #1e293b;
+  --rs-slate-900:    #0f172a;
+  --rs-slate-950:    #020617;
+  --rs-white:        #ffffff;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ─────────────────────────────────────────────────────────────────
+   SEMANTIC — was Komponenten verwenden dürfen.
+   ───────────────────────────────────────────────────────────────── */
+:root,
+[data-theme="light"] {
+  /* Intent-Farben — Status */
+  --color-positive-bar:      var(--rs-emerald-500);
+  --color-positive-icon:     var(--rs-emerald-600);
+  --color-positive-soft:     var(--rs-emerald-400);
+  --color-fresh-bar:         var(--rs-sky-400);
+  --color-fresh-icon:        var(--rs-sky-500);
+  --color-fresh-soft:        var(--rs-sky-300);
+  --color-attention-bar:     var(--rs-amber-500);
+  --color-attention-soft:    var(--rs-amber-400);
+  --color-attention-strong:  var(--rs-amber-700);
+  --color-caution-bar:       var(--rs-orange-400);
+  --color-caution-icon:      var(--rs-orange-500);
+  --color-caution-soft:      var(--rs-orange-300);
+  --color-blocked-bar:       var(--rs-rose-500);
+  --color-blocked-soft:      var(--rs-rose-400);
+  --color-blocked-strong:    var(--rs-rose-700);
+  --color-critical-bar:      var(--rs-red-500);
+  --color-critical-soft:     var(--rs-red-400);
+  --color-critical-strong:   var(--rs-red-700);
+  --color-escalation-bar:    var(--rs-fuchsia-600);
+  --color-escalation-soft:   var(--rs-fuchsia-500);
+  --color-escalation-strong: var(--rs-fuchsia-700);
+
+  /* Light-Tint-Trios — Banner-Optik (bg-50 + border-200 + text-700). */
+  --color-positive-tint:        var(--rs-emerald-50);
+  --color-positive-tint-edge:   var(--rs-emerald-200);
+  --color-positive-deep:        var(--rs-emerald-700);
+  --color-fresh-tint:           var(--rs-sky-50);
+  --color-fresh-tint-edge:      var(--rs-sky-200);
+  --color-fresh-deep:           var(--rs-sky-700);
+  --color-attention-tint:       var(--rs-amber-50);
+  --color-attention-tint-edge:  var(--rs-amber-200);
+  --color-caution-tint:         var(--rs-orange-50);
+  --color-caution-tint-edge:    var(--rs-orange-200);
+  --color-caution-deep:         var(--rs-orange-700);
+  --color-blocked-tint:         var(--rs-rose-50);
+  --color-blocked-tint-edge:    var(--rs-rose-200);
+  --color-critical-tint:        var(--rs-red-50);
+  --color-critical-tint-edge:   var(--rs-red-200);
+  --color-escalation-tint:      var(--rs-fuchsia-50);
+  --color-escalation-tint-edge: var(--rs-fuchsia-200);
+
+  /* Pill-Tints (Stage -100) — Status-Badges/Pills. */
+  --color-positive-pill:    var(--rs-emerald-100);
+  --color-fresh-pill:       var(--rs-sky-100);
+  --color-attention-pill:   var(--rs-amber-100);
+  --color-caution-pill:     var(--rs-orange-100);
+  --color-blocked-pill:     var(--rs-rose-100);
+  --color-critical-pill:    var(--rs-red-100);
+  --color-escalation-pill:  var(--rs-fuchsia-100);
+
+  /* Pill-Edge (Stage -300) — kräftigere Border für Pills/Badges. */
+  --color-positive-pill-edge:    var(--rs-emerald-300);
+  --color-fresh-pill-edge:       var(--rs-sky-300);
+  --color-attention-pill-edge:   var(--rs-amber-300);
+  --color-caution-pill-edge:     var(--rs-orange-300);
+  --color-blocked-pill-edge:     var(--rs-rose-300);
+  --color-critical-pill-edge:    var(--rs-red-300);
+  --color-escalation-pill-edge:  var(--rs-fuchsia-300);
+
+  /* Deepest-Text (Stage -900) — maximale Lesbarkeit auf Tints/Pills. */
+  --color-positive-deepest:    var(--rs-emerald-900);
+  --color-fresh-deepest:       var(--rs-sky-900);
+  --color-attention-deepest:   var(--rs-amber-900);
+  --color-caution-deepest:     var(--rs-orange-900);
+  --color-blocked-deepest:     var(--rs-rose-900);
+  --color-critical-deepest:    var(--rs-red-900);
+  --color-escalation-deepest:  var(--rs-fuchsia-900);
+
+  /* Brand / Action — Primär-Aktion (Submit/Confirm) + Sekundär-Akzent. */
+  --color-action-bar:        var(--rs-blue-600);
+  --color-action-strong:     var(--rs-blue-700);
+  --color-action-tint:       var(--rs-blue-50);
+  --color-action-tint-edge:  var(--rs-blue-200);
+  --color-action-pill:       var(--rs-blue-100);
+  --color-action-pill-edge:  var(--rs-blue-300);
+  --color-action-soft:       var(--rs-blue-400);
+  --color-action-deep:       var(--rs-blue-900);
+  --color-accent-bar:        var(--rs-violet-500);
+  --color-accent-strong:     var(--rs-violet-700);
+  --color-accent-tint:       var(--rs-violet-50);
+  --color-accent-tint-edge:  var(--rs-violet-200);
+  --color-accent-pill:       var(--rs-violet-100);
+  --color-accent-pill-edge:  var(--rs-violet-300);
+  --color-accent-deep:       var(--rs-violet-900);
+
+  /* Per-Family Foreground-Tokens für saturierte Buttons — luminance-
+     bewusst, theme-INDEPENDENT (saturierte BGs theme-shiften nicht). */
+  --color-positive-foreground:   var(--rs-slate-900);
+  --color-fresh-foreground:      var(--rs-slate-900);
+  --color-attention-foreground:  var(--rs-slate-900);
+  --color-caution-foreground:    var(--rs-slate-900);
+  --color-blocked-foreground:    #ffffff;
+  --color-critical-foreground:   #ffffff;
+  --color-escalation-foreground: #ffffff;
+  --color-action-foreground:     #ffffff;
+  --color-accent-foreground:     #ffffff;
+
+  /* Selektion / Active — „aktuelles Zimmer"-Highlight. */
+  --color-active-bar:        var(--rs-blue-400);
+  --color-active-soft:       var(--rs-blue-200);
+  --color-active-strong:     var(--rs-blue-900);
+
+  /* Surface */
+  --color-surface-base:     var(--rs-white);
+  --color-surface-sunken:   var(--rs-slate-50);
+  --color-surface-elevated: var(--rs-white);
+  --color-surface-muted:    var(--rs-slate-100);
+
+  /* Text */
+  --color-text-primary:    var(--rs-slate-900);
+  --color-text-secondary:  var(--rs-slate-700);
+  --color-text-muted:      var(--rs-slate-400);
+  --color-text-inverse:    var(--rs-white);
+
+  /* Border */
+  --color-border-subtle:   var(--rs-slate-200);
+  --color-border-strong:   var(--rs-slate-300);
+
+  /* Animations-Farben (RGB-Triple für rgb(... / alpha)-Syntax) */
+  --motion-color-blink:    248 113 113;
+  --motion-color-flash:    139 92 246;
+  --motion-duration-fast:  150ms;
+  --motion-duration-base:  300ms;
+  --motion-duration-slow:  900ms;
 }
 
+/* ─────────────────────────────────────────────────────────────────
+   DENSITY — überschreibt Tailwind-4-Standard-Theme-Vars (--spacing,
+   --text-*), sodass alle Utilities automatisch mitskalieren.
+   ───────────────────────────────────────────────────────────────── */
+[data-density="compact"] {
+  --spacing:    0.22rem;
+  --text-xs:    0.6875rem;
+  --text-sm:    0.8125rem;
+  --text-base:  0.9375rem;
+  --text-lg:    1.0625rem;
+  --text-xl:    1.1875rem;
+  --text-2xl:   1.4375rem;
+  --text-3xl:   1.6875rem;
+}
+
+[data-density="comfortable"] {
+  --spacing:    0.3rem;
+  --text-xs:    0.875rem;
+  --text-sm:    1.0625rem;
+  --text-base:  1.1875rem;
+  --text-lg:    1.3125rem;
+  --text-xl:    1.5rem;
+  --text-2xl:   1.8125rem;
+  --text-3xl:   2.125rem;
+
+  /* Container-Widths proportional zur Schrift-Skalierung (~+18 %),
+     damit Zeichen-pro-Zeile konstant bleibt. */
+  --container-xs:  23.6rem;
+  --container-sm:  28.32rem;
+  --container-md:  33.04rem;
+  --container-lg:  37.76rem;
+  --container-xl:  42.48rem;
+  --container-2xl: 49.56rem;
+  --container-3xl: 56.64rem;
+  --container-4xl: 66.08rem;
+  --container-5xl: 75.52rem;
+  --container-6xl: 84.96rem;
+  --container-7xl: 94.4rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   THEMES — Dark Mode. Invertiert nur Surface / Ink / Edge.
+   ───────────────────────────────────────────────────────────────── */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  [data-theme="auto"] {
+    --color-surface-base:     var(--rs-slate-900);
+    --color-surface-sunken:   var(--rs-slate-950);
+    --color-surface-elevated: var(--rs-slate-800);
+    --color-surface-muted:    var(--rs-slate-800);
+
+    --color-text-primary:    var(--rs-slate-50);
+    --color-text-secondary:  var(--rs-slate-200);
+    --color-text-muted:      var(--rs-slate-400);
+    --color-text-inverse:    var(--rs-slate-900);
+
+    --color-border-subtle:   var(--rs-slate-700);
+    --color-border-strong:   var(--rs-slate-600);
   }
 }
 
+[data-theme="dark"] {
+  --color-surface-base:     var(--rs-slate-900);
+  --color-surface-sunken:   var(--rs-slate-950);
+  --color-surface-elevated: var(--rs-slate-800);
+  --color-surface-muted:    var(--rs-slate-800);
+
+  --color-text-primary:    var(--rs-slate-50);
+  --color-text-secondary:  var(--rs-slate-200);
+  --color-text-muted:      var(--rs-slate-400);
+  --color-text-inverse:    var(--rs-slate-900);
+
+  --color-border-subtle:   var(--rs-slate-700);
+  --color-border-strong:   var(--rs-slate-600);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   CONTRAST — Hoher Kontrast (User-Opt-in).
+   ───────────────────────────────────────────────────────────────── */
+[data-contrast="high"] {
+  --color-text-secondary: var(--rs-slate-900);
+  --color-text-muted:     var(--rs-slate-600);
+  --color-border-subtle:  var(--rs-slate-400);
+  --color-border-strong:  var(--rs-slate-500);
+}
+
+[data-theme="dark"][data-contrast="high"] {
+  --color-text-secondary: var(--rs-slate-50);
+  --color-text-muted:     var(--rs-slate-200);
+  --color-border-subtle:  var(--rs-slate-500);
+  --color-border-strong:  var(--rs-slate-400);
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme="auto"][data-contrast="high"] {
+    --color-text-secondary: var(--rs-slate-50);
+    --color-text-muted:     var(--rs-slate-200);
+    --color-border-subtle:  var(--rs-slate-500);
+    --color-border-strong:  var(--rs-slate-400);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   COLOR-BLIND-MODI — Overrides auf der Primitive-Schicht (Wong 2011).
+   ───────────────────────────────────────────────────────────────── */
+[data-color-mode="red-green"] {
+  --rs-emerald-50:   #e0f2ee;
+  --rs-emerald-100:  #b8e2d5;
+  --rs-emerald-200:  #87cfb8;
+  --rs-emerald-300:  #4db89c;
+  --rs-emerald-400:  #26ab87;
+  --rs-emerald-500:  #009e73;
+  --rs-emerald-600:  #007d5a;
+  --rs-emerald-700:  #005c42;
+  --rs-emerald-900:  #003b2a;
+}
+
+[data-color-mode="blue-yellow"] {
+  --rs-amber-50:     #fff0e6;
+  --rs-amber-100:    #ffd9b8;
+  --rs-amber-200:    #ffb87a;
+  --rs-amber-300:    #ff9a47;
+  --rs-amber-400:    #ff7f1f;
+  --rs-amber-500:    #e85d00;
+  --rs-amber-700:    #993d00;
+  --rs-amber-900:    #4d1f00;
+
+  --rs-sky-300:      #4fc3c6;
+  --rs-sky-400:      #1ab5b8;
+  --rs-sky-500:      #0e9da0;
+  --rs-sky-700:      #036570;
+  --rs-sky-900:      #013742;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   PRINT — beim Drucken immer Light-Theme (QR-Aushänge, Gast-Handout,
+   Maid-Karten sollen hell drucken, egal welches Browser-Theme).
+   ───────────────────────────────────────────────────────────────── */
+@media print {
+  [data-theme="dark"],
+  [data-theme="auto"] {
+    --color-surface-base:     var(--rs-white);
+    --color-surface-sunken:   var(--rs-slate-50);
+    --color-surface-elevated: var(--rs-white);
+    --color-surface-muted:    var(--rs-slate-100);
+
+    --color-text-primary:    var(--rs-slate-900);
+    --color-text-secondary:  var(--rs-slate-700);
+    --color-text-muted:      var(--rs-slate-400);
+    --color-text-inverse:    var(--rs-white);
+
+    --color-border-subtle:   var(--rs-slate-200);
+    --color-border-strong:   var(--rs-slate-300);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   MOTION — System-Default + User-Override.
+   ───────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  [data-motion="auto"] {
+    --motion-duration-fast: 0ms;
+    --motion-duration-base: 0ms;
+    --motion-duration-slow: 0ms;
+  }
+  [data-motion="auto"] .blink-ring-overdue,
+  [data-motion="auto"] .flash-state-change {
+    animation: none;
+  }
+}
+[data-motion="reduced"] {
+  --motion-duration-fast: 0ms;
+  --motion-duration-base: 0ms;
+  --motion-duration-slow: 0ms;
+}
+[data-motion="reduced"] .blink-ring-overdue,
+[data-motion="reduced"] .flash-state-change {
+  animation: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   TAILWIND-INTEGRATION — semantische Tokens als Utilities
+   (bg-positive, text-blocked-strong, border-edge, …).
+   ───────────────────────────────────────────────────────────────── */
+@theme inline {
+  --color-background: var(--color-surface-base);
+  --color-foreground: var(--color-text-primary);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --color-positive:          var(--color-positive-bar);
+  --color-positive-strong:   var(--color-positive-icon);
+  --color-positive-soft:     var(--color-positive-soft);
+  --color-fresh:             var(--color-fresh-bar);
+  --color-fresh-strong:      var(--color-fresh-icon);
+  --color-fresh-soft:        var(--color-fresh-soft);
+  --color-attention:         var(--color-attention-bar);
+  --color-attention-soft:    var(--color-attention-soft);
+  --color-attention-strong:  var(--color-attention-strong);
+  --color-caution:           var(--color-caution-bar);
+  --color-caution-strong:    var(--color-caution-icon);
+  --color-caution-soft:      var(--color-caution-soft);
+  --color-blocked:           var(--color-blocked-bar);
+  --color-blocked-soft:      var(--color-blocked-soft);
+  --color-blocked-strong:    var(--color-blocked-strong);
+  --color-critical:          var(--color-critical-bar);
+  --color-critical-soft:     var(--color-critical-soft);
+  --color-critical-strong:   var(--color-critical-strong);
+  --color-escalation:        var(--color-escalation-bar);
+  --color-escalation-soft:   var(--color-escalation-soft);
+  --color-escalation-strong: var(--color-escalation-strong);
+  --color-active:            var(--color-active-bar);
+  --color-active-soft:       var(--color-active-soft);
+  --color-active-strong:     var(--color-active-strong);
+
+  /* Light-Tint-Aliase */
+  --color-positive-tint:        var(--color-positive-tint);
+  --color-positive-tint-edge:   var(--color-positive-tint-edge);
+  --color-positive-deep:        var(--color-positive-deep);
+  --color-fresh-tint:           var(--color-fresh-tint);
+  --color-fresh-tint-edge:      var(--color-fresh-tint-edge);
+  --color-fresh-deep:           var(--color-fresh-deep);
+  --color-attention-tint:       var(--color-attention-tint);
+  --color-attention-tint-edge:  var(--color-attention-tint-edge);
+  --color-caution-tint:         var(--color-caution-tint);
+  --color-caution-tint-edge:    var(--color-caution-tint-edge);
+  --color-caution-deep:         var(--color-caution-deep);
+  --color-blocked-tint:         var(--color-blocked-tint);
+  --color-blocked-tint-edge:    var(--color-blocked-tint-edge);
+  --color-critical-tint:        var(--color-critical-tint);
+  --color-critical-tint-edge:   var(--color-critical-tint-edge);
+  --color-escalation-tint:      var(--color-escalation-tint);
+  --color-escalation-tint-edge: var(--color-escalation-tint-edge);
+
+  /* Pill-Tints */
+  --color-positive-pill:   var(--color-positive-pill);
+  --color-fresh-pill:      var(--color-fresh-pill);
+  --color-attention-pill:  var(--color-attention-pill);
+  --color-caution-pill:    var(--color-caution-pill);
+  --color-blocked-pill:    var(--color-blocked-pill);
+  --color-critical-pill:   var(--color-critical-pill);
+  --color-escalation-pill: var(--color-escalation-pill);
+
+  /* Pill-Edge */
+  --color-positive-pill-edge:   var(--color-positive-pill-edge);
+  --color-fresh-pill-edge:      var(--color-fresh-pill-edge);
+  --color-attention-pill-edge:  var(--color-attention-pill-edge);
+  --color-caution-pill-edge:    var(--color-caution-pill-edge);
+  --color-blocked-pill-edge:    var(--color-blocked-pill-edge);
+  --color-critical-pill-edge:   var(--color-critical-pill-edge);
+  --color-escalation-pill-edge: var(--color-escalation-pill-edge);
+
+  /* Deepest-Text */
+  --color-positive-deepest:   var(--color-positive-deepest);
+  --color-fresh-deepest:      var(--color-fresh-deepest);
+  --color-attention-deepest:  var(--color-attention-deepest);
+  --color-caution-deepest:    var(--color-caution-deepest);
+  --color-blocked-deepest:    var(--color-blocked-deepest);
+  --color-critical-deepest:   var(--color-critical-deepest);
+  --color-escalation-deepest: var(--color-escalation-deepest);
+
+  /* Brand / Action / Accent */
+  --color-action:           var(--color-action-bar);
+  --color-action-strong:    var(--color-action-strong);
+  --color-action-tint:      var(--color-action-tint);
+  --color-action-tint-edge: var(--color-action-tint-edge);
+  --color-action-pill:      var(--color-action-pill);
+  --color-action-pill-edge: var(--color-action-pill-edge);
+  --color-action-soft:      var(--color-action-soft);
+  --color-action-deep:      var(--color-action-deep);
+  --color-accent:           var(--color-accent-bar);
+  --color-accent-strong:    var(--color-accent-strong);
+  --color-accent-tint:      var(--color-accent-tint);
+  --color-accent-tint-edge: var(--color-accent-tint-edge);
+  --color-accent-pill:      var(--color-accent-pill);
+  --color-accent-pill-edge: var(--color-accent-pill-edge);
+  --color-accent-deep:      var(--color-accent-deep);
+
+  /* Per-Family Foreground-Aliase */
+  --color-positive-foreground:   var(--color-positive-foreground);
+  --color-fresh-foreground:      var(--color-fresh-foreground);
+  --color-attention-foreground:  var(--color-attention-foreground);
+  --color-caution-foreground:    var(--color-caution-foreground);
+  --color-blocked-foreground:    var(--color-blocked-foreground);
+  --color-critical-foreground:   var(--color-critical-foreground);
+  --color-escalation-foreground: var(--color-escalation-foreground);
+  --color-action-foreground:     var(--color-action-foreground);
+  --color-accent-foreground:     var(--color-accent-foreground);
+
+  --color-surface:          var(--color-surface-base);
+  --color-surface-sunken:   var(--color-surface-sunken);
+  --color-surface-elevated: var(--color-surface-elevated);
+  --color-surface-muted:    var(--color-surface-muted);
+
+  /* Ink (Textfarben) */
+  --color-ink:         var(--color-text-primary);
+  --color-ink-soft:    var(--color-text-secondary);
+  --color-ink-muted:   var(--color-text-muted);
+  --color-ink-inverse: var(--color-text-inverse);
+
+  /* Edge (Borders) */
+  --color-edge:        var(--color-border-subtle);
+  --color-edge-strong: var(--color-border-strong);
+
+  /* Theme-unabhängiges IMMER-Weiß für Text/Icons auf saturierten BGs. */
+  --color-on-saturated: #ffffff;
+
+  /* Auto-Migration — häufigste Light-End-Stufen folgen dem Theme,
+     auch wenn Komponenten raw bg-white / bg-slate-50 etc. nutzen.
+     BEWUSST NICHT überschrieben: slate-400/500/600/900 (Mid-Tones + BGs). */
+  --color-white:      var(--color-surface-base);
+  --color-slate-50:   var(--color-surface-sunken);
+  --color-slate-100:  var(--color-surface-muted);
+  --color-slate-200:  var(--color-border-subtle);
+  --color-slate-300:  var(--color-border-strong);
+  --color-slate-700:  var(--color-text-secondary);
+  --color-slate-800:  var(--color-text-primary);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-surface-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Pulsiert ausschließlich den äußeren Glow/Ring einer Zimmerkachel
+   (z. B. priorisierte Reinigung) — im Gegensatz zu animate-pulse,
+   das die komplette Kachel halbtransparent macht. */
+@keyframes blink-ring-overdue {
+  0%, 100% { box-shadow: 0 0 0 3px rgb(var(--motion-color-blink) / 0.55); }
+  50%      { box-shadow: 0 0 0 3px rgb(var(--motion-color-blink) / 0.10); }
+}
+.blink-ring-overdue {
+  animation: blink-ring-overdue 1.2s ease-in-out infinite;
+}
+
+/* Zimmerkachel-Aufblitzen bei Status-Wechsel (Realtime-Feedback). */
+@keyframes flash-state-change {
+  0%   { box-shadow: 0 0 0 3px rgb(var(--motion-color-flash) / 0.00); }
+  30%  { box-shadow: 0 0 0 3px rgb(var(--motion-color-flash) / 0.70); }
+  100% { box-shadow: 0 0 0 3px rgb(var(--motion-color-flash) / 0.00); }
+}
+.flash-state-change {
+  animation: flash-state-change var(--motion-duration-slow) ease-out;
 }
