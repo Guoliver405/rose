@@ -130,6 +130,47 @@ befüllt — die Route existiert und handhabt fehlende Tokens sauber.
 
 ## Endstand
 
-tsc clean, 0 Lint-Warnings, Build grün, alle Flows im Browser verifiziert.
-Nächster Schritt: **Phase 2 — Gastportal** (QR-Landing, PIN + Rate-Limit,
-Reinigen/DND, Session-Cookie).
+tsc clean, 0 Lint-Warnings, Build grün, alle Flows (Phase 1 + 2) im Browser
+end-to-end verifiziert. Phasen 0–2 committed und gepusht.
+
+---
+
+## 🔖 Wiederaufnahme — Stand 05.07. Abend
+
+**Was steht:** Rezeptions-Portal (Login, Zimmer-Setup, Übersicht mit
+Check-in/-out + PIN-Anzeige, Priorisieren, Erledigt-Korrektur) und Gastportal
+(Zimmernummer/QR-Token + PIN mit Rate-Limit, Reinigen/DND-Toggles,
+Check-out-Kill) sind komplett funktional gegen die Live-Supabase-DB.
+
+**Nächster Schritt: Phase 3 — Reinigungsboard** (der dickste Brocken):
+
+1. Maid-Verwaltung im Admin: Anlegen (Auth-User `<username>@<hotelId>.rose.svc`
+   + Profil mit `username`), QR-Login-Karten (`maid_login_tokens`,
+   Pattern aus HotCord: PIN + Token atomar, UPSERT invalidiert alte Karte,
+   Karten-Druckseite), Auto-Login-Route `/service/auto/[token]`.
+2. `/service`-Portal mit `createServicePortalClient()` (svc_-Cookies!
+   nie `server.ts`-Client verwenden), Login-Seite Username + PIN.
+3. Etagen-Board: alle Zimmer, drei aktive Status (gewünscht amber /
+   ausgecheckt orange / priorisiert rot), Rest ausgegraut aber sichtbar;
+   Etagenscore = gewichtete Summe (z. B. 3×prio + 2×checkout + 1×wunsch),
+   Etagen danach sortierbar; „Kollegin in Zimmer X" live via
+   `room_states.cleaning_by`.
+4. Slider-Logik (SlideAction aus HotCord portieren): Schichtstart →
+   Reinigung starten (setzt `cleaning_by`/`cleaning_started_at` +
+   staff_log `clean_start`) → abschließen (`clean_done`, löscht
+   checkout_pending/priority/please_clean + cleaning_by) → Schichtende.
+   Pause/Sonstige Reinigung frei stechbar (nur staff_log).
+5. Stale-Timeout: `cleaning_started_at` älter als
+   `policies.cleaningStaleMinutes` (Default 90) → gilt als offen
+   (Ableitung im Loader, kein Cron nötig) + manuelle Übersteuerung.
+
+**Testzugänge:** Login rezeption@rose.local / F51DeP17ed1w (auch in
+`.env.local`-Nähe nirgends gespeichert — ggf. beim User erfragen).
+8 Testzimmer: 101–105 (Etage 1), 201–203 (Etage 2). Dev-Server:
+`npm run dev` im RoSe-Ordner, http://localhost:3000.
+
+**Erinnerungen:** Bei sichtbaren UI-Änderungen ggf. Hilfe-System erst ab
+späterer Phase (existiert in RoSe noch nicht). Neue Migrationen nach
+`Supabase_sql/`, nach Einspielen `git mv` ins `archive/`. Für Phase 3 wird
+vermutlich eine kleine Migration nötig sein, falls Schema-Lücken auffallen —
+Schema v1 deckt maid_login_tokens/staff_log aber bereits ab.

@@ -136,3 +136,5 @@ Nach jeder Phase: Review mit dem User (enger Dialog vereinbart).
 ## Session-Protokolle
 
 Wie in HotCord: Protokolle unter `Sessions/` ablegen, aktuellsten Stand hier verlinken.
+
+- [Sessions/2026-07-05_Phase-0-1_Fundament-und-Admin-Portal.md](Sessions/2026-07-05_Phase-0-1_Fundament-und-Admin-Portal.md) — **Aktueller Stand.** Phasen 0–2: Scaffold + Theming-Port + Schema v1 + Bootstrap, Rezeptions-Portal (Login, Zimmer-Setup, Übersicht mit Check-in/-out + PIN, Priorisieren), Gastportal (Zimmernummer/QR-Token + PIN mit Rate-Limit, Reinigen/DND, Check-out-Kill). Alles im Browser end-to-end verifiziert. **Für Wiederaufnahme: „🔖 Wiederaufnahme"-Block am Ende des Protokolls lesen** — dort steht der detaillierte Phase-3-Plan (Reinigungsboard).
