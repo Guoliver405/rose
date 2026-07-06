@@ -1,4 +1,4 @@
-# Session 2026-07-05 — Phase 0 + 1 + 2: Fundament, Admin-Portal, Gastportal
+# Projekt-Protokoll — Phasen 0–5 (Sessions 2026-07-05 / 2026-07-06)
 
 ## Kontext
 
@@ -300,6 +300,11 @@ tsc/lint/build grün.
 ---
 
 ## 🔖 Wiederaufnahme — Stand 06.07. Abend, PROJEKT KOMPLETT
+
+**Nächster Schritt (vereinbart):** gemeinsamer Schritt-für-Schritt-Test
+aller Portale — Checkliste liegt in
+[Testplan-Walkthrough.md](Testplan-Walkthrough.md). Dort auch das
+Aufräumen der Testreste (101 auschecken) als Punkt 0.
 
 **Alle geplanten Phasen 0–5 sind umgesetzt, verifiziert, committed.**
 Drei funktionale Portale gegen die Live-Supabase-DB:
