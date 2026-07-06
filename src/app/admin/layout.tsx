@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { LogOut } from 'lucide-react'
 import { getManagementContext } from '@/utils/auth'
+import { createClient } from '@/utils/supabase/server'
 import { logoutAction } from '@/app/login/actions'
 import RealtimeListener from '@/components/RealtimeListener'
 
@@ -10,6 +11,14 @@ export default async function AdminLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   const ctx = await getManagementContext()
   if (!ctx) redirect('/login')
+
+  // Offene Bestellungen als Nav-Badge — Realtime-Refresh + revalidatePath
+  // ('/admin', 'layout') halten den Zähler aktuell.
+  const supabase = await createClient()
+  const { count: openOrders } = await supabase
+    .from('service_orders')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'open')
 
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-surface-sunken">
@@ -24,6 +33,15 @@ export default async function AdminLayout({
             <Link href="/admin" className="hover:text-ink">Übersicht</Link>
             <Link href="/admin/zimmer" className="hover:text-ink">Zimmer</Link>
             <Link href="/admin/personal" className="hover:text-ink">Personal</Link>
+            <Link href="/admin/services" className="hover:text-ink">Services</Link>
+            <Link href="/admin/bestellungen" className="flex items-center gap-1.5 hover:text-ink">
+              Bestellungen
+              {(openOrders ?? 0) > 0 && (
+                <span className="rounded-full bg-attention-pill px-2 py-0.5 text-xs font-bold text-attention-deepest">
+                  {openOrders}
+                </span>
+              )}
+            </Link>
           </nav>
 
           <div className="ml-auto flex items-center gap-3">

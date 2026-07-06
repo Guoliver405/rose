@@ -207,30 +207,83 @@ dispatchen. (3) Lint `react-hooks/immutability`: keine Reassignments aus
 
 ---
 
-## 🔖 Wiederaufnahme — Stand 06.07.
+## Phase 4 — Service-Baukasten (Session 2026-07-06)
 
-**Was steht:** Alle drei Portale funktional gegen die Live-Supabase-DB:
-Rezeption (Login, Zimmer, Check-in/-out + PIN, Priorisieren, Personal-
-Verwaltung mit QR-Karten), Gastportal (PIN-Login, Reinigen/DND), Reinigungs-
-board (QR-/PIN-Login, Etagen-Board mit Score, Schicht/Pause/Slider,
-Stale-Timeout). Phasen 0–3 ✅.
+Neue Dateien:
 
-**Nächster Schritt: Phase 4 — Service-Baukasten:**
+- [src/lib/money.ts](../src/lib/money.ts) — `parseEuroToCents` („4,50" →
+  450, leer → null = ohne Preis), `formatCents` (Intl de-DE).
+- [src/app/admin/services/](../src/app/admin/services/) — Konfigurator:
+  Service anlegen (Name, Beschreibung, urgent-Flag), Optionen mit optionalem
+  Preis hinzufügen, urgent togglen, **Archivieren statt Löschen** (Service
+  und Option; FK `on delete restrict` — alte Orders referenzieren die
+  Definition weiter).
+- [src/app/guest/status/GuestServicesPanel.tsx](../src/app/guest/status/GuestServicesPanel.tsx)
+  — Akkordeon pro Service, Options-Auswahl (Multi-Select, Pflicht ≥1 wenn
+  Optionen existieren; Service ohne Optionen ist als Ganzes bestellbar),
+  Notiz-Feld, Erfolgs-Feedback; darunter „Deine Bestellungen" mit
+  open/done-Status (übers 15-s-Polling der Status-Seite aktuell).
+- `placeOrderAction` in [guest/actions.ts](../src/app/guest/actions.ts) —
+  validiert Service (Hotel, nicht archiviert) + Optionen serverseitig,
+  schreibt `items_snapshot` (Label + Preis eingefroren — spätere
+  Baukasten-Änderungen verfälschen alte Bestellungen nicht).
+- [src/app/admin/bestellungen/](../src/app/admin/bestellungen/) — Orders-Tab:
+  offene Bestellungen FIFO (älteste oben), urgent = rote Blink-Kachel +
+  Badge, Items mit Preisen, Notiz, Alter; „Erledigt" mit Race-Guard
+  (`.eq('status','open')` + betroffene Zeilen prüfen — Doppelklick meldet
+  „bereits erledigt"); einklappbare „Zuletzt erledigt"-Liste (20, mit
+  done_by-Name). Nav-Badge mit offener Anzahl im Admin-Layout
+  (Realtime + `revalidatePath('/admin','layout')` halten ihn frisch).
 
-1. Admin-Konfigurator: `service_definitions` + `service_items` (Name,
-   Beschreibung, urgent-Flag, optionale Preise, sort_order, Archivieren).
-2. Gast-Bestellung: Services im Gastportal listen, Items wählen,
-   `service_orders` mit `items_snapshot` (immutabler Preis-/Namens-Snapshot),
-   Notiz-Feld.
-3. Orders-Tab Rezeption: offene Bestellungen (urgent hervorgehoben),
-   `open → done` mit `done_by`, Realtime-Refresh läuft schon
-   (service_orders ist in Publication + RealtimeListener).
+Keine Migration nötig — Schema v1 deckte den Baukasten komplett ab.
 
-**Testzugänge:** rezeption@rose.local / F51DeP17ed1w. Maid: maria / PIN
-046055 (steht auf der Karten-Seite unter /admin/personal). 8 Testzimmer:
-101–105 (Etage 1), 201–203 (Etage 2); 103 steht auf checkout_pending
-(Test-Rest). Dev: `npm run dev`, http://localhost:3000.
+**Verifikation (Browser, End-to-End):** Service „Extra Handtücher"
+(Optionen: Handtuch groß 4,50 € / Handtuch klein ohne Preis) + „Problem
+melden" (urgent, ohne Optionen) angelegt → Check-in 101 (PIN 5319) →
+Gast-Login → beide Services sichtbar → Bestellung mit Option + Notiz
+„Bitte vor 18 Uhr" → urgent-Bestellung „Dusche tropft" → Rezeption:
+Nav-Badge „2", urgent blinkt rot, Preise/Notizen korrekt → „Erledigt" →
+Badge weg, „Zuletzt erledigt (2)" mit Bearbeiter-Name → Gast sieht beide
+als „erledigt". Keine Console-Errors, tsc/lint/build grün.
+
+**Stolperstein:** Während der offenen Seite editierte Dateien → Fast
+Refresh macht Server-Action-Referenzen stale; der Klick läuft dann gegen
+eine tote Action-ID (RSC-Antwort enthält das 404-Template), die Transition
+hängt und `pending` bleibt true. Reines Dev-Artefakt — nach Reload sauber.
+Beim Browser-Testen nach Code-Edits: erst neu laden, dann klicken.
+
+---
+
+## 🔖 Wiederaufnahme — Stand 06.07. Abend
+
+**Was steht:** Alle drei Portale komplett funktional gegen die
+Live-Supabase-DB. Phasen 0–4 ✅: Rezeption (Zimmer, Check-in/-out + PIN,
+Priorisieren, Personal mit QR-Karten, Service-Konfigurator, Orders-Tab mit
+Nav-Badge), Gastportal (PIN-Login, Reinigen/DND, Service-Bestellung mit
+Snapshot), Reinigungsboard (QR-/PIN-Login, Etagen-Score, Schicht/Pause,
+Slider, Stale-Timeout).
+
+**Nächster Schritt: Phase 5 — Politur** (letzte geplante Phase):
+
+1. **QR-Druckseiten**: Zimmer-Aushang (erzeugt + befüllt endlich
+   `room_guest_tokens` — die Route `/guest/r/<token>` wartet darauf;
+   Erzeugen-Button + Druckseite pro Zimmer oder als Bogen) und
+   Check-in-Handout (Zimmernummer + PIN + QR nach dem Check-in-Klick).
+2. **Policies-UI**: Hotelname, pinLength (4–8), cleaningStaleMinutes,
+   stayoverAutoClean + Uhrzeit editierbar (hotels.policies JSONB).
+3. **Stayover-Automatik**: `stayoverAutoClean` — belegte Zimmer ohne DND
+   bekommen zur konfigurierten Uhrzeit ein Reinigungs-Signal (Ableitung
+   im Loader oder leichter Trigger — designen, kein Cron nötig machen).
+4. **Etagenscore-Feintuning** + Kleinkram (Passwort ändern fürs
+   Management, hotels.name-Anzeige).
+
+**Testzugänge:** rezeption@rose.local / F51DeP17ed1w. Maid: maria /
+PIN 046055 (Karte unter /admin/personal). Zimmer 101–105 (Etage 1),
+201–203 (Etage 2). Test-Reste: 101 belegt (PIN 5319), 103 checkout_pending.
+2 Services angelegt, 2 erledigte Bestellungen. Dev: `npm run dev`,
+http://localhost:3000.
 
 **Erinnerungen:** Neue Migrationen nach `Supabase_sql/`, nach Einspielen
-`git mv` ins `archive/`. Slider-Drags im Browser-Test: PointerEvents in
-getrennten Ticks (siehe Stolpersteine Phase 3).
+`git mv` ins `archive/`. Browser-Test-Fallen: Formular-spezifische
+Submit-Selektoren (Logout-Button matcht auch), PointerEvents in getrennten
+Ticks, nach Code-Edits erst reloaden (stale Action-IDs).

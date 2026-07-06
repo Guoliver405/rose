@@ -102,6 +102,57 @@ export async function setGuestSignalAction(
   return {}
 }
 
+/**
+ * Service-Bestellung des Gastes. `items_snapshot` friert Name + Preis der
+ * gewählten Optionen zum Bestellzeitpunkt ein — spätere Baukasten-Änderungen
+ * verfälschen alte Bestellungen nicht.
+ */
+export async function placeOrderAction(
+  serviceId: string,
+  itemIds: string[],
+  note: string,
+): Promise<{ error?: string }> {
+  const ctx = await getGuestContext()
+  if (!ctx) return { error: 'Sitzung abgelaufen — bitte neu anmelden.' }
+
+  const admin = createAdminClient()
+
+  const { data: service } = await admin
+    .from('service_definitions')
+    .select('id, hotel_id, archived_at')
+    .eq('id', serviceId)
+    .maybeSingle()
+  if (!service || service.hotel_id !== ctx.hotelId || service.archived_at) {
+    return { error: 'Dieser Service ist nicht mehr verfügbar.' }
+  }
+
+  const { data: activeItems } = await admin
+    .from('service_items')
+    .select('id, label, price_cents')
+    .eq('service_id', serviceId)
+    .is('archived_at', null)
+
+  const hasItems = (activeItems ?? []).length > 0
+  const chosen = (activeItems ?? []).filter(i => itemIds.includes(i.id))
+  if (hasItems && chosen.length === 0) {
+    return { error: 'Bitte mindestens eine Option auswählen.' }
+  }
+
+  const trimmedNote = note.trim().slice(0, 500)
+  const { error } = await admin.from('service_orders').insert({
+    hotel_id: ctx.hotelId,
+    room_id: ctx.roomId,
+    stay_id: ctx.stayId,
+    service_id: serviceId,
+    items_snapshot: chosen.map(i => ({ label: i.label, price_cents: i.price_cents })),
+    note: trimmedNote || null,
+  })
+  if (error) return { error: 'Bestellung fehlgeschlagen — bitte erneut versuchen.' }
+
+  revalidatePath('/guest/status')
+  return {}
+}
+
 export async function guestLogoutAction(): Promise<void> {
   const cookieStore = await cookies()
   cookieStore.set(GUEST_COOKIE, '', { maxAge: 0, path: '/' })
