@@ -1,21 +1,25 @@
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/server'
-import { clampStaleMinutes, isCleaningFresh } from '@/lib/board'
+import {
+  clampStaleMinutes, isCleaningFresh, isStayoverDue, parseStayoverPolicy, todayStartIso,
+} from '@/lib/board'
 import RoomGrid, { type FloorGroup, type RoomTileData } from './RoomGrid'
 
 export default async function AdminOverviewPage() {
   const supabase = await createClient()
 
-  const [{ data: rooms }, { data: states }, { data: stays }, { data: hotel }] = await Promise.all([
+  const [{ data: rooms }, { data: states }, { data: stays }, { data: hotel }, { data: cleanedToday }] = await Promise.all([
     supabase.from('rooms').select('id, number, floor, building').order('number'),
     supabase.from('room_states').select('room_id, guest_signal, checkout_pending, priority, cleaning_by, cleaning_started_at'),
     supabase.from('stays').select('id, room_id, pin, checked_in_at').is('checked_out_at', null),
     supabase.from('hotels').select('policies').limit(1).maybeSingle(),
+    supabase.from('staff_log').select('room_id').eq('kind', 'clean_done').gte('at', todayStartIso()),
   ])
 
-  const staleMinutes = clampStaleMinutes(
-    (hotel?.policies as { cleaningStaleMinutes?: number } | null)?.cleaningStaleMinutes,
-  )
+  const policies = (hotel?.policies ?? {}) as Record<string, unknown>
+  const staleMinutes = clampStaleMinutes(policies.cleaningStaleMinutes)
+  const stayoverPolicy = parseStayoverPolicy(policies)
+  const cleanedRoomsToday = new Set((cleanedToday ?? []).map(c => c.room_id))
   const now = new Date()
 
   const stateByRoom = new Map((states ?? []).map(s => [s.room_id, s]))
@@ -24,6 +28,7 @@ export default async function AdminOverviewPage() {
   const tiles: RoomTileData[] = (rooms ?? []).map(r => {
     const state = stateByRoom.get(r.id)
     const stay = stayByRoom.get(r.id)
+    const guestSignal = (state?.guest_signal ?? 'none') as RoomTileData['guestSignal']
     return {
       id: r.id,
       number: r.number,
@@ -32,11 +37,19 @@ export default async function AdminOverviewPage() {
       occupied: Boolean(stay),
       pin: stay?.pin ?? null,
       checkedInAt: stay?.checked_in_at ?? null,
-      guestSignal: (state?.guest_signal ?? 'none') as RoomTileData['guestSignal'],
+      guestSignal,
       checkoutPending: state?.checkout_pending ?? false,
       priority: state?.priority ?? false,
       // Stale-Timeout (vergessener Abschluss) zählt nicht mehr als „in Arbeit"
       cleaningActive: state ? isCleaningFresh(state, staleMinutes, now) : false,
+      stayoverDue: isStayoverDue({
+        policy: stayoverPolicy,
+        occupied: Boolean(stay),
+        checkedInAt: stay?.checked_in_at ?? null,
+        guestSignal,
+        cleanedToday: cleanedRoomsToday.has(r.id),
+        now,
+      }),
     }
   })
 
@@ -62,7 +75,7 @@ export default async function AdminOverviewPage() {
   // KPIs
   const total = tiles.length
   const occupied = tiles.filter(t => t.occupied).length
-  const toClean = tiles.filter(t => t.checkoutPending || t.priority || t.guestSignal === 'please_clean').length
+  const toClean = tiles.filter(t => t.checkoutPending || t.priority || t.guestSignal === 'please_clean' || t.stayoverDue).length
   const dnd = tiles.filter(t => t.guestSignal === 'dnd').length
   const inProgress = tiles.filter(t => t.cleaningActive).length
 

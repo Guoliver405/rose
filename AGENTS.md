@@ -129,12 +129,16 @@ Auf saturierten Buttons per-Family-Foreground verwenden (`bg-attention text-atte
 - **Phase 2** — Gastportal: `/guest` + `/guest/r/<token>`, PIN-Eingabe + Rate-Limit, Reinigen/DND, Session-Cookie ✅
 - **Phase 3** — Reinigungsboard: Maid-Login (QR-Karten), Etagen-Board, Slider (Start/Abschluss), staff_log, Stale-Timeout ✅
 - **Phase 4** — Service-Baukasten: Konfigurator, Gast-Bestellung, Orders-Tab Rezeption ✅
-- **Phase 5** — Politur: Etagenscore-Feintuning, Policies-UI, QR-Druckseiten (Zimmer-Aushang + Check-in-Handout), Stayover-Automatik
+- **Phase 5** — Politur: Etagenscore-Feintuning, Policies-UI, QR-Druckseiten (Zimmer-Aushang + Check-in-Handout), Stayover-Automatik ✅
 
-Nach jeder Phase: Review mit dem User (enger Dialog vereinbart).
+Alle geplanten Phasen sind umgesetzt. Nach jeder Phase: Review mit dem User (enger Dialog vereinbart).
+
+### Stayover-Automatik (Phase 5) — Funktionsweise
+
+Reine Loader-Ableitung, kein Cron, kein persistentes Flag: Ein belegtes Zimmer ist „routine-fällig", wenn `policies.stayoverAutoClean` an ist, die konfigurierte Uhrzeit erreicht ist, der Check-in vor heute liegt (ab der zweiten Nacht), kein DND anliegt und heute noch kein `staff_log.clean_done` für das Zimmer existiert. Deshalb schreibt **auch `markCleanedAction` (Rezeption) einen `clean_done`-Stich** — sonst würde die Rezeptions-Korrektur die Routine nicht befriedigen. Siehe `isStayoverDue` in [src/lib/board.ts](src/lib/board.ts).
 
 ## Session-Protokolle
 
 Wie in HotCord: Protokolle unter `Sessions/` ablegen, aktuellsten Stand hier verlinken.
 
-- [Sessions/2026-07-05_Phase-0-1_Fundament-und-Admin-Portal.md](Sessions/2026-07-05_Phase-0-1_Fundament-und-Admin-Portal.md) — **Aktueller Stand.** Phasen 0–4: Scaffold + Theming-Port + Schema v1 + Bootstrap, Rezeptions-Portal (Login, Zimmer-Setup, Übersicht mit Check-in/-out + PIN, Priorisieren, Personal-Verwaltung mit QR-Karten, Service-Konfigurator, Orders-Tab mit Nav-Badge), Gastportal (Zimmernummer/QR-Token + PIN mit Rate-Limit, Reinigen/DND, Service-Bestellung, Check-out-Kill), Reinigungsboard (QR-/PIN-Login, Etagen-Board mit Score, Schicht/Pause, Slider Start/Abschluss, Stale-Timeout). Alles im Browser end-to-end verifiziert. **Für Wiederaufnahme: „🔖 Wiederaufnahme"-Block am Ende des Protokolls lesen** — dort steht der Phase-5-Plan (Politur).
+- [Sessions/2026-07-05_Phase-0-1_Fundament-und-Admin-Portal.md](Sessions/2026-07-05_Phase-0-1_Fundament-und-Admin-Portal.md) — **Aktueller Stand.** Alle Phasen 0–5 umgesetzt und end-to-end verifiziert: Rezeptions-Portal (Zimmer, Check-in/-out + PIN, Priorisieren, Personal mit QR-Karten, Service-Konfigurator, Orders-Tab, Einstellungen mit Policies + Passwort, QR-Aushänge + Gast-Handout), Gastportal (Zimmernummer/QR-Deep-Link + PIN mit Rate-Limit, Reinigen/DND, Service-Bestellung), Reinigungsboard (QR-/PIN-Login, Etagen-Score, Schicht/Pause, Slider, Stale-Timeout, Stayover-Routine). **Für Wiederaufnahme: „🔖 Wiederaufnahme"-Block am Ende des Protokolls lesen.**

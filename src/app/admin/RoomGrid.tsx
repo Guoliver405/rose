@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Link from 'next/link'
 import {
-  AlertTriangle, BedDouble, DoorOpen, Loader2, Moon, Sparkles, X,
+  AlertTriangle, BedDouble, DoorOpen, Loader2, Moon, Printer, RefreshCw, Sparkles, X,
 } from 'lucide-react'
 import {
   checkInAction, checkOutAction, markCleanedAction, setPriorityAction,
@@ -20,6 +21,7 @@ export type RoomTileData = {
   checkoutPending: boolean
   priority: boolean
   cleaningActive: boolean
+  stayoverDue: boolean
 }
 
 export type FloorGroup = {
@@ -28,12 +30,12 @@ export type FloorGroup = {
   rooms: RoomTileData[]
 }
 
-/** Farb-Vorrang: priorisiert > in Arbeit > ausgecheckt > Reinigungswunsch > DND > belegt > frei */
+/** Farb-Vorrang: priorisiert > in Arbeit > ausgecheckt > Reinigungswunsch/Routine > DND > belegt > frei */
 function tileBar(t: RoomTileData): string {
   if (t.priority) return 'bg-critical'
   if (t.cleaningActive) return 'bg-positive-soft'
   if (t.checkoutPending) return 'bg-caution'
-  if (t.guestSignal === 'please_clean') return 'bg-attention'
+  if (t.guestSignal === 'please_clean' || t.stayoverDue) return 'bg-attention'
   if (t.guestSignal === 'dnd') return 'bg-blocked'
   if (t.occupied) return 'bg-fresh'
   return 'bg-edge'
@@ -46,6 +48,7 @@ function statusLabel(t: RoomTileData): string {
   if (t.cleaningActive) parts.push('Reinigung läuft')
   if (t.checkoutPending) parts.push('Reinigung nach Check-out offen')
   if (t.guestSignal === 'please_clean') parts.push('Gast wünscht Reinigung')
+  if (t.stayoverDue) parts.push('Routine-Reinigung fällig')
   if (t.guestSignal === 'dnd') parts.push('Bitte nicht stören')
   return parts.join(' · ')
 }
@@ -105,6 +108,7 @@ function RoomTile({ room, onClick }: { room: RoomTileData; onClick: () => void }
           {room.occupied && <BedDouble className="h-3.5 w-3.5 text-active-strong" />}
           {room.guestSignal === 'dnd' && <Moon className="h-3.5 w-3.5 text-blocked-strong" />}
           {room.guestSignal === 'please_clean' && <Sparkles className="h-3.5 w-3.5 text-attention-strong" />}
+          {room.stayoverDue && <RefreshCw className="h-3.5 w-3.5 text-attention-strong" />}
           {room.checkoutPending && <DoorOpen className="h-3.5 w-3.5 text-caution-strong" />}
           {room.priority && <AlertTriangle className="h-3.5 w-3.5 text-critical-strong" />}
           {room.cleaningActive && <Loader2 className="h-3.5 w-3.5 animate-spin text-positive-strong" />}
@@ -121,7 +125,7 @@ function RoomDialog({ room, onClose }: { room: RoomTileData; onClose: () => void
   const [freshPin, setFreshPin] = useState<string | null>(null)
   const [confirmCheckout, setConfirmCheckout] = useState(false)
 
-  const needsCleaning = room.checkoutPending || room.priority || room.guestSignal === 'please_clean'
+  const needsCleaning = room.checkoutPending || room.priority || room.guestSignal === 'please_clean' || room.stayoverDue
 
   function runCheckIn(force: boolean) {
     setError(null)
@@ -206,6 +210,12 @@ function RoomDialog({ room, onClose }: { room: RoomTileData; onClose: () => void
               Dem Gast mitteilen — Anmeldung mit Zimmernummer + PIN im Gäste-Portal.
               {checkedInLabel && !freshPin ? ` Eingecheckt am ${checkedInLabel}.` : ''}
             </p>
+            <Link
+              href={`/admin/handout/${room.id}`}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-action-tint-edge px-3 py-1.5 text-sm font-bold text-action-deep hover:bg-surface"
+            >
+              <Printer className="h-4 w-4" /> Gast-Handout drucken
+            </Link>
           </div>
         )}
 

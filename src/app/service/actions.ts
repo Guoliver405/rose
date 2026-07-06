@@ -5,7 +5,10 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/utils/supabase/service'
 import { getMaidContext, type MaidContext } from '@/utils/maid-auth'
 import { deriveShiftState, type ShiftState } from '@/lib/shift'
-import { clampStaleMinutes, isCleaningFresh, isRoomActive } from '@/lib/board'
+import {
+  clampStaleMinutes, isCleaningFresh, isRoomActive, isStayoverDue,
+  parseStayoverPolicy, todayStartIso,
+} from '@/lib/board'
 
 type ActionResult = { error?: string }
 
@@ -157,7 +160,34 @@ export async function startCleaningAction(roomId: string): Promise<ActionResult>
     .maybeSingle()
   if (!state || state.hotel_id !== ctx.hotelId) return { error: 'Zimmer nicht gefunden.' }
   if (state.guest_signal === 'dnd') return { error: 'Der Gast möchte nicht gestört werden (DND).' }
-  if (!isRoomActive(state)) return { error: 'Für dieses Zimmer ist keine Reinigung offen.' }
+
+  // Neben den persistenten Signalen zählt auch die abgeleitete
+  // Stayover-Routine als „offen" (gleiche Logik wie im Board-Loader).
+  if (!isRoomActive(state)) {
+    const [{ data: stay }, { data: cleaned }] = await Promise.all([
+      admin
+        .from('stays')
+        .select('checked_in_at')
+        .eq('room_id', roomId)
+        .is('checked_out_at', null)
+        .maybeSingle(),
+      admin
+        .from('staff_log')
+        .select('id')
+        .eq('room_id', roomId)
+        .eq('kind', 'clean_done')
+        .gte('at', todayStartIso())
+        .limit(1),
+    ])
+    const stayoverDue = isStayoverDue({
+      policy: parseStayoverPolicy(ctx.policies),
+      occupied: Boolean(stay),
+      checkedInAt: stay?.checked_in_at ?? null,
+      guestSignal: state.guest_signal,
+      cleanedToday: (cleaned ?? []).length > 0,
+    })
+    if (!stayoverDue) return { error: 'Für dieses Zimmer ist keine Reinigung offen.' }
+  }
 
   const staleMinutes = clampStaleMinutes(ctx.policies.cleaningStaleMinutes)
   if (state.cleaning_by && isCleaningFresh(state, staleMinutes)) {

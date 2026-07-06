@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  AlertTriangle, BedDouble, Coffee, DoorOpen, Loader2, Moon, Sparkles, X,
+  AlertTriangle, BedDouble, Coffee, DoorOpen, Loader2, Moon, RefreshCw, Sparkles, X,
 } from 'lucide-react'
 import SlideAction from '@/components/SlideAction'
 import {
@@ -20,6 +20,7 @@ export type BoardRoom = {
   guestSignal: 'none' | 'please_clean' | 'dnd'
   checkoutPending: boolean
   priority: boolean
+  stayoverDue: boolean
   active: boolean
   score: number
   cleaningByName: string | null
@@ -44,17 +45,18 @@ function statusLabel(r: BoardRoom): string {
   if (r.priority) parts.push('Priorisiert')
   if (r.checkoutPending) parts.push('Ausgecheckt')
   if (r.guestSignal === 'please_clean') parts.push('Reinigung gewünscht')
+  if (r.stayoverDue) parts.push('Routine fällig')
   if (r.guestSignal === 'dnd') parts.push('Nicht stören')
   if (parts.length === 0) parts.push(r.occupied ? 'Belegt' : 'Frei')
   return parts.join(' · ')
 }
 
-/** Farb-Vorrang wie im Admin: priorisiert > in Arbeit > ausgecheckt > Wunsch. */
+/** Farb-Vorrang wie im Admin: priorisiert > in Arbeit > ausgecheckt > Wunsch/Routine. */
 function tileBar(r: BoardRoom): string {
   if (r.priority) return 'bg-critical'
   if (r.cleaningFresh) return 'bg-positive-soft'
   if (r.checkoutPending) return 'bg-caution'
-  if (r.guestSignal === 'please_clean') return 'bg-attention'
+  if (r.guestSignal === 'please_clean' || r.stayoverDue) return 'bg-attention'
   return 'bg-edge'
 }
 
@@ -268,6 +270,7 @@ function RoomTile({ room, onClick }: { room: BoardRoom; onClick: () => void }) {
           {room.occupied && <BedDouble className="h-4 w-4 text-active-strong" />}
           {room.guestSignal === 'dnd' && <Moon className="h-4 w-4 text-blocked-strong" />}
           {room.guestSignal === 'please_clean' && <Sparkles className="h-4 w-4 text-attention-strong" />}
+          {room.stayoverDue && <RefreshCw className="h-4 w-4 text-attention-strong" />}
           {room.checkoutPending && <DoorOpen className="h-4 w-4 text-caution-strong" />}
           {room.priority && <AlertTriangle className="h-4 w-4 text-critical-strong" />}
           {room.cleaningFresh && <Loader2 className="h-4 w-4 animate-spin text-positive-strong" />}

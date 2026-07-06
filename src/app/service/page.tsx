@@ -3,7 +3,10 @@ import { LogOut } from 'lucide-react'
 import { getMaidContext } from '@/utils/maid-auth'
 import { createAdminClient } from '@/utils/supabase/service'
 import { deriveShiftState } from '@/lib/shift'
-import { clampStaleMinutes, isCleaningFresh, isRoomActive, roomScore } from '@/lib/board'
+import {
+  clampStaleMinutes, isCleaningFresh, isRoomActive, isStayoverDue,
+  parseStayoverPolicy, roomScore, todayStartIso,
+} from '@/lib/board'
 import RealtimeListener from '@/components/RealtimeListener'
 import { maidLogoutAction } from './login/actions'
 import ServiceBoard, { type BoardFloor, type BoardRoom } from './ServiceBoard'
@@ -16,14 +19,14 @@ export default async function ServiceBoardPage() {
   // nicht („Kollegin in Zimmer X" braucht aber deren Namen) und stays gar
   // nicht. Auth ist über getMaidContext() bereits geprüft.
   const admin = createAdminClient()
-  const [{ data: rooms }, { data: states }, { data: stays }, { data: maids }, { data: myLog }] =
+  const [{ data: rooms }, { data: states }, { data: stays }, { data: maids }, { data: myLog }, { data: cleanedToday }] =
     await Promise.all([
       admin.from('rooms').select('id, number, floor, building').eq('hotel_id', ctx.hotelId),
       admin
         .from('room_states')
         .select('room_id, guest_signal, checkout_pending, priority, cleaning_by, cleaning_started_at')
         .eq('hotel_id', ctx.hotelId),
-      admin.from('stays').select('room_id').eq('hotel_id', ctx.hotelId).is('checked_out_at', null),
+      admin.from('stays').select('room_id, checked_in_at').eq('hotel_id', ctx.hotelId).is('checked_out_at', null),
       admin.from('profiles').select('id, display_name').eq('hotel_id', ctx.hotelId),
       admin
         .from('staff_log')
@@ -32,14 +35,22 @@ export default async function ServiceBoardPage() {
         .in('kind', ['shift_start', 'shift_end', 'break_start', 'break_end'])
         .order('at', { ascending: false })
         .limit(50),
+      admin
+        .from('staff_log')
+        .select('room_id')
+        .eq('hotel_id', ctx.hotelId)
+        .eq('kind', 'clean_done')
+        .gte('at', todayStartIso()),
     ])
 
   const staleMinutes = clampStaleMinutes(ctx.policies.cleaningStaleMinutes)
+  const stayoverPolicy = parseStayoverPolicy(ctx.policies)
+  const cleanedRoomsToday = new Set((cleanedToday ?? []).map(c => c.room_id))
   const now = new Date()
   const shift = deriveShiftState(myLog ?? [])
 
   const stateByRoom = new Map((states ?? []).map(s => [s.room_id, s]))
-  const occupiedRooms = new Set((stays ?? []).map(s => s.room_id))
+  const stayByRoom = new Map((stays ?? []).map(s => [s.room_id, s]))
   const nameByProfile = new Map((maids ?? []).map(p => [p.id, p.display_name]))
 
   const myCleaningRoomId =
@@ -49,6 +60,7 @@ export default async function ServiceBoardPage() {
 
   const boardRooms: BoardRoom[] = (rooms ?? []).map(r => {
     const state = stateByRoom.get(r.id)
+    const stay = stayByRoom.get(r.id)
     const signal = (state?.guest_signal ?? 'none') as BoardRoom['guestSignal']
     const checkoutPending = state?.checkout_pending ?? false
     const priority = state?.priority ?? false
@@ -61,17 +73,27 @@ export default async function ServiceBoardPage() {
       : false
     const cleaningStale = Boolean(state?.cleaning_by) && !cleaningFresh
 
+    const stayoverDue = isStayoverDue({
+      policy: stayoverPolicy,
+      occupied: Boolean(stay),
+      checkedInAt: stay?.checked_in_at ?? null,
+      guestSignal: signal,
+      cleanedToday: cleanedRoomsToday.has(r.id),
+      now,
+    })
+
     return {
       id: r.id,
       number: r.number,
       floor: r.floor,
       building: r.building,
-      occupied: occupiedRooms.has(r.id),
+      occupied: Boolean(stay),
       guestSignal: signal,
       checkoutPending,
       priority,
-      active: isRoomActive(stateLike),
-      score: roomScore(stateLike),
+      stayoverDue,
+      active: isRoomActive(stateLike) || stayoverDue,
+      score: roomScore(stateLike, stayoverDue),
       cleaningByName: state?.cleaning_by
         ? (nameByProfile.get(state.cleaning_by) ?? 'Kollegin')
         : null,

@@ -149,6 +149,15 @@ export async function markCleanedAction(roomId: string): Promise<{ error?: strin
     .eq('hotel_id', ctx.hotelId)
   if (error) return { error: error.message }
 
+  // clean_done auch bei Rezeptions-Korrektur stechen — die Stayover-
+  // Ableitung ("heute schon gereinigt?") liest staff_log.
+  await admin.from('staff_log').insert({
+    hotel_id: ctx.hotelId,
+    profile_id: ctx.userId,
+    room_id: roomId,
+    kind: 'clean_done',
+  })
+
   revalidatePath('/admin', 'layout')
   return {}
 }

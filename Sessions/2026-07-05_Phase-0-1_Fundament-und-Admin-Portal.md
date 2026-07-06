@@ -254,33 +254,76 @@ Beim Browser-Testen nach Code-Edits: erst neu laden, dann klicken.
 
 ---
 
-## 🔖 Wiederaufnahme — Stand 06.07. Abend
+## Phase 5 — Politur (Session 2026-07-06)
 
-**Was steht:** Alle drei Portale komplett funktional gegen die
-Live-Supabase-DB. Phasen 0–4 ✅: Rezeption (Zimmer, Check-in/-out + PIN,
-Priorisieren, Personal mit QR-Karten, Service-Konfigurator, Orders-Tab mit
-Nav-Badge), Gastportal (PIN-Login, Reinigen/DND, Service-Bestellung mit
-Snapshot), Reinigungsboard (QR-/PIN-Login, Etagen-Score, Schicht/Pause,
-Slider, Stale-Timeout).
+Neue/geänderte Dateien:
 
-**Nächster Schritt: Phase 5 — Politur** (letzte geplante Phase):
+- **Stayover-Automatik** (Design: reine Loader-Ableitung, kein Cron, keine
+  Migration): [lib/board.ts](../src/lib/board.ts) →
+  `parseStayoverPolicy` + `isStayoverDue` (belegt, Check-in vor heute,
+  kein DND, Uhrzeit erreicht, heute kein `clean_done` im staff_log).
+  „Heute gereinigt" kommt aus `staff_log.clean_done` — deshalb schreibt
+  **`markCleanedAction` (Rezeption) jetzt ebenfalls einen clean_done-Stich**.
+  Fällige Zimmer erscheinen auf beiden Boards (amber, RefreshCw-Icon,
+  „Routine-Reinigung fällig"), zählen im Etagenscore wie ein Wunsch (+1)
+  und sind vom Board startbar (`startCleaningAction` prüft die Ableitung
+  serverseitig nach).
+- **QR-Zimmer-Aushänge** [admin/zimmer/aushang/](../src/app/admin/zimmer/aushang/):
+  „N fehlende QR-Codes erzeugen" (idempotent, bestehende Tokens bleiben),
+  Karte pro Zimmer mit QR auf `/guest/r/<token>` + Klartext-Link,
+  „Code erneuern" pro Zimmer (invalidiert alten Aushang), Druck mit
+  `break-after-page` (1 Karte/Seite). Verlinkt von der Zimmer-Seite.
+  **Damit ist `room_guest_tokens` erstmals befüllt** — Deep-Link-Route
+  aus Phase 2 jetzt produktiv.
+- **Gast-Handout** [admin/handout/[roomId]/](../src/app/admin/handout/%5BroomId%5D/):
+  druckbare Willkommenskarte (Zimmernummer, PIN groß, QR auf Deep-Link,
+  Fallback Baseline-/guest ohne Token), verlinkt aus dem Zimmer-Dialog
+  („Gast-Handout drucken" bei belegtem Zimmer / nach Check-in).
+- **Einstellungen** [admin/einstellungen/](../src/app/admin/einstellungen/):
+  Hotelname, PIN-Länge (4–8), Stale-Minuten (5–1440), Stayover an/aus +
+  Uhrzeit — Policies werden **gemergt**, nicht ersetzt. Plus Passwort
+  ändern (eigener Account via Session-Client, min. 8 Zeichen, 2×-Eingabe).
+- [components/QrImage.tsx](../src/components/QrImage.tsx) — geteiltes
+  QR-Rendering (Aushang + Handout).
 
-1. **QR-Druckseiten**: Zimmer-Aushang (erzeugt + befüllt endlich
-   `room_guest_tokens` — die Route `/guest/r/<token>` wartet darauf;
-   Erzeugen-Button + Druckseite pro Zimmer oder als Bogen) und
-   Check-in-Handout (Zimmernummer + PIN + QR nach dem Check-in-Klick).
-2. **Policies-UI**: Hotelname, pinLength (4–8), cleaningStaleMinutes,
-   stayoverAutoClean + Uhrzeit editierbar (hotels.policies JSONB).
-3. **Stayover-Automatik**: `stayoverAutoClean` — belegte Zimmer ohne DND
-   bekommen zur konfigurierten Uhrzeit ein Reinigungs-Signal (Ableitung
-   im Loader oder leichter Trigger — designen, kein Cron nötig machen).
-4. **Etagenscore-Feintuning** + Kleinkram (Passwort ändern fürs
-   Management, hotels.name-Anzeige).
+**Verifikation (Browser, End-to-End):** 8 QR-Codes erzeugt → Deep-Link
+`/guest/r/<token>` zeigt „Zimmer 101" + nur PIN-Feld → Login mit PIN 5319
+→ Status-Seite. Handout aus dem Zimmer-Dialog: PIN + Deep-Link-QR.
+Einstellungen: Stayover an (00:00) gespeichert → Stay auf gestern
+zurückdatiert → Rezeption zeigt „Routine-Reinigung fällig" (KPI zählt),
+Board zeigt „Routine fällig" mit Score +1 → Maid startet + schließt ab →
+Routine verschwindet (clean_done heute). Rezeptions-„erledigt" auf 103
+schreibt clean_done ins staff_log (DB-geprüft). Passwort-Mismatch sauber
+abgewiesen. Stayover zurück auf Default (aus). Keine Console-Errors,
+tsc/lint/build grün.
+
+---
+
+## 🔖 Wiederaufnahme — Stand 06.07. Abend, PROJEKT KOMPLETT
+
+**Alle geplanten Phasen 0–5 sind umgesetzt, verifiziert, committed.**
+Drei funktionale Portale gegen die Live-Supabase-DB:
+
+- **Rezeption** (/admin): Zimmer-Setup, Übersicht mit Check-in/-out + PIN,
+  Priorisieren, Personal (QR-Login-Karten), Service-Baukasten, Orders-Tab
+  mit Nav-Badge, Einstellungen (Policies + Passwort), QR-Aushänge,
+  Gast-Handout.
+- **Gast** (/guest): Baseline Zimmernummer+PIN und QR-Deep-Link (nur PIN),
+  Rate-Limit, Reinigen/DND, Service-Bestellung mit Snapshot,
+  Bestell-Status.
+- **Reinigung** (/service): QR-Auto-Login + Username/PIN, Etagen-Board
+  mit Score, Schicht/Pause/Sonstige, Slider Start/Abschluss/Abbruch,
+  Stale-Timeout, Stayover-Routine.
+
+**Mögliche Anschlussarbeiten (nichts davon geplant):** Multi-Property-UI
+(Schema trägt hotel_id schon), Statistiken aus staff_log/Transitions,
+Hilfe-System (HotCord-Pattern), E-Mail-Reset für Management-Logins,
+Push-Benachrichtigung bei urgent-Orders.
 
 **Testzugänge:** rezeption@rose.local / F51DeP17ed1w. Maid: maria /
 PIN 046055 (Karte unter /admin/personal). Zimmer 101–105 (Etage 1),
-201–203 (Etage 2). Test-Reste: 101 belegt (PIN 5319), 103 checkout_pending.
-2 Services angelegt, 2 erledigte Bestellungen. Dev: `npm run dev`,
+201–203 (Etage 2); 101 belegt (PIN 5319, Check-in testweise auf gestern
+zurückdatiert). 2 Services, 2 erledigte Bestellungen. Dev: `npm run dev`,
 http://localhost:3000.
 
 **Erinnerungen:** Neue Migrationen nach `Supabase_sql/`, nach Einspielen
