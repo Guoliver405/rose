@@ -135,42 +135,102 @@ end-to-end verifiziert. Phasen 0–2 committed und gepusht.
 
 ---
 
-## 🔖 Wiederaufnahme — Stand 05.07. Abend
+## Phase 3 — Reinigungsboard (Session 2026-07-06)
 
-**Was steht:** Rezeptions-Portal (Login, Zimmer-Setup, Übersicht mit
-Check-in/-out + PIN-Anzeige, Priorisieren, Erledigt-Korrektur) und Gastportal
-(Zimmernummer/QR-Token + PIN mit Rate-Limit, Reinigen/DND-Toggles,
-Check-out-Kill) sind komplett funktional gegen die Live-Supabase-DB.
+Neue Dateien:
 
-**Nächster Schritt: Phase 3 — Reinigungsboard** (der dickste Brocken):
+- [src/lib/maid.ts](../src/lib/maid.ts) — `buildMaidEmail`
+  (`<username>@<hotelId>.rose.svc`), `normalizeUsername`.
+- [src/lib/board.ts](../src/lib/board.ts) — geteilte Board-Ableitung:
+  `isRoomActive`, `roomScore` (3×prio + 2×checkout + 1×wunsch),
+  `isCleaningFresh` + `clampStaleMinutes` (Stale-Timeout, Default 90 min,
+  reine Loader-Ableitung — kein Cron). Auch vom Admin-Board genutzt.
+- [src/lib/shift.ts](../src/lib/shift.ts) — `deriveShiftState`: Schicht/Pause
+  aus den jüngsten staff_log-Stichen, kein eigener Zustands-Speicher.
+- [src/utils/maid-auth.ts](../src/utils/maid-auth.ts) — `getMaidContext()`:
+  svc_-Session → Profil (username NOT NULL) + Hotel/Policies +
+  `accessToken` (für Realtime-RLS im Browser).
+- [src/app/admin/personal/](../src/app/admin/personal/) — Maid-Verwaltung:
+  Anlegen (Auth-User + Profil + Karte, Rollback bei Profil-Fehler),
+  PIN-Anzeige in der Liste, „Neue Karte" (PIN + Token als Einheit ersetzt,
+  UPSERT auf PK), Löschen (blockiert während laufender Reinigung; CASCADE
+  nimmt staff_log-Historie mit — Dialog sagt das ehrlich).
+- [karte/[profileId]/page.tsx](../src/app/admin/personal/karte/%5BprofileId%5D/page.tsx)
+  + [MaidPinCard.tsx](../src/components/MaidPinCard.tsx) — Standalone-
+  Druckseite (Admin-Header ist jetzt `print:hidden`), QR via `qrcode`-Paket
+  (neue Dependency) auf `/service/auto/<token>`, PIN + Klartext-Link.
+- [src/app/service/auto/[token]/route.ts](../src/app/service/auto/%5Btoken%5D/route.ts)
+  — QR-Auto-Login: Token-Lookup → `signInWithPassword` über svc_-Client.
+- [src/app/service/login/](../src/app/service/login/) — Username + PIN
+  (Single-Property: Hotel wird serverseitig über den Username aufgelöst),
+  generische Fehlermeldung, Logout-Action.
+- [src/app/service/page.tsx](../src/app/service/page.tsx) — Board-Loader über
+  Admin-Client (Maid-RLS sieht weder fremde profiles noch stays): Etagen
+  nach Score sortiert, Stale-Ableitung, eigener Reinigungs-Slot.
+- [src/app/service/ServiceBoard.tsx](../src/app/service/ServiceBoard.tsx) —
+  Schicht-Panel (Slider Schichtbeginn/-ende, Pause-Toggle, „Sonstige
+  Reinigung" nur geloggt), Etagen-Sections mit Score-Badge, Zimmer-Dialog
+  mit Slidern; 60-s-Fallback-Poll (Realtime-Token läuft nach ~1 h ab).
+- [src/app/service/actions.ts](../src/app/service/actions.ts) — Slider-Logik:
+  Schicht rahmt ein, ein Zimmer zur Zeit, `startCleaningAction` mit
+  race-sicherem Claiming (bedingtes UPDATE auf gelesenen `cleaning_by`),
+  `finishCleaningAction` (löscht checkout/priority/please_clean, DND bleibt),
+  `abortCleaningAction` (`clean_aborted`), Schichtende schließt offene Pause
+  implizit. Audit-Trio mit source `'maid'`.
+- [src/components/SlideAction.tsx](../src/components/SlideAction.tsx) —
+  1:1-Port aus HotCord, Farbfamilien auf RoSe-Semantik gemappt.
+- [src/proxy.ts](../src/proxy.ts) — refresht jetzt auch svc_-Sessions
+  (`/service/:path*`, Präfix-Mapping im Cookie-Adapter).
+- [RealtimeListener](../src/components/RealtimeListener.tsx) — optionaler
+  `token`-Prop → `realtime.setAuth()` (HotCord-Pattern; ohne ihn blockt RLS
+  die postgres_changes fürs Service-Portal).
 
-1. Maid-Verwaltung im Admin: Anlegen (Auth-User `<username>@<hotelId>.rose.svc`
-   + Profil mit `username`), QR-Login-Karten (`maid_login_tokens`,
-   Pattern aus HotCord: PIN + Token atomar, UPSERT invalidiert alte Karte,
-   Karten-Druckseite), Auto-Login-Route `/service/auto/[token]`.
-2. `/service`-Portal mit `createServicePortalClient()` (svc_-Cookies!
-   nie `server.ts`-Client verwenden), Login-Seite Username + PIN.
-3. Etagen-Board: alle Zimmer, drei aktive Status (gewünscht amber /
-   ausgecheckt orange / priorisiert rot), Rest ausgegraut aber sichtbar;
-   Etagenscore = gewichtete Summe (z. B. 3×prio + 2×checkout + 1×wunsch),
-   Etagen danach sortierbar; „Kollegin in Zimmer X" live via
-   `room_states.cleaning_by`.
-4. Slider-Logik (SlideAction aus HotCord portieren): Schichtstart →
-   Reinigung starten (setzt `cleaning_by`/`cleaning_started_at` +
-   staff_log `clean_start`) → abschließen (`clean_done`, löscht
-   checkout_pending/priority/please_clean + cleaning_by) → Schichtende.
-   Pause/Sonstige Reinigung frei stechbar (nur staff_log).
-5. Stale-Timeout: `cleaning_started_at` älter als
-   `policies.cleaningStaleMinutes` (Default 90) → gilt als offen
-   (Ableitung im Loader, kein Cron nötig) + manuelle Übersteuerung.
+Keine Migration nötig — Schema v1 deckte maid_login_tokens/staff_log ab.
 
-**Testzugänge:** Login rezeption@rose.local / F51DeP17ed1w (auch in
-`.env.local`-Nähe nirgends gespeichert — ggf. beim User erfragen).
-8 Testzimmer: 101–105 (Etage 1), 201–203 (Etage 2). Dev-Server:
-`npm run dev` im RoSe-Ordner, http://localhost:3000.
+**Verifikation (Browser, End-to-End):** Maid „Maria K." (@maria) angelegt →
+PIN 046055 in Liste sichtbar → Karten-Seite rendert QR + PIN →
+Auto-Login-URL direkt aufgerufen → Board als Maria → Schicht-Slider →
+Reinigung 102 gestartet (Kachel „Du bist hier", Schichtende gesperrt) →
+Admin parallel „1 in Arbeit" (Cookie-Trennung: beide Sessions koexistieren)
+→ abgeschlossen (0 offen, Etagen neu sortiert) → Pause an/aus → „Sonstige
+Reinigung geloggt" → Schichtende (schließt Pause mit) → Logout → falsche
+PIN generisch abgewiesen → Login Username+PIN → Admin-Check-in/-out 103 →
+Board zeigt „Ausgecheckt", Etage 1 Score 2 zuerst. tsc/lint/build grün.
 
-**Erinnerungen:** Bei sichtbaren UI-Änderungen ggf. Hilfe-System erst ab
-späterer Phase (existiert in RoSe noch nicht). Neue Migrationen nach
-`Supabase_sql/`, nach Einspielen `git mv` ins `archive/`. Für Phase 3 wird
-vermutlich eine kleine Migration nötig sein, falls Schema-Lücken auffallen —
-Schema v1 deckt maid_login_tokens/staff_log aber bereits ab.
+**Stolpersteine:** (1) Der dokumentierte `button[type=submit]`-Selektor-Fall
+hat wieder zugeschlagen (Logout im Header) — Formular-spezifische Selektoren
+verwenden. (2) React-Batching bricht synchron gefeuerte
+PointerEvent-Sequenzen: `dragging`-State aus `pointerdown` ist beim direkt
+folgenden `pointermove` noch nicht da — Events in getrennten Ticks
+dispatchen. (3) Lint `react-hooks/immutability`: keine Reassignments aus
+`.map`-Callbacks in Server Components.
+
+---
+
+## 🔖 Wiederaufnahme — Stand 06.07.
+
+**Was steht:** Alle drei Portale funktional gegen die Live-Supabase-DB:
+Rezeption (Login, Zimmer, Check-in/-out + PIN, Priorisieren, Personal-
+Verwaltung mit QR-Karten), Gastportal (PIN-Login, Reinigen/DND), Reinigungs-
+board (QR-/PIN-Login, Etagen-Board mit Score, Schicht/Pause/Slider,
+Stale-Timeout). Phasen 0–3 ✅.
+
+**Nächster Schritt: Phase 4 — Service-Baukasten:**
+
+1. Admin-Konfigurator: `service_definitions` + `service_items` (Name,
+   Beschreibung, urgent-Flag, optionale Preise, sort_order, Archivieren).
+2. Gast-Bestellung: Services im Gastportal listen, Items wählen,
+   `service_orders` mit `items_snapshot` (immutabler Preis-/Namens-Snapshot),
+   Notiz-Feld.
+3. Orders-Tab Rezeption: offene Bestellungen (urgent hervorgehoben),
+   `open → done` mit `done_by`, Realtime-Refresh läuft schon
+   (service_orders ist in Publication + RealtimeListener).
+
+**Testzugänge:** rezeption@rose.local / F51DeP17ed1w. Maid: maria / PIN
+046055 (steht auf der Karten-Seite unter /admin/personal). 8 Testzimmer:
+101–105 (Etage 1), 201–203 (Etage 2); 103 steht auf checkout_pending
+(Test-Rest). Dev: `npm run dev`, http://localhost:3000.
+
+**Erinnerungen:** Neue Migrationen nach `Supabase_sql/`, nach Einspielen
+`git mv` ins `archive/`. Slider-Drags im Browser-Test: PointerEvents in
+getrennten Ticks (siehe Stolpersteine Phase 3).

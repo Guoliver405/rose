@@ -1,15 +1,22 @@
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/server'
+import { clampStaleMinutes, isCleaningFresh } from '@/lib/board'
 import RoomGrid, { type FloorGroup, type RoomTileData } from './RoomGrid'
 
 export default async function AdminOverviewPage() {
   const supabase = await createClient()
 
-  const [{ data: rooms }, { data: states }, { data: stays }] = await Promise.all([
+  const [{ data: rooms }, { data: states }, { data: stays }, { data: hotel }] = await Promise.all([
     supabase.from('rooms').select('id, number, floor, building').order('number'),
-    supabase.from('room_states').select('room_id, guest_signal, checkout_pending, priority, cleaning_by'),
+    supabase.from('room_states').select('room_id, guest_signal, checkout_pending, priority, cleaning_by, cleaning_started_at'),
     supabase.from('stays').select('id, room_id, pin, checked_in_at').is('checked_out_at', null),
+    supabase.from('hotels').select('policies').limit(1).maybeSingle(),
   ])
+
+  const staleMinutes = clampStaleMinutes(
+    (hotel?.policies as { cleaningStaleMinutes?: number } | null)?.cleaningStaleMinutes,
+  )
+  const now = new Date()
 
   const stateByRoom = new Map((states ?? []).map(s => [s.room_id, s]))
   const stayByRoom = new Map((stays ?? []).map(s => [s.room_id, s]))
@@ -28,7 +35,8 @@ export default async function AdminOverviewPage() {
       guestSignal: (state?.guest_signal ?? 'none') as RoomTileData['guestSignal'],
       checkoutPending: state?.checkout_pending ?? false,
       priority: state?.priority ?? false,
-      cleaningActive: Boolean(state?.cleaning_by),
+      // Stale-Timeout (vergessener Abschluss) zählt nicht mehr als „in Arbeit"
+      cleaningActive: state ? isCleaningFresh(state, staleMinutes, now) : false,
     }
   })
 

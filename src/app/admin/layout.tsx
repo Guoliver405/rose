@@ -13,7 +13,7 @@ export default async function AdminLayout({
 
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-surface-sunken">
-      <header className="sticky top-0 z-40 border-b border-edge bg-surface">
+      <header className="sticky top-0 z-40 border-b border-edge bg-surface print:hidden">
         <div className="mx-auto flex max-w-[1400px] items-center gap-6 px-4 py-3">
           <Link href="/admin" className="text-lg font-black text-ink">
             Ro<span className="text-blocked">Se</span>
@@ -23,6 +23,7 @@ export default async function AdminLayout({
           <nav className="flex items-center gap-4 text-sm font-semibold text-ink-soft">
             <Link href="/admin" className="hover:text-ink">Übersicht</Link>
             <Link href="/admin/zimmer" className="hover:text-ink">Zimmer</Link>
+            <Link href="/admin/personal" className="hover:text-ink">Personal</Link>
           </nav>
 
           <div className="ml-auto flex items-center gap-3">

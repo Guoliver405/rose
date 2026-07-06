@@ -2,15 +2,20 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 /**
- * Session-Refresh für das Admin-Portal (Next-16-Proxy, vormals Middleware).
+ * Session-Refresh für Admin- und Reinigungs-Portal (Next-16-Proxy).
  *
  * Server Components können keine Cookies setzen — ohne diesen Refresh würde
  * die Token-Rotation nach Ablauf des Access-Tokens verloren gehen und die
- * Session mit "refresh_token_already_used" sterben. Berührt nur die
- * Default-Supabase-Cookies; die svc_-Cookies des Reinigungs-Portals
- * bleiben unangetastet (eigener Namespace, eigener Refresh in Phase 3).
+ * Session mit "refresh_token_already_used" sterben.
+ *
+ * /admin + /login nutzen die Default-Supabase-Cookies, /service den
+ * svc_-Namespace (Präfix wird beim Lesen entfernt, beim Schreiben
+ * hinzugefügt) — beide Sessions koexistieren im selben Browser.
  */
+const SVC = 'svc_'
+
 export async function proxy(request: NextRequest) {
+  const isService = request.nextUrl.pathname.startsWith('/service')
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -19,13 +24,18 @@ export async function proxy(request: NextRequest) {
     {
       cookies: {
         getAll() {
-          return request.cookies.getAll()
+          if (!isService) return request.cookies.getAll()
+          return request.cookies
+            .getAll()
+            .filter(c => c.name.startsWith(SVC))
+            .map(c => ({ name: c.name.slice(SVC.length), value: c.value }))
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          const prefix = isService ? SVC : ''
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(prefix + name, value))
           response = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
+            response.cookies.set(prefix + name, value, options),
           )
         },
       },
@@ -39,5 +49,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/login'],
+  matcher: ['/admin/:path*', '/login', '/service/:path*'],
 }

@@ -127,7 +127,7 @@ Auf saturierten Buttons per-Family-Foreground verwenden (`bg-attention text-atte
 - **Phase 0** — Scaffold, Theming-Port, Supabase-Clients, Schema v1 ✅
 - **Phase 1** — Admin: Login, Zimmer-Setup, Zimmer-Übersicht, Check-in/-out mit PIN-Anzeige, Priorisieren ✅
 - **Phase 2** — Gastportal: `/guest` + `/guest/r/<token>`, PIN-Eingabe + Rate-Limit, Reinigen/DND, Session-Cookie ✅
-- **Phase 3** — Reinigungsboard: Maid-Login (QR-Karten), Etagen-Board, Slider (Start/Abschluss), staff_log, Stale-Timeout
+- **Phase 3** — Reinigungsboard: Maid-Login (QR-Karten), Etagen-Board, Slider (Start/Abschluss), staff_log, Stale-Timeout ✅
 - **Phase 4** — Service-Baukasten: Konfigurator, Gast-Bestellung, Orders-Tab Rezeption
 - **Phase 5** — Politur: Etagenscore-Feintuning, Policies-UI, QR-Druckseiten (Zimmer-Aushang + Check-in-Handout), Stayover-Automatik
 
@@ -137,4 +137,4 @@ Nach jeder Phase: Review mit dem User (enger Dialog vereinbart).
 
 Wie in HotCord: Protokolle unter `Sessions/` ablegen, aktuellsten Stand hier verlinken.
 
-- [Sessions/2026-07-05_Phase-0-1_Fundament-und-Admin-Portal.md](Sessions/2026-07-05_Phase-0-1_Fundament-und-Admin-Portal.md) — **Aktueller Stand.** Phasen 0–2: Scaffold + Theming-Port + Schema v1 + Bootstrap, Rezeptions-Portal (Login, Zimmer-Setup, Übersicht mit Check-in/-out + PIN, Priorisieren), Gastportal (Zimmernummer/QR-Token + PIN mit Rate-Limit, Reinigen/DND, Check-out-Kill). Alles im Browser end-to-end verifiziert. **Für Wiederaufnahme: „🔖 Wiederaufnahme"-Block am Ende des Protokolls lesen** — dort steht der detaillierte Phase-3-Plan (Reinigungsboard).
+- [Sessions/2026-07-05_Phase-0-1_Fundament-und-Admin-Portal.md](Sessions/2026-07-05_Phase-0-1_Fundament-und-Admin-Portal.md) — **Aktueller Stand.** Phasen 0–3: Scaffold + Theming-Port + Schema v1 + Bootstrap, Rezeptions-Portal (Login, Zimmer-Setup, Übersicht mit Check-in/-out + PIN, Priorisieren, Personal-Verwaltung mit QR-Karten), Gastportal (Zimmernummer/QR-Token + PIN mit Rate-Limit, Reinigen/DND, Check-out-Kill), Reinigungsboard (QR-/PIN-Login, Etagen-Board mit Score, Schicht/Pause, Slider Start/Abschluss, Stale-Timeout). Alles im Browser end-to-end verifiziert. **Für Wiederaufnahme: „🔖 Wiederaufnahme"-Block am Ende des Protokolls lesen** — dort steht der Phase-4-Plan (Service-Baukasten).
