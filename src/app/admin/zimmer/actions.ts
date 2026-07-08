@@ -7,22 +7,39 @@ import { getManagementContext } from '@/utils/auth'
 export type CreateRoomsResult = { created?: number; skipped?: number; error?: string }
 
 /**
- * Legt mehrere Zimmer auf einer Etage an (Nummern-Liste, bereits vom Client
- * expandiert). Bereits existierende Nummern werden übersprungen.
+ * Legt Zimmer auf einer oder mehreren Etagen an (Nummern bereits vom Client
+ * expandiert, inkl. optionalem Etagen-Präfix). Bereits existierende Nummern
+ * werden übersprungen — Nummern sind hotelweit unique.
  * Für jedes neue Zimmer wird die room_states-Zeile miterzeugt.
  */
 export async function createRoomsAction(
   building: string | null,
-  floor: number,
-  numbers: string[],
+  groups: { floor: number; numbers: string[] }[],
 ): Promise<CreateRoomsResult> {
   const ctx = await getManagementContext()
   if (!ctx) return { error: 'Nicht angemeldet.' }
 
-  const clean = [...new Set(numbers.map(n => n.trim()).filter(Boolean))]
-  if (clean.length === 0) return { error: 'Keine Zimmernummern angegeben.' }
-  if (clean.length > 500) return { error: 'Maximal 500 Zimmer pro Vorgang.' }
-  if (!Number.isInteger(floor)) return { error: 'Ungültige Etage.' }
+  if (!Array.isArray(groups) || groups.length === 0) {
+    return { error: 'Keine Zimmernummern angegeben.' }
+  }
+  // Über alle Etagen deduplizieren (Nummern sind hotelweit unique) —
+  // erste Etage gewinnt, Rest zählt als übersprungen.
+  const seen = new Set<string>()
+  const rows: { floor: number; number: string }[] = []
+  let requested = 0
+  for (const g of groups) {
+    if (!Number.isInteger(g.floor)) return { error: 'Ungültige Etage.' }
+    for (const raw of g.numbers) {
+      const number = raw.trim()
+      if (!number) continue
+      requested++
+      if (seen.has(number)) continue
+      seen.add(number)
+      rows.push({ floor: g.floor, number })
+    }
+  }
+  if (requested === 0) return { error: 'Keine Zimmernummern angegeben.' }
+  if (requested > 500) return { error: 'Maximal 500 Zimmer pro Vorgang.' }
 
   const admin = createAdminClient()
   const trimmedBuilding = building?.trim() || null
@@ -30,10 +47,10 @@ export async function createRoomsAction(
   const { data: inserted, error: insErr } = await admin
     .from('rooms')
     .upsert(
-      clean.map(number => ({
+      rows.map(r => ({
         hotel_id: ctx.hotelId,
-        number,
-        floor,
+        number: r.number,
+        floor: r.floor,
         building: trimmedBuilding,
       })),
       { onConflict: 'hotel_id,number', ignoreDuplicates: true },
@@ -53,7 +70,49 @@ export async function createRoomsAction(
   }
 
   revalidatePath('/admin', 'layout')
-  return { created, skipped: clean.length - created }
+  return { created, skipped: requested - created }
+}
+
+export type DeleteFloorResult = { deleted?: number; skippedOccupied?: number; error?: string }
+
+/**
+ * Löscht alle Zimmer einer Etage (innerhalb eines Gebäudeteils). Belegte
+ * Zimmer bleiben stehen und werden als übersprungen gemeldet.
+ */
+export async function deleteFloorRoomsAction(
+  building: string | null,
+  floor: number,
+): Promise<DeleteFloorResult> {
+  const ctx = await getManagementContext()
+  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!Number.isInteger(floor)) return { error: 'Ungültige Etage.' }
+
+  const admin = createAdminClient()
+  const trimmedBuilding = building?.trim() || null
+
+  let roomsQuery = admin
+    .from('rooms').select('id').eq('hotel_id', ctx.hotelId).eq('floor', floor)
+  roomsQuery = trimmedBuilding === null
+    ? roomsQuery.is('building', null)
+    : roomsQuery.eq('building', trimmedBuilding)
+  const { data: floorRooms, error: selErr } = await roomsQuery
+  if (selErr) return { error: `Laden fehlgeschlagen: ${selErr.message}` }
+  if (!floorRooms || floorRooms.length === 0) return { deleted: 0, skippedOccupied: 0 }
+
+  const roomIds = floorRooms.map(r => r.id)
+  const { data: activeStays } = await admin
+    .from('stays').select('room_id').in('room_id', roomIds).is('checked_out_at', null)
+  const occupied = new Set((activeStays ?? []).map(s => s.room_id))
+  const deletable = roomIds.filter(id => !occupied.has(id))
+
+  if (deletable.length > 0) {
+    // Cascade räumt room_states, room_guest_tokens, stays, service_orders mit ab.
+    const { error } = await admin.from('rooms').delete().in('id', deletable)
+    if (error) return { error: `Löschen fehlgeschlagen: ${error.message}` }
+  }
+
+  revalidatePath('/admin', 'layout')
+  return { deleted: deletable.length, skippedOccupied: occupied.size }
 }
 
 export async function deleteRoomAction(roomId: string): Promise<{ error?: string }> {

@@ -319,6 +319,20 @@ gekennzeichnet); nur Deutsch. Signup-CTA ist bewusst Platzhalter
 reine Ansage — Feature-Gating (plan-Feld, Zimmer-Limit, Baukasten-Sperre)
 existiert noch nicht und gehört zu Phase 6b.
 
+**Zimmer-Anlage komfortabler (08.07. Abend):** Modus-Switch „Etagen
+individuell" (wie bisher, eine Etage) vs. „Etagen identisch" (gleicher
+Nummernkreis auf Etagen-Bereich, z. B. 1–3 × 01–10); Checkbox
+„Etagennummer voranstellen" (Etage 2 + „05" → „205"); führende Nullen in
+Bereichen bleiben erhalten („01-10"). Da Zimmernummern hotelweit unique
+sind, warnt das Formular bei „identisch ohne Präfix". Neu außerdem:
+Mülltonne pro Etagen-Gruppe (`deleteFloorRoomsAction` — löscht alle
+nicht-belegten Zimmer der Etage, belegte werden gemeldet).
+`createRoomsAction` nimmt jetzt Gruppen `{floor, numbers[]}[]`. Verifiziert
+im Krone-Mandanten (15 anlegen über 3 Etagen, Warnung, etagenweise
+löschen). Achtung: In Pension Alpenblick liegen 61 Zimmer des Users, alle
+auf Etage 1 (mit alter UI angelegt) — nicht angerührt, kann der User mit
+der neuen Etagen-Mülltonne selbst aufräumen.
+
 **Nächster Schritt (vereinbart):** gemeinsamer Schritt-für-Schritt-Test
 aller Portale — Checkliste liegt in
 [Testplan-Walkthrough.md](Testplan-Walkthrough.md), am besten direkt auf dem
