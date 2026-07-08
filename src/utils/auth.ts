@@ -5,6 +5,8 @@ export type ManagementContext = {
   hotelId: string
   displayName: string
   hotelName: string
+  /** 'admin' = Inhaber/Management (alles), 'reception' = Tagesgeschäft. */
+  role: 'admin' | 'reception'
 }
 
 /**
@@ -21,7 +23,7 @@ export async function getManagementContext(): Promise<ManagementContext | null> 
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('hotel_id, display_name, username')
+    .select('hotel_id, display_name, username, role')
     .eq('id', user.id)
     .single()
 
@@ -38,5 +40,19 @@ export async function getManagementContext(): Promise<ManagementContext | null> 
     hotelId: profile.hotel_id,
     displayName: profile.display_name,
     hotelName: hotel?.name ?? 'Hotel',
+    role: profile.role === 'reception' ? 'reception' : 'admin',
   }
+}
+
+/**
+ * Wie getManagementContext, aber nur für die Admin-Rolle — Rezeptions-
+ * Zugänge (und alles andere) liefern `null`.
+ *
+ * Admin-only-Pages: `if (!await getAdminContext()) redirect('/admin')`
+ * (Layout hat Nicht-Angemeldete schon nach /login geschickt).
+ * Admin-only-Actions: bei `null` mit `{ error: 'Keine Berechtigung.' }`.
+ */
+export async function getAdminContext(): Promise<ManagementContext | null> {
+  const ctx = await getManagementContext()
+  return ctx?.role === 'admin' ? ctx : null
 }

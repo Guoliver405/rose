@@ -342,6 +342,20 @@ würfelt die PIN neu, falls ein aktiver Stay auf gleichnamigem Zimmer
 dieselbe PIN hat. End-to-end in Krone verifiziert (zwei 101er eingecheckt,
 Gast-Login disambiguiert korrekt), danach aufgeräumt.
 
+**Rollen-System Admin/Rezeption (08.07. Nacht):** `profiles.role`
+(`admin`|`reception`, Migration eingespielt + archiviert) — revidiert
+bewusst „kein Rollen-System". Rezeption = Tagesgeschäft (Übersicht,
+Bestellungen, Handouts, Maid-Karten drucken, Aushänge drucken, eigenes
+Passwort); Admin-only: Einstellungen (Hotel/Policies), Zimmer-Setup,
+Services, Personal-Verwaltung, „Code erneuern". Guards doppelt: Nav/Pages
+(`getAdminContext` → redirect) UND jede Admin-Action. Rezeptions-Zugänge
+legt der Admin unter /admin/personal an (E-Mail + generiertes Einmal-
+Passwort). Verifiziert in Krone mit Test-Zugang
+frontdesk-krone@rose.local / qsBdTWfGpJu6-tad (bewusst stehengelassen zum
+Ausprobieren): Nav gefiltert, /admin/zimmer + /admin/services redirecten,
+Einstellungen zeigt nur Passwort-Form, Personal ohne Verwaltungs-Buttons,
+Aushänge ohne „Code erneuern".
+
 **Nächster Schritt (vereinbart):** gemeinsamer Schritt-für-Schritt-Test
 aller Portale — Checkliste liegt in
 [Testplan-Walkthrough.md](Testplan-Walkthrough.md), am besten direkt auf dem

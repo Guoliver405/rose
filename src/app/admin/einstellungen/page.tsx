@@ -21,6 +21,7 @@ export default async function EinstellungenPage() {
 
   return (
     <SettingsForm
+      canManageHotel={ctx.role === 'admin'}
       initial={{
         hotelName: hotel?.name ?? '',
         pinLength: clampPinLength(policies.pinLength),

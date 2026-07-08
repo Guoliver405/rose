@@ -16,9 +16,12 @@ export type RoomQrData = {
 export default function RoomQrSheet({
   cards,
   hotelName,
+  canRenew,
 }: {
   cards: RoomQrData[]
   hotelName: string
+  /** „Code erneuern" invalidiert den alten Aushang — nur für Admins. */
+  canRenew: boolean
 }) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -123,14 +126,16 @@ export default function RoomQrSheet({
                       <p className="break-all border-t border-dashed border-edge pt-2 text-[10px] text-ink-muted">
                         {c.url}
                       </p>
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => runRegenerate(c.roomId, c.number)}
-                        className="mx-auto flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink disabled:opacity-50 print:hidden"
-                      >
-                        <RefreshCw className="h-3 w-3" /> Code erneuern
-                      </button>
+                      {canRenew && (
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => runRegenerate(c.roomId, c.number)}
+                          className="mx-auto flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink disabled:opacity-50 print:hidden"
+                        >
+                          <RefreshCw className="h-3 w-3" /> Code erneuern
+                        </button>
+                      )}
                     </>
                   ) : (
                     <p className="py-10 text-sm font-semibold text-ink-muted">

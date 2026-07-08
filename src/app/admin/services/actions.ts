@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/utils/supabase/service'
-import { getManagementContext } from '@/utils/auth'
+import { getAdminContext } from '@/utils/auth'
 import { parseEuroToCents } from '@/lib/money'
 
 type ActionResult = { error?: string }
@@ -12,8 +12,8 @@ type ActionResult = { error?: string }
  * nur urgent-Flag, Preise optional als Anzeige-Info.
  */
 export async function createServiceAction(formData: FormData): Promise<ActionResult> {
-  const ctx = await getManagementContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  const ctx = await getAdminContext()
+  if (!ctx) return { error: 'Keine Berechtigung.' }
 
   const name = ((formData.get('name') as string) ?? '').trim()
   const description = ((formData.get('description') as string) ?? '').trim()
@@ -40,8 +40,8 @@ export async function createServiceAction(formData: FormData): Promise<ActionRes
  * Portal und Konfigurator.
  */
 export async function archiveServiceAction(serviceId: string): Promise<ActionResult> {
-  const ctx = await getManagementContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  const ctx = await getAdminContext()
+  if (!ctx) return { error: 'Keine Berechtigung.' }
 
   const admin = createAdminClient()
   const { error } = await admin
@@ -59,8 +59,8 @@ export async function setServiceUrgentAction(
   serviceId: string,
   urgent: boolean,
 ): Promise<ActionResult> {
-  const ctx = await getManagementContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  const ctx = await getAdminContext()
+  if (!ctx) return { error: 'Keine Berechtigung.' }
 
   const admin = createAdminClient()
   const { error } = await admin
@@ -78,8 +78,8 @@ export async function createServiceItemAction(
   serviceId: string,
   formData: FormData,
 ): Promise<ActionResult> {
-  const ctx = await getManagementContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  const ctx = await getAdminContext()
+  if (!ctx) return { error: 'Keine Berechtigung.' }
 
   const label = ((formData.get('label') as string) ?? '').trim()
   const priceRaw = ((formData.get('price') as string) ?? '').trim()
@@ -109,8 +109,8 @@ export async function createServiceItemAction(
 }
 
 export async function archiveServiceItemAction(itemId: string): Promise<ActionResult> {
-  const ctx = await getManagementContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  const ctx = await getAdminContext()
+  if (!ctx) return { error: 'Keine Berechtigung.' }
 
   const admin = createAdminClient()
   const { error } = await admin

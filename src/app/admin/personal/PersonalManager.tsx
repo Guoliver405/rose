@@ -2,8 +2,11 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { IdCard, Loader2, Plus, Printer, Sparkles, Trash2, UserRound } from 'lucide-react'
-import { createMaidAction, deleteMaidAction, issueMaidLoginCardAction } from './actions'
+import { IdCard, KeyRound, Loader2, Plus, Printer, Sparkles, Trash2, UserRound } from 'lucide-react'
+import {
+  createMaidAction, createReceptionAction, deleteMaidAction, deleteReceptionAction,
+  issueMaidLoginCardAction, type ReceptionCredentials,
+} from './actions'
 
 export type MaidRow = {
   id: string
@@ -13,11 +16,51 @@ export type MaidRow = {
   cleaningRoom: string | null
 }
 
-export default function PersonalManager({ maids }: { maids: MaidRow[] }) {
+export type ReceptionRow = {
+  id: string
+  displayName: string
+  email: string
+}
+
+export default function PersonalManager({
+  maids,
+  receptionists,
+  canManage,
+}: {
+  maids: MaidRow[]
+  receptionists: ReceptionRow[]
+  /** false = Rezeptions-Rolle: nur Liste ansehen + Karten drucken. */
+  canManage: boolean
+}) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [recCredentials, setRecCredentials] = useState<ReceptionCredentials | null>(null)
+  const [confirmRecDeleteId, setConfirmRecDeleteId] = useState<string | null>(null)
+
+  function runCreateReception(form: HTMLFormElement) {
+    setError(null)
+    setNotice(null)
+    setRecCredentials(null)
+    const formData = new FormData(form)
+    startTransition(async () => {
+      const res = await createReceptionAction(formData)
+      if (res.error) { setError(res.error); return }
+      form.reset()
+      setRecCredentials(res.credentials!)
+    })
+  }
+
+  function runDeleteReception(profileId: string) {
+    setError(null)
+    setNotice(null)
+    startTransition(async () => {
+      const res = await deleteReceptionAction(profileId)
+      if (res.error) { setError(res.error); return }
+      setConfirmRecDeleteId(null)
+    })
+  }
 
   function runCreate(form: HTMLFormElement) {
     setError(null)
@@ -60,7 +103,8 @@ export default function PersonalManager({ maids }: { maids: MaidRow[] }) {
         </span>
       </div>
 
-      {/* Anlegen */}
+      {/* Anlegen — nur Admin */}
+      {canManage && (
       <form
         onSubmit={e => { e.preventDefault(); runCreate(e.currentTarget) }}
         className="rounded-xl border border-edge bg-surface p-4"
@@ -103,6 +147,7 @@ export default function PersonalManager({ maids }: { maids: MaidRow[] }) {
           PIN (6 Ziffern) und QR-Login-Karte werden automatisch erzeugt — danach über &bdquo;Karte drucken&ldquo; aushändigen.
         </p>
       </form>
+      )}
 
       {error && (
         <p className="rounded-lg border border-critical-tint-edge bg-critical-tint px-3 py-2 text-sm font-semibold text-critical-strong">
@@ -158,25 +203,29 @@ export default function PersonalManager({ maids }: { maids: MaidRow[] }) {
                     </Link>
                   )}
 
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => runIssueCard(m.id, m.displayName)}
-                    title="Neue PIN + neuer QR-Code — alte Karte wird ungültig"
-                    className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
-                  >
-                    <IdCard className="h-4 w-4" /> Neue Karte
-                  </button>
+                  {canManage && (
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => runIssueCard(m.id, m.displayName)}
+                      title="Neue PIN + neuer QR-Code — alte Karte wird ungültig"
+                      className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
+                    >
+                      <IdCard className="h-4 w-4" /> Neue Karte
+                    </button>
+                  )}
 
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => setConfirmDeleteId(m.id)}
-                    className="rounded-lg border border-critical-pill-edge p-1.5 text-critical-strong hover:bg-critical-tint disabled:opacity-50"
-                    aria-label={`${m.displayName} löschen`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  {canManage && (
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => setConfirmDeleteId(m.id)}
+                      className="rounded-lg border border-critical-pill-edge p-1.5 text-critical-strong hover:bg-critical-tint disabled:opacity-50"
+                      aria-label={`${m.displayName} löschen`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -208,6 +257,120 @@ export default function PersonalManager({ maids }: { maids: MaidRow[] }) {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Rezeptions-Zugänge — nur Admin */}
+      {canManage && (
+        <>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <h2 className="text-xl font-black text-ink">Personal — Rezeption</h2>
+            <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-semibold text-ink-soft">
+              {receptionists.length} {receptionists.length === 1 ? 'Zugang' : 'Zugänge'}
+            </span>
+          </div>
+
+          <form
+            onSubmit={e => { e.preventDefault(); runCreateReception(e.currentTarget) }}
+            className="rounded-xl border border-edge bg-surface p-4"
+          >
+            <h3 className="mb-3 text-sm font-bold text-ink-soft">Neuen Rezeptions-Zugang anlegen</h3>
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+                Anzeigename
+                <input
+                  name="displayName"
+                  required
+                  minLength={2}
+                  placeholder="z. B. Front Desk Früh"
+                  className="w-48 rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink placeholder:text-ink-muted focus:border-action focus:outline-none"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+                E-Mail (Login)
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="z. B. rezeption@meinhotel.de"
+                  className="w-64 rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink placeholder:text-ink-muted focus:border-action focus:outline-none"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={pending}
+                className="flex items-center gap-1.5 rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
+              >
+                {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                Anlegen
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-ink-muted">
+              Rezeptions-Zugänge bedienen das Tagesgeschäft (Check-in/-out, Bestellungen,
+              Drucken) — Einstellungen, Zimmer-Setup und Services bleiben dem Admin vorbehalten.
+            </p>
+          </form>
+
+          {recCredentials && (
+            <div className="rounded-xl border border-action-tint-edge bg-action-tint p-4">
+              <p className="flex items-center gap-1.5 text-sm font-bold text-action-deep">
+                <KeyRound className="h-4 w-4" /> Zugang für {recCredentials.displayName} angelegt —
+                Passwort jetzt notieren, es wird nur einmal angezeigt:
+              </p>
+              <p className="mt-2 font-mono text-sm font-bold text-action-deep">
+                {recCredentials.email} &nbsp;/&nbsp; {recCredentials.password}
+              </p>
+            </div>
+          )}
+
+          {receptionists.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {receptionists.map(r => (
+                <div key={r.id} className="rounded-xl border border-edge bg-surface px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="min-w-40">
+                      <p className="font-bold text-ink">{r.displayName}</p>
+                      <p className="font-mono text-xs text-ink-muted">{r.email}</p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => setConfirmRecDeleteId(r.id)}
+                      className="ml-auto rounded-lg border border-critical-pill-edge p-1.5 text-critical-strong hover:bg-critical-tint disabled:opacity-50"
+                      aria-label={`${r.displayName} löschen`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {confirmRecDeleteId === r.id && (
+                    <div className="mt-3 rounded-lg border border-edge bg-surface-sunken p-3">
+                      <p className="text-sm font-semibold text-ink">
+                        {r.displayName} wirklich löschen? Der Login wird sofort ungültig.
+                      </p>
+                      <div className="mt-2 flex gap-2">
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => runDeleteReception(r.id)}
+                          className="rounded-lg bg-critical px-3 py-1.5 text-sm font-bold text-critical-foreground disabled:opacity-50"
+                        >
+                          {pending ? 'Löschen …' : 'Ja, löschen'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmRecDeleteId(null)}
+                          className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft"
+                        >
+                          Abbrechen
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   )

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/utils/supabase/service'
 import { createClient } from '@/utils/supabase/server'
-import { getManagementContext } from '@/utils/auth'
+import { getAdminContext, getManagementContext } from '@/utils/auth'
 import { clampPinLength } from '@/lib/ids'
 import { clampStaleMinutes } from '@/lib/board'
 
@@ -14,8 +14,8 @@ type ActionResult = { error?: string }
  * damit künftige Policy-Schlüssel nicht verloren gehen.
  */
 export async function updateSettingsAction(formData: FormData): Promise<ActionResult> {
-  const ctx = await getManagementContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  const ctx = await getAdminContext()
+  if (!ctx) return { error: 'Keine Berechtigung.' }
 
   const name = ((formData.get('hotelName') as string) ?? '').trim()
   if (name.length < 2) return { error: 'Hotelname muss mindestens 2 Zeichen haben.' }

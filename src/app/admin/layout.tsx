@@ -31,9 +31,16 @@ export default async function AdminLayout({
 
           <nav className="flex items-center gap-4 text-sm font-semibold text-ink-soft">
             <Link href="/admin" className="hover:text-ink">Übersicht</Link>
-            <Link href="/admin/zimmer" className="hover:text-ink">Zimmer</Link>
+            {ctx.role === 'admin' && (
+              <Link href="/admin/zimmer" className="hover:text-ink">Zimmer</Link>
+            )}
             <Link href="/admin/personal" className="hover:text-ink">Personal</Link>
-            <Link href="/admin/services" className="hover:text-ink">Services</Link>
+            {ctx.role === 'admin' && (
+              <Link href="/admin/services" className="hover:text-ink">Services</Link>
+            )}
+            {ctx.role === 'reception' && (
+              <Link href="/admin/zimmer/aushang" className="hover:text-ink">Aushänge</Link>
+            )}
             <Link href="/admin/einstellungen" className="hover:text-ink">Einstellungen</Link>
             <Link href="/admin/bestellungen" className="flex items-center gap-1.5 hover:text-ink">
               Bestellungen

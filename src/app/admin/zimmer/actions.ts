@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/utils/supabase/service'
-import { getManagementContext } from '@/utils/auth'
+import { getAdminContext } from '@/utils/auth'
 
 export type CreateRoomsResult = { created?: number; skipped?: number; error?: string }
 
@@ -16,8 +16,8 @@ export async function createRoomsAction(
   building: string | null,
   groups: { floor: number; numbers: string[] }[],
 ): Promise<CreateRoomsResult> {
-  const ctx = await getManagementContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  const ctx = await getAdminContext()
+  if (!ctx) return { error: 'Keine Berechtigung.' }
 
   if (!Array.isArray(groups) || groups.length === 0) {
     return { error: 'Keine Zimmernummern angegeben.' }
@@ -84,8 +84,8 @@ export async function deleteFloorRoomsAction(
   building: string | null,
   floor: number,
 ): Promise<DeleteFloorResult> {
-  const ctx = await getManagementContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  const ctx = await getAdminContext()
+  if (!ctx) return { error: 'Keine Berechtigung.' }
   if (!Number.isInteger(floor)) return { error: 'Ungültige Etage.' }
 
   const admin = createAdminClient()
@@ -117,8 +117,8 @@ export async function deleteFloorRoomsAction(
 }
 
 export async function deleteRoomAction(roomId: string): Promise<{ error?: string }> {
-  const ctx = await getManagementContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  const ctx = await getAdminContext()
+  if (!ctx) return { error: 'Keine Berechtigung.' }
   const admin = createAdminClient()
 
   const { data: room } = await admin

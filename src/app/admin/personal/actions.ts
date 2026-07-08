@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/utils/supabase/service'
-import { getManagementContext } from '@/utils/auth'
+import { getAdminContext } from '@/utils/auth'
 import { generatePin, generateToken } from '@/lib/ids'
 import { buildMaidEmail, normalizeUsername } from '@/lib/maid'
 
@@ -21,8 +21,8 @@ export type CreateMaidResult = { card?: MaidLoginCard; error?: string }
  * + Profil mit username-Discriminator + Login-Karte (Token + PIN als Einheit).
  */
 export async function createMaidAction(formData: FormData): Promise<CreateMaidResult> {
-  const ctx = await getManagementContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  const ctx = await getAdminContext()
+  if (!ctx) return { error: 'Keine Berechtigung.' }
 
   const displayName = ((formData.get('displayName') as string) ?? '').trim()
   const username = normalizeUsername((formData.get('username') as string) ?? '')
@@ -86,8 +86,8 @@ export async function createMaidAction(formData: FormData): Promise<CreateMaidRe
 export async function issueMaidLoginCardAction(
   profileId: string,
 ): Promise<{ card?: MaidLoginCard; error?: string }> {
-  const ctx = await getManagementContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  const ctx = await getAdminContext()
+  if (!ctx) return { error: 'Keine Berechtigung.' }
   const admin = createAdminClient()
 
   const { data: profile } = await admin
@@ -118,8 +118,8 @@ export async function issueMaidLoginCardAction(
 
 /** Reinigungskraft löschen (Auth-User → CASCADE räumt Profil + Karte ab). */
 export async function deleteMaidAction(profileId: string): Promise<{ error?: string }> {
-  const ctx = await getManagementContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  const ctx = await getAdminContext()
+  if (!ctx) return { error: 'Keine Berechtigung.' }
   const admin = createAdminClient()
 
   const { data: profile } = await admin
@@ -137,6 +137,85 @@ export async function deleteMaidAction(profileId: string): Promise<{ error?: str
     .limit(1)
   if (cleaning && cleaning.length > 0) {
     return { error: 'Diese Kraft ist gerade als reinigend eingetragen. Erst die Reinigung abschließen (oder im Board als erledigt markieren).' }
+  }
+
+  const { error } = await admin.auth.admin.deleteUser(profileId)
+  if (error) return { error: error.message }
+
+  revalidatePath('/admin', 'layout')
+  return {}
+}
+
+export type ReceptionCredentials = {
+  profileId: string
+  displayName: string
+  email: string
+  password: string
+}
+
+/**
+ * Rezeptions-Zugang anlegen: E-Mail-Login mit role 'reception' —
+ * Tagesgeschäft ja, Konfiguration/Struktur nein. Das generierte Passwort
+ * wird genau einmal angezeigt (danach nur noch über „Passwort ändern"
+ * durch den Nutzer selbst).
+ */
+export async function createReceptionAction(
+  formData: FormData,
+): Promise<{ credentials?: ReceptionCredentials; error?: string }> {
+  const ctx = await getAdminContext()
+  if (!ctx) return { error: 'Keine Berechtigung.' }
+
+  const displayName = ((formData.get('displayName') as string) ?? '').trim()
+  const email = ((formData.get('email') as string) ?? '').trim().toLowerCase()
+
+  if (displayName.length < 2) return { error: 'Name muss mindestens 2 Zeichen haben.' }
+  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: 'Bitte eine gültige E-Mail-Adresse angeben.' }
+
+  const password = generateToken(12)
+  const admin = createAdminClient()
+
+  const { data: authUser, error: authErr } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true, // kein Bestätigungs-Flow — Zugang wird persönlich übergeben
+  })
+  if (authErr || !authUser.user) {
+    if (authErr?.message?.includes('already')) {
+      return { error: 'Diese E-Mail-Adresse ist bereits vergeben.' }
+    }
+    return { error: authErr?.message ?? 'Konto konnte nicht erstellt werden.' }
+  }
+
+  const { error: profileErr } = await admin.from('profiles').insert({
+    id: authUser.user.id,
+    hotel_id: ctx.hotelId,
+    display_name: displayName,
+    role: 'reception',
+  })
+  if (profileErr) {
+    // Rollback: Auth-User ohne Profil wäre eine Leiche
+    await admin.auth.admin.deleteUser(authUser.user.id)
+    return { error: `Profil konnte nicht angelegt werden: ${profileErr.message}` }
+  }
+
+  revalidatePath('/admin', 'layout')
+  return { credentials: { profileId: authUser.user.id, displayName, email, password } }
+}
+
+/** Rezeptions-Zugang löschen (Auth-User → CASCADE räumt das Profil ab). */
+export async function deleteReceptionAction(profileId: string): Promise<{ error?: string }> {
+  const ctx = await getAdminContext()
+  if (!ctx) return { error: 'Keine Berechtigung.' }
+  const admin = createAdminClient()
+
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('id, hotel_id, username, role')
+    .eq('id', profileId)
+    .maybeSingle()
+  if (!profile || profile.hotel_id !== ctx.hotelId) return { error: 'Profil nicht gefunden.' }
+  if (profile.username !== null || profile.role !== 'reception') {
+    return { error: 'Nur Rezeptions-Zugänge können hier gelöscht werden.' }
   }
 
   const { error } = await admin.auth.admin.deleteUser(profileId)

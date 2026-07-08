@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/utils/supabase/service'
-import { getManagementContext } from '@/utils/auth'
+import { getAdminContext, getManagementContext } from '@/utils/auth'
 import { generateToken } from '@/lib/ids'
 
 /**
@@ -35,11 +35,12 @@ export async function ensureRoomTokensAction(): Promise<{ created?: number; erro
 
 /**
  * Token eines Zimmers neu erzeugen — der alte QR-Aushang wird sofort
- * ungültig (z. B. wenn ein Aushang abhandengekommen ist).
+ * ungültig (z. B. wenn ein Aushang abhandengekommen ist). Invalidiert
+ * Bestehendes → nur Admin; Rezeption darf Aushänge nur (nach-)drucken.
  */
 export async function regenerateRoomTokenAction(roomId: string): Promise<{ error?: string }> {
-  const ctx = await getManagementContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  const ctx = await getAdminContext()
+  if (!ctx) return { error: 'Keine Berechtigung.' }
   const admin = createAdminClient()
 
   const { data: room } = await admin

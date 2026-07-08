@@ -12,7 +12,14 @@ export type SettingsInitial = {
   stayoverAutoCleanTime: string
 }
 
-export default function SettingsForm({ initial }: { initial: SettingsInitial }) {
+export default function SettingsForm({
+  initial,
+  canManageHotel,
+}: {
+  initial: SettingsInitial
+  /** Hotel & Policies nur für Admins — Rezeption sieht nur „Passwort ändern". */
+  canManageHotel: boolean
+}) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
@@ -50,7 +57,8 @@ export default function SettingsForm({ initial }: { initial: SettingsInitial }) 
     <div className="flex max-w-2xl flex-col gap-5">
       <h1 className="text-xl font-black text-ink">Einstellungen</h1>
 
-      {/* Hotel + Policies */}
+      {/* Hotel + Policies — nur Admin */}
+      {canManageHotel && (
       <form
         onSubmit={e => { e.preventDefault(); submitSettings(e.currentTarget) }}
         className="flex flex-col gap-4 rounded-xl border border-edge bg-surface p-4"
@@ -127,6 +135,7 @@ export default function SettingsForm({ initial }: { initial: SettingsInitial }) 
           Speichern
         </button>
       </form>
+      )}
 
       {/* Passwort */}
       <form

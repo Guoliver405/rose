@@ -1,9 +1,14 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { QrCode } from 'lucide-react'
+import { getAdminContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import RoomSetup, { type SetupRoom } from './RoomSetup'
 
 export default async function RoomSetupPage() {
+  // Struktur (Zimmer anlegen/löschen) ist Admin-Sache — Rezeption zur Übersicht.
+  if (!(await getAdminContext())) redirect('/admin')
+
   const supabase = await createClient()
 
   const [{ data: rooms }, { data: stays }] = await Promise.all([

@@ -35,13 +35,13 @@ export default async function AushangPage() {
   return (
     <div className="flex flex-col gap-4">
       <Link
-        href="/admin/zimmer"
+        href={ctx.role === 'admin' ? '/admin/zimmer' : '/admin'}
         className="flex items-center gap-1.5 self-start text-sm font-semibold text-ink-soft hover:text-ink print:hidden"
       >
-        <ArrowLeft className="h-4 w-4" /> Zurück zu Zimmer
+        <ArrowLeft className="h-4 w-4" /> {ctx.role === 'admin' ? 'Zurück zu Zimmer' : 'Zurück zur Übersicht'}
       </Link>
 
-      <RoomQrSheet cards={cards} hotelName={ctx.hotelName} />
+      <RoomQrSheet cards={cards} hotelName={ctx.hotelName} canRenew={ctx.role === 'admin'} />
     </div>
   )
 }

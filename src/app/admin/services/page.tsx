@@ -1,11 +1,12 @@
 import { redirect } from 'next/navigation'
-import { getManagementContext } from '@/utils/auth'
+import { getAdminContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import ServicesManager, { type ServiceRow } from './ServicesManager'
 
 export default async function ServicesPage() {
-  const ctx = await getManagementContext()
-  if (!ctx) redirect('/login')
+  // Service-Konfiguration ist Admin-Sache — Rezeption zur Übersicht.
+  const ctx = await getAdminContext()
+  if (!ctx) redirect('/admin')
 
   const supabase = await createClient()
   const [{ data: services }, { data: items }] = await Promise.all([

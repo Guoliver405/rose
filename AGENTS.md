@@ -31,7 +31,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Slider-Logik aus HotCord**: „Reinigung starten" erlaubt danach nur „Reinigung abschließen"; Schichtbeginn/-ende rahmen ein; Pause + sonstige Reinigung frei stechbar, werden nur geloggt.
 - **Vergessener Abschluss**: nach `policies.cleaningStaleMinutes` (Default 90) automatisch zurück auf offen; manuell übersteuerbar.
 - **Check-in auf ungereinigtes Zimmer**: Warnung mit Override (`force`-Pattern aus HotCord).
-- **Rechte minimal**: Management (username NULL) vs. Reinigungskraft (username gesetzt) — sonst nichts. Kein Rollen-System.
+- **Rechte** (revidiert 08.07.2026, ursprünglich „kein Rollen-System"): Reinigungskraft (username gesetzt) vs. Management (username NULL); Management-Logins tragen zusätzlich `profiles.role` `admin` | `reception`. Admin = alles; Rezeption = Tagesgeschäft (Check-in/-out, Prioritäten, Bestellungen, Handouts, Karten-/Aushang-Druck, eigenes Passwort) — ohne Einstellungen, Zimmer-Setup, Services, Personal-Verwaltung, „Code erneuern". Guards: `getAdminContext()` in Admin-only-Pages/-Actions; Rezeptions-Zugänge legt der Admin unter /admin/personal an.
 - **Multi-Tenant**: `hotel_id` überall im Schema, UI zunächst single-property.
 - **Service-Baukasten abgespeckt**: nur urgent-Flag, Lifecycle nur `open → done`, Preise optional (Anzeige-Info).
 
@@ -82,7 +82,7 @@ Env-Vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `S
 Siehe [supabase_schema_v1.sql](Supabase_sql/supabase_schema_v1.sql). Kern:
 
 - `hotels` — Mandant + `policies` JSONB (stayoverAutoClean, pinLength, cleaningStaleMinutes)
-- `profiles` — Personal; Discriminator: `username IS NOT NULL` = Reinigungskraft
+- `profiles` — Personal; Discriminator: `username IS NOT NULL` = Reinigungskraft; Management-Logins tragen `role` (`admin` | `reception`)
 - `rooms` — Nummer + Etage + optional Gebäude, keine Geometrie
 - `room_guest_tokens` — statischer QR-Token pro Zimmer (PK = room_id)
 - `stays` — anonymer Aufenthalt: PIN, session_token, Rate-Limit-Felder; Partial-Unique `room_id WHERE checked_out_at IS NULL` verhindert Doppel-Check-in strukturell
