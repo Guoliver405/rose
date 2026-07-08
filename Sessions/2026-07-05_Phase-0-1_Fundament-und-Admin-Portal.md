@@ -333,6 +333,15 @@ löschen). Achtung: In Pension Alpenblick liegen 61 Zimmer des Users, alle
 auf Etage 1 (mit alter UI angelegt) — nicht angerührt, kann der User mit
 der neuen Etagen-Mülltonne selbst aufräumen.
 
+**Zimmernummern je Gebäudeteil (08.07. Abend):** Unique-Constraint jetzt
+`(hotel_id, building, number) NULLS NOT DISTINCT` (Migration eingespielt,
+im Archiv). Nebenhaus 101 neben Haupthaus 101 ist möglich. Folgeänderungen:
+Gast-Login prüft die PIN gegen ALLE Zimmer gleicher Nummer (PIN entscheidet,
+Rate-Limit je Stay, alle Kandidaten gesperrt → Sperrmeldung); Check-in
+würfelt die PIN neu, falls ein aktiver Stay auf gleichnamigem Zimmer
+dieselbe PIN hat. End-to-end in Krone verifiziert (zwei 101er eingecheckt,
+Gast-Login disambiguiert korrekt), danach aufgeräumt.
+
 **Nächster Schritt (vereinbart):** gemeinsamer Schritt-für-Schritt-Test
 aller Portale — Checkliste liegt in
 [Testplan-Walkthrough.md](Testplan-Walkthrough.md), am besten direkt auf dem
