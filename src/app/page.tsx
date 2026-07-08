@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'RoSe — RoomService für kleine Hotels & Pensionen',
+  title: 'RoSe — RoomService für Hotels jeder Größe',
   description:
     'Check-in per Klick, Gäste per QR-Code, Reinigung im Takt: RoSe verbindet Rezeption, Housekeeping und Gäste — ohne Gast-App, ohne PMS-Projekt.',
 }
@@ -78,7 +78,7 @@ function Hero() {
   return (
     <section className="mx-auto w-full max-w-5xl px-4 pb-16 pt-14 text-center sm:pt-20">
       <p className="mx-auto mb-4 w-fit rounded-full border border-action-tint-edge bg-action-tint px-3 py-1 text-xs font-semibold text-action-deep">
-        Für kleine Hotels, Pensionen &amp; Aparthotels
+        Vom Gasthof bis zum Grand Hotel
       </p>
       <h1 className="mx-auto max-w-3xl text-4xl font-black leading-tight text-ink sm:text-5xl">
         Zimmerservice &amp; Housekeeping —{' '}
@@ -287,25 +287,33 @@ function FeatureGrid() {
 function UseCases() {
   const cases = [
     {
-      title: 'Pension & Gasthof',
+      title: 'Pension, Gasthof & Ferienwohnungen',
       text: 'Die Rezeption ist oft gleichzeitig Küche, Service und Housekeeping. RoSe hält den Überblick: Wer reist ab, wo wird Reinigung gewünscht, was wurde bestellt — ohne Zettelwirtschaft.',
     },
     {
-      title: 'Boutique-Hotel',
-      text: 'Externe oder wechselnde Reinigungskräfte? QR-Login-Karten statt Passwort-Chaos, ein gemeinsames Board statt Einweisung — und die Rezeption sieht live, was erledigt ist.',
+      title: 'Boutique- & Aparthotel',
+      text: 'Längere Aufenthalte, wechselnde Reinigungskräfte: QR-Login-Karten statt Passwort-Chaos, die Stayover-Automatik erinnert ab der zweiten Nacht, DND und Wünsche steuern die Gäste selbst.',
     },
     {
-      title: 'Aparthotel & Ferienwohnungen',
-      text: 'Gäste bleiben länger, Routine-Reinigung im Takt: die Stayover-Automatik erinnert ab der zweiten Nacht, DND und Wünsche steuern die Gäste selbst per QR.',
+      title: 'Mittelgroßes Stadthotel',
+      text: 'Mehrere Etagen, eigenes oder externes Housekeeping-Team: das Etagen-Board mit Score zeigt, wo es sich zu starten lohnt — und die Rezeption sieht live, wer wo arbeitet.',
+    },
+    {
+      title: 'Großes Haus & Resort',
+      text: 'Viele Zimmer, parallele Teams, hohes Tempo: Prioritäten lenken bei Beschwerden sofort um, vergessene Abschlüsse verfallen automatisch — und RoSe wächst ohne Zimmer-Limit mit.',
     },
   ]
   return (
     <section className="border-y border-edge bg-surface-sunken">
       <div className="mx-auto w-full max-w-5xl px-4 py-16">
         <h2 className="text-center text-3xl font-black text-ink">
-          Gemacht für Häuser ohne IT-Abteilung
+          Gemacht für Häuser jeder Größe
         </h2>
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
+        <p className="mx-auto mt-3 max-w-2xl text-center text-ink-soft">
+          Vom Familienbetrieb bis zum Resort — RoSe skaliert mit, ohne dass
+          irgendwo eine IT-Abteilung nötig wird.
+        </p>
+        <div className="mt-10 grid gap-6 sm:grid-cols-2">
           {cases.map((c) => (
             <div key={c.title} className="rounded-xl border border-edge bg-surface-elevated p-6">
               <h3 className="font-bold text-ink">{c.title}</h3>
