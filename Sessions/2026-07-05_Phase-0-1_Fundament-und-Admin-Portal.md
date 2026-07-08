@@ -299,12 +299,20 @@ tsc/lint/build grün.
 
 ---
 
-## 🔖 Wiederaufnahme — Stand 06.07. Abend, PROJEKT KOMPLETT
+## 🔖 Wiederaufnahme — Stand 08.07., PROJEKT KOMPLETT + TEST-DEPLOYMENT LIVE
+
+**Test-Deployment (08.07.):** https://rose-sand-one.vercel.app — Vercel-Projekt
+`guoliver405s-projects/rose`, per CLI deployt (`vercel deploy --prod --yes`),
+Env-Vars in Vercel gesetzt (inkl. `NEXT_PUBLIC_SITE_URL` auf die Vercel-Domain),
+Gast- und Admin-Portal live verifiziert. Gleiche Supabase-DB wie lokal.
+GitHub-Auto-Deploy noch nicht verbunden (Vercel-App hat keinen Repo-Zugriff);
+offen außerdem: Rezeptions-Passwort ändern, da es im Repo dokumentiert ist.
 
 **Nächster Schritt (vereinbart):** gemeinsamer Schritt-für-Schritt-Test
 aller Portale — Checkliste liegt in
-[Testplan-Walkthrough.md](Testplan-Walkthrough.md). Dort auch das
-Aufräumen der Testreste (101 auschecken) als Punkt 0.
+[Testplan-Walkthrough.md](Testplan-Walkthrough.md), am besten direkt auf dem
+Test-Deployment. Dort auch das Aufräumen der Testreste (101 auschecken) als
+Punkt 0.
 
 **Alle geplanten Phasen 0–5 sind umgesetzt, verifiziert, committed.**
 Drei funktionale Portale gegen die Live-Supabase-DB:

@@ -5,7 +5,9 @@ dieser Reihenfolge. Haken setzen, Auffälligkeiten direkt notieren.
 
 **Zugänge:** Rezeption `rezeption@rose.local` / `F51DeP17ed1w` ·
 Maid `maria` / PIN `046055` (Karte unter /admin/personal).
-**Start:** `npm run dev` → http://localhost:3000
+**Start:** `npm run dev` → http://localhost:3000 — oder besser direkt auf dem
+Test-Deployment https://rose-sand-one.vercel.app (gleiche DB; QR-Scans mit
+Handy/Tablet funktionieren nur dort).
 
 ## 0) Aufräumen (Testreste der Bau-Sessions)
 
