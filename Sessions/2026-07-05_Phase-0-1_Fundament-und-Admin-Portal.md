@@ -309,6 +309,13 @@ GitHub-Auto-Deploy verbunden und per Test-Push verifiziert (Push auf `main`
 → Production-Deploy). Offen: Rezeptions-Passwort ändern, da es im Repo
 dokumentiert ist.
 
+**Phase 6a (08.07.):** Marketing-Landing auf `/` ersetzt den Phase-0-Portal-
+Umschalter (der lebt verkleinert im Footer weiter). Entschieden: erst Landing,
+Self-Service-Signup als Phase 6b danach; Pricing als Platzhalter-Tiers
+(Starter 0 € bis 10 Zimmer / Pro 49 €/Monat bis 50 Zimmer / Haus-Gruppe auf
+Anfrage, als „Beta — vorläufig" gekennzeichnet); nur Deutsch. Signup-CTA ist
+bewusst Platzhalter („Registrierung öffnet in Kürze", noch ohne Kontaktweg).
+
 **Nächster Schritt (vereinbart):** gemeinsamer Schritt-für-Schritt-Test
 aller Portale — Checkliste liegt in
 [Testplan-Walkthrough.md](Testplan-Walkthrough.md), am besten direkt auf dem

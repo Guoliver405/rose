@@ -130,8 +130,10 @@ Auf saturierten Buttons per-Family-Foreground verwenden (`bg-attention text-atte
 - **Phase 3** — Reinigungsboard: Maid-Login (QR-Karten), Etagen-Board, Slider (Start/Abschluss), staff_log, Stale-Timeout ✅
 - **Phase 4** — Service-Baukasten: Konfigurator, Gast-Bestellung, Orders-Tab Rezeption ✅
 - **Phase 5** — Politur: Etagenscore-Feintuning, Policies-UI, QR-Druckseiten (Zimmer-Aushang + Check-in-Handout), Stayover-Automatik ✅
+- **Phase 6a** — Marketing-Landing auf `/` (Hero, Portale, Ablauf, Features, Use-Cases, Platzhalter-Pricing, FAQ); Signup-CTA verweist auf „Registrierung öffnet in Kürze" ✅
+- **Phase 6b** — Self-Service-Registrierung/Onboarding (Hotel + Management-Konto entstehen beim Signup, Wizard für Hotelname/Zimmer; braucht Supabase-E-Mail-Bestätigung) — geplant
 
-Alle geplanten Phasen sind umgesetzt. Nach jeder Phase: Review mit dem User (enger Dialog vereinbart).
+Kernphasen 0–5 sind umgesetzt. Nach jeder Phase: Review mit dem User (enger Dialog vereinbart).
 
 ### Stayover-Automatik (Phase 5) — Funktionsweise
 
