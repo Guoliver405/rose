@@ -55,32 +55,53 @@ function statusLabel(t: RoomTileData): string {
 
 export default function RoomGrid({ floorGroups }: { floorGroups: FloorGroup[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const buildings = new Set(floorGroups.map(g => g.building ?? ''))
-  const showBuilding = buildings.size > 1
+
+  // Gebäude-Ebene: sobald irgendein Zimmer einen Gebäudeteil hat, werden die
+  // Etagen darunter gruppiert. Ohne Gebäudeteile bleibt die flache Ansicht.
+  const hasNamedBuilding = floorGroups.some(g => g.building !== null)
+  const byBuilding: { name: string | null; groups: FloorGroup[] }[] = []
+  for (const g of floorGroups) {
+    const last = byBuilding[byBuilding.length - 1]
+    if (last && last.name === g.building) last.groups.push(g)
+    else byBuilding.push({ name: g.building, groups: [g] })
+  }
 
   const selected = selectedId
     ? floorGroups.flatMap(g => g.rooms).find(r => r.id === selectedId) ?? null
     : null
 
+  const floorSection = (group: FloorGroup) => (
+    <section
+      key={`${group.building ?? ''}#${group.floor}`}
+      className="rounded-xl border border-edge bg-surface px-4 py-2"
+    >
+      <h3 className="mb-1.5 text-sm font-bold text-ink-soft">
+        Etage {group.floor}
+        <span className="ml-2 font-normal text-ink-muted">{group.rooms.length} Zimmer</span>
+      </h3>
+      <div className="flex flex-wrap gap-2 pb-1">
+        {group.rooms.map(room => (
+          <RoomTile key={room.id} room={room} onClick={() => setSelectedId(room.id)} />
+        ))}
+      </div>
+    </section>
+  )
+
   return (
     <div className="flex flex-col gap-3">
-      {floorGroups.map(group => (
-        <section
-          key={`${group.building ?? ''}#${group.floor}`}
-          className="rounded-xl border border-edge bg-surface px-4 py-2"
-        >
-          <h2 className="mb-1.5 text-sm font-bold text-ink-soft">
-            {showBuilding && group.building ? `${group.building} · ` : ''}
-            Etage {group.floor}
-            <span className="ml-2 font-normal text-ink-muted">{group.rooms.length} Zimmer</span>
-          </h2>
-          <div className="flex flex-wrap gap-2 pb-1">
-            {group.rooms.map(room => (
-              <RoomTile key={room.id} room={room} onClick={() => setSelectedId(room.id)} />
-            ))}
-          </div>
-        </section>
-      ))}
+      {hasNamedBuilding
+        ? byBuilding.map(b => (
+            <div key={b.name ?? ''} className="flex flex-col gap-2">
+              <h2 className="mt-1 flex items-center gap-2 text-base font-black text-ink">
+                {b.name ?? 'Ohne Gebäudeteil'}
+                <span className="text-xs font-semibold text-ink-muted">
+                  {b.groups.reduce((n, g) => n + g.rooms.length, 0)} Zimmer
+                </span>
+              </h2>
+              {b.groups.map(floorSection)}
+            </div>
+          ))
+        : floorGroups.map(floorSection)}
 
       {selected && (
         <RoomDialog key={selected.id} room={selected} onClose={() => setSelectedId(null)} />
