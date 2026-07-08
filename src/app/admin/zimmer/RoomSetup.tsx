@@ -75,7 +75,7 @@ export default function RoomSetup({ rooms }: { rooms: SetupRoom[] }) {
 
   const plannedFlat = useMemo(() => planned.flatMap(g => g.numbers), [planned])
 
-  // "Etagen identisch" ohne Präfix: Nummern sind hotelweit unique →
+  // "Etagen identisch" ohne Präfix: Nummern sind je Gebäudeteil unique →
   // dieselbe Nummer auf mehreren Etagen kollidiert zwangsläufig.
   const collisionWarning = mode === 'identical' && !prefixFloor && planned.length > 1
 
@@ -247,7 +247,7 @@ export default function RoomSetup({ rooms }: { rooms: SetupRoom[] }) {
         {collisionWarning && (
           <p className="rounded-lg border border-attention-tint-edge bg-attention-tint px-3 py-2 text-sm font-semibold text-attention-deepest">
             Ohne vorangestellte Etagennummer ist dieselbe Nummer auf mehreren
-            Etagen nicht möglich — Zimmernummern sind im ganzen Haus eindeutig.
+            Etagen nicht möglich — Zimmernummern sind je Gebäudeteil eindeutig.
             Nur die erste Etage würde angelegt.
           </p>
         )}

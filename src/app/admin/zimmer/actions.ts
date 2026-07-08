@@ -9,7 +9,7 @@ export type CreateRoomsResult = { created?: number; skipped?: number; error?: st
 /**
  * Legt Zimmer auf einer oder mehreren Etagen an (Nummern bereits vom Client
  * expandiert, inkl. optionalem Etagen-Präfix). Bereits existierende Nummern
- * werden übersprungen — Nummern sind hotelweit unique.
+ * werden übersprungen — Nummern sind je Gebäudeteil unique.
  * Für jedes neue Zimmer wird die room_states-Zeile miterzeugt.
  */
 export async function createRoomsAction(
@@ -22,8 +22,9 @@ export async function createRoomsAction(
   if (!Array.isArray(groups) || groups.length === 0) {
     return { error: 'Keine Zimmernummern angegeben.' }
   }
-  // Über alle Etagen deduplizieren (Nummern sind hotelweit unique) —
-  // erste Etage gewinnt, Rest zählt als übersprungen.
+  // Über alle Etagen deduplizieren (Nummern sind je Gebäudeteil unique,
+  // ein Aufruf betrifft genau einen Gebäudeteil) — erste Etage gewinnt,
+  // Rest zählt als übersprungen.
   const seen = new Set<string>()
   const rows: { floor: number; number: string }[] = []
   let requested = 0
@@ -53,7 +54,7 @@ export async function createRoomsAction(
         floor: r.floor,
         building: trimmedBuilding,
       })),
-      { onConflict: 'hotel_id,number', ignoreDuplicates: true },
+      { onConflict: 'hotel_id,building,number', ignoreDuplicates: true },
     )
     .select('id')
   if (insErr) return { error: `Anlegen fehlgeschlagen: ${insErr.message}` }

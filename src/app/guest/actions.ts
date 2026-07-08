@@ -24,40 +24,50 @@ export async function guestLoginAction(input: GuestLoginInput): Promise<{ error?
 
   const admin = createAdminClient()
 
-  // Zimmer auflösen: QR-Deep-Link-Token ODER Zimmernummer (Single-Property:
-  // Nummer ist eindeutig; bei Mehrdeutigkeit über Hotels hinweg → Fehlschlag).
-  let roomId: string | null = null
+  // Zimmer auflösen: QR-Deep-Link-Token (eindeutig) ODER Zimmernummer.
+  // Nummern sind nur je Gebäudeteil eindeutig — dieselbe Nummer kann in
+  // mehreren Gebäuden existieren; dann entscheidet die PIN, welcher
+  // Aufenthalt gemeint ist.
+  let roomIds: string[] = []
   if (input.roomToken) {
     const { data } = await admin
       .from('room_guest_tokens').select('room_id').eq('token', input.roomToken).maybeSingle()
-    roomId = data?.room_id ?? null
+    if (data?.room_id) roomIds = [data.room_id]
   } else if (input.roomNumber?.trim()) {
     const { data } = await admin
-      .from('rooms').select('id').ilike('number', input.roomNumber.trim()).limit(2)
-    if (data && data.length === 1) roomId = data[0].id
+      .from('rooms').select('id').ilike('number', input.roomNumber.trim()).limit(10)
+    roomIds = (data ?? []).map(r => r.id)
   }
-  if (!roomId) return FAIL
+  if (roomIds.length === 0) return FAIL
 
-  const { data: stay } = await admin
+  const { data: candidates } = await admin
     .from('stays')
     .select('id, pin, session_token, pin_attempts, pin_locked_until')
-    .eq('room_id', roomId)
+    .in('room_id', roomIds)
     .is('checked_out_at', null)
-    .maybeSingle()
-  if (!stay) return FAIL
+  if (!candidates || candidates.length === 0) return FAIL
 
-  // Rate-Limit: 5 Fehlversuche → 15 Minuten Sperre
-  if (stay.pin_locked_until && new Date(stay.pin_locked_until) > new Date()) {
-    const mins = Math.max(1, Math.ceil((new Date(stay.pin_locked_until).getTime() - Date.now()) / 60000))
+  // Rate-Limit je Aufenthalt: 5 Fehlversuche → 15 Minuten Sperre.
+  // Gesperrte Aufenthalte nehmen nicht an der PIN-Prüfung teil.
+  const nowMs = Date.now()
+  const unlocked = candidates.filter(
+    s => !s.pin_locked_until || new Date(s.pin_locked_until).getTime() <= nowMs,
+  )
+  if (unlocked.length === 0) {
+    const latest = Math.max(...candidates.map(s => new Date(s.pin_locked_until!).getTime()))
+    const mins = Math.max(1, Math.ceil((latest - nowMs) / 60000))
     return { error: `Zu viele Fehlversuche — bitte in ${mins} Min. erneut versuchen.` }
   }
 
-  if (stay.pin !== pin) {
-    const attempts = (stay.pin_attempts ?? 0) + 1
-    const patch = attempts >= MAX_ATTEMPTS
-      ? { pin_attempts: 0, pin_locked_until: new Date(Date.now() + LOCK_MINUTES * 60000).toISOString() }
-      : { pin_attempts: attempts }
-    await admin.from('stays').update(patch).eq('id', stay.id)
+  const stay = unlocked.find(s => s.pin === pin)
+  if (!stay) {
+    for (const s of unlocked) {
+      const attempts = (s.pin_attempts ?? 0) + 1
+      const patch = attempts >= MAX_ATTEMPTS
+        ? { pin_attempts: 0, pin_locked_until: new Date(nowMs + LOCK_MINUTES * 60000).toISOString() }
+        : { pin_attempts: attempts }
+      await admin.from('stays').update(patch).eq('id', s.id)
+    }
     return FAIL
   }
 

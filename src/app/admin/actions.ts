@@ -31,7 +31,7 @@ export async function checkInAction(roomId: string, force = false): Promise<Chec
   const admin = createAdminClient()
 
   const { data: room } = await admin
-    .from('rooms').select('id, hotel_id').eq('id', roomId).single()
+    .from('rooms').select('id, hotel_id, number').eq('id', roomId).single()
   if (!room || room.hotel_id !== ctx.hotelId) return { error: 'Zimmer nicht gefunden.' }
 
   const { data: activeStay } = await admin
@@ -55,7 +55,24 @@ export async function checkInAction(roomId: string, force = false): Promise<Chec
   const { data: hotel } = await admin
     .from('hotels').select('policies').eq('id', ctx.hotelId).single()
   const policies = (hotel?.policies ?? {}) as { pinLength?: number }
-  const pin = generatePin(clampPinLength(policies.pinLength))
+  const pinLength = clampPinLength(policies.pinLength)
+
+  // PIN darf nicht mit einem aktiven Aufenthalt auf einem Zimmer GLEICHER
+  // Nummer kollidieren (Nummern sind nur je Gebäudeteil eindeutig; der
+  // Gast-Login löst Duplikate über die PIN auf).
+  const { data: sameNumberRooms } = await admin
+    .from('rooms').select('id').ilike('number', room.number).neq('id', roomId).limit(10)
+  const takenPins = new Set<string>()
+  if (sameNumberRooms && sameNumberRooms.length > 0) {
+    const { data: siblingStays } = await admin
+      .from('stays')
+      .select('pin')
+      .in('room_id', sameNumberRooms.map(r => r.id))
+      .is('checked_out_at', null)
+    for (const s of siblingStays ?? []) takenPins.add(s.pin)
+  }
+  let pin = generatePin(pinLength)
+  for (let i = 0; i < 20 && takenPins.has(pin); i++) pin = generatePin(pinLength)
 
   const { error: insErr } = await admin.from('stays').insert({
     hotel_id: ctx.hotelId,
