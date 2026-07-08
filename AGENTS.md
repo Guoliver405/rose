@@ -121,6 +121,7 @@ Auf saturierten Buttons per-Family-Foreground verwenden (`bg-attention text-atte
 | Tailwind scannt Markdown/SQL | `@source not`-Einträge in globals.css pflegen |
 | Floating-Modal in Button-Größe | Vorfahre mit `transform`/`translate` erzeugt Containing-Block → `createPortal(document.body)` |
 | `revalidatePath('/admin')` invalidiert keine Unterseiten | `revalidatePath('/admin', 'layout')` |
+| Login auf Vercel scheitert mit `TypeError: Cannot convert argument to a ByteString` | Env-Var-Wert enthält Unicode-Müll (PowerShell-Pipe in `vercel env add`) → Werte aus Git Bash mit `printf '%s' '…' \| vercel env add` setzen, danach redeployen |
 
 ## Phasen-Plan
 
