@@ -325,21 +325,21 @@ function Pricing() {
       price: '0 €',
       cadence: 'für immer',
       highlight: false,
-      features: ['Bis 10 Zimmer', 'Alle drei Portale', 'QR-Aushänge & Handouts', 'Service-Baukasten'],
+      features: ['Bis 10 Zimmer', 'Alle drei Portale', 'QR-Aushänge & Handouts', 'Stayover-Automatik'],
     },
     {
       name: 'Pro',
-      price: '49 €',
+      price: '19 €',
       cadence: 'pro Monat',
       highlight: true,
-      features: ['Bis 50 Zimmer', 'Alles aus Starter', 'Stayover-Automatik', 'Bevorzugter Support'],
+      features: ['Bis 50 Zimmer', 'Alles aus Starter', 'Service-Baukasten'],
     },
     {
-      name: 'Haus-Gruppe',
-      price: 'Auf Anfrage',
-      cadence: 'mehrere Häuser',
+      name: 'Max',
+      price: '49 €',
+      cadence: 'pro Monat',
       highlight: false,
-      features: ['Über 50 Zimmer', 'Mehrere Properties', 'Persönliche Einrichtung', 'Individuelle Wünsche'],
+      features: ['Unbegrenzt viele Zimmer', 'Alles aus Pro'],
     },
   ]
   return (

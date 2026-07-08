@@ -312,9 +312,12 @@ dokumentiert ist.
 **Phase 6a (08.07.):** Marketing-Landing auf `/` ersetzt den Phase-0-Portal-
 Umschalter (der lebt verkleinert im Footer weiter). Entschieden: erst Landing,
 Self-Service-Signup als Phase 6b danach; Pricing als Platzhalter-Tiers
-(Starter 0 € bis 10 Zimmer / Pro 49 €/Monat bis 50 Zimmer / Haus-Gruppe auf
-Anfrage, als „Beta — vorläufig" gekennzeichnet); nur Deutsch. Signup-CTA ist
-bewusst Platzhalter („Registrierung öffnet in Kürze", noch ohne Kontaktweg).
+(Starter 0 € bis 10 Zimmer inkl. Stayover / Pro 19 €/Monat bis 50 Zimmer
+inkl. Service-Baukasten / Max 49 €/Monat unbegrenzt — als „Beta — vorläufig"
+gekennzeichnet); nur Deutsch. Signup-CTA ist bewusst Platzhalter
+(„Registrierung öffnet in Kürze", noch ohne Kontaktweg). Achtung: Tiers sind
+reine Ansage — Feature-Gating (plan-Feld, Zimmer-Limit, Baukasten-Sperre)
+existiert noch nicht und gehört zu Phase 6b.
 
 **Nächster Schritt (vereinbart):** gemeinsamer Schritt-für-Schritt-Test
 aller Portale — Checkliste liegt in
@@ -336,7 +339,9 @@ Drei funktionale Portale gegen die Live-Supabase-DB:
   mit Score, Schicht/Pause/Sonstige, Slider Start/Abschluss/Abbruch,
   Stale-Timeout, Stayover-Routine.
 
-**Mögliche Anschlussarbeiten (nichts davon geplant):** Multi-Property-UI
+**Mögliche Anschlussarbeiten (nichts davon geplant):** Feature-Gating nach
+Pricing-Tier (plan-Feld an `hotels`, Zimmer-Limit, Baukasten ab Pro),
+Multi-Property-UI
 (Schema trägt hotel_id schon), Statistiken aus staff_log/Transitions,
 Hilfe-System (HotCord-Pattern), E-Mail-Reset für Management-Logins,
 Push-Benachrichtigung bei urgent-Orders.
