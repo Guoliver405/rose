@@ -352,6 +352,14 @@ PIN 046055 (Karte unter /admin/personal). Zimmer 101–105 (Etage 1),
 zurückdatiert). 2 Services, 2 erledigte Bestellungen. Dev: `npm run dev`,
 http://localhost:3000.
 
+**Test-Mandanten (08.07., leere Hotels für Multi-Tenant-Tests, angelegt
+mit `node scripts/create-tenant.mjs`):**
+- Pension Alpenblick — alpenblick@rose.local / vMveKmavWgau
+- Stadthotel Krone — krone@rose.local / B3caYDaumMWg
+
+Beide per UI-Login verifiziert (Header zeigt Hotelname, 0 Zimmer —
+Mandanten-Trennung greift, keine Fremd-Zimmer sichtbar).
+
 **Erinnerungen:** Neue Migrationen nach `Supabase_sql/`, nach Einspielen
 `git mv` ins `archive/`. Browser-Test-Fallen: Formular-spezifische
 Submit-Selektoren (Logout-Button matcht auch), PointerEvents in getrennten

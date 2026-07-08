@@ -145,6 +145,8 @@ Vercel-Projekt `guoliver405s-projects/rose`, Produktions-URL **https://rose-sand
 
 Env-Vars liegen in Vercel (Production): die drei Supabase-Keys + `NEXT_PUBLIC_SITE_URL=https://rose-sand-one.vercel.app` (Basis der QR-Links). Bei Domain-Wechsel `NEXT_PUBLIC_SITE_URL` anpassen und redeployen, sonst zeigen Aushänge/Handouts/Maid-Karten auf die alte URL.
 
+Solange es keine Self-Service-Registrierung gibt (Phase 6b), werden Mandanten manuell angelegt: `node scripts/create-tenant.mjs "Hotelname" mail@rose.local [passwort]` erzeugt Hotel + Auth-User + Management-Profil (Zugangsdaten im Session-Protokoll).
+
 ## Session-Protokolle
 
 Wie in HotCord: Protokolle unter `Sessions/` ablegen, aktuellsten Stand hier verlinken.
