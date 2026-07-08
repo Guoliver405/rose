@@ -105,6 +105,7 @@ Etagenscore = gewichtete Summe der aktiven Zimmer pro Etage
 
 - `Supabase_sql/` — neue, noch nicht eingespielte Migrationen (manuell via Supabase-SQL-Editor).
 - `Supabase_sql/archive/` — eingespielte Migrationen, per `git mv` verschoben.
+- **Reihenfolge beachten (Push = Auto-Deploy!):** Additive Migrationen (neue Spalte mit Default) zuerst einspielen, dann pushen — kein Bruch. Bei Migrationen, die alten Code brechen (z. B. Constraint-Wechsel, auf den `onConflict` zeigt), Code erst committen, NICHT pushen, Migration einspielen lassen, dann sofort pushen — das Fenster, in dem Live-Code gegen das neue Schema läuft, klein halten.
 
 ## Theming
 
