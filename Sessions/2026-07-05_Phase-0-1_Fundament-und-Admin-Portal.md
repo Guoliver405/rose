@@ -305,8 +305,9 @@ tsc/lint/build grün.
 `guoliver405s-projects/rose`, per CLI deployt (`vercel deploy --prod --yes`),
 Env-Vars in Vercel gesetzt (inkl. `NEXT_PUBLIC_SITE_URL` auf die Vercel-Domain),
 Gast- und Admin-Portal live verifiziert. Gleiche Supabase-DB wie lokal.
-GitHub-Auto-Deploy noch nicht verbunden (Vercel-App hat keinen Repo-Zugriff);
-offen außerdem: Rezeptions-Passwort ändern, da es im Repo dokumentiert ist.
+GitHub-Auto-Deploy verbunden und per Test-Push verifiziert (Push auf `main`
+→ Production-Deploy). Offen: Rezeptions-Passwort ändern, da es im Repo
+dokumentiert ist.
 
 **Nächster Schritt (vereinbart):** gemeinsamer Schritt-für-Schritt-Test
 aller Portale — Checkliste liegt in

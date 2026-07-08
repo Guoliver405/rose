@@ -139,11 +139,7 @@ Reine Loader-Ableitung, kein Cron, kein persistentes Flag: Ein belegtes Zimmer i
 
 ## Deployment (Test-Stage)
 
-Vercel-Projekt `guoliver405s-projects/rose`, Produktions-URL **https://rose-sand-one.vercel.app** — läuft gegen dieselbe Supabase-DB wie lokal. Kein Git-Auto-Deploy (GitHub-Verknüpfung der Vercel-App ausstehend); deployen per CLI aus dem Projektordner:
-
-```bash
-vercel deploy --prod --yes
-```
+Vercel-Projekt `guoliver405s-projects/rose`, Produktions-URL **https://rose-sand-one.vercel.app** — läuft gegen dieselbe Supabase-DB wie lokal. **Auto-Deploy aktiv:** jeder Push auf `main` baut und deployt Production (verifiziert 08.07.). Manuell geht weiterhin `vercel deploy --prod --yes` aus dem Projektordner.
 
 Env-Vars liegen in Vercel (Production): die drei Supabase-Keys + `NEXT_PUBLIC_SITE_URL=https://rose-sand-one.vercel.app` (Basis der QR-Links). Bei Domain-Wechsel `NEXT_PUBLIC_SITE_URL` anpassen und redeployen, sonst zeigen Aushänge/Handouts/Maid-Karten auf die alte URL.
 
