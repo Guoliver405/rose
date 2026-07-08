@@ -299,7 +299,7 @@ function UseCases() {
       text: 'Mehrere Etagen, eigenes oder externes Housekeeping-Team: das Etagen-Board mit Score zeigt, wo es sich zu starten lohnt — und die Rezeption sieht live, wer wo arbeitet.',
     },
     {
-      title: 'Großes Haus & Resort',
+      title: 'Große Ferienanlage & Resort',
       text: 'Viele Zimmer, parallele Teams, hohes Tempo: Prioritäten lenken bei Beschwerden sofort um, vergessene Abschlüsse verfallen automatisch — und RoSe wächst ohne Zimmer-Limit mit.',
     },
   ]
