@@ -31,11 +31,13 @@ export async function getMaidContext(): Promise<MaidContext | null> {
   const admin = createAdminClient()
   const { data: profile } = await admin
     .from('profiles')
-    .select('hotel_id, display_name, username')
+    .select('hotel_id, display_name, username, deactivated_at')
     .eq('id', session.user.id)
     .maybeSingle()
 
-  if (!profile || profile.username === null) return null
+  // Deaktivierte Kräfte fliegen auch aus einer bestehenden Session — der
+  // Check hier ist die eigentliche Sperre, nicht der Login-Pfad.
+  if (!profile || profile.username === null || profile.deactivated_at) return null
 
   const { data: hotel } = await admin
     .from('hotels')

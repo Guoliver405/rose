@@ -39,10 +39,11 @@ export async function GET(
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('username')
+    .select('username, deactivated_at')
     .eq('id', row.profile_id)
     .maybeSingle()
-  if (!profile?.username) return fail()
+  // Deaktivierte Kraft: gedruckte Karte ist damit wirkungslos.
+  if (!profile?.username || profile.deactivated_at) return fail()
 
   const supabase = await createServicePortalClient()
   const { error } = await supabase.auth.signInWithPassword({

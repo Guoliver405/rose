@@ -21,12 +21,14 @@ export async function maidLoginAction(formData: FormData): Promise<void> {
   const admin = createAdminClient()
   const { data: profiles } = await admin
     .from('profiles')
-    .select('id, hotel_id')
+    .select('id, hotel_id, deactivated_at')
     .eq('username', username)
     .limit(1)
 
   const profile = profiles?.[0]
   if (!profile) redirect('/service/login?error=invalid')
+  // Deaktivierte Kraft: generische Meldung, kein Hinweis auf den Grund.
+  if (profile.deactivated_at) redirect('/service/login?error=invalid')
 
   const supabase = await createServicePortalClient()
   const { error } = await supabase.auth.signInWithPassword({

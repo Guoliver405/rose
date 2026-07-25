@@ -13,7 +13,7 @@ export default async function PersonalPage() {
     await Promise.all([
       supabase
         .from('profiles')
-        .select('id, display_name, username, created_at')
+        .select('id, display_name, username, created_at, deactivated_at')
         .not('username', 'is', null)
         .order('display_name'),
       supabase.from('maid_login_tokens').select('profile_id, pin'),
@@ -40,6 +40,7 @@ export default async function PersonalPage() {
     username: p.username as string,
     pin: pinByProfile.get(p.id) ?? null,
     cleaningRoom: roomByCleaner.get(p.id) ?? null,
+    deactivatedAt: p.deactivated_at,
   }))
 
   // E-Mails der Rezeptions-Zugänge stehen nur in auth.users → Admin-API.

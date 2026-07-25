@@ -2,10 +2,12 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { IdCard, KeyRound, Loader2, Plus, Printer, Sparkles, Trash2, UserRound } from 'lucide-react'
+import {
+  IdCard, KeyRound, Loader2, Plus, Printer, Sparkles, Trash2, UserCheck, UserMinus, UserRound,
+} from 'lucide-react'
 import {
   createMaidAction, createReceptionAction, deleteMaidAction, deleteReceptionAction,
-  issueMaidLoginCardAction, type ReceptionCredentials,
+  issueMaidLoginCardAction, setMaidActiveAction, type ReceptionCredentials,
 } from './actions'
 
 export type MaidRow = {
@@ -14,6 +16,8 @@ export type MaidRow = {
   username: string
   pin: string | null
   cleaningRoom: string | null
+  /** gesetzt = ausgeschieden: kein Login, Historie bleibt erhalten */
+  deactivatedAt: string | null
 }
 
 export type ReceptionRow = {
@@ -36,8 +40,25 @@ export default function PersonalManager({
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [confirmDeactivateId, setConfirmDeactivateId] = useState<string | null>(null)
   const [recCredentials, setRecCredentials] = useState<ReceptionCredentials | null>(null)
   const [confirmRecDeleteId, setConfirmRecDeleteId] = useState<string | null>(null)
+
+  const activeMaids = maids.filter(m => !m.deactivatedAt)
+  const inactiveMaids = maids.filter(m => m.deactivatedAt)
+
+  function runSetActive(profileId: string, active: boolean, name: string) {
+    setError(null)
+    setNotice(null)
+    startTransition(async () => {
+      const res = await setMaidActiveAction(profileId, active)
+      if (res.error) { setError(res.error); return }
+      setConfirmDeactivateId(null)
+      setNotice(active
+        ? `${name} ist wieder aktiv — der alte Zugang (PIN + Karte) gilt erneut.`
+        : `${name} deaktiviert — Login und Karte sind gesperrt, die Tätigkeits-Historie bleibt erhalten.`)
+    })
+  }
 
   function runCreateReception(form: HTMLFormElement) {
     setError(null)
@@ -99,7 +120,7 @@ export default function PersonalManager({
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-xl font-black text-ink">Personal — Reinigungskräfte</h1>
         <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-semibold text-ink-soft">
-          {maids.length} {maids.length === 1 ? 'Kraft' : 'Kräfte'}
+          {activeMaids.length} {activeMaids.length === 1 ? 'Kraft' : 'Kräfte'}
         </span>
       </div>
 
@@ -160,8 +181,8 @@ export default function PersonalManager({
         </p>
       )}
 
-      {/* Liste */}
-      {maids.length === 0 ? (
+      {/* Liste — aktive Kräfte */}
+      {activeMaids.length === 0 ? (
         <div className="rounded-xl border border-edge bg-surface p-8 text-center">
           <UserRound className="mx-auto mb-2 h-8 w-8 text-ink-muted" />
           <p className="font-semibold text-ink">Noch keine Reinigungskräfte angelegt.</p>
@@ -171,7 +192,7 @@ export default function PersonalManager({
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {maids.map(m => (
+          {activeMaids.map(m => (
             <div key={m.id} className="rounded-xl border border-edge bg-surface px-4 py-3">
               <div className="flex flex-wrap items-center gap-3">
                 <div className="min-w-40">
@@ -219,34 +240,35 @@ export default function PersonalManager({
                     <button
                       type="button"
                       disabled={pending}
-                      onClick={() => setConfirmDeleteId(m.id)}
-                      className="rounded-lg border border-critical-pill-edge p-1.5 text-critical-strong hover:bg-critical-tint disabled:opacity-50"
-                      aria-label={`${m.displayName} löschen`}
+                      onClick={() => setConfirmDeactivateId(m.id)}
+                      title="Ausgeschieden — Zugang sperren, Historie behalten"
+                      className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <UserMinus className="h-4 w-4" /> Deaktivieren
                     </button>
                   )}
                 </div>
               </div>
 
-              {confirmDeleteId === m.id && (
+              {confirmDeactivateId === m.id && (
                 <div className="mt-3 rounded-lg border border-edge bg-surface-sunken p-3">
                   <p className="text-sm font-semibold text-ink">
-                    {m.displayName} wirklich löschen? Login und Karte werden sofort ungültig,
-                    auch die Tätigkeits-Historie wird entfernt.
+                    {m.displayName} deaktivieren? Login per PIN und QR-Karte werden sofort
+                    gesperrt. Die Tätigkeits-Historie bleibt für Auswertungen erhalten, und
+                    eine spätere Reaktivierung stellt den Zugang wieder her.
                   </p>
                   <div className="mt-2 flex gap-2">
                     <button
                       type="button"
                       disabled={pending}
-                      onClick={() => runDelete(m.id)}
-                      className="rounded-lg bg-critical px-3 py-1.5 text-sm font-bold text-critical-foreground disabled:opacity-50"
+                      onClick={() => runSetActive(m.id, false, m.displayName)}
+                      className="rounded-lg bg-action px-3 py-1.5 text-sm font-bold text-action-foreground disabled:opacity-50"
                     >
-                      {pending ? 'Löschen …' : 'Ja, löschen'}
+                      {pending ? 'Deaktivieren …' : 'Ja, deaktivieren'}
                     </button>
                     <button
                       type="button"
-                      onClick={() => setConfirmDeleteId(null)}
+                      onClick={() => setConfirmDeactivateId(null)}
                       className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft"
                     >
                       Abbrechen
@@ -257,6 +279,83 @@ export default function PersonalManager({
             </div>
           ))}
         </div>
+      )}
+
+      {/* Deaktivierte Kräfte — Zugang gesperrt, Historie erhalten */}
+      {inactiveMaids.length > 0 && (
+        <section className="rounded-xl border border-edge bg-surface-sunken p-4">
+          <h2 className="mb-2 text-sm font-bold text-ink-soft">
+            Deaktiviert
+            <span className="ml-2 font-normal text-ink-muted">
+              kein Login — Tätigkeits-Historie bleibt in der Auswertung sichtbar
+            </span>
+          </h2>
+          <div className="flex flex-col gap-2">
+            {inactiveMaids.map(m => (
+              <div key={m.id} className="rounded-lg border border-edge bg-surface px-4 py-2.5">
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="min-w-40">
+                    <p className="font-bold text-ink-muted">{m.displayName}</p>
+                    <p className="font-mono text-xs text-ink-muted">@{m.username}</p>
+                  </div>
+                  <span className="text-xs text-ink-muted">
+                    seit {new Date(m.deactivatedAt!).toLocaleDateString('de-DE')}
+                  </span>
+
+                  {canManage && (
+                    <div className="ml-auto flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => runSetActive(m.id, true, m.displayName)}
+                        className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
+                      >
+                        <UserCheck className="h-4 w-4" /> Reaktivieren
+                      </button>
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => setConfirmDeleteId(m.id)}
+                        className="rounded-lg border border-critical-pill-edge p-1.5 text-critical-strong hover:bg-critical-tint disabled:opacity-50"
+                        aria-label={`${m.displayName} endgültig löschen`}
+                        title="Endgültig löschen — entfernt auch die Historie"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {confirmDeleteId === m.id && (
+                  <div className="mt-3 rounded-lg border border-critical-tint-edge bg-critical-tint p-3">
+                    <p className="text-sm font-semibold text-critical-strong">
+                      {m.displayName} endgültig löschen? Damit verschwindet auch die komplette
+                      Tätigkeits-Historie aus der Auswertung — für ausgeschiedene Kräfte ist
+                      „Deaktiviert“ die richtige Ablage.
+                    </p>
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => runDelete(m.id)}
+                        className="rounded-lg bg-critical px-3 py-1.5 text-sm font-bold text-critical-foreground disabled:opacity-50"
+                      >
+                        {pending ? 'Löschen …' : 'Ja, endgültig löschen'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDeleteId(null)}
+                        className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft"
+                      >
+                        Abbrechen
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Rezeptions-Zugänge — nur Admin */}

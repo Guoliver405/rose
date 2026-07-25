@@ -116,7 +116,59 @@ export async function issueMaidLoginCardAction(
   }
 }
 
-/** Reinigungskraft löschen (Auth-User → CASCADE räumt Profil + Karte ab). */
+/**
+ * Reinigungskraft deaktivieren/reaktivieren — der Regelweg beim Ausscheiden.
+ * Das Profil bleibt samt `staff_log` erhalten (Arbeitsnachweis!), Login per
+ * Username+PIN und per QR-Karte wird abgewiesen. Die Login-Karte bleibt
+ * absichtlich gespeichert: sie ist bei deaktiviertem Profil wirkungslos, und
+ * eine Reaktivierung stellt den alten Zugang ohne Neudruck wieder her.
+ */
+export async function setMaidActiveAction(
+  profileId: string,
+  active: boolean,
+): Promise<{ error?: string }> {
+  const ctx = await getAdminContext()
+  if (!ctx) return { error: 'Keine Berechtigung.' }
+  const admin = createAdminClient()
+
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('id, hotel_id, username')
+    .eq('id', profileId)
+    .maybeSingle()
+  if (!profile || profile.hotel_id !== ctx.hotelId) return { error: 'Profil nicht gefunden.' }
+  if (!profile.username) return { error: 'Nur Reinigungskräfte können deaktiviert werden.' }
+
+  if (!active) {
+    const { data: cleaning } = await admin
+      .from('room_states')
+      .select('room_id')
+      .eq('cleaning_by', profileId)
+      .limit(1)
+    if (cleaning && cleaning.length > 0) {
+      return { error: 'Diese Kraft reinigt gerade ein Zimmer. Erst die Reinigung abschließen (oder im Board als erledigt markieren).' }
+    }
+  }
+
+  const { error } = await admin
+    .from('profiles')
+    .update({ deactivated_at: active ? null : new Date().toISOString() })
+    .eq('id', profileId)
+  if (error) return { error: error.message }
+
+  // Verortung endet mit der Deaktivierung.
+  if (!active) await admin.from('maid_presence').delete().eq('profile_id', profileId)
+
+  revalidatePath('/admin', 'layout')
+  revalidatePath('/service')
+  return {}
+}
+
+/**
+ * Reinigungskraft endgültig löschen (Auth-User → CASCADE räumt Profil, Karte
+ * UND staff_log ab). Notausgang für Fehlanlagen — beim Ausscheiden gehört
+ * `setMaidActiveAction(id, false)` benutzt, sonst ist die Historie weg.
+ */
 export async function deleteMaidAction(profileId: string): Promise<{ error?: string }> {
   const ctx = await getAdminContext()
   if (!ctx) return { error: 'Keine Berechtigung.' }
