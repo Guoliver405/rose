@@ -223,6 +223,7 @@ export default function ServiceBoard({
           label="Zurück zu allen Etagen"
           variant="neutral"
           size="compact"
+          direction="rtl"
           disabled={pending}
           onConfirm={() => run(leaveFloorAction)}
         />
