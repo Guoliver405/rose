@@ -17,6 +17,10 @@ export default async function AdminLayout({
   // Service-Definition; bei mindestens einer dringenden Anfrage blinkt die
   // Badge rot.
   const supabase = await createClient()
+
+  // Access-Token für Realtime: ohne setAuth blockt RLS alle
+  // postgres_changes-Events (siehe RealtimeListener).
+  const { data: { session } } = await supabase.auth.getSession()
   const { data: openOrderRows } = await supabase
     .from('service_orders')
     .select('id, service_definitions(urgent)')
@@ -72,7 +76,7 @@ export default async function AdminLayout({
         </div>
       </header>
 
-      <RealtimeListener />
+      <RealtimeListener token={session?.access_token} pollMs={60_000} />
 
       <main className="mx-auto w-full max-w-[1400px] flex-1 p-4">{children}</main>
     </div>

@@ -11,11 +11,17 @@ const TABLES = ['room_states', 'stays', 'staff_log', 'service_orders'] as const
  * `router.refresh()` auf (200 ms Trailing-Debounce fasst Event-Kaskaden
  * zu einem Refresh zusammen — Pattern aus HotCord).
  *
- * `token`: Access-Token für Portale, deren Session nicht in den
- * Default-Cookies liegt (Service-Portal, svc_-Namespace) — ohne
- * `realtime.setAuth` würde RLS die postgres_changes-Events blocken.
+ * `token`: Access-Token der Session — PFLICHT für Events unter RLS:
+ * ohne `realtime.setAuth` verbindet der Browser-Client nur mit dem
+ * Publishable Key und Supabase filtert alle postgres_changes weg
+ * (Lese-Policies verlangen ein Mitglieds-JWT). Gilt für ALLE Portale,
+ * auch wenn die Session in den Default-Cookies liegt.
+ *
+ * `pollMs`: Fallback-Poll — nach Ablauf des Access-Tokens (~1 h) stirbt
+ * die Realtime-Verbindung leise; der Poll hält die Ansicht am Leben und
+ * liefert beim Refresh serverseitig frische Daten.
  */
-export default function RealtimeListener({ token }: { token?: string }) {
+export default function RealtimeListener({ token, pollMs }: { token?: string; pollMs?: number }) {
   const router = useRouter()
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -25,6 +31,8 @@ export default function RealtimeListener({ token }: { token?: string }) {
     if (token) {
       supabase.realtime.setAuth(token)
     }
+
+    const poll = pollMs ? setInterval(() => router.refresh(), pollMs) : null
 
     const refresh = () => {
       if (timer.current) clearTimeout(timer.current)
@@ -42,9 +50,10 @@ export default function RealtimeListener({ token }: { token?: string }) {
       channels.forEach(c => {
         supabase.removeChannel(c)
       })
+      if (poll) clearInterval(poll)
       if (timer.current) clearTimeout(timer.current)
     }
-  }, [router, token])
+  }, [router, token, pollMs])
 
   return null
 }
