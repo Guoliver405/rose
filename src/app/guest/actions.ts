@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/utils/supabase/service'
 import { getGuestContext, GUEST_COOKIE } from '@/utils/guest'
+import { isWithinCleaningWindow, parseCleaningWindow } from '@/lib/board'
 
 const MAX_ATTEMPTS = 5
 const LOCK_MINUTES = 15
@@ -95,6 +96,17 @@ export async function setGuestSignalAction(
 
   const ctx = await getGuestContext()
   if (!ctx) return { error: 'Sitzung abgelaufen — bitte neu anmelden.' }
+
+  // Zeitfenster-Policy: betrifft nur das AKTIVE Anfordern der Reinigung.
+  // DND und das Zurücknehmen ('none') bleiben jederzeit möglich.
+  if (signal === 'please_clean') {
+    const window = parseCleaningWindow(ctx.policies)
+    if (!isWithinCleaningWindow(window)) {
+      return {
+        error: `Reinigungswünsche sind nur zwischen ${window.start} und ${window.end} Uhr möglich.`,
+      }
+    }
+  }
 
   const admin = createAdminClient()
   const { error } = await admin

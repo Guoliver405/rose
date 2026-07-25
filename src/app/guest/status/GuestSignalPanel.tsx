@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Moon, Sparkles, CheckCircle2 } from 'lucide-react'
+import { Clock, Moon, Sparkles, CheckCircle2 } from 'lucide-react'
 import { setGuestSignalAction } from '../actions'
 
 type Signal = 'none' | 'please_clean' | 'dnd'
@@ -10,9 +10,14 @@ type Signal = 'none' | 'please_clean' | 'dnd'
 export default function GuestSignalPanel({
   signal,
   cleaningActive,
+  cleaningWindow,
+  windowOpen,
 }: {
   signal: Signal
   cleaningActive: boolean
+  /** Reinigungs-Zeitfenster der Hotel-Policy — null, wenn die Regel aus ist. */
+  cleaningWindow: { start: string; end: string } | null
+  windowOpen: boolean
 }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
@@ -27,6 +32,10 @@ export default function GuestSignalPanel({
       if (pollRef.current) clearInterval(pollRef.current)
     }
   }, [router])
+
+  // Außerhalb des Zeitfensters ist nur das ANFORDERN gesperrt — einen bereits
+  // aktiven Wunsch darf der Gast jederzeit zurücknehmen.
+  const cleanBlocked = Boolean(cleaningWindow) && !windowOpen && signal !== 'please_clean'
 
   function choose(next: Signal) {
     setError(null)
@@ -49,13 +58,13 @@ export default function GuestSignalPanel({
 
       <button
         type="button"
-        disabled={pending}
+        disabled={pending || cleanBlocked}
         onClick={() => choose('please_clean')}
         className={`flex items-center gap-3 rounded-2xl border-2 px-5 py-4 text-left disabled:opacity-50 ${
           signal === 'please_clean'
             ? 'border-attention bg-attention text-attention-foreground'
             : 'border-edge bg-surface-elevated text-ink hover:border-edge-strong'
-        }`}
+        } ${cleanBlocked ? 'cursor-not-allowed' : ''}`}
       >
         <Sparkles className="h-6 w-6 shrink-0" />
         <span>
@@ -63,10 +72,24 @@ export default function GuestSignalPanel({
           <span className={`block text-sm ${signal === 'please_clean' ? '' : 'text-ink-muted'}`}>
             {signal === 'please_clean'
               ? 'Wunsch ist aktiv — erneut tippen zum Zurücknehmen'
-              : 'Der Reinigungsdienst wird informiert'}
+              : cleanBlocked
+                ? 'Zurzeit nicht möglich'
+                : 'Der Reinigungsdienst wird informiert'}
           </span>
         </span>
       </button>
+
+      {cleanBlocked && cleaningWindow && (
+        <p className="flex items-start gap-2 rounded-xl border border-edge bg-surface-sunken px-4 py-3 text-sm text-ink-soft">
+          <Clock className="mt-0.5 h-5 w-5 shrink-0 text-ink-muted" />
+          <span>
+            Reinigungswünsche nehmen wir täglich zwischen{' '}
+            <strong className="font-bold text-ink">{cleaningWindow.start}</strong> und{' '}
+            <strong className="font-bold text-ink">{cleaningWindow.end}</strong> Uhr entgegen.
+            Bitte melde dich in diesem Zeitraum noch einmal — oder wende dich an die Rezeption.
+          </span>
+        </p>
+      )}
 
       <button
         type="button"

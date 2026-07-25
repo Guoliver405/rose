@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import { getAdminContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import { clampPinLength } from '@/lib/ids'
-import { clampStaleMinutes, parseStayoverPolicy } from '@/lib/board'
+import { clampStaleMinutes, parseCleaningWindow, parseStayoverPolicy } from '@/lib/board'
 import HotelSettingsForm from '../HotelSettingsForm'
 
 export default async function HotelSettingsPage() {
@@ -20,6 +20,7 @@ export default async function HotelSettingsPage() {
 
   const policies = (hotel?.policies ?? {}) as Record<string, unknown>
   const stayover = parseStayoverPolicy(policies)
+  const cleaningWindow = parseCleaningWindow(policies)
 
   return (
     <div className="flex max-w-2xl flex-col gap-5">
@@ -40,6 +41,9 @@ export default async function HotelSettingsPage() {
           cleaningStaleMinutes: clampStaleMinutes(policies.cleaningStaleMinutes),
           stayoverAutoClean: stayover.enabled,
           stayoverAutoCleanTime: `${String(stayover.hour).padStart(2, '0')}:${String(stayover.minute).padStart(2, '0')}`,
+          cleaningWindowEnabled: cleaningWindow.enabled,
+          cleaningWindowStart: cleaningWindow.start,
+          cleaningWindowEnd: cleaningWindow.end,
         }}
       />
     </div>

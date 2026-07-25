@@ -28,6 +28,18 @@ export async function updateSettingsAction(formData: FormData): Promise<ActionRe
     return { error: 'Uhrzeit für die Routine-Reinigung fehlt (z. B. 10:00).' }
   }
 
+  const cleaningWindowEnabled = formData.get('cleaningWindowEnabled') === 'on'
+  const windowStartRaw = ((formData.get('cleaningWindowStart') as string) ?? '').trim()
+  const windowEndRaw = ((formData.get('cleaningWindowEnd') as string) ?? '').trim()
+  if (cleaningWindowEnabled) {
+    if (!/^\d{1,2}:\d{2}$/.test(windowStartRaw) || !/^\d{1,2}:\d{2}$/.test(windowEndRaw)) {
+      return { error: 'Für das Reinigungs-Zeitfenster fehlen Start- und Endzeit.' }
+    }
+    if (windowStartRaw === windowEndRaw) {
+      return { error: 'Start- und Endzeit des Zeitfensters dürfen nicht gleich sein.' }
+    }
+  }
+
   const admin = createAdminClient()
   const { data: hotel } = await admin
     .from('hotels').select('policies').eq('id', ctx.hotelId).single()
@@ -38,6 +50,9 @@ export async function updateSettingsAction(formData: FormData): Promise<ActionRe
     cleaningStaleMinutes,
     stayoverAutoClean,
     ...(timeRaw ? { stayoverAutoCleanTime: timeRaw } : {}),
+    cleaningWindowEnabled,
+    ...(windowStartRaw ? { cleaningWindowStart: windowStartRaw } : {}),
+    ...(windowEndRaw ? { cleaningWindowEnd: windowEndRaw } : {}),
   }
 
   const { error } = await admin

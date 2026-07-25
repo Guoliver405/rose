@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getGuestContext } from '@/utils/guest'
 import { createAdminClient } from '@/utils/supabase/service'
+import { isWithinCleaningWindow, parseCleaningWindow } from '@/lib/board'
 import { guestLogoutAction } from '../actions'
 import GuestSignalPanel from './GuestSignalPanel'
 import GuestServicesPanel, { type GuestOrder, type GuestService } from './GuestServicesPanel'
@@ -8,6 +9,8 @@ import GuestServicesPanel, { type GuestOrder, type GuestService } from './GuestS
 export default async function GuestStatusPage() {
   const ctx = await getGuestContext()
   if (!ctx) redirect('/guest')
+
+  const cleaningWindow = parseCleaningWindow(ctx.policies)
 
   // Baukasten + eigene Bestellungen (Gast ist anonym → Admin-Client).
   const admin = createAdminClient()
@@ -68,7 +71,12 @@ export default async function GuestStatusPage() {
         <h1 className="text-2xl font-black text-ink">Zimmer {ctx.roomNumber}</h1>
       </header>
 
-      <GuestSignalPanel signal={ctx.guestSignal} cleaningActive={ctx.cleaningActive} />
+      <GuestSignalPanel
+        signal={ctx.guestSignal}
+        cleaningActive={ctx.cleaningActive}
+        cleaningWindow={cleaningWindow.enabled ? cleaningWindow : null}
+        windowOpen={isWithinCleaningWindow(cleaningWindow)}
+      />
 
       <GuestServicesPanel services={guestServices} orders={guestOrders} />
 

@@ -17,6 +17,7 @@ export type GuestContext = {
   hotelName: string
   guestSignal: 'none' | 'please_clean' | 'dnd'
   cleaningActive: boolean
+  policies: Record<string, unknown>
 }
 
 export async function getGuestContext(): Promise<GuestContext | null> {
@@ -36,7 +37,7 @@ export async function getGuestContext(): Promise<GuestContext | null> {
   const [{ data: room }, { data: state }, { data: hotel }] = await Promise.all([
     admin.from('rooms').select('number').eq('id', stay.room_id).single(),
     admin.from('room_states').select('guest_signal, cleaning_by').eq('room_id', stay.room_id).maybeSingle(),
-    admin.from('hotels').select('name').eq('id', stay.hotel_id).single(),
+    admin.from('hotels').select('name, policies').eq('id', stay.hotel_id).single(),
   ])
   if (!room) return null
 
@@ -48,5 +49,6 @@ export async function getGuestContext(): Promise<GuestContext | null> {
     hotelName: hotel?.name ?? 'Hotel',
     guestSignal: (state?.guest_signal ?? 'none') as GuestContext['guestSignal'],
     cleaningActive: Boolean(state?.cleaning_by),
+    policies: (hotel?.policies ?? {}) as Record<string, unknown>,
   }
 }

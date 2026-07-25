@@ -106,6 +106,57 @@ export function todayStartIso(now: Date = new Date()): string {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
 }
 
+// ── Reinigungs-Zeitfenster (Hotel-Policy, Default aus) ──────────────────────
+//
+// Begrenzt, wann Gäste den Reinigungswunsch absetzen dürfen. Betrifft NUR
+// `please_clean` — DND und das Zurücknehmen eines Wunsches bleiben jederzeit
+// möglich. Bereits gesetzte Wünsche laufen weiter (kein Auto-Reset).
+
+export type CleaningWindowPolicy = { enabled: boolean; start: string; end: string }
+
+const DEFAULT_WINDOW = { start: '08:00', end: '16:00' }
+
+function parseHhMm(raw: unknown, fallback: string): string {
+  const value = typeof raw === 'string' ? raw.trim() : ''
+  const match = /^(\d{1,2}):(\d{2})$/.exec(value)
+  if (!match) return fallback
+  const hour = Math.min(23, Math.max(0, Number(match[1])))
+  const minute = Math.min(59, Math.max(0, Number(match[2])))
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+}
+
+export function parseCleaningWindow(policies: Record<string, unknown>): CleaningWindowPolicy {
+  return {
+    enabled: policies.cleaningWindowEnabled === true,
+    start: parseHhMm(policies.cleaningWindowStart, DEFAULT_WINDOW.start),
+    end: parseHhMm(policies.cleaningWindowEnd, DEFAULT_WINDOW.end),
+  }
+}
+
+function toMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(':').map(Number)
+  return h * 60 + m
+}
+
+/**
+ * Liegt `now` im Wunsch-Zeitfenster? Bei ausgeschalteter Policy immer true.
+ * Start > Ende wird als über Mitternacht laufendes Fenster gelesen
+ * (z. B. 22:00–02:00); Start === Ende bedeutet „ganztägig".
+ */
+export function isWithinCleaningWindow(
+  policy: CleaningWindowPolicy,
+  now: Date = new Date(),
+): boolean {
+  if (!policy.enabled) return true
+  const start = toMinutes(policy.start)
+  const end = toMinutes(policy.end)
+  if (start === end) return true
+  const minutes = now.getHours() * 60 + now.getMinutes()
+  return start < end
+    ? minutes >= start && minutes < end
+    : minutes >= start || minutes < end
+}
+
 // ── Etagen-Verortung (maid_presence) ────────────────────────────────────────
 //
 // Präsenz wird beim Schichtende und per "Zurück"-Button gelöscht; vergessene

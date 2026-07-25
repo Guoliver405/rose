@@ -26,6 +26,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Zimmerstatus ist event-getrieben, nicht abgeleitet** — der Check-in-/Check-out-Klick IST die Wahrheit. Keine `deriveCleanState`-Logik wie in HotCord.
 - **Sicherheit**: statischer Zimmer-Token (unguessbar) + Aufenthalts-PIN (4 Ziffern, Default; per Policy konfigurierbar) + Rate-Limit (5 Fehlversuche → 15 min Sperre, `stays.pin_attempts`/`pin_locked_until`). PIN im Plaintext in `stays.pin` — bewusst (Rezeption muss ablesen können, Schadenspotenzial minimal, Lebensdauer = Aufenthalt).
 - **Stayover-Routine-Reinigung**: Hotel-Policy (`policies.stayoverAutoClean` + Uhrzeit), Default aus.
+- **Reinigungs-Zeitfenster** (25.07.2026): Hotel-Policy (`cleaningWindowEnabled` + `cleaningWindowStart`/`cleaningWindowEnd`, Default aus) begrenzt, wann Gäste den Reinigungswunsch absetzen dürfen. Betrifft **nur** `please_clean` — DND und das Zurücknehmen eines aktiven Wunsches bleiben jederzeit möglich; bereits gesetzte Wünsche laufen weiter (kein Auto-Reset). Gesperrt wird doppelt: Button im Gastportal deaktiviert + Hinweis mit den Zeiten, dazu ein Riegel in `setGuestSignalAction`. `isWithinCleaningWindow` in [board.ts](src/lib/board.ts) liest Start > Ende als über Mitternacht laufendes Fenster.
 - **Priorisierung**: manueller Rezeptions-Eingriff (Beschwerden, Sonderfälle) — kein Automatismus.
 - **Maid-Identität**: echte Accounts + QR-Login-Karten (Pattern 1:1 aus HotCord, `maid_login_tokens`), weil Reiniger-Tracking ein echtes Zusatzfeature ist. Vereinfachtes Logging in `staff_log` (shift/break/other_cleaning/clean_start/clean_done).
 - **Slider-Logik aus HotCord**: „Reinigung starten" erlaubt danach nur „Reinigung abschließen"; Schichtbeginn/-ende rahmen ein; Pause + sonstige Reinigung frei stechbar, werden nur geloggt.
@@ -84,7 +85,7 @@ Env-Vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `S
 
 Siehe [supabase_schema_v1.sql](Supabase_sql/supabase_schema_v1.sql). Kern:
 
-- `hotels` — Mandant + `policies` JSONB (stayoverAutoClean, pinLength, cleaningStaleMinutes)
+- `hotels` — Mandant + `policies` JSONB (stayoverAutoClean, pinLength, cleaningStaleMinutes, cleaningWindow*)
 - `profiles` — Personal; Discriminator: `username IS NOT NULL` = Reinigungskraft; Management-Logins tragen `role` (`admin` | `reception`)
 - `rooms` — Nummer + Etage + optional Gebäude, keine Geometrie
 - `room_guest_tokens` — statischer QR-Token pro Zimmer (PK = room_id)

@@ -10,6 +10,9 @@ export type HotelSettingsInitial = {
   cleaningStaleMinutes: number
   stayoverAutoClean: boolean
   stayoverAutoCleanTime: string
+  cleaningWindowEnabled: boolean
+  cleaningWindowStart: string
+  cleaningWindowEnd: string
 }
 
 export default function HotelSettingsForm({ initial }: { initial: HotelSettingsInitial }) {
@@ -17,6 +20,7 @@ export default function HotelSettingsForm({ initial }: { initial: HotelSettingsI
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [stayoverOn, setStayoverOn] = useState(initial.stayoverAutoClean)
+  const [windowOn, setWindowOn] = useState(initial.cleaningWindowEnabled)
 
   function submitSettings(form: HTMLFormElement) {
     setError(null)
@@ -83,6 +87,39 @@ export default function HotelSettingsForm({ initial }: { initial: HotelSettingsI
             <input
               name="stayoverAutoCleanTime" type="time" required
               defaultValue={initial.stayoverAutoCleanTime} className={inputClass}
+            />
+            Uhr
+          </label>
+        )}
+      </div>
+
+      <div className="rounded-lg border border-edge bg-surface-sunken p-3">
+        <label className="flex items-center gap-2 text-sm font-semibold text-ink">
+          <input
+            type="checkbox"
+            name="cleaningWindowEnabled"
+            checked={windowOn}
+            onChange={e => setWindowOn(e.target.checked)}
+            className="h-4 w-4 accent-current"
+          />
+          Reinigungswunsch nur innerhalb fester Zeiten
+        </label>
+        <p className="mt-1 text-xs text-ink-muted">
+          Außerhalb des Zeitfensters können Gäste im Portal keinen Reinigungswunsch mehr
+          absetzen — sie sehen stattdessen einen Hinweis mit den Reinigungszeiten.
+          &bdquo;Nicht stören&ldquo; und das Zurücknehmen eines Wunsches bleiben jederzeit möglich.
+        </p>
+        {windowOn && (
+          <label className="mt-2 flex flex-wrap items-center gap-2 text-xs font-semibold text-ink-muted">
+            von
+            <input
+              name="cleaningWindowStart" type="time" required
+              defaultValue={initial.cleaningWindowStart} className={inputClass}
+            />
+            bis
+            <input
+              name="cleaningWindowEnd" type="time" required
+              defaultValue={initial.cleaningWindowEnd} className={inputClass}
             />
             Uhr
           </label>
