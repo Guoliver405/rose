@@ -126,6 +126,7 @@ Auf saturierten Buttons per-Family-Foreground verwenden (`bg-attention text-atte
 | Floating-Modal in Button-Größe | Vorfahre mit `transform`/`translate` erzeugt Containing-Block → `createPortal(document.body)` |
 | `revalidatePath('/admin')` invalidiert keine Unterseiten | `revalidatePath('/admin', 'layout')` |
 | Login auf Vercel scheitert mit `TypeError: Cannot convert argument to a ByteString` | Env-Var-Wert enthält Unicode-Müll (PowerShell-Pipe in `vercel env add`) → Werte aus Git Bash mit `printf '%s' '…' \| vercel env add` setzen, danach redeployen |
+| User anlegen/löschen scheitert mit `invalid JWT: … unrecognized JWT kid <nil> for algorithm ES256` (nur auf Vercel, lokal ok) | `SUPABASE_SECRET_KEY` in Vercel war noch der Legacy-`service_role`-JWT: PostgREST akzeptiert ihn weiter, aber die Auth-Admin-API verifiziert gegen die neuen ES256-Signatur-Schlüssel → Env-Var auf den `sb_secret_…`-Wert aus `.env.local` setzen (Git-Bash-`printf`-Muster!), redeployen (behoben 25.07.2026) |
 
 ## Phasen-Plan
 
