@@ -32,11 +32,12 @@ export type FloorGroup = {
   rooms: RoomTileData[]
 }
 
-/** Farb-Vorrang: priorisiert > in Arbeit > ausgecheckt > Reinigungswunsch/Routine > DND > belegt > frei & bereit.
-    Farbsprache: Violett = priorisiert, Rot(+Blinken) = dringender Service, Rosé = DND. */
+/** Farb-Vorrang: priorisiert > ausgecheckt > Reinigungswunsch/Routine > DND > belegt > frei & bereit.
+    Farbsprache: Violett = priorisiert, Rot(+Blinken) = dringender Service, Rosé = DND.
+    Eine LAUFENDE Reinigung ändert den Balken bewusst NICHT (nur Spinner-Icon):
+    die Grundfarbe bleibt stehen, bis der Abschluss den Status wirklich ändert. */
 function tileBar(t: RoomTileData): string {
   if (t.priority) return 'bg-accent'
-  if (t.cleaningActive) return 'bg-positive-soft'
   if (t.checkoutPending) return 'bg-caution'
   if (t.guestSignal === 'please_clean' || t.stayoverDue) return 'bg-attention'
   if (t.guestSignal === 'dnd') return 'bg-blocked'
