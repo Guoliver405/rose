@@ -4,7 +4,7 @@ import { getMaidContext } from '@/utils/maid-auth'
 import { createAdminClient } from '@/utils/supabase/service'
 import { deriveShiftState } from '@/lib/shift'
 import {
-  clampStaleMinutes, isCleaningFresh, isRoomActive, isStayoverDue,
+  clampStaleMinutes, isCleaningFresh, isPresenceFresh, isRoomActive, isStayoverDue,
   parseStayoverPolicy, roomScore, todayStartIso,
 } from '@/lib/board'
 import RealtimeListener from '@/components/RealtimeListener'
@@ -19,7 +19,7 @@ export default async function ServiceBoardPage() {
   // nicht („Kollegin in Zimmer X" braucht aber deren Namen) und stays gar
   // nicht. Auth ist über getMaidContext() bereits geprüft.
   const admin = createAdminClient()
-  const [{ data: rooms }, { data: states }, { data: stays }, { data: maids }, { data: myLog }, { data: cleanedToday }] =
+  const [{ data: rooms }, { data: states }, { data: stays }, { data: maids }, { data: myLog }, { data: cleanedToday }, { data: presence }] =
     await Promise.all([
       admin.from('rooms').select('id, number, floor, building').eq('hotel_id', ctx.hotelId),
       admin
@@ -41,6 +41,7 @@ export default async function ServiceBoardPage() {
         .eq('hotel_id', ctx.hotelId)
         .eq('kind', 'clean_done')
         .gte('at', todayStartIso()),
+      admin.from('maid_presence').select('profile_id, building, floor, entered_at').eq('hotel_id', ctx.hotelId),
     ])
 
   const staleMinutes = clampStaleMinutes(ctx.policies.cleaningStaleMinutes)
@@ -103,19 +104,38 @@ export default async function ServiceBoardPage() {
     }
   })
 
-  // Gruppierung Gebäude → Etage; Sortierung nach Etagenscore (Priorisierungshilfe).
+  // Etagen-Verortung: frische Präsenz-Zeilen (Stale-Guard gegen vergessene
+  // Schichtenden) → Namen je Etage + meine eigene Etage.
+  const freshPresence = (presence ?? []).filter(p => isPresenceFresh(p.entered_at, now))
+  const myPresence = freshPresence.find(p => p.profile_id === ctx.profileId) ?? null
+  const maidsByFloor = new Map<string, string[]>()
+  for (const p of freshPresence) {
+    const key = `${p.building ?? ''}#${p.floor}`
+    const list = maidsByFloor.get(key) ?? []
+    list.push(nameByProfile.get(p.profile_id) ?? 'Kollegin')
+    maidsByFloor.set(key, list)
+  }
+
+  // Gruppierung Gebäude → Etage; FESTE Reihenfolge wie in der Admin-Übersicht
+  // (Gebäude alphabetisch, Etagen absteigend) — die frühere Score-Sortierung
+  // sortierte beim Sauberwerden sichtbar um und war verwirrend.
   const groups = new Map<string, BoardFloor>()
   for (const room of boardRooms) {
     const key = `${room.building ?? ''}#${room.floor}`
     if (!groups.has(key)) {
-      groups.set(key, { building: room.building, floor: room.floor, score: 0, rooms: [] })
+      groups.set(key, {
+        building: room.building,
+        floor: room.floor,
+        score: 0,
+        rooms: [],
+        maids: maidsByFloor.get(key) ?? [],
+      })
     }
     const g = groups.get(key)!
     g.rooms.push(room)
     g.score += room.score
   }
   const floors = [...groups.values()].sort((a, b) => {
-    if (a.score !== b.score) return b.score - a.score
     const ba = a.building ?? ''
     const bb = b.building ?? ''
     if (ba !== bb) return ba.localeCompare(bb, 'de')
@@ -161,6 +181,7 @@ export default async function ServiceBoardPage() {
             shiftStartedAt: shift.shiftStartedAt,
           }}
           myCleaningRoomId={myCleaningRoomId}
+          myFloorKey={myPresence ? `${myPresence.building ?? ''}#${myPresence.floor}` : null}
         />
       </main>
     </div>

@@ -103,7 +103,57 @@ export async function shiftEndAction(): Promise<ActionResult> {
 
   const res = await logStitch(admin, ctx, 'shift_end')
   if (res.error) return res
+
+  // Etagen-Verortung endet mit der Schicht.
+  await admin.from('maid_presence').delete().eq('profile_id', ctx.profileId)
+
   revalidatePath('/service')
+  revalidatePath('/admin', 'layout')
+  return {}
+}
+
+// ── Etagen-Verortung ─────────────────────────────────────────────────────────
+
+/** Auf eine Etage einbuchen — live sichtbar für Kolleginnen und Rezeption. */
+export async function enterFloorAction(
+  building: string | null,
+  floor: number,
+): Promise<ActionResult> {
+  const ctx = await getMaidContext()
+  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!Number.isInteger(floor)) return { error: 'Ungültige Etage.' }
+  const admin = createAdminClient()
+
+  const shift = await loadShiftState(admin, ctx.profileId)
+  if (!shift.onShift) return { error: 'Erst die Schicht beginnen.' }
+
+  const { error } = await admin.from('maid_presence').upsert(
+    {
+      profile_id: ctx.profileId,
+      hotel_id: ctx.hotelId,
+      building: building ?? null,
+      floor,
+      entered_at: new Date().toISOString(),
+    },
+    { onConflict: 'profile_id' },
+  )
+  if (error) return { error: `Einbuchen fehlgeschlagen: ${error.message}` }
+
+  revalidatePath('/service')
+  revalidatePath('/admin', 'layout')
+  return {}
+}
+
+/** Etage verlassen (Zurück zur Etagen-Übersicht). */
+export async function leaveFloorAction(): Promise<ActionResult> {
+  const ctx = await getMaidContext()
+  if (!ctx) return { error: 'Nicht angemeldet.' }
+  const admin = createAdminClient()
+
+  await admin.from('maid_presence').delete().eq('profile_id', ctx.profileId)
+
+  revalidatePath('/service')
+  revalidatePath('/admin', 'layout')
   return {}
 }
 

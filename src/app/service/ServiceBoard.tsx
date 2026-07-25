@@ -3,12 +3,13 @@
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  Ban, BedDouble, Coffee, DoorOpen, Flag, Loader2, RefreshCw, Sparkles, X,
+  ArrowLeft, Ban, BedDouble, ChevronRight, Coffee, DoorOpen, Flag, Loader2,
+  RefreshCw, Siren, Sparkles, Users, X,
 } from 'lucide-react'
 import SlideAction from '@/components/SlideAction'
 import {
-  abortCleaningAction, breakToggleAction, finishCleaningAction,
-  otherCleaningAction, shiftEndAction, shiftStartAction, startCleaningAction,
+  abortCleaningAction, breakToggleAction, enterFloorAction, finishCleaningAction,
+  leaveFloorAction, otherCleaningAction, shiftEndAction, shiftStartAction, startCleaningAction,
 } from './actions'
 
 export type BoardRoom = {
@@ -34,9 +35,19 @@ export type BoardFloor = {
   floor: number
   score: number
   rooms: BoardRoom[]
+  /** Namen der aktuell auf dieser Etage eingebuchten Kolleginnen. */
+  maids: string[]
 }
 
 type ShiftInfo = { onShift: boolean; onBreak: boolean; shiftStartedAt: string | null }
+
+function floorKey(f: Pick<BoardFloor, 'building' | 'floor'>): string {
+  return `${f.building ?? ''}#${f.floor}`
+}
+
+function floorLabel(f: Pick<BoardFloor, 'building' | 'floor'>): string {
+  return `${f.building ? `${f.building} · ` : ''}Etage ${f.floor}`
+}
 
 function statusLabel(r: BoardRoom): string {
   if (r.cleaningByMe && r.cleaningFresh) return 'Du reinigst dieses Zimmer'
@@ -61,14 +72,22 @@ function tileBar(r: BoardRoom): string {
   return 'bg-edge'
 }
 
+/** Offenes Prio-Zimmer (nicht gerade in frischer Reinigung) auf der Etage? */
+function hasOpenPriority(f: BoardFloor): boolean {
+  return f.rooms.some(r => r.priority && !r.cleaningFresh)
+}
+
 export default function ServiceBoard({
   floors,
   shift,
   myCleaningRoomId,
+  myFloorKey,
 }: {
   floors: BoardFloor[]
   shift: ShiftInfo
   myCleaningRoomId: string | null
+  /** Etage, auf die ich eingebucht bin (maid_presence) — null = Etagen-Übersicht. */
+  myFloorKey: string | null
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -84,10 +103,15 @@ export default function ServiceBoard({
     return () => clearInterval(t)
   }, [router])
 
+  const myFloor = myFloorKey ? floors.find(f => floorKey(f) === myFloorKey) ?? null : null
+  const visibleRooms = myFloor ? myFloor.rooms : []
+  const selected = selectedId ? visibleRooms.find(r => r.id === selectedId) ?? null : null
+
   const allRooms = floors.flatMap(f => f.rooms)
-  const selected = selectedId ? allRooms.find(r => r.id === selectedId) ?? null : null
   const openCount = allRooms.filter(r => r.active && !r.cleaningFresh).length
   const inProgressCount = allRooms.filter(r => r.cleaningFresh).length
+  // Warn-Lampe: irgendwo im Haus ist ein Prio-Zimmer offen.
+  const priorityFloors = floors.filter(hasOpenPriority)
 
   function run(action: () => Promise<{ error?: string }>, closeDialog = false) {
     setError(null)
@@ -105,8 +129,34 @@ export default function ServiceBoard({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Schicht-Panel */}
+      {/* Status-Bereich */}
       <section className="rounded-xl border border-edge bg-surface p-4">
+        {/* Ebene 2: Etagen-Kopf mit Zurück-Button + Prio-Warnlampe */}
+        {myFloor && (
+          <div className="mb-3 flex items-center gap-3 border-b border-edge pb-3">
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => run(leaveFloorAction)}
+              className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
+            >
+              <ArrowLeft className="h-4 w-4" /> Alle Etagen
+            </button>
+            <span className="text-base font-black text-ink">{floorLabel(myFloor)}</span>
+            {priorityFloors.length > 0 && (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => run(leaveFloorAction)}
+                title={`Priorisierte Reinigung offen: ${priorityFloors.map(floorLabel).join(', ')} — tippen für die Etagen-Übersicht`}
+                className="ml-auto flex items-center gap-1.5 rounded-lg border border-accent-pill-edge bg-accent-tint px-3 py-1.5 text-sm font-bold text-accent-strong"
+              >
+                <Siren className="blink-icon h-4 w-4" /> Prio offen
+              </button>
+            )}
+          </div>
+        )}
+
         {!shift.onShift ? (
           <div className="flex flex-col gap-2">
             <p className="text-sm font-semibold text-ink-soft">
@@ -206,32 +256,43 @@ export default function ServiceBoard({
         )}
       </section>
 
-      {/* Etagen */}
-      {floors.map(f => (
-        <section
-          key={`${f.building ?? ''}#${f.floor}`}
-          className="rounded-xl border border-edge bg-surface px-4 py-3"
-        >
+      {/* Ebene 1: Etagen-Übersicht (feste Reihenfolge wie in der Rezeption) */}
+      {!myFloor && (
+        <div className="flex flex-col gap-2">
+          {floors.map(f => (
+            <FloorRow
+              key={floorKey(f)}
+              floor={f}
+              pending={pending}
+              onEnter={() => run(() => enterFloorAction(f.building, f.floor))}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Ebene 2: Zimmer der eingebuchten Etage */}
+      {myFloor && (
+        <section className="rounded-xl border border-edge bg-surface px-4 py-3">
           <h2 className="mb-2 flex items-center gap-2 text-sm font-bold text-ink-soft">
-            {f.building ? `${f.building} · ` : ''}Etage {f.floor}
-            {f.score > 0 && (
-              <span className="rounded-full bg-attention-pill px-2.5 py-0.5 text-xs font-bold text-attention-deepest" title="Etagenscore — gewichtete Dringlichkeit">
-                Score {f.score}
-              </span>
-            )}
+            {floorLabel(myFloor)}
             <span className="font-normal text-ink-muted">
-              {f.rooms.filter(r => r.active).length > 0
-                ? `${f.rooms.filter(r => r.active).length} offen`
+              {myFloor.rooms.filter(r => r.active).length > 0
+                ? `${myFloor.rooms.filter(r => r.active).length} offen`
                 : 'nichts offen'}
             </span>
+            {myFloor.maids.length > 1 && (
+              <span className="flex items-center gap-1 font-normal text-ink-muted">
+                <Users className="h-3.5 w-3.5" /> {myFloor.maids.join(', ')}
+              </span>
+            )}
           </h2>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {f.rooms.map(room => (
+            {myFloor.rooms.map(room => (
               <RoomTile key={room.id} room={room} onClick={() => { setError(null); setNotice(null); setSelectedId(room.id) }} />
             ))}
           </div>
         </section>
-      ))}
+      )}
 
       {selected && (
         <RoomDialog
@@ -248,6 +309,60 @@ export default function ServiceBoard({
         />
       )}
     </div>
+  )
+}
+
+/** Verdichtete Etagen-Zeile: wie viel ist zu tun, wer ist schon dort. */
+function FloorRow({
+  floor: f,
+  pending,
+  onEnter,
+}: {
+  floor: BoardFloor
+  pending: boolean
+  onEnter: () => void
+}) {
+  const open = f.rooms.filter(r => r.active && !r.cleaningFresh).length
+  const inProgress = f.rooms.filter(r => r.cleaningFresh).length
+  const prio = hasOpenPriority(f)
+  const idle = open === 0 && inProgress === 0 && f.maids.length === 0
+
+  return (
+    <button
+      type="button"
+      disabled={pending}
+      onClick={onEnter}
+      className={`flex items-center gap-3 rounded-xl border bg-surface px-4 py-3 text-left hover:border-edge-strong disabled:opacity-50 ${
+        prio ? 'border-accent blink-ring-priority' : 'border-edge'
+      } ${idle ? 'opacity-60' : ''}`}
+    >
+      <span className="text-base font-black text-ink">{floorLabel(f)}</span>
+
+      <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+        open > 0 ? 'bg-attention-pill text-attention-deepest' : 'bg-positive-pill text-positive-deepest'
+      }`}>
+        {open > 0 ? `${open} offen` : 'fertig'}
+      </span>
+      {prio && (
+        <span className="flex items-center gap-1 rounded-full bg-accent-pill px-2.5 py-0.5 text-xs font-bold text-accent-deep">
+          <Flag className="h-3 w-3" /> Prio
+        </span>
+      )}
+      {inProgress > 0 && (
+        <span className="flex items-center gap-1 rounded-full bg-positive-pill px-2.5 py-0.5 text-xs font-semibold text-positive-deepest">
+          <Loader2 className="h-3 w-3 animate-spin" /> {inProgress} in Arbeit
+        </span>
+      )}
+
+      <span className="ml-auto flex items-center gap-3">
+        {f.maids.length > 0 && (
+          <span className="flex items-center gap-1.5 text-sm font-semibold text-ink-soft">
+            <Users className="h-4 w-4" /> {f.maids.join(', ')}
+          </span>
+        )}
+        <ChevronRight className="h-4 w-4 text-ink-muted" />
+      </span>
+    </button>
   )
 }
 

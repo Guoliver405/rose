@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 
-const TABLES = ['room_states', 'stays', 'staff_log', 'service_orders'] as const
+const TABLES = ['room_states', 'stays', 'staff_log', 'service_orders', 'maid_presence'] as const
 
 /**
  * Abonniert die statusrelevanten Tabellen und ruft debounced

@@ -105,3 +105,14 @@ export function isStayoverDue(args: {
 export function todayStartIso(now: Date = new Date()): string {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
 }
+
+// ── Etagen-Verortung (maid_presence) ────────────────────────────────────────
+//
+// Präsenz wird beim Schichtende und per "Zurück"-Button gelöscht; vergessene
+// Zeilen (Schichtende nie gestochen) altern heraus — reine Loader-Ableitung.
+
+export const PRESENCE_STALE_HOURS = 16
+
+export function isPresenceFresh(enteredAt: string, now: Date = new Date()): boolean {
+  return now.getTime() - new Date(enteredAt).getTime() < PRESENCE_STALE_HOURS * 60 * 60_000
+}

@@ -1,20 +1,22 @@
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/server'
 import {
-  clampStaleMinutes, isCleaningFresh, isStayoverDue, parseStayoverPolicy, todayStartIso,
+  clampStaleMinutes, isCleaningFresh, isPresenceFresh, isStayoverDue, parseStayoverPolicy, todayStartIso,
 } from '@/lib/board'
 import RoomGrid, { type FloorGroup, type RoomTileData } from './RoomGrid'
 
 export default async function AdminOverviewPage() {
   const supabase = await createClient()
 
-  const [{ data: rooms }, { data: states }, { data: stays }, { data: hotel }, { data: cleanedToday }, { data: openOrders }] = await Promise.all([
+  const [{ data: rooms }, { data: states }, { data: stays }, { data: hotel }, { data: cleanedToday }, { data: openOrders }, { data: presence }, { data: profiles }] = await Promise.all([
     supabase.from('rooms').select('id, number, floor, building').order('number'),
     supabase.from('room_states').select('room_id, guest_signal, checkout_pending, priority, cleaning_by, cleaning_started_at'),
     supabase.from('stays').select('id, room_id, pin, checked_in_at').is('checked_out_at', null),
     supabase.from('hotels').select('policies').limit(1).maybeSingle(),
     supabase.from('staff_log').select('room_id').eq('kind', 'clean_done').gte('at', todayStartIso()),
     supabase.from('service_orders').select('room_id, service_definitions(urgent)').eq('status', 'open'),
+    supabase.from('maid_presence').select('profile_id, building, floor, entered_at'),
+    supabase.from('profiles').select('id, display_name'),
   ])
 
   const policies = (hotel?.policies ?? {}) as Record<string, unknown>
@@ -68,12 +70,22 @@ export default async function AdminOverviewPage() {
     }
   })
 
+  // Etagen-Verortung der Reinigungskräfte (maid_presence, mit Stale-Guard)
+  const nameByProfile = new Map((profiles ?? []).map(p => [p.id, p.display_name]))
+  const maidsByFloor = new Map<string, string[]>()
+  for (const p of (presence ?? []).filter(p => isPresenceFresh(p.entered_at, now))) {
+    const key = `${p.building ?? ''}#${p.floor}`
+    const list = maidsByFloor.get(key) ?? []
+    list.push(nameByProfile.get(p.profile_id) ?? 'Reinigungskraft')
+    maidsByFloor.set(key, list)
+  }
+
   // Gruppierung: Gebäude (alphabetisch, ohne zuerst) → Etage absteigend
   const groups = new Map<string, FloorGroup>()
   for (const t of tiles) {
     const key = `${t.building ?? ''}#${t.floor}`
     if (!groups.has(key)) {
-      groups.set(key, { building: t.building, floor: t.floor, rooms: [] })
+      groups.set(key, { building: t.building, floor: t.floor, rooms: [], maids: maidsByFloor.get(key) ?? [] })
     }
     groups.get(key)!.rooms.push(t)
   }

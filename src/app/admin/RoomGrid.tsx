@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import {
-  AlertTriangle, Ban, BedDouble, ConciergeBell, DoorOpen, Flag, Loader2, Printer, RefreshCw, Sparkles, X,
+  AlertTriangle, Ban, BedDouble, ConciergeBell, DoorOpen, Flag, Loader2, Printer, RefreshCw, Sparkles, Users, X,
 } from 'lucide-react'
 import {
   checkInAction, checkOutAction, markCleanedAction, setPriorityAction,
@@ -30,6 +30,8 @@ export type FloorGroup = {
   building: string | null
   floor: number
   rooms: RoomTileData[]
+  /** Namen der aktuell auf dieser Etage eingebuchten Reinigungskräfte. */
+  maids: string[]
 }
 
 /** Farb-Vorrang: priorisiert > ausgecheckt > Reinigungswunsch/Routine > DND > belegt > frei & bereit.
@@ -89,9 +91,17 @@ export default function RoomGrid({ floorGroups }: { floorGroups: FloorGroup[] })
       key={`${group.building ?? ''}#${group.floor}`}
       className="rounded-xl border border-edge bg-surface px-4 py-2"
     >
-      <h3 className="mb-1.5 text-sm font-bold text-ink-soft">
+      <h3 className="mb-1.5 flex items-center text-sm font-bold text-ink-soft">
         Etage {group.floor}
         <span className="ml-2 font-normal text-ink-muted">{group.rooms.length} Zimmer</span>
+        {group.maids.length > 0 && (
+          <span
+            className="ml-3 flex items-center gap-1 rounded-full bg-positive-pill px-2.5 py-0.5 text-xs font-semibold text-positive-deepest"
+            title="Reinigungskräfte auf dieser Etage"
+          >
+            <Users className="h-3 w-3" /> {group.maids.join(', ')}
+          </span>
+        )}
       </h3>
       <div className="flex flex-wrap gap-2 pb-1">
         {group.rooms.map(room => (

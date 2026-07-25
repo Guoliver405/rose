@@ -31,6 +31,14 @@ gereinigter Zimmer tragen einen grünen Balken, die KPI-Leiste bleibt beim
 Scrollen stehen. Zimmer mit offener Service-Anfrage zeigen eine Glocke
 neben der Nummer — blinkend rot bei mindestens einer dringenden Anfrage.
 
+**Reinigungsboard-Umbau 25.07. (Migration nötig!):** Neue Etagen-
+Zwischenebene: nach Schichtbeginn erst verdichtete Etagen-Zeilen (feste
+Reihenfolge wie Rezeption, keine Score-Umsortierung mehr), Etage antippen =
+einbuchen (live sichtbar für Kolleginnen + Rezeptions-Etagen-Header), dann
+nur die Zimmer der Etage mit „Zurück"-Button und violetter Blink-Warnlampe
+bei offenem Prio-Zimmer. Voraussetzung:
+`Supabase_sql/2026-07-25_maid_presence.sql` einspielen.
+
 **Symbolik-Update 25.07.:** Priorisierte Reinigung ist jetzt VIOLETT
 (Balken, Flagge statt Warndreieck, violetter Blink-Ring, violetter
 Start-Slider auf dem Reinigungsboard). Rot + Blinken heißt ausschließlich

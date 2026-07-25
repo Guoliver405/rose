@@ -92,6 +92,7 @@ Siehe [supabase_schema_v1.sql](Supabase_sql/supabase_schema_v1.sql). Kern:
 - `room_states` — event-getriebener Status: `guest_signal` (none/please_clean/dnd), `checkout_pending`, `priority`, `cleaning_by`/`cleaning_started_at`; `last_updated_at` wird von jeder statusrelevanten Action getoucht (Realtime-Kick)
 - `room_state_transitions` — Audit via `AFTER UPDATE`-Trigger (SECURITY DEFINER), eine Zeile pro geändertem Feld, `IS DISTINCT FROM` filtert reine Touches; Attribution über `last_update_source`/`last_updated_by` im Payload
 - `maid_login_tokens` — QR-Login-Karten (PK = profile_id, UPSERT invalidiert alte Karte)
+- `maid_presence` — Etagen-Verortung der Reinigungskräfte (PK = profile_id, UPSERT beim Etagenwechsel; gelöscht bei Schichtende/„Zurück"; Stale-Guard 16 h via `isPresenceFresh`). Das Reinigungsboard hat eine Etagen-Zwischenebene: nach Schichtbeginn erst Etagen-Zeilen (feste Reihenfolge wie Admin-Übersicht, KEINE Score-Sortierung mehr), Etage wählen = einbuchen, dann nur die Zimmer dieser Etage + „Zurück"-Button + violette Blink-Warnlampe bei offenem Prio-Zimmer. Verortung ist live für Kolleginnen und in den Etagen-Headern der Rezeptions-Übersicht sichtbar.
 - `staff_log` — Tätigkeits-Stiche der Reinigungskräfte
 - `service_definitions` / `service_items` / `service_orders` — Baukasten (open/done)
 
