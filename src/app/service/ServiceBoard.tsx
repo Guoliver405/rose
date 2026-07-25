@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
   Ban, BedDouble, ChevronRight, DoorOpen, Flag, Loader2,
-  RefreshCw, Siren, SlidersHorizontal, Sparkles, Users, X,
+  RefreshCw, Siren, SlidersHorizontal, Sparkles, Target, Users, X,
 } from 'lucide-react'
 import SlideAction from '@/components/SlideAction'
 import {
@@ -83,6 +83,37 @@ function hasOpenPriority(f: BoardFloor): boolean {
   return f.rooms.some(r => r.priority && !r.cleaningFresh)
 }
 
+/** Zimmer, die hier noch zu tun sind — laufende Reinigungen zählen nicht. */
+function openRooms(f: BoardFloor): BoardRoom[] {
+  return f.rooms.filter(r => r.active && !r.cleaningFresh)
+}
+
+/**
+ * Empfohlene Etage: höchste noch offene Dringlichkeit, geteilt durch die
+ * Kräfte vor Ort + 1 — wo schon jemand arbeitet, lohnt sich der Weg
+ * weniger. Etagen ohne offene Arbeit fallen raus; bei Gleichstand gewinnt
+ * die untere Etage, damit die Empfehlung nicht zwischen zwei Etagen springt.
+ */
+function pickRecommendedFloor(floors: BoardFloor[]): string | null {
+  let best: { key: string; weight: number; floor: number; building: string } | null = null
+
+  for (const f of floors) {
+    const open = openRooms(f)
+    if (open.length === 0) continue
+    const weight = open.reduce((sum, r) => sum + r.score, 0) / (f.maids.length + 1)
+    const candidate = { key: floorKey(f), weight, floor: f.floor, building: f.building ?? '' }
+
+    if (!best) { best = candidate; continue }
+    const diff = candidate.weight - best.weight
+    const tie = Math.abs(diff) < 1e-9
+    if (diff > 0 || (tie && (candidate.floor < best.floor ||
+      (candidate.floor === best.floor && candidate.building < best.building)))) {
+      best = candidate
+    }
+  }
+  return best?.key ?? null
+}
+
 export default function ServiceBoard({
   floors,
   shift,
@@ -119,6 +150,7 @@ export default function ServiceBoard({
   const inProgressCount = allRooms.filter(r => r.cleaningFresh).length
   // Warn-Lampe: irgendwo im Haus ist ein Prio-Zimmer offen.
   const priorityFloors = floors.filter(hasOpenPriority)
+  const recommendedKey = pickRecommendedFloor(floors)
 
   function run(action: () => Promise<{ error?: string }>, closeDialog = false) {
     setError(null)
@@ -210,6 +242,7 @@ export default function ServiceBoard({
               key={floorKey(f)}
               floor={f}
               pending={pending}
+              recommended={floorKey(f) === recommendedKey}
               onEnter={() => run(() => enterFloorAction(f.building, f.floor))}
             />
           ))}
@@ -275,13 +308,16 @@ export default function ServiceBoard({
 function FloorRow({
   floor: f,
   pending,
+  recommended,
   onEnter,
 }: {
   floor: BoardFloor
   pending: boolean
+  /** Wegweiser: hier lohnt sich der Weg am meisten (genau eine Etage). */
+  recommended: boolean
   onEnter: () => void
 }) {
-  const open = f.rooms.filter(r => r.active && !r.cleaningFresh).length
+  const open = openRooms(f).length
   const inProgress = f.rooms.filter(r => r.cleaningFresh).length
   const prio = hasOpenPriority(f)
   const idle = open === 0 && inProgress === 0 && f.maids.length === 0
@@ -292,10 +328,21 @@ function FloorRow({
       disabled={pending}
       onClick={onEnter}
       className={`flex items-center gap-3 rounded-xl border bg-surface px-4 py-3 text-left hover:border-edge-strong disabled:opacity-50 ${
-        prio ? 'border-accent blink-ring-priority' : 'border-edge'
+        prio
+          ? 'border-accent blink-ring-priority'
+          : recommended
+            ? 'border-action'
+            : 'border-edge'
       } ${idle ? 'opacity-60' : ''}`}
     >
       <span className="text-base font-black text-ink">{floorLabel(f)}</span>
+
+      {recommended && (
+        <span className="flex items-center gap-1 rounded-full bg-action px-2.5 py-0.5 text-xs font-bold text-action-foreground">
+          {/* Blinkt nur, wenn die Zeile nicht ohnehin schon wegen Prio blinkt. */}
+          <Target className={`h-3.5 w-3.5 ${prio ? '' : 'blink-icon'}`} /> Als Nächstes
+        </span>
+      )}
 
       <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
         open > 0 ? 'bg-attention-pill text-attention-deepest' : 'bg-positive-pill text-positive-deepest'
