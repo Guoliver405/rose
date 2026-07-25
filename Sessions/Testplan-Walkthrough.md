@@ -9,8 +9,9 @@ Maid `maria` / PIN `046055` (Karte unter /admin/personal).
 Test-Deployment https://rose-sand-one.vercel.app (gleiche DB; QR-Scans mit
 Handy/Tablet funktionieren nur dort).
 
-**Hilfsmittel (vorübergehend, 25.07. eingebaut):** Auf `/admin/einstellungen`
-gibt es unten das Panel „Test-Szenario" (nur Admin). „Szenario erzeugen" setzt
+**Hilfsmittel (vorübergehend, 25.07. eingebaut):** Unter
+`/admin/einstellungen/test` (Kachel „Test-Szenario" im Einstellungen-Hub,
+nur Admin) gibt es das Seeding-Panel. „Szenario erzeugen" setzt
 alles zurück und baut per Prozent-Reglern + Zufalls-Seed eine praxisnahe Lage
 auf (echte Stays mit PINs — werden im Panel angezeigt —, Reinigungswünsche,
 DND, ausgecheckte + priorisierte Zimmer, offene Bestellungen; zufällig über
@@ -18,8 +19,14 @@ die Zimmer verteilt, gleicher Seed ⇒ identische Verteilung; rund die Hälfte
 der Stays ist „seit gestern" für Stayover-Tests).
 „Alles zurücksetzen" räumt jede Testlage ab (Stays ausgecheckt, Status
 neutral, offene Bestellungen gelöscht). Rückbau nach der Testphase:
-`TestScenarioPanel.tsx` + `test-actions.ts` löschen, Einbindung in
-`einstellungen/page.tsx` entfernen.
+`TestScenarioPanel.tsx` + `test-actions.ts` + `test/page.tsx` löschen,
+Kachel in `einstellungen/page.tsx` entfernen.
+
+**Layout-Update 25.07.:** Nav ist jetzt Übersicht | Bestellungen |
+Einstellungen — Zimmer, Personal, Services und QR-Aushänge liegen als
+Kacheln im Einstellungen-Hub (rollenabhängig). KPI „frei" heißt jetzt
+„bereit" (frei & gereinigt, grün), Kacheln freier gereinigter Zimmer
+tragen einen grünen Balken, die KPI-Leiste bleibt beim Scrollen stehen.
 
 ## 0) Aufräumen (Testreste der Bau-Sessions)
 

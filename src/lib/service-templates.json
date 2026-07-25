@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Technischer Dienst",
+    "description": "Etwas im Zimmer funktioniert nicht? Kurz beschreiben — wir kümmern uns schnellstmöglich. Kostenfrei.",
+    "urgent": true,
+    "items": []
+  },
+  {
+    "name": "Wäscheservice",
+    "description": "Wäsche im Wäschesack an die Zimmertür hängen und bis 10:00 Uhr anmelden — zurück am Folgetag.",
+    "urgent": false,
+    "items": [
+      { "label": "Wäschesack klein", "price_cents": 1200 },
+      { "label": "Wäschesack groß", "price_cents": 2000 }
+    ]
+  }
+]

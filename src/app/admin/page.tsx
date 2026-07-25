@@ -72,24 +72,31 @@ export default async function AdminOverviewPage() {
     g.rooms.sort((a, b) => a.number.localeCompare(b.number, 'de', { numeric: true }))
   }
 
-  // KPIs
+  // KPIs — „bereit" = frei & gereinigt (freie ungereinigte Zimmer sind
+  // zwangsläufig checkout_pending oder priorisiert und stecken in „zu reinigen").
   const total = tiles.length
   const occupied = tiles.filter(t => t.occupied).length
+  const ready = tiles.filter(t => !t.occupied && !t.checkoutPending && !t.priority && !t.cleaningActive).length
   const toClean = tiles.filter(t => t.checkoutPending || t.priority || t.guestSignal === 'please_clean' || t.stayoverDue).length
   const dnd = tiles.filter(t => t.guestSignal === 'dnd').length
   const inProgress = tiles.filter(t => t.cleaningActive).length
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-black text-ink">Zimmer-Übersicht</h1>
-        <div className="ml-auto flex flex-wrap gap-2 text-sm">
-          <Kpi label="Zimmer" value={total} />
-          <Kpi label="belegt" value={occupied} tone={occupied > 0 ? 'fresh' : undefined} />
-          <Kpi label="frei" value={total - occupied} />
-          <Kpi label="zu reinigen" value={toClean} tone={toClean > 0 ? 'attention' : 'positive'} />
-          <Kpi label="DND" value={dnd} tone={dnd > 0 ? 'blocked' : undefined} />
-          <Kpi label="in Arbeit" value={inProgress} tone={inProgress > 0 ? 'positive' : undefined} />
+      {/* Sticky unterhalb des App-Headers (dessen Höhe = top-Offset, im
+          Browser nachgemessen); -mx/-mt + Padding, damit der Hintergrund
+          beim Scrollen die Kacheln sauber abdeckt. */}
+      <div className="sticky top-[57px] z-30 -mx-4 -mt-4 bg-surface-sunken px-4 pb-2 pt-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-xl font-black text-ink">Zimmer-Übersicht</h1>
+          <div className="ml-auto flex flex-wrap gap-2 text-sm">
+            <Kpi label="Zimmer" value={total} />
+            <Kpi label="belegt" value={occupied} tone={occupied > 0 ? 'fresh' : undefined} />
+            <Kpi label="bereit" value={ready} tone={ready > 0 ? 'positive' : undefined} />
+            <Kpi label="zu reinigen" value={toClean} tone={toClean > 0 ? 'attention' : 'positive'} />
+            <Kpi label="DND" value={dnd} tone={dnd > 0 ? 'blocked' : undefined} />
+            <Kpi label="in Arbeit" value={inProgress} tone={inProgress > 0 ? 'positive' : undefined} />
+          </div>
         </div>
       </div>
 

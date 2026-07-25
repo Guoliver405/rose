@@ -29,19 +29,10 @@ export default async function AdminLayout({
             <span className="ml-2 text-sm font-semibold text-ink-muted">{ctx.hotelName}</span>
           </Link>
 
+          {/* Setup-Bereiche (Zimmer/Personal/Services/Aushänge) liegen im
+              Einstellungen-Hub — die Nav trägt nur das Tagesgeschäft. */}
           <nav className="flex items-center gap-4 text-sm font-semibold text-ink-soft">
             <Link href="/admin" className="hover:text-ink">Übersicht</Link>
-            {ctx.role === 'admin' && (
-              <Link href="/admin/zimmer" className="hover:text-ink">Zimmer</Link>
-            )}
-            <Link href="/admin/personal" className="hover:text-ink">Personal</Link>
-            {ctx.role === 'admin' && (
-              <Link href="/admin/services" className="hover:text-ink">Services</Link>
-            )}
-            {ctx.role === 'reception' && (
-              <Link href="/admin/zimmer/aushang" className="hover:text-ink">Aushänge</Link>
-            )}
-            <Link href="/admin/einstellungen" className="hover:text-ink">Einstellungen</Link>
             <Link href="/admin/bestellungen" className="flex items-center gap-1.5 hover:text-ink">
               Bestellungen
               {(openOrders ?? 0) > 0 && (
@@ -50,6 +41,7 @@ export default async function AdminLayout({
                 </span>
               )}
             </Link>
+            <Link href="/admin/einstellungen" className="hover:text-ink">Einstellungen</Link>
           </nav>
 
           <div className="ml-auto flex items-center gap-3">

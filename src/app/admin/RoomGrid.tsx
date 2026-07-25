@@ -30,7 +30,7 @@ export type FloorGroup = {
   rooms: RoomTileData[]
 }
 
-/** Farb-Vorrang: priorisiert > in Arbeit > ausgecheckt > Reinigungswunsch/Routine > DND > belegt > frei */
+/** Farb-Vorrang: priorisiert > in Arbeit > ausgecheckt > Reinigungswunsch/Routine > DND > belegt > frei & bereit */
 function tileBar(t: RoomTileData): string {
   if (t.priority) return 'bg-critical'
   if (t.cleaningActive) return 'bg-positive-soft'
@@ -38,12 +38,15 @@ function tileBar(t: RoomTileData): string {
   if (t.guestSignal === 'please_clean' || t.stayoverDue) return 'bg-attention'
   if (t.guestSignal === 'dnd') return 'bg-blocked'
   if (t.occupied) return 'bg-fresh'
-  return 'bg-edge'
+  // Alle Nicht-bereit-Fälle sind oben abgefangen: ein freies Zimmer ohne
+  // checkout_pending/priority ist im event-getriebenen Modell gereinigt.
+  return 'bg-positive'
 }
 
 function statusLabel(t: RoomTileData): string {
+  const ready = !t.occupied && !t.checkoutPending && !t.priority && !t.cleaningActive
   const parts: string[] = []
-  parts.push(t.occupied ? 'Belegt' : 'Frei')
+  parts.push(t.occupied ? 'Belegt' : ready ? 'Frei & bereit' : 'Frei')
   if (t.priority) parts.push('priorisierte Reinigung')
   if (t.cleaningActive) parts.push('Reinigung läuft')
   if (t.checkoutPending) parts.push('Reinigung nach Check-out offen')

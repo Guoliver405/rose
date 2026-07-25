@@ -4,8 +4,54 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/utils/supabase/service'
 import { getAdminContext } from '@/utils/auth'
 import { parseEuroToCents } from '@/lib/money'
+import serviceTemplates from '@/lib/service-templates.json'
 
 type ActionResult = { error?: string }
+
+/**
+ * Beispiel-Services aus den Vorlagen anlegen (gleiche Quelle wie das
+ * Neukunden-Seeding in scripts/create-tenant.mjs). Bereits vorhandene
+ * Namen (auch archivierte) werden übersprungen — kein Doppel-Anlegen.
+ */
+export async function createExampleServicesAction(): Promise<ActionResult & { created?: number }> {
+  const ctx = await getAdminContext()
+  if (!ctx) return { error: 'Keine Berechtigung.' }
+
+  const admin = createAdminClient()
+  const { data: existing } = await admin
+    .from('service_definitions')
+    .select('name')
+    .eq('hotel_id', ctx.hotelId)
+  const existingNames = new Set((existing ?? []).map(s => s.name.toLowerCase()))
+
+  let created = 0
+  for (const t of serviceTemplates) {
+    if (existingNames.has(t.name.toLowerCase())) continue
+    const { data: svc, error } = await admin
+      .from('service_definitions')
+      .insert({ hotel_id: ctx.hotelId, name: t.name, description: t.description, urgent: t.urgent })
+      .select('id')
+      .single()
+    if (error) return { error: error.message }
+    if (t.items.length > 0) {
+      const { error: itemErr } = await admin.from('service_items').insert(
+        t.items.map((i, idx) => ({
+          service_id: svc.id,
+          hotel_id: ctx.hotelId,
+          label: i.label,
+          price_cents: i.price_cents,
+          sort_order: idx,
+        })),
+      )
+      if (itemErr) return { error: itemErr.message }
+    }
+    created++
+  }
+
+  revalidatePath('/admin', 'layout')
+  if (created === 0) return { error: 'Die Beispiel-Services existieren bereits (ggf. archiviert).' }
+  return { created }
+}
 
 /**
  * Service anlegen. Baukasten bewusst abgespeckt (siehe AGENTS.md):

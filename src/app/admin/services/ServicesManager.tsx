@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Archive, Loader2, Plus, Siren, Wrench } from 'lucide-react'
+import { Archive, Loader2, Plus, Siren, Sparkles, Wrench } from 'lucide-react'
 import { formatCents } from '@/lib/money'
 import {
-  archiveServiceAction, archiveServiceItemAction, createServiceAction,
-  createServiceItemAction, setServiceUrgentAction,
+  archiveServiceAction, archiveServiceItemAction, createExampleServicesAction,
+  createServiceAction, createServiceItemAction, setServiceUrgentAction,
 } from './actions'
 
 export type ServiceRow = {
@@ -100,6 +100,14 @@ export default function ServicesManager({ services }: { services: ServiceRow[] }
           <p className="mt-1 text-sm text-ink-muted">
             Gäste sehen den Baukasten in ihrem Portal und bestellen mit einem Tipp.
           </p>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => run(() => createExampleServicesAction())}
+            className="mx-auto mt-4 flex items-center gap-1.5 rounded-lg border border-edge px-4 py-2 text-sm font-bold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
+          >
+            <Sparkles className="h-4 w-4" /> Beispiel-Services anlegen
+          </button>
         </div>
       ) : (
         services.map(s => (

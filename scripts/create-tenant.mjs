@@ -58,7 +58,34 @@ if (profErr) {
   process.exit(1)
 }
 
+// Beispiel-Services seeden (gleiche Vorlagen wie der Button im
+// Service-Konfigurator) — löschbar wie jeder andere Service.
+const templates = JSON.parse(
+  readFileSync(new URL('../src/lib/service-templates.json', import.meta.url), 'utf8')
+)
+for (const t of templates) {
+  const { data: svc, error: svcErr } = await admin
+    .from('service_definitions')
+    .insert({ hotel_id: hotel.id, name: t.name, description: t.description, urgent: t.urgent })
+    .select('id')
+    .single()
+  if (svcErr) { console.error('WARNUNG Beispiel-Service:', svcErr.message); continue }
+  if (t.items.length > 0) {
+    const { error: itemErr } = await admin.from('service_items').insert(
+      t.items.map((i, idx) => ({
+        service_id: svc.id,
+        hotel_id: hotel.id,
+        label: i.label,
+        price_cents: i.price_cents,
+        sort_order: idx,
+      }))
+    )
+    if (itemErr) console.error('WARNUNG Beispiel-Service-Optionen:', itemErr.message)
+  }
+}
+
 console.log(`Angelegt: ${hotelName}`)
 console.log(`  Login:    ${email}`)
 console.log(`  Passwort: ${password}`)
 console.log(`  hotel_id: ${hotel.id}`)
+console.log(`  Beispiel-Services: ${templates.map((t) => t.name).join(', ')}`)
