@@ -44,6 +44,7 @@ export default function SlideAction({
   done = false,
   disabled = false,
   variant,
+  size = 'default',
   onConfirm,
 }: {
   label: string
@@ -51,8 +52,11 @@ export default function SlideAction({
   done?: boolean
   disabled?: boolean
   variant: SlideVariant
+  /** `compact` = flache Zeile (40 px) für Nebenwege wie „Etage verlassen". */
+  size?: 'default' | 'compact'
   onConfirm: () => void
 }) {
+  const compact = size === 'compact'
   const trackRef = useRef<HTMLDivElement>(null)
   const [x, setX] = useState(0)
   const [maxX, setMaxX] = useState(0)
@@ -64,7 +68,7 @@ export default function SlideAction({
    * ersten Bewegungen einer schnellen Geste verloren.
    */
   const dragRef = useRef<{ pointerStart: number; startX: number; currentX: number } | null>(null)
-  const HANDLE = 48
+  const HANDLE = compact ? 32 : 48
   const PADDING = 4
   /** Antipp-Toleranz um den Griff (dicke Finger auf kleinen Displays). */
   const GRAB_SLACK = 10
@@ -81,7 +85,7 @@ export default function SlideAction({
     } else {
       setX(0)
     }
-  }, [done])
+  }, [done, HANDLE])
 
   const styles = SLIDE_STYLES[variant]
   const inactive = disabled || done
@@ -146,14 +150,14 @@ export default function SlideAction({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
-      className={`relative h-14 w-full select-none touch-none overflow-hidden rounded-xl border ${styles.track} ${inactive && !done ? 'cursor-not-allowed opacity-40' : ''}`}
+      className={`relative w-full select-none touch-none overflow-hidden border ${compact ? 'h-10 rounded-lg' : 'h-14 rounded-xl'} ${styles.track} ${inactive && !done ? 'cursor-not-allowed opacity-40' : ''}`}
       role="slider"
       aria-label={label}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={maxX > 0 ? Math.round((x / maxX) * 100) : 0}
     >
-      <div className={`pointer-events-none absolute inset-0 flex items-center justify-center text-sm font-black ${styles.text}`}>
+      <div className={`pointer-events-none absolute inset-0 flex items-center justify-center font-black ${compact ? 'text-xs' : 'text-sm'} ${styles.text}`}>
         {done ? (doneLabel ?? label) : `${label}  →`}
       </div>
       <div
@@ -162,11 +166,11 @@ export default function SlideAction({
           transform: `translateX(${x}px)`,
           transition: dragging ? 'none' : 'transform 200ms ease-out',
         }}
-        className={`absolute top-1 flex h-12 w-12 items-center justify-center rounded-lg shadow-lg ${styles.handle} ${inactive ? '' : 'cursor-grab active:cursor-grabbing'}`}
+        className={`absolute top-1 flex items-center justify-center shadow-lg ${compact ? 'h-8 w-8 rounded-md' : 'h-12 w-12 rounded-lg'} ${styles.handle} ${inactive ? '' : 'cursor-grab active:cursor-grabbing'}`}
       >
         {done
-          ? <Check className="h-5 w-5 stroke-[3]" />
-          : <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          ? <Check className={`stroke-[3] ${compact ? 'h-4 w-4' : 'h-5 w-5'}`} />
+          : <svg className={compact ? 'h-4 w-4' : 'h-5 w-5'} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         }
       </div>
     </div>

@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  ArrowLeft, Ban, BedDouble, ChevronRight, DoorOpen, Flag, Loader2,
+  Ban, BedDouble, ChevronRight, DoorOpen, Flag, Loader2,
   RefreshCw, Siren, SlidersHorizontal, Sparkles, Users, X,
 } from 'lucide-react'
 import SlideAction from '@/components/SlideAction'
@@ -150,18 +150,6 @@ export default function ServiceBoard({
     <div className="flex flex-col gap-4">
       {/* Kompakte Statusleiste — Zustand + die zwei wichtigsten Zahlen */}
       <section className="flex flex-wrap items-center gap-2 rounded-xl border border-edge bg-surface px-3 py-2">
-        {myFloor && (
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => run(leaveFloorAction)}
-            className="flex items-center gap-1.5 rounded-lg border border-edge px-2.5 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span className="hidden sm:inline">Alle Etagen</span>
-          </button>
-        )}
-
         <span className={`rounded-full px-3 py-1 text-sm font-bold ${status.tone}`}>
           {status.label}
         </span>
@@ -177,16 +165,15 @@ export default function ServiceBoard({
 
         <div className="ml-auto flex items-center gap-2">
           {myFloor && priorityFloors.length > 0 && (
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => run(leaveFloorAction)}
-              title={`Priorisierte Reinigung offen: ${priorityFloors.map(floorLabel).join(', ')} — tippen für die Etagen-Übersicht`}
+            /* Reine Warnlampe — das Verlassen der Etage läuft über den
+               Slider darunter, nie über einen versehentlichen Tipper. */
+            <span
+              title={`Priorisierte Reinigung offen: ${priorityFloors.map(floorLabel).join(', ')}`}
               className="flex items-center gap-1.5 rounded-lg border border-accent-pill-edge bg-accent-tint px-2.5 py-1.5 text-sm font-bold text-accent-strong"
             >
               <Siren className="blink-icon h-4 w-4" />
               <span className="hidden sm:inline">Prio offen</span>
-            </button>
+            </span>
           )}
           <Link
             href="/service/status"
@@ -227,6 +214,18 @@ export default function ServiceBoard({
             />
           ))}
         </div>
+      )}
+
+      {/* Etage verlassen — eigene schmale Zeile, bewusst als Slider:
+          ein Fehltipper soll nicht aus der Etage werfen. */}
+      {myFloor && (
+        <SlideAction
+          label="Zurück zu allen Etagen"
+          variant="neutral"
+          size="compact"
+          disabled={pending}
+          onConfirm={() => run(leaveFloorAction)}
+        />
       )}
 
       {/* Ebene 2: Zimmer der eingebuchten Etage */}
