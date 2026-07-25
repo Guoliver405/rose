@@ -1,13 +1,15 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import {
-  AlertTriangle, Ban, BedDouble, ConciergeBell, DoorOpen, Flag, Loader2, Printer, RefreshCw, Sparkles, Users, X,
+  AlertTriangle, Ban, BedDouble, ConciergeBell, DoorOpen, Flag, History, Loader2,
+  Printer, RefreshCw, Sparkles, Users, X,
 } from 'lucide-react'
 import {
   checkInAction, checkOutAction, markCleanedAction, setPriorityAction,
 } from './actions'
+import { getRoomHistoryAction, type RoomHistoryEvent } from './history-actions'
 
 export type RoomTileData = {
   id: string
@@ -47,6 +49,20 @@ function tileBar(t: RoomTileData): string {
   // Alle Nicht-bereit-Fälle sind oben abgefangen: ein freies Zimmer ohne
   // checkout_pending/priority ist im event-getriebenen Modell gereinigt.
   return 'bg-positive'
+}
+
+/** Punkt-Farbe der Verlaufs-Zeitleiste (eigene Sprache, nicht die der Kacheln). */
+const HISTORY_DOT: Record<string, string> = {
+  guest: 'bg-attention',
+  clean: 'bg-positive',
+  desk: 'bg-edge-strong',
+  service: 'bg-action',
+}
+
+function historyTime(at: string): string {
+  return new Date(at).toLocaleString('de-DE', {
+    weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+  })
 }
 
 function statusLabel(t: RoomTileData): string {
@@ -187,6 +203,22 @@ function RoomDialog({ room, onClose }: { room: RoomTileData; onClose: () => void
   const [freshPin, setFreshPin] = useState<string | null>(null)
   const [confirmCheckout, setConfirmCheckout] = useState(false)
 
+  // Verlauf beim Öffnen nachladen; `alive` verhindert setState nach dem
+  // Schließen. `pending` triggert den Reload, damit eine gerade ausgelöste
+  // Aktion (Check-in, Priorisieren …) sofort in der Zeitleiste steht.
+  const [history, setHistory] = useState<RoomHistoryEvent[] | null>(null)
+  const [historyError, setHistoryError] = useState<string | null>(null)
+  useEffect(() => {
+    let alive = true
+    if (pending) return
+    getRoomHistoryAction(room.id).then(res => {
+      if (!alive) return
+      if (res.error) setHistoryError(res.error)
+      else { setHistory(res.events ?? []); setHistoryError(null) }
+    })
+    return () => { alive = false }
+  }, [room.id, pending])
+
   const needsCleaning = room.checkoutPending || room.priority || room.guestSignal === 'please_clean' || room.stayoverDue
 
   function runCheckIn(force: boolean) {
@@ -237,7 +269,7 @@ function RoomDialog({ room, onClose }: { room: RoomTileData; onClose: () => void
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl border border-edge bg-surface-elevated p-5 shadow-xl"
+        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl border border-edge bg-surface-elevated p-5 shadow-xl"
         onClick={e => e.stopPropagation()}
       >
         <div className="mb-1 flex items-start justify-between">
@@ -390,6 +422,38 @@ function RoomDialog({ room, onClose }: { room: RoomTileData; onClose: () => void
             </button>
           )}
         </div>
+
+        {/* Verlauf — Arbeitsnachweis & Beschwerde-Aufklärung */}
+        <section className="mt-5 border-t border-edge pt-4">
+          <h4 className="flex items-center gap-1.5 text-sm font-bold text-ink-soft">
+            <History className="h-4 w-4" /> Verlauf
+            <span className="font-normal text-ink-muted">letzte 30 Tage</span>
+          </h4>
+
+          {historyError ? (
+            <p className="mt-2 text-sm font-semibold text-critical-strong">{historyError}</p>
+          ) : history === null ? (
+            <p className="mt-2 flex items-center gap-2 text-sm text-ink-muted">
+              <Loader2 className="h-4 w-4 animate-spin" /> wird geladen …
+            </p>
+          ) : history.length === 0 ? (
+            <p className="mt-2 text-sm text-ink-muted">Keine Ereignisse in den letzten 30 Tagen.</p>
+          ) : (
+            <ol className="mt-2 max-h-56 space-y-1.5 overflow-y-auto pr-1">
+              {history.map((e, i) => (
+                <li key={`${e.at}-${i}`} className="flex items-start gap-2">
+                  <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${HISTORY_DOT[e.tone]}`} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold text-ink">{e.label}</span>
+                    <span className="block text-xs text-ink-muted">
+                      {historyTime(e.at)} · {e.actor}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
       </div>
     </div>
   )
