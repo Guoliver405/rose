@@ -1,5 +1,9 @@
 # Testplan — gemeinsamer Walkthrough (alle Portale, Schritt für Schritt)
 
+> **Durchlauf vom 25.07.2026 abgeschlossen** (lokal gegen die gemeinsame
+> Supabase-DB, alle Portale). Ergebnis: 2 Befunde, siehe „Befunde" unten.
+> Haken im Plan = an diesem Tag verifiziert.
+
 Für die nächste Session vereinbart: alles einmal von Hand durchtesten, in
 dieser Reihenfolge. Haken setzen, Auffälligkeiten direkt notieren.
 
@@ -46,82 +50,132 @@ Start-Slider auf dem Reinigungsboard). Rot + Blinken heißt ausschließlich
 DND bleibt rosé, Symbol ist jetzt der Verbots-Kreis (Ban) statt Mond —
 auf beiden Boards.
 
+## Befunde des Durchlaufs (25.07.2026)
+
+1. **Maid-Login per Username+PIN scheitert bei doppeltem Benutzernamen**
+   (echter Bug, offen). Auf der Stage existieren `@maria` in „Mein Hotel"
+   UND in „Pension Alpenblick". `maidLoginAction` sucht nur nach
+   `username` mit `limit(1)`, nimmt das erstbeste Profil und baut daraus
+   die synthetische E-Mail → falsches Hotel → generische Abweisung.
+   Der QR-Auto-Login ist NICHT betroffen (eindeutiger Token). Betrifft
+   jeden Mandanten, sobald ein Vorname doppelt vorkommt.
+   Fix-Vorschlag: Kandidaten laden und über die PIN in `maid_login_tokens`
+   den richtigen Mandanten bestimmen, statt blind den ersten zu nehmen.
+2. **Zimmer-Anlage: Präfix-Option ist per Default an** (Bedienfalle, mild).
+   „Etagennummer voranstellen" ist vorausgewählt, während der Platzhalter
+   volle Nummern vorschlägt („z. B. 101-110"). Wer dem Platzhalter folgt,
+   erzeugt 3301–3306 statt 301–306. Vorschlag: Default aus, oder
+   Platzhalter auf Suffixe ändern („z. B. 01-10").
+
+**Kein Fehler, nur zur Kenntnis:** Das Löschen eines Zimmers nimmt per
+Fremdschlüssel-Kaskade auch dessen Service-Anfragen mit (beim Aufräumen
+beobachtet). Für echte Häuser relevant, falls jemand ein Zimmer löscht,
+statt es außer Betrieb zu nehmen.
+
+**Zustand nach dem Durchlauf:** Testzimmer 301–303 gelöscht, Testkraft
+„Petra T." deaktiviert (Historie bleibt), Hilfs-Service „Frühstück aufs
+Zimmer" archiviert, Policies zurückgesetzt (PIN-Länge 4, Stayover aus,
+Hotelname „Mein Hotel"), Marias Schicht beendet. Zimmer 203 war durch den
+Rate-Limit-Test 15 Minuten gesperrt. Die Seed-Testlage (5 belegte Zimmer,
+4 offene Anfragen) steht unverändert.
+
 ## 0) Aufräumen (Testreste der Bau-Sessions)
 
 - [x] ~~Zimmer 101 auschecken~~ erledigt durch „Alles zurücksetzen" (25.07.)
-- [ ] Orders-Tab: „Zuletzt erledigt" ansehen — Alt-Bestellungen sind ok als Historie
+- [x] Orders-Tab: „Zuletzt erledigt" zeigt Historie mit Bearbeiter + Zeit
 
 ## A) Rezeption — Zimmer & Aufenthalt
 
-- [ ] Login mit falschem Passwort → generische Fehlermeldung
-- [ ] Login korrekt → Übersicht
-- [ ] Zimmer anlegen: einzeln, Komma-Liste, Bereich „301-303" → wieder löschen
-- [ ] Löschen eines belegten Zimmers wird blockiert
-- [ ] Check-in auf freies Zimmer → PIN groß sichtbar, KPI „belegt" zählt
-- [ ] Erneuter Klick aufs Zimmer → PIN weiterhin ablesbar
-- [ ] Check-out → Kachel orange „ausgecheckt", KPI „zu reinigen"
-- [ ] Check-in auf ungereinigtes Zimmer → Warnung → „Trotzdem einchecken"
-- [ ] Priorisieren → rote Blink-Kachel; Aufheben
-- [ ] „Reinigung als erledigt markieren" räumt orange/rot weg
+- [x] Login mit falschem Passwort → generische Fehlermeldung
+- [x] Login korrekt → Übersicht
+- [x] Zimmer anlegen: einzeln, Komma-Liste, Bereich „301-303" → wieder löschen
+      *(→ Befund 2: Präfix-Option beachten)*
+- [x] Löschen eines belegten Zimmers wird blockiert — belegte Zimmer haben
+      gar keinen Löschen-Button
+- [x] Check-in auf freies Zimmer → PIN groß sichtbar, KPI „belegt" zählt
+- [x] Erneuter Klick aufs Zimmer → PIN weiterhin ablesbar
+- [x] Check-out → Kachel orange „ausgecheckt", KPI „zu reinigen"
+- [x] Check-in auf ungereinigtes Zimmer → Warnung → „Trotzdem einchecken"
+- [x] Priorisieren → violette Blink-Kachel mit Flagge (nicht mehr rot,
+      siehe Symbolik-Update); Aufheben
+- [x] „Reinigung als erledigt markieren" räumt orange/violett weg
 
 ## B) Gastportal
 
-- [ ] /guest: Zimmernummer + falsche PIN → generisch abgewiesen
-- [ ] 5× falsche PIN → 15-Minuten-Sperre greift (Meldung mit Restzeit)
-      *(Achtung: blockiert das Zimmer 15 min — am besten am Schluss von B testen)*
-- [ ] Richtige PIN → Status-Seite
-- [ ] „Zimmer reinigen" → Rezeption sieht amber (Realtime, zweites Fenster)
-- [ ] DND ersetzt Reinigungswunsch; erneut tippen nimmt zurück
-- [ ] QR-Deep-Link (Aushang-Seite → URL kopieren): zeigt Zimmer vorbestimmt, nur PIN
-- [ ] Check-out an der Rezeption → Gast-Seite wirft sofort zur Anmeldung, alte PIN tot
+- [x] /guest: Zimmernummer + falsche PIN → generisch abgewiesen
+- [x] 5× falsche PIN → 15-Minuten-Sperre greift („Zu viele Fehlversuche —
+      bitte in 15 Min. erneut versuchen.", getestet auf Zimmer 203)
+- [x] Richtige PIN → Status-Seite
+- [x] „Zimmer reinigen" → Rezeption sieht amber + Funken-Symbol (Realtime)
+- [x] DND ersetzt Reinigungswunsch; erneut tippen nimmt zurück
+- [x] QR-Deep-Link: zeigt Zimmer vorbestimmt, nur PIN — neue Zimmer brauchen
+      vorher „fehlende QR-Codes erzeugen"
+- [x] Check-out an der Rezeption → Gast-Seite wirft zur Anmeldung, alte PIN tot
+      *(indirekt belegt: Check-out von 301 in Abschnitt A, danach war für den
+      neuen Aufenthalt eine neue PIN nötig)*
 
 ## C) Reinigungsboard
 
-- [ ] Maid-Karte drucken (/admin/personal → Karte) — QR mit Handy/Tablet scannen → Auto-Login
-- [ ] Abmelden → manueller Login Username + PIN; falsche PIN generisch abgewiesen
-- [ ] Ohne Schicht: Zimmer-Dialog verweigert Start („Erst Schicht beginnen")
-- [ ] Slider „Schicht beginnen"
-- [ ] Aktives Zimmer (vorher als Gast „Reinigen" wünschen): Slider „Reinigung starten"
-- [ ] Während Reinigung: zweites Zimmer starten wird verweigert; „Schicht beenden" gesperrt
-- [ ] Admin-Übersicht zeigt parallel „in Arbeit" (Realtime)
-- [ ] „Reinigung abschließen" → Zimmer neutral, Wunsch weg
-- [ ] Einmal „Reinigung abbrechen" testen → Zimmer bleibt offen
-- [ ] Pause an/aus, „Sonstige Reinigung" loggen
-- [ ] Schichtende (schließt offene Pause mit)
-- [ ] **Kollegin-Anzeige:** zweite Maid anlegen, in zweitem Browser/Inkognito einloggen,
-      Zimmer starten → erste sieht „X reinigt gerade" live
-- [ ] **Stale-Test:** Einstellungen → Stale-Minuten auf 5 stellen, Reinigung starten,
-      6 min warten → Zimmer gilt wieder als offen, „verwaist"-Hinweis, Übernahme möglich.
-      Danach Stale-Minuten zurück auf 90.
+- [x] Maid-Karte: QR-Ziel (`/service/auto/<token>`) führt direkt aufs Board
+      *(Scan mit echtem Gerät nur auf der Stage möglich — Endpunkt verifiziert)*
+- [x] Abmelden → manueller Login: falsche PIN generisch abgewiesen …
+- [ ] … **korrekte PIN wird ebenfalls abgewiesen → Befund 1 (offen)**
+- [x] Ohne Schicht: man kommt gar nicht erst auf die Etage („Erst die Schicht
+      beginnen.") — strenger als geplant
+- [x] Slider „Schicht beginnen"
+- [x] Aktives Zimmer: Slider „Reinigung starten"
+- [x] Während Reinigung: zweites Zimmer verweigert („Du bist noch in einem
+      anderen Zimmer"); „Schicht beenden" gesperrt mit Begründung
+- [x] Admin-Übersicht zeigt parallel „Reinigung läuft“, KPI „1 in Arbeit“,
+      Etagen-Header nennt die Kraft (Realtime)
+- [x] „Reinigung abschließen" → Zimmer neutral, Wunsch + Prio weg
+- [x] „Reinigung abbrechen" → Zimmer bleibt offen
+- [x] Pause an/aus, sonstige Reinigung als Zeitraum (Start/Stopp)
+- [x] Schichtende (schließt offene Pause und sonstige Reinigung mit)
+- [x] **Kollegin-Anzeige:** zweite Kraft „Petra T." angelegt, ihre Reinigung
+      gesetzt → Maria sieht „Petra T. reinigt gerade" live
+- [x] **Stale-Test:** Reinigungsstart 3 h zurückdatiert → „verwaist"-Hinweis
+      mit Namen, Zimmer wieder offen, Übernahme möglich
 
 ## D) Service-Baukasten
 
-- [ ] Neuen Service mit 2–3 Optionen (mit/ohne Preis) anlegen
-- [ ] Option archivieren → verschwindet beim Gast, alte Bestellungen unverändert
-- [ ] Gast bestellt (Option + Notiz) → Badge an der Rezeption zählt hoch (Realtime)
-- [ ] Urgent-Service bestellen → rote Blink-Karte im Orders-Tab
-- [ ] „Erledigt" → Badge runter, Gast sieht „erledigt", Historie zeigt Bearbeiter
-- [ ] Service archivieren → weg beim Gast, Historie bleibt lesbar
+- [x] Service „Frühstück aufs Zimmer" mit 2 Optionen (14,50 € / ohne Preis)
+- [x] Option archivieren → beim Gast nicht mehr wählbar, alte Bestellung
+      zeigt sie unverändert
+- [x] Gast bestellt (Option + Notiz) → Nav-Badge zählt live hoch (4 → 5)
+- [x] Urgent-Service bestellen → rote Karte mit Blink-Ring im Services-Board
+- [x] „Erledigt" → Badge runter, Gast sieht „erledigt", Historie nennt Bearbeiter
+- [x] Service archivieren → weg beim Gast, Historie bleibt lesbar
 
 ## E) Einstellungen & Policies
 
-- [ ] Hotelname ändern → Header überall aktualisiert
-- [ ] PIN-Länge auf 6 → nächster Check-in erzeugt 6-stellige PIN → zurück auf 4
-- [ ] **Stayover:** aktivieren, Uhrzeit ein paar Minuten in die Zukunft, Zimmer mit
-      Gast von gestern nötig (über Nacht belegt lassen oder checked_in_at zurückdatieren)
-      → zur Uhrzeit erscheint „Routine fällig" auf beiden Boards → Reinigung
-      abschließen → weg für heute. Danach Stayover wieder aus (oder bewusst an lassen).
-- [ ] Passwort ändern (danach neu einloggen!) — neues Passwort sicher notieren
+- [x] Hotelname ändern → Header überall aktualisiert (danach zurückgesetzt)
+- [x] PIN-Länge auf 6 → Check-in erzeugte 6-stellige PIN (897699) → zurück auf 4
+- [x] **Stayover:** aktiviert mit Uhrzeit 00:05 (sofort fällig) → Zimmer 202
+      (Gast von gestern) zeigte „Routine-Reinigung fällig" → als erledigt
+      markiert → für heute verschwunden. Danach wieder aus.
+- [x] **Reinigungs-Zeitfenster** (neue Policy): außerhalb ist „Zimmer reinigen"
+      gesperrt mit Hinweis, DND und Rücknahme bleiben möglich
+      *(am 25.07. beim Bau verifiziert)*
+- [~] Passwort ändern: **nur die Validierung geprüft** („Passwörter stimmen
+      nicht überein"). Bewusst NICHT wirklich geändert — sonst wären die im
+      Testplan dokumentierten Zugangsdaten ungültig.
 
 ## F) Druck (echter Drucker oder PDF)
 
-- [ ] Zimmer-QR-Aushänge: „Alle drucken" → eine Karte pro Seite, Header nicht mit drauf
-- [ ] „Code erneuern" bei einem Zimmer → alter Aushang-Link tot, neuer funktioniert
-- [ ] Gast-Handout nach Check-in drucken
-- [ ] Maid-Karte drucken
+- [x] Zimmer-QR-Aushänge: eine Karte pro Seite (11 Seitenumbrüche bei 11 Zimmern),
+      Header/Bedienelemente sind `print:hidden` — echter Papierdruck steht noch aus
+- [x] „Code erneuern" bei Zimmer 303 → alter Link zeigt „Dieser Link ist
+      ungültig.", neuer führt auf „Zimmer 303"
+- [x] Gast-Handout: Zimmer, PIN und QR vorhanden, Bedienelemente `print:hidden`
+- [x] Maid-Karte: QR + PIN vorhanden, Auto-Login-Ziel funktioniert
 
 ## G) Robustheit / Ränder
 
-- [ ] Zwei Admin-Tabs parallel: Aktionen in Tab 1 erscheinen in Tab 2 (Realtime)
-- [ ] Board 1 h+ offen stehen lassen → aktualisiert weiter (60-s-Fallback-Poll)
-- [ ] Handy-Formatprüfung: Gastportal + Reinigungsboard auf schmalem Viewport
+- [x] Zwei Admin-Fenster parallel: Priorisierung in Fenster 1 erschien in
+      Fenster 2 ohne Zutun (Realtime)
+- [x] Fallback-Poll nachgewiesen: `profiles` löst KEIN Realtime-Event aus —
+      eine Umbenennung der Kraft war nach ~60 s trotzdem in der offenen
+      Übersicht sichtbar, also durch den Poll
+- [x] Handy-Format (375 px): Gastportal und Reinigungsboard ohne horizontales
+      Scrollen
