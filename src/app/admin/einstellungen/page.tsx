@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import { clampPinLength } from '@/lib/ids'
 import { clampStaleMinutes, parseStayoverPolicy } from '@/lib/board'
 import SettingsForm from './SettingsForm'
+import TestScenarioPanel from './TestScenarioPanel'
 
 export default async function EinstellungenPage() {
   const ctx = await getManagementContext()
@@ -19,16 +20,29 @@ export default async function EinstellungenPage() {
   const policies = (hotel?.policies ?? {}) as Record<string, unknown>
   const stayover = parseStayoverPolicy(policies)
 
+  const { count: roomCount } = await supabase
+    .from('rooms')
+    .select('id', { count: 'exact', head: true })
+    .eq('hotel_id', ctx.hotelId)
+
   return (
-    <SettingsForm
-      canManageHotel={ctx.role === 'admin'}
-      initial={{
-        hotelName: hotel?.name ?? '',
-        pinLength: clampPinLength(policies.pinLength),
-        cleaningStaleMinutes: clampStaleMinutes(policies.cleaningStaleMinutes),
-        stayoverAutoClean: stayover.enabled,
-        stayoverAutoCleanTime: `${String(stayover.hour).padStart(2, '0')}:${String(stayover.minute).padStart(2, '0')}`,
-      }}
-    />
+    <>
+      <SettingsForm
+        canManageHotel={ctx.role === 'admin'}
+        initial={{
+          hotelName: hotel?.name ?? '',
+          pinLength: clampPinLength(policies.pinLength),
+          cleaningStaleMinutes: clampStaleMinutes(policies.cleaningStaleMinutes),
+          stayoverAutoClean: stayover.enabled,
+          stayoverAutoCleanTime: `${String(stayover.hour).padStart(2, '0')}:${String(stayover.minute).padStart(2, '0')}`,
+        }}
+      />
+      {/* VORÜBERGEHEND: Test-Szenario-Seeding (Rückbau: Panel + test-actions.ts) */}
+      {ctx.role === 'admin' && (
+        <div className="mt-5 max-w-2xl">
+          <TestScenarioPanel roomCount={roomCount ?? 0} />
+        </div>
+      )}
+    </>
   )
 }

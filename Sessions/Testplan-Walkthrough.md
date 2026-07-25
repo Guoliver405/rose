@@ -9,11 +9,21 @@ Maid `maria` / PIN `046055` (Karte unter /admin/personal).
 Test-Deployment https://rose-sand-one.vercel.app (gleiche DB; QR-Scans mit
 Handy/Tablet funktionieren nur dort).
 
+**Hilfsmittel (vorübergehend, 25.07. eingebaut):** Auf `/admin/einstellungen`
+gibt es unten das Panel „Test-Szenario" (nur Admin). „Szenario erzeugen" setzt
+alles zurück und baut mit wenigen Zahlenangaben eine praxisnahe Lage auf
+(echte Stays mit PINs — werden im Panel angezeigt —, Reinigungswünsche, DND,
+ausgecheckte + priorisierte Zimmer, offene Bestellungen, über die Etagen
+verteilt; jeder zweite Stay ist „seit gestern" für Stayover-Tests).
+„Alles zurücksetzen" räumt jede Testlage ab (Stays ausgecheckt, Status
+neutral, offene Bestellungen gelöscht). Rückbau nach der Testphase:
+`TestScenarioPanel.tsx` + `test-actions.ts` löschen, Einbindung in
+`einstellungen/page.tsx` entfernen.
+
 ## 0) Aufräumen (Testreste der Bau-Sessions)
 
-- [ ] Zimmer 101 auschecken (war Testgast, Check-in künstlich auf gestern datiert)
-- [ ] Danach 101 „als erledigt markieren" (checkout_pending wegräumen)
-- [ ] Orders-Tab: „Zuletzt erledigt" ansehen — 2 Alt-Bestellungen sind ok als Historie
+- [x] ~~Zimmer 101 auschecken~~ erledigt durch „Alles zurücksetzen" (25.07.)
+- [ ] Orders-Tab: „Zuletzt erledigt" ansehen — Alt-Bestellungen sind ok als Historie
 
 ## A) Rezeption — Zimmer & Aufenthalt
 
