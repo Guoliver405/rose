@@ -42,7 +42,7 @@ export default function OrdersBoard({ open, done }: { open: OrderRow[]; done: Or
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-black text-ink">Bestellungen</h1>
+        <h1 className="text-xl font-black text-ink">Services</h1>
         <span className={`rounded-full px-3 py-1 text-sm font-semibold ${
           open.length > 0 ? 'bg-attention-pill text-attention-deepest' : 'bg-positive-pill text-positive-deepest'
         }`}>
@@ -59,9 +59,9 @@ export default function OrdersBoard({ open, done }: { open: OrderRow[]; done: Or
       {open.length === 0 ? (
         <div className="rounded-xl border border-edge bg-surface p-8 text-center">
           <ClipboardList className="mx-auto mb-2 h-8 w-8 text-ink-muted" />
-          <p className="font-semibold text-ink">Keine offenen Bestellungen.</p>
+          <p className="font-semibold text-ink">Keine offenen Service-Anfragen.</p>
           <p className="mt-1 text-sm text-ink-muted">
-            Neue Bestellungen aus dem Gast-Portal erscheinen hier sofort.
+            Neue Anfragen aus dem Gast-Portal erscheinen hier sofort.
           </p>
         </div>
       ) : (

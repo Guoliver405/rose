@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import {
-  AlertTriangle, BedDouble, DoorOpen, Loader2, Moon, Printer, RefreshCw, Sparkles, X,
+  AlertTriangle, BedDouble, ConciergeBell, DoorOpen, Loader2, Moon, Printer, RefreshCw, Sparkles, X,
 } from 'lucide-react'
 import {
   checkInAction, checkOutAction, markCleanedAction, setPriorityAction,
@@ -22,6 +22,8 @@ export type RoomTileData = {
   priority: boolean
   cleaningActive: boolean
   stayoverDue: boolean
+  openOrders: number
+  urgentOrders: boolean
 }
 
 export type FloorGroup = {
@@ -53,6 +55,13 @@ function statusLabel(t: RoomTileData): string {
   if (t.guestSignal === 'please_clean') parts.push('Gast wünscht Reinigung')
   if (t.stayoverDue) parts.push('Routine-Reinigung fällig')
   if (t.guestSignal === 'dnd') parts.push('Bitte nicht stören')
+  if (t.openOrders > 0) {
+    parts.push(
+      t.urgentOrders
+        ? 'DRINGENDE Service-Anfrage'
+        : t.openOrders === 1 ? 'offene Service-Anfrage' : `${t.openOrders} offene Service-Anfragen`,
+    )
+  }
   return parts.join(' · ')
 }
 
@@ -125,10 +134,21 @@ function RoomTile({ room, onClick }: { room: RoomTileData; onClick: () => void }
     >
       <span className={`h-1.5 w-full ${tileBar(room)}`} />
       <span className="flex flex-col gap-1 px-2 py-1.5">
-        <span className={`text-sm font-black ${room.occupied || room.checkoutPending || room.priority ? 'text-ink' : 'text-ink-muted'}`}>
-          {room.number}
+        {/* Service-Glocke rechts neben der Nummer — dort ist immer Platz,
+            die Status-Zeile darunter bleibt den Reinigungs-Symbolen. */}
+        <span className="flex items-center justify-between">
+          <span className={`text-sm font-black ${room.occupied || room.checkoutPending || room.priority ? 'text-ink' : 'text-ink-muted'}`}>
+            {room.number}
+          </span>
+          {room.openOrders > 0 && (
+            <ConciergeBell
+              className={`h-3.5 w-3.5 ${
+                room.urgentOrders ? 'blink-icon text-critical-strong' : 'text-action'
+              }`}
+            />
+          )}
         </span>
-        <span className="flex h-4 items-center gap-1">
+        <span className="flex h-4 items-center gap-0.5">
           {room.occupied && <BedDouble className="h-3.5 w-3.5 text-active-strong" />}
           {room.guestSignal === 'dnd' && <Moon className="h-3.5 w-3.5 text-blocked-strong" />}
           {room.guestSignal === 'please_clean' && <Sparkles className="h-3.5 w-3.5 text-attention-strong" />}

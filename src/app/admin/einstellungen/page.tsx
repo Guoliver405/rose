@@ -29,8 +29,8 @@ const ADMIN_TILES: Tile[] = [
     description: 'Reinigungskräfte und Rezeptions-Zugänge, QR-Login-Karten',
   },
   {
-    href: '/admin/services', icon: ConciergeBell, title: 'Services',
-    description: 'Service-Baukasten für Gast-Bestellungen',
+    href: '/admin/services', icon: ConciergeBell, title: 'Service-Baukasten',
+    description: 'Services konfigurieren, die Gäste anfragen können',
   },
   {
     href: '/admin/zimmer/aushang', icon: QrCode, title: 'QR-Aushänge',

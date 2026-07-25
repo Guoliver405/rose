@@ -34,7 +34,7 @@ export default async function AdminLayout({
           <nav className="flex items-center gap-4 text-sm font-semibold text-ink-soft">
             <Link href="/admin" className="hover:text-ink">Übersicht</Link>
             <Link href="/admin/bestellungen" className="flex items-center gap-1.5 hover:text-ink">
-              Bestellungen
+              Services
               {(openOrders ?? 0) > 0 && (
                 <span className="rounded-full bg-attention-pill px-2 py-0.5 text-xs font-bold text-attention-deepest">
                   {openOrders}

@@ -22,11 +22,14 @@ neutral, offene Bestellungen gelöscht). Rückbau nach der Testphase:
 `TestScenarioPanel.tsx` + `test-actions.ts` + `test/page.tsx` löschen,
 Kachel in `einstellungen/page.tsx` entfernen.
 
-**Layout-Update 25.07.:** Nav ist jetzt Übersicht | Bestellungen |
-Einstellungen — Zimmer, Personal, Services und QR-Aushänge liegen als
-Kacheln im Einstellungen-Hub (rollenabhängig). KPI „frei" heißt jetzt
-„bereit" (frei & gereinigt, grün), Kacheln freier gereinigter Zimmer
-tragen einen grünen Balken, die KPI-Leiste bleibt beim Scrollen stehen.
+**Layout-Update 25.07.:** Nav ist jetzt Übersicht | Services |
+Einstellungen — „Services" ist das frühere Bestellungen-Board, der
+Konfigurator heißt „Service-Baukasten" und liegt wie Zimmer, Personal
+und QR-Aushänge als Kachel im Einstellungen-Hub (rollenabhängig).
+KPI „frei" heißt jetzt „bereit" (frei & gereinigt, grün), Kacheln freier
+gereinigter Zimmer tragen einen grünen Balken, die KPI-Leiste bleibt beim
+Scrollen stehen. Zimmer mit offener Service-Anfrage zeigen eine Glocke
+neben der Nummer — blinkend rot bei mindestens einer dringenden Anfrage.
 
 ## 0) Aufräumen (Testreste der Bau-Sessions)
 

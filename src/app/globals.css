@@ -406,7 +406,8 @@
     --motion-duration-slow: 0ms;
   }
   [data-motion="auto"] .blink-ring-overdue,
-  [data-motion="auto"] .flash-state-change {
+  [data-motion="auto"] .flash-state-change,
+  [data-motion="auto"] .blink-icon {
     animation: none;
   }
 }
@@ -416,7 +417,8 @@
   --motion-duration-slow: 0ms;
 }
 [data-motion="reduced"] .blink-ring-overdue,
-[data-motion="reduced"] .flash-state-change {
+[data-motion="reduced"] .flash-state-change,
+[data-motion="reduced"] .blink-icon {
   animation: none;
 }
 
@@ -584,4 +586,14 @@ body {
 }
 .flash-state-change {
   animation: flash-state-change var(--motion-duration-slow) ease-out;
+}
+
+/* Blinkendes Einzel-Icon (z. B. dringende Service-Anfrage auf der Kachel) —
+   blinkt nur das Symbol, nicht die ganze Kachel. */
+@keyframes blink-icon {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.15; }
+}
+.blink-icon {
+  animation: blink-icon 1.2s ease-in-out infinite;
 }

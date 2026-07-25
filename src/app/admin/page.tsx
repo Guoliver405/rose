@@ -8,12 +8,13 @@ import RoomGrid, { type FloorGroup, type RoomTileData } from './RoomGrid'
 export default async function AdminOverviewPage() {
   const supabase = await createClient()
 
-  const [{ data: rooms }, { data: states }, { data: stays }, { data: hotel }, { data: cleanedToday }] = await Promise.all([
+  const [{ data: rooms }, { data: states }, { data: stays }, { data: hotel }, { data: cleanedToday }, { data: openOrders }] = await Promise.all([
     supabase.from('rooms').select('id, number, floor, building').order('number'),
     supabase.from('room_states').select('room_id, guest_signal, checkout_pending, priority, cleaning_by, cleaning_started_at'),
     supabase.from('stays').select('id, room_id, pin, checked_in_at').is('checked_out_at', null),
     supabase.from('hotels').select('policies').limit(1).maybeSingle(),
     supabase.from('staff_log').select('room_id').eq('kind', 'clean_done').gte('at', todayStartIso()),
+    supabase.from('service_orders').select('room_id, service_definitions(urgent)').eq('status', 'open'),
   ])
 
   const policies = (hotel?.policies ?? {}) as Record<string, unknown>
@@ -24,6 +25,18 @@ export default async function AdminOverviewPage() {
 
   const stateByRoom = new Map((states ?? []).map(s => [s.room_id, s]))
   const stayByRoom = new Map((stays ?? []).map(s => [s.room_id, s]))
+
+  // Offene Service-Anfragen je Zimmer (dringend, wenn mindestens eine
+  // auf einem als dringend markierten Service basiert). Der FK-Join kommt
+  // je nach Supabase-Version als Objekt oder Array zurück.
+  const ordersByRoom = new Map<string, { count: number; urgent: boolean }>()
+  for (const o of openOrders ?? []) {
+    const def = Array.isArray(o.service_definitions) ? o.service_definitions[0] : o.service_definitions
+    const entry = ordersByRoom.get(o.room_id) ?? { count: 0, urgent: false }
+    entry.count++
+    if (def?.urgent) entry.urgent = true
+    ordersByRoom.set(o.room_id, entry)
+  }
 
   const tiles: RoomTileData[] = (rooms ?? []).map(r => {
     const state = stateByRoom.get(r.id)
@@ -42,6 +55,8 @@ export default async function AdminOverviewPage() {
       priority: state?.priority ?? false,
       // Stale-Timeout (vergessener Abschluss) zählt nicht mehr als „in Arbeit"
       cleaningActive: state ? isCleaningFresh(state, staleMinutes, now) : false,
+      openOrders: ordersByRoom.get(r.id)?.count ?? 0,
+      urgentOrders: ordersByRoom.get(r.id)?.urgent ?? false,
       stayoverDue: isStayoverDue({
         policy: stayoverPolicy,
         occupied: Boolean(stay),
