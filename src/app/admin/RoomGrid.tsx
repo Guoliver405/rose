@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import {
-  AlertTriangle, BedDouble, ConciergeBell, DoorOpen, Loader2, Moon, Printer, RefreshCw, Sparkles, X,
+  AlertTriangle, Ban, BedDouble, ConciergeBell, DoorOpen, Flag, Loader2, Printer, RefreshCw, Sparkles, X,
 } from 'lucide-react'
 import {
   checkInAction, checkOutAction, markCleanedAction, setPriorityAction,
@@ -32,9 +32,10 @@ export type FloorGroup = {
   rooms: RoomTileData[]
 }
 
-/** Farb-Vorrang: priorisiert > in Arbeit > ausgecheckt > Reinigungswunsch/Routine > DND > belegt > frei & bereit */
+/** Farb-Vorrang: priorisiert > in Arbeit > ausgecheckt > Reinigungswunsch/Routine > DND > belegt > frei & bereit.
+    Farbsprache: Violett = priorisiert, Rot(+Blinken) = dringender Service, Rosé = DND. */
 function tileBar(t: RoomTileData): string {
-  if (t.priority) return 'bg-critical'
+  if (t.priority) return 'bg-accent'
   if (t.cleaningActive) return 'bg-positive-soft'
   if (t.checkoutPending) return 'bg-caution'
   if (t.guestSignal === 'please_clean' || t.stayoverDue) return 'bg-attention'
@@ -129,7 +130,13 @@ function RoomTile({ room, onClick }: { room: RoomTileData; onClick: () => void }
       onClick={onClick}
       title={statusLabel(room)}
       className={`flex w-20 flex-col overflow-hidden rounded-lg border bg-surface-elevated text-left shadow-sm hover:border-edge-strong ${
-        room.priority ? 'border-critical blink-ring-overdue' : 'border-edge'
+        // Nur ein Ring kann blinken: Rot (dringender Service) schlägt
+        // Violett (Prio) — die Prio bleibt über Balken + Flagge sichtbar.
+        room.urgentOrders
+          ? 'border-critical blink-ring-overdue'
+          : room.priority
+            ? 'border-accent blink-ring-priority'
+            : 'border-edge'
       }`}
     >
       <span className={`h-1.5 w-full ${tileBar(room)}`} />
@@ -150,11 +157,11 @@ function RoomTile({ room, onClick }: { room: RoomTileData; onClick: () => void }
         </span>
         <span className="flex h-4 items-center gap-0.5">
           {room.occupied && <BedDouble className="h-3.5 w-3.5 text-active-strong" />}
-          {room.guestSignal === 'dnd' && <Moon className="h-3.5 w-3.5 text-blocked-strong" />}
+          {room.guestSignal === 'dnd' && <Ban className="h-3.5 w-3.5 text-blocked-strong" />}
           {room.guestSignal === 'please_clean' && <Sparkles className="h-3.5 w-3.5 text-attention-strong" />}
           {room.stayoverDue && <RefreshCw className="h-3.5 w-3.5 text-attention-strong" />}
           {room.checkoutPending && <DoorOpen className="h-3.5 w-3.5 text-caution-strong" />}
-          {room.priority && <AlertTriangle className="h-3.5 w-3.5 text-critical-strong" />}
+          {room.priority && <Flag className="h-3.5 w-3.5 text-accent-strong" />}
           {room.cleaningActive && <Loader2 className="h-3.5 w-3.5 animate-spin text-positive-strong" />}
         </span>
       </span>
@@ -353,8 +360,8 @@ function RoomDialog({ room, onClose }: { room: RoomTileData; onClose: () => void
             onClick={() => runPriority(!room.priority)}
             className={`rounded-xl px-4 py-3 font-bold disabled:opacity-50 ${
               room.priority
-                ? 'bg-critical text-critical-foreground hover:bg-critical-strong'
-                : 'border border-critical-pill-edge bg-critical-tint text-critical-strong hover:bg-critical-pill'
+                ? 'bg-accent text-accent-foreground hover:bg-accent-strong'
+                : 'border border-accent-pill-edge bg-accent-tint text-accent-strong hover:bg-accent-pill'
             }`}
           >
             {room.priority ? 'Priorisierung aufheben' : 'Reinigung priorisieren'}

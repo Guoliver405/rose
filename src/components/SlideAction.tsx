@@ -7,13 +7,19 @@ import { Check } from 'lucide-react'
 // ── Slide-to-Confirm-Button (verhindert versehentliches Auslösen) ────────────
 // Port aus HotCord, Farbfamilien auf RoSe-Semantik gemappt.
 
-export type SlideVariant = 'danger' | 'warning' | 'success' | 'neutral'
+export type SlideVariant = 'danger' | 'warning' | 'success' | 'neutral' | 'priority'
 
 const SLIDE_STYLES: Record<SlideVariant, { track: string; handle: string; text: string }> = {
   danger: {
     track: 'bg-critical-tint border-critical-pill-edge',
     handle: 'bg-critical text-critical-foreground',
     text: 'text-critical-strong',
+  },
+  /* Priorisierte Reinigung — violett wie Balken/Flagge auf den Kacheln. */
+  priority: {
+    track: 'bg-accent-tint border-accent-pill-edge',
+    handle: 'bg-accent text-accent-foreground',
+    text: 'text-accent-strong',
   },
   warning: {
     track: 'bg-attention-tint border-attention-tint-edge',

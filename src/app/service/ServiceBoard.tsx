@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-  AlertTriangle, BedDouble, Coffee, DoorOpen, Loader2, Moon, RefreshCw, Sparkles, X,
+  Ban, BedDouble, Coffee, DoorOpen, Flag, Loader2, RefreshCw, Sparkles, X,
 } from 'lucide-react'
 import SlideAction from '@/components/SlideAction'
 import {
@@ -51,9 +51,10 @@ function statusLabel(r: BoardRoom): string {
   return parts.join(' · ')
 }
 
-/** Farb-Vorrang wie im Admin: priorisiert > in Arbeit > ausgecheckt > Wunsch/Routine. */
+/** Farb-Vorrang wie im Admin: priorisiert > in Arbeit > ausgecheckt > Wunsch/Routine.
+    Violett = priorisiert (Rot bleibt DND/dringend vorbehalten). */
 function tileBar(r: BoardRoom): string {
-  if (r.priority) return 'bg-critical'
+  if (r.priority) return 'bg-accent'
   if (r.cleaningFresh) return 'bg-positive-soft'
   if (r.checkoutPending) return 'bg-caution'
   if (r.guestSignal === 'please_clean' || r.stayoverDue) return 'bg-attention'
@@ -258,7 +259,7 @@ function RoomTile({ room, onClick }: { room: BoardRoom; onClick: () => void }) {
       onClick={onClick}
       title={statusLabel(room)}
       className={`flex flex-col overflow-hidden rounded-lg border bg-surface-elevated text-left shadow-sm hover:border-edge-strong ${
-        room.priority && !room.cleaningFresh ? 'border-critical blink-ring-overdue' : 'border-edge'
+        room.priority && !room.cleaningFresh ? 'border-accent blink-ring-priority' : 'border-edge'
       } ${grayed ? 'opacity-50' : ''}`}
     >
       <span className={`h-2 w-full ${tileBar(room)}`} />
@@ -268,11 +269,11 @@ function RoomTile({ room, onClick }: { room: BoardRoom; onClick: () => void }) {
             {room.number}
           </span>
           {room.occupied && <BedDouble className="h-4 w-4 text-active-strong" />}
-          {room.guestSignal === 'dnd' && <Moon className="h-4 w-4 text-blocked-strong" />}
+          {room.guestSignal === 'dnd' && <Ban className="h-4 w-4 text-blocked-strong" />}
           {room.guestSignal === 'please_clean' && <Sparkles className="h-4 w-4 text-attention-strong" />}
           {room.stayoverDue && <RefreshCw className="h-4 w-4 text-attention-strong" />}
           {room.checkoutPending && <DoorOpen className="h-4 w-4 text-caution-strong" />}
-          {room.priority && <AlertTriangle className="h-4 w-4 text-critical-strong" />}
+          {room.priority && <Flag className="h-4 w-4 text-accent-strong" />}
           {room.cleaningFresh && <Loader2 className="h-4 w-4 animate-spin text-positive-strong" />}
         </span>
         <span className="h-4 truncate text-xs font-semibold text-ink-muted">
@@ -311,7 +312,7 @@ function RoomDialog({
     shift.onShift &&
     !myCleaningRoomId
 
-  const startVariant = room.priority ? 'danger' : 'warning'
+  const startVariant = room.priority ? 'priority' : 'warning'
 
   return (
     <div

@@ -12,13 +12,20 @@ export default async function AdminLayout({
   const ctx = await getManagementContext()
   if (!ctx) redirect('/login')
 
-  // Offene Bestellungen als Nav-Badge — Realtime-Refresh + revalidatePath
-  // ('/admin', 'layout') halten den Zähler aktuell.
+  // Offene Service-Anfragen als Nav-Badge — Realtime-Refresh + revalidatePath
+  // ('/admin', 'layout') halten den Zähler aktuell. urgent kommt aus der
+  // Service-Definition; bei mindestens einer dringenden Anfrage blinkt die
+  // Badge rot.
   const supabase = await createClient()
-  const { count: openOrders } = await supabase
+  const { data: openOrderRows } = await supabase
     .from('service_orders')
-    .select('id', { count: 'exact', head: true })
+    .select('id, service_definitions(urgent)')
     .eq('status', 'open')
+  const openOrders = (openOrderRows ?? []).length
+  const hasUrgentOrder = (openOrderRows ?? []).some(o => {
+    const def = Array.isArray(o.service_definitions) ? o.service_definitions[0] : o.service_definitions
+    return def?.urgent === true
+  })
 
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-surface-sunken">
@@ -35,8 +42,14 @@ export default async function AdminLayout({
             <Link href="/admin" className="hover:text-ink">Übersicht</Link>
             <Link href="/admin/bestellungen" className="flex items-center gap-1.5 hover:text-ink">
               Services
-              {(openOrders ?? 0) > 0 && (
-                <span className="rounded-full bg-attention-pill px-2 py-0.5 text-xs font-bold text-attention-deepest">
+              {openOrders > 0 && (
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                    hasUrgentOrder
+                      ? 'blink-icon bg-critical-pill text-critical-deepest'
+                      : 'bg-attention-pill text-attention-deepest'
+                  }`}
+                >
                   {openOrders}
                 </span>
               )}

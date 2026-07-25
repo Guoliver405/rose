@@ -31,6 +31,13 @@ gereinigter Zimmer tragen einen grünen Balken, die KPI-Leiste bleibt beim
 Scrollen stehen. Zimmer mit offener Service-Anfrage zeigen eine Glocke
 neben der Nummer — blinkend rot bei mindestens einer dringenden Anfrage.
 
+**Symbolik-Update 25.07.:** Priorisierte Reinigung ist jetzt VIOLETT
+(Balken, Flagge statt Warndreieck, violetter Blink-Ring, violetter
+Start-Slider auf dem Reinigungsboard). Rot + Blinken heißt ausschließlich
+„dringende Service-Anfrage" (Kachel-Ring, Glocke, Nav-Badge blinken rot).
+DND bleibt rosé, Symbol ist jetzt der Verbots-Kreis (Ban) statt Mond —
+auf beiden Boards.
+
 ## 0) Aufräumen (Testreste der Bau-Sessions)
 
 - [x] ~~Zimmer 101 auschecken~~ erledigt durch „Alles zurücksetzen" (25.07.)

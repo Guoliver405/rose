@@ -236,6 +236,7 @@
   /* Animations-Farben (RGB-Triple für rgb(... / alpha)-Syntax) */
   --motion-color-blink:    248 113 113;
   --motion-color-flash:    139 92 246;
+  --motion-color-priority: 139 92 246;
   --motion-duration-fast:  150ms;
   --motion-duration-base:  300ms;
   --motion-duration-slow:  900ms;
@@ -406,6 +407,7 @@
     --motion-duration-slow: 0ms;
   }
   [data-motion="auto"] .blink-ring-overdue,
+  [data-motion="auto"] .blink-ring-priority,
   [data-motion="auto"] .flash-state-change,
   [data-motion="auto"] .blink-icon {
     animation: none;
@@ -417,6 +419,7 @@
   --motion-duration-slow: 0ms;
 }
 [data-motion="reduced"] .blink-ring-overdue,
+[data-motion="reduced"] .blink-ring-priority,
 [data-motion="reduced"] .flash-state-change,
 [data-motion="reduced"] .blink-icon {
   animation: none;
@@ -576,6 +579,16 @@ body {
 }
 .blink-ring-overdue {
   animation: blink-ring-overdue 1.2s ease-in-out infinite;
+}
+
+/* Violette Schwester des roten Rings — priorisierte Reinigung.
+   Rot + Blinken bleibt dringenden Service-Anfragen vorbehalten. */
+@keyframes blink-ring-priority {
+  0%, 100% { box-shadow: 0 0 0 3px rgb(var(--motion-color-priority) / 0.55); }
+  50%      { box-shadow: 0 0 0 3px rgb(var(--motion-color-priority) / 0.10); }
+}
+.blink-ring-priority {
+  animation: blink-ring-priority 1.2s ease-in-out infinite;
 }
 
 /* Zimmerkachel-Aufblitzen bei Status-Wechsel (Realtime-Feedback). */
