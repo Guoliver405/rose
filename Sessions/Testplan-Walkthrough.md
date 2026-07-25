@@ -52,15 +52,16 @@ auf beiden Boards.
 
 ## Befunde des Durchlaufs (25.07.2026)
 
-1. **Maid-Login per Username+PIN scheitert bei doppeltem Benutzernamen**
-   (echter Bug, offen). Auf der Stage existieren `@maria` in „Mein Hotel"
-   UND in „Pension Alpenblick". `maidLoginAction` sucht nur nach
-   `username` mit `limit(1)`, nimmt das erstbeste Profil und baut daraus
-   die synthetische E-Mail → falsches Hotel → generische Abweisung.
-   Der QR-Auto-Login ist NICHT betroffen (eindeutiger Token). Betrifft
-   jeden Mandanten, sobald ein Vorname doppelt vorkommt.
-   Fix-Vorschlag: Kandidaten laden und über die PIN in `maid_login_tokens`
-   den richtigen Mandanten bestimmen, statt blind den ersten zu nehmen.
+1. ~~**Maid-Login per Username+PIN scheitert bei doppeltem Benutzernamen**~~
+   → **behoben am 25.07.2026.** Auf der Stage existieren `@maria` in „Mein
+   Hotel" UND in „Pension Alpenblick". `maidLoginAction` suchte nur nach
+   `username` mit `limit(1)`, nahm das erstbeste Profil und baute daraus
+   die synthetische E-Mail → falsches Hotel → Abweisung trotz korrekter
+   PIN. Der QR-Auto-Login war nicht betroffen (eindeutiger Token).
+   Jetzt entscheidet die PIN: alle aktiven Kandidaten laden, über die
+   Karten-PIN vorsortieren, dann der Reihe nach anmelden.
+   Verifiziert: beide Marias kommen in ihr jeweils eigenes Haus, falsche
+   PIN bleibt generisch abgewiesen.
 2. **Zimmer-Anlage: Präfix-Option ist per Default an** (Bedienfalle, mild).
    „Etagennummer voranstellen" ist vorausgewählt, während der Platzhalter
    volle Nummern vorschlägt („z. B. 101-110"). Wer dem Platzhalter folgt,
@@ -118,8 +119,8 @@ Rate-Limit-Test 15 Minuten gesperrt. Die Seed-Testlage (5 belegte Zimmer,
 
 - [x] Maid-Karte: QR-Ziel (`/service/auto/<token>`) führt direkt aufs Board
       *(Scan mit echtem Gerät nur auf der Stage möglich — Endpunkt verifiziert)*
-- [x] Abmelden → manueller Login: falsche PIN generisch abgewiesen …
-- [ ] … **korrekte PIN wird ebenfalls abgewiesen → Befund 1 (offen)**
+- [x] Abmelden → manueller Login Username + PIN; falsche PIN generisch
+      abgewiesen *(korrekte PIN scheiterte zunächst → Befund 1, behoben)*
 - [x] Ohne Schicht: man kommt gar nicht erst auf die Etage („Erst die Schicht
       beginnen.") — strenger als geplant
 - [x] Slider „Schicht beginnen"
