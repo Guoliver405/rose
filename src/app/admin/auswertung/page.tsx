@@ -6,7 +6,7 @@ import { createClient } from '@/utils/supabase/server'
 import { clampStaleMinutes } from '@/lib/board'
 import {
   computeWorkStats, dayKey, dayRange, extractCleanings, formatDuration, sumStats,
-  type StaffLogRow, type WorkStats,
+  MAX_BREAK_HOURS, MAX_SHIFT_HOURS, type StaffLogRow, type WorkStats,
 } from '@/lib/worklog'
 
 const KIND_LABEL: Record<string, string> = {
@@ -189,9 +189,13 @@ export default async function AuswertungPage({
             <Kpi label="Übrige Zeit" value={formatDuration(total.otherMs)} hint="Wege, Rüstzeit, Sonstiges" />
             <Kpi
               label="Auffällig"
-              value={`${total.implausibleCount + total.abortedCount + total.openCount}`}
-              hint={`${total.abortedCount} abgebrochen · ${total.openCount} offen · ${total.implausibleCount} unplausibel`}
-              tone={total.implausibleCount + total.openCount > 0 ? 'attention' : undefined}
+              value={`${total.implausibleCount + total.abortedCount + total.openCount + total.implausibleShiftCount + total.implausibleBreakCount}`}
+              hint={`${total.implausibleShiftCount} Schichten ohne Ende · ${total.abortedCount} abgebrochen · ${total.openCount} offen · ${total.implausibleCount} unplausibel`}
+              tone={
+                total.implausibleCount + total.openCount + total.implausibleShiftCount > 0
+                  ? 'attention'
+                  : undefined
+              }
             />
           </section>
 
@@ -224,7 +228,17 @@ export default async function AuswertungPage({
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-2 text-ink-soft">{m.stats.shiftCount}</td>
+                    <td className="px-3 py-2 text-ink-soft">
+                      {m.stats.shiftCount}
+                      {m.stats.implausibleShiftCount > 0 && (
+                        <span
+                          className="ml-1.5 rounded-full bg-attention-pill px-2 py-0.5 text-xs font-bold text-attention-deepest"
+                          title={`${m.stats.implausibleShiftCount}× Schichtende vergessen — nicht in der Arbeitszeit enthalten`}
+                        >
+                          +{m.stats.implausibleShiftCount} offen
+                        </span>
+                      )}
+                    </td>
                     <td className="px-3 py-2 font-semibold text-ink">{formatDuration(m.stats.shiftMs)}</td>
                     <td className="px-3 py-2 text-ink-soft">{formatDuration(m.stats.breakMs)}</td>
                     <td className="px-3 py-2 font-semibold text-ink">{formatDuration(m.stats.netMs)}</td>
@@ -242,11 +256,12 @@ export default async function AuswertungPage({
             <Info className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
               Zeiten entstehen aus den Stichen der Kräfte (Schicht, Pause, Reinigung Start/Ende).
-              Reinigungen ohne Abschluss oder länger als {staleMinutes} Minuten gelten als
-              unplausibel und fließen nicht in Summe und Durchschnitt ein — sie stehen unter
-              &bdquo;Auffällig&ldquo;. &bdquo;Sonstige Reinigung&ldquo; wird im Portal nur gestochen
-              und hat daher keine Dauer; diese Zeit steckt in &bdquo;Übrige Zeit&ldquo;.
-              Name anklicken für das Tagesprotokoll.
+              Vergessene Stiche werden nicht stillschweigend gekappt, sondern aus den Summen
+              genommen und unter &bdquo;Auffällig&ldquo; ausgewiesen: Schichten über
+              {' '}{MAX_SHIFT_HOURS} h, Pausen über {MAX_BREAK_HOURS} h sowie Reinigungen ohne
+              Abschluss oder länger als {staleMinutes}{' '}Minuten. &bdquo;Sonstige Reinigung&ldquo;
+              wird im Portal nur gestochen und hat daher keine Dauer; diese Zeit steckt in
+              &bdquo;Übrige Zeit&ldquo;. Name anklicken für das Tagesprotokoll.
             </span>
           </p>
 

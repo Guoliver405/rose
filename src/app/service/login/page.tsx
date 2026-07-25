@@ -5,6 +5,7 @@ import {
   getServicePortalSession,
 } from '@/utils/supabase/service-portal'
 import { createAdminClient } from '@/utils/supabase/service'
+import { getMaidContext } from '@/utils/maid-auth'
 import { maidLoginAction } from './actions'
 
 export default async function ServiceLoginPage({
@@ -14,10 +15,15 @@ export default async function ServiceLoginPage({
 }) {
   const { error } = await searchParams
 
-  // Bereits eingeloggt → direkt aufs Board.
+  // Bereits eingeloggt → direkt aufs Board. Maßgeblich ist getMaidContext,
+  // NICHT die rohe Session: eine deaktivierte Kraft behält ihr Cookie, darf
+  // aber nicht aufs Board — mit `if (session)` entstünde eine Redirect-
+  // Schleife zwischen Login und Board.
   const svcClient = await createServicePortalClient()
   const { session } = await getServicePortalSession(svcClient)
-  if (session) redirect('/service')
+  const maid = session ? await getMaidContext() : null
+  if (maid) redirect('/service')
+  const deactivated = Boolean(session) && !maid
 
   // Hotelname fürs Branding (Single-Property: das eine Hotel).
   const { data: hotel } = await createAdminClient()
@@ -45,6 +51,12 @@ export default async function ServiceLoginPage({
           </h1>
           {hotel?.name && <p className="mt-1 font-medium text-ink-muted">{hotel.name}</p>}
         </div>
+
+        {deactivated && !errorMessage && (
+          <div className="rounded-xl border border-caution-pill-edge bg-caution-tint px-4 py-3 text-center text-sm font-bold text-caution-deepest">
+            Dieser Zugang ist nicht mehr aktiv. Bitte wende dich an die Rezeption.
+          </div>
+        )}
 
         {errorMessage && (
           <div className="rounded-xl border border-critical-tint-edge bg-critical-tint px-4 py-3 text-center text-sm font-bold text-critical-strong">

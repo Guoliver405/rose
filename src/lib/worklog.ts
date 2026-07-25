@@ -22,6 +22,17 @@
 
 export type StaffLogRow = { kind: string; at: string; room_id: string | null }
 
+/**
+ * Plausibilitäts-Grenzen für vergessene Stiche. Eine Schicht über 16 h wurde
+ * nie beendet (der Zähler liefe sonst tagelang weiter und würde die
+ * Arbeitszeit-Summe unbrauchbar machen), eine Pause über 4 h ebenso.
+ * Solche Intervalle werden NICHT gekappt, sondern aus den Summen genommen
+ * und separat gezählt — stilles Kappen würde falsche Zahlen echt aussehen
+ * lassen.
+ */
+export const MAX_SHIFT_HOURS = 16
+export const MAX_BREAK_HOURS = 4
+
 export type CleaningRun = {
   roomId: string | null
   startedAt: string
@@ -35,6 +46,9 @@ export type CleaningRun = {
 export type WorkStats = {
   shiftMs: number
   shiftCount: number
+  /** Schichten über MAX_SHIFT_HOURS — vergessenes Schichtende, nicht in shiftMs */
+  implausibleShiftCount: number
+  implausibleBreakCount: number
   breakMs: number
   /** Arbeitszeit abzüglich Pause */
   netMs: number
@@ -58,34 +72,42 @@ function ts(iso: string): number {
   return new Date(iso).getTime()
 }
 
-/** Intervall-Summe für ein Stich-Paar, mit Klammerung an den Zeitraum. */
+/**
+ * Intervall-Summe für ein Stich-Paar, mit Klammerung an den Zeitraum.
+ * Intervalle über `maxMs` gelten als vergessener Abschluss und fließen
+ * nicht in die Summe ein; sie werden als `implausible` zurückgegeben.
+ */
 function sumIntervals(
   rows: StaffLogRow[],
   startKind: string,
   endKind: string,
   range: Range,
   now: Date,
-): { total: number; count: number } {
+  maxMs: number,
+): { total: number; count: number; implausible: number } {
   let total = 0
   let count = 0
+  let implausible = 0
   let open: number | null = null
+
+  const add = (start: number, end: number) => {
+    if (end <= start) return
+    if (end - start > maxMs) { implausible++; return }
+    total += end - start
+    count++
+  }
 
   for (const r of rows) {
     if (r.kind === startKind) {
       open = ts(r.at)
     } else if (r.kind === endKind) {
-      const start = open ?? range.start.getTime()
-      const end = ts(r.at)
-      if (end > start) { total += end - start; count++ }
+      add(open ?? range.start.getTime(), ts(r.at))
       open = null
     }
   }
 
-  if (open !== null) {
-    const end = Math.min(range.end.getTime(), now.getTime())
-    if (end > open) { total += end - open; count++ }
-  }
-  return { total, count }
+  if (open !== null) add(open, Math.min(range.end.getTime(), now.getTime()))
+  return { total, count, implausible }
 }
 
 /** Einzelne Reinigungs-Vorgänge (für Ø-Dauer und das Detail-Protokoll). */
@@ -147,8 +169,8 @@ export function computeWorkStats(
 ): WorkStats {
   const sorted = [...rows].sort((a, b) => a.at.localeCompare(b.at))
 
-  const shift = sumIntervals(sorted, 'shift_start', 'shift_end', range, now)
-  const brk = sumIntervals(sorted, 'break_start', 'break_end', range, now)
+  const shift = sumIntervals(sorted, 'shift_start', 'shift_end', range, now, MAX_SHIFT_HOURS * 3_600_000)
+  const brk = sumIntervals(sorted, 'break_start', 'break_end', range, now, MAX_BREAK_HOURS * 3_600_000)
   const cleanings = extractCleanings(sorted, range, staleMinutes, now)
 
   const counted = cleanings.filter(c => c.outcome === 'done' && !c.implausible)
@@ -158,6 +180,8 @@ export function computeWorkStats(
   return {
     shiftMs: shift.total,
     shiftCount: shift.count,
+    implausibleShiftCount: shift.implausible,
+    implausibleBreakCount: brk.implausible,
     breakMs: brk.total,
     netMs,
     cleaningMs,
@@ -174,9 +198,10 @@ export function computeWorkStats(
 
 export function emptyStats(): WorkStats {
   return {
-    shiftMs: 0, shiftCount: 0, breakMs: 0, netMs: 0, cleaningMs: 0, cleaningCount: 0,
-    countedCount: 0, abortedCount: 0, openCount: 0, implausibleCount: 0,
-    otherCleaningCount: 0, avgCleaningMs: null, otherMs: 0,
+    shiftMs: 0, shiftCount: 0, implausibleShiftCount: 0, implausibleBreakCount: 0,
+    breakMs: 0, netMs: 0, cleaningMs: 0, cleaningCount: 0, countedCount: 0,
+    abortedCount: 0, openCount: 0, implausibleCount: 0, otherCleaningCount: 0,
+    avgCleaningMs: null, otherMs: 0,
   }
 }
 
@@ -185,6 +210,8 @@ export function sumStats(all: WorkStats[]): WorkStats {
   const total = all.reduce((acc, s) => ({
     shiftMs: acc.shiftMs + s.shiftMs,
     shiftCount: acc.shiftCount + s.shiftCount,
+    implausibleShiftCount: acc.implausibleShiftCount + s.implausibleShiftCount,
+    implausibleBreakCount: acc.implausibleBreakCount + s.implausibleBreakCount,
     breakMs: acc.breakMs + s.breakMs,
     netMs: acc.netMs + s.netMs,
     cleaningMs: acc.cleaningMs + s.cleaningMs,
@@ -207,10 +234,11 @@ export function sumStats(all: WorkStats[]): WorkStats {
 
 // ── Formatierung ────────────────────────────────────────────────────────────
 
-/** „3 h 25 min", „42 min", „—" */
+/** „3 h 25 min", „42 min", „< 1 min", „—" */
 export function formatDuration(ms: number | null): string {
   if (ms === null || ms <= 0) return '—'
   const totalMin = Math.round(ms / 60_000)
+  if (totalMin === 0) return '< 1 min'
   const h = Math.floor(totalMin / 60)
   const m = totalMin % 60
   if (h === 0) return `${m} min`
