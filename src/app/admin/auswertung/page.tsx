@@ -272,7 +272,7 @@ export default async function AuswertungPage({
               genommen und unter &bdquo;Auffällig&ldquo; ausgewiesen: Schichten über
               {' '}{MAX_SHIFT_HOURS} h, Pausen und sonstige Reinigungen über
               {' '}{MAX_BREAK_HOURS} h sowie Zimmerreinigungen ohne Abschluss oder länger als
-              {' '}{staleMinutes} Minuten. &bdquo;Übrige Zeit&ldquo; ist der Rest der
+              {` ${staleMinutes} Minuten. `}&bdquo;Übrige Zeit&ldquo; ist der Rest der
               Netto-Arbeitszeit (Wege, Rüstzeit). Name anklicken für das Tagesprotokoll.
             </span>
           </p>
