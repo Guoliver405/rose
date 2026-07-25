@@ -14,7 +14,9 @@ const KIND_LABEL: Record<string, string> = {
   shift_end: 'Schichtende',
   break_start: 'Pause begonnen',
   break_end: 'Pause beendet',
-  other_cleaning: 'Sonstige Reinigung',
+  other_cleaning: 'Sonstige Reinigung (Einzelstich)',
+  other_start: 'Sonstige Reinigung begonnen',
+  other_end: 'Sonstige Reinigung beendet',
   clean_start: 'Reinigung gestartet',
   clean_done: 'Reinigung abgeschlossen',
   clean_aborted: 'Reinigung abgebrochen',
@@ -185,8 +187,16 @@ export default async function AuswertungPage({
             <Kpi label="Netto-Arbeitszeit" value={formatDuration(total.netMs)} tone="positive" />
             <Kpi label="Zimmerreinigung" value={formatDuration(total.cleaningMs)} hint={`${total.cleaningCount} Zimmer`} />
             <Kpi label="Ø je Zimmer" value={formatDuration(total.avgCleaningMs)} tone="action" />
-            <Kpi label="Sonstige Reinigung" value={`${total.otherCleaningCount}×`} hint="nur Anzahl — siehe Hinweis" />
-            <Kpi label="Übrige Zeit" value={formatDuration(total.otherMs)} hint="Wege, Rüstzeit, Sonstiges" />
+            <Kpi
+              label="Sonstige Reinigung"
+              value={formatDuration(total.otherCleaningMs)}
+              hint={
+                total.legacyOtherCount > 0
+                  ? `${total.otherCleaningCount}× · ${total.legacyOtherCount} Alt-Stiche ohne Dauer`
+                  : `${total.otherCleaningCount}×`
+              }
+            />
+            <Kpi label="Übrige Zeit" value={formatDuration(total.unassignedMs)} hint="Wege, Rüstzeit" />
             <Kpi
               label="Auffällig"
               value={`${total.implausibleCount + total.abortedCount + total.openCount + total.implausibleShiftCount + total.implausibleBreakCount}`}
@@ -212,6 +222,7 @@ export default async function AuswertungPage({
                   <th className="px-3 py-2">Zimmer</th>
                   <th className="px-3 py-2">Reinigungszeit</th>
                   <th className="px-3 py-2">Ø je Zimmer</th>
+                  <th className="px-3 py-2">Sonstige</th>
                   <th className="px-3 py-2">Übrige Zeit</th>
                 </tr>
               </thead>
@@ -245,7 +256,8 @@ export default async function AuswertungPage({
                     <td className="px-3 py-2 text-ink-soft">{m.stats.cleaningCount}</td>
                     <td className="px-3 py-2 text-ink-soft">{formatDuration(m.stats.cleaningMs)}</td>
                     <td className="px-3 py-2 font-semibold text-ink">{formatDuration(m.stats.avgCleaningMs)}</td>
-                    <td className="px-3 py-2 text-ink-soft">{formatDuration(m.stats.otherMs)}</td>
+                    <td className="px-3 py-2 text-ink-soft">{formatDuration(m.stats.otherCleaningMs)}</td>
+                    <td className="px-3 py-2 text-ink-soft">{formatDuration(m.stats.unassignedMs)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -258,10 +270,10 @@ export default async function AuswertungPage({
               Zeiten entstehen aus den Stichen der Kräfte (Schicht, Pause, Reinigung Start/Ende).
               Vergessene Stiche werden nicht stillschweigend gekappt, sondern aus den Summen
               genommen und unter &bdquo;Auffällig&ldquo; ausgewiesen: Schichten über
-              {' '}{MAX_SHIFT_HOURS} h, Pausen über {MAX_BREAK_HOURS} h sowie Reinigungen ohne
-              Abschluss oder länger als {staleMinutes}{' '}Minuten. &bdquo;Sonstige Reinigung&ldquo;
-              wird im Portal nur gestochen und hat daher keine Dauer; diese Zeit steckt in
-              &bdquo;Übrige Zeit&ldquo;. Name anklicken für das Tagesprotokoll.
+              {' '}{MAX_SHIFT_HOURS} h, Pausen und sonstige Reinigungen über
+              {' '}{MAX_BREAK_HOURS} h sowie Zimmerreinigungen ohne Abschluss oder länger als
+              {' '}{staleMinutes} Minuten. &bdquo;Übrige Zeit&ldquo; ist der Rest der
+              Netto-Arbeitszeit (Wege, Rüstzeit). Name anklicken für das Tagesprotokoll.
             </span>
           </p>
 

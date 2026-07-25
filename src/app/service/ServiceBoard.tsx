@@ -1,15 +1,16 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  ArrowLeft, Ban, BedDouble, ChevronRight, Coffee, DoorOpen, Flag, Loader2,
-  RefreshCw, Siren, Sparkles, Users, X,
+  ArrowLeft, Ban, BedDouble, ChevronRight, DoorOpen, Flag, Loader2,
+  RefreshCw, Siren, SlidersHorizontal, Sparkles, Users, X,
 } from 'lucide-react'
 import SlideAction from '@/components/SlideAction'
 import {
-  abortCleaningAction, breakToggleAction, enterFloorAction, finishCleaningAction,
-  leaveFloorAction, otherCleaningAction, shiftEndAction, shiftStartAction, startCleaningAction,
+  abortCleaningAction, enterFloorAction, finishCleaningAction,
+  leaveFloorAction, startCleaningAction,
 } from './actions'
 
 export type BoardRoom = {
@@ -39,7 +40,12 @@ export type BoardFloor = {
   maids: string[]
 }
 
-type ShiftInfo = { onShift: boolean; onBreak: boolean; shiftStartedAt: string | null }
+type ShiftInfo = {
+  onShift: boolean
+  onBreak: boolean
+  onOther: boolean
+  shiftStartedAt: string | null
+}
 
 function floorKey(f: Pick<BoardFloor, 'building' | 'floor'>): string {
   return `${f.building ?? ''}#${f.floor}`
@@ -82,19 +88,20 @@ export default function ServiceBoard({
   shift,
   myCleaningRoomId,
   myFloorKey,
+  myCleaningRoomNumber,
 }: {
   floors: BoardFloor[]
   shift: ShiftInfo
   myCleaningRoomId: string | null
   /** Etage, auf die ich eingebucht bin (maid_presence) — null = Etagen-Übersicht. */
   myFloorKey: string | null
+  myCleaningRoomNumber: string | null
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [confirmShiftEnd, setConfirmShiftEnd] = useState(false)
 
   // Fallback-Poll: nach Ablauf des Realtime-Tokens (~1 h idle) hält der
   // 60-s-Refresh das Board am Leben — jeder Refresh liefert frischen Token.
@@ -127,134 +134,86 @@ export default function ServiceBoard({
     ? new Date(shift.shiftStartedAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
     : null
 
+  // Statusleiste: der markanteste Zustand gewinnt (Zimmerreinigung > Pause >
+  // sonstige Reinigung > Schicht > frei). Alle Wechsel liegen auf /service/status.
+  const status = myCleaningRoomNumber
+    ? { label: `Du reinigst ${myCleaningRoomNumber}`, tone: 'bg-positive-pill text-positive-deepest' }
+    : shift.onBreak
+      ? { label: 'Pause', tone: 'bg-caution-pill text-caution-deepest' }
+      : shift.onOther
+        ? { label: 'Sonstige Reinigung', tone: 'bg-attention-pill text-attention-deepest' }
+        : shift.onShift
+          ? { label: `Auf Schicht${shiftStartedLabel ? ` seit ${shiftStartedLabel}` : ''}`, tone: 'bg-positive-pill text-positive-deepest' }
+          : { label: 'Nicht auf Schicht', tone: 'bg-surface-muted text-ink-soft' }
+
   return (
     <div className="flex flex-col gap-4">
-      {/* Status-Bereich */}
-      <section className="rounded-xl border border-edge bg-surface p-4">
-        {/* Ebene 2: Etagen-Kopf mit Zurück-Button + Prio-Warnlampe */}
+      {/* Kompakte Statusleiste — Zustand + die zwei wichtigsten Zahlen */}
+      <section className="flex flex-wrap items-center gap-2 rounded-xl border border-edge bg-surface px-3 py-2">
         {myFloor && (
-          <div className="mb-3 flex items-center gap-3 border-b border-edge pb-3">
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => run(leaveFloorAction)}
+            className="flex items-center gap-1.5 rounded-lg border border-edge px-2.5 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">Alle Etagen</span>
+          </button>
+        )}
+
+        <span className={`rounded-full px-3 py-1 text-sm font-bold ${status.tone}`}>
+          {status.label}
+        </span>
+
+        <span className="rounded-full bg-surface-muted px-2.5 py-1 text-sm font-semibold text-ink-soft">
+          {openCount} offen
+        </span>
+        {inProgressCount > 0 && (
+          <span className="rounded-full bg-positive-pill px-2.5 py-1 text-sm font-semibold text-positive-deepest">
+            {inProgressCount} in Arbeit
+          </span>
+        )}
+
+        <div className="ml-auto flex items-center gap-2">
+          {myFloor && priorityFloors.length > 0 && (
             <button
               type="button"
               disabled={pending}
               onClick={() => run(leaveFloorAction)}
-              className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
+              title={`Priorisierte Reinigung offen: ${priorityFloors.map(floorLabel).join(', ')} — tippen für die Etagen-Übersicht`}
+              className="flex items-center gap-1.5 rounded-lg border border-accent-pill-edge bg-accent-tint px-2.5 py-1.5 text-sm font-bold text-accent-strong"
             >
-              <ArrowLeft className="h-4 w-4" /> Alle Etagen
+              <Siren className="blink-icon h-4 w-4" />
+              <span className="hidden sm:inline">Prio offen</span>
             </button>
-            <span className="text-base font-black text-ink">{floorLabel(myFloor)}</span>
-            {priorityFloors.length > 0 && (
-              <button
-                type="button"
-                disabled={pending}
-                onClick={() => run(leaveFloorAction)}
-                title={`Priorisierte Reinigung offen: ${priorityFloors.map(floorLabel).join(', ')} — tippen für die Etagen-Übersicht`}
-                className="ml-auto flex items-center gap-1.5 rounded-lg border border-accent-pill-edge bg-accent-tint px-3 py-1.5 text-sm font-bold text-accent-strong"
-              >
-                <Siren className="blink-icon h-4 w-4" /> Prio offen
-              </button>
-            )}
-          </div>
-        )}
-
-        {!shift.onShift ? (
-          <div className="flex flex-col gap-2">
-            <p className="text-sm font-semibold text-ink-soft">
-              Schicht beginnen, um Zimmer-Reinigungen zu starten.
-            </p>
-            <SlideAction
-              label="Schicht beginnen"
-              variant="success"
-              disabled={pending}
-              onConfirm={() => run(shiftStartAction)}
-            />
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={`rounded-full px-3 py-1 text-sm font-bold ${shift.onBreak ? 'bg-caution-pill text-caution-deepest' : 'bg-positive-pill text-positive-deepest'}`}>
-                {shift.onBreak ? 'Pause' : `Auf Schicht${shiftStartedLabel ? ` seit ${shiftStartedLabel}` : ''}`}
-              </span>
-              <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-semibold text-ink-soft">
-                {openCount} offen
-              </span>
-              {inProgressCount > 0 && (
-                <span className="rounded-full bg-positive-pill px-3 py-1 text-sm font-semibold text-positive-deepest">
-                  {inProgressCount} in Arbeit
-                </span>
-              )}
-              <div className="ml-auto flex gap-2">
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={() => run(breakToggleAction)}
-                  className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
-                >
-                  <Coffee className="h-4 w-4" />
-                  {shift.onBreak ? 'Pause beenden' : 'Pause'}
-                </button>
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={() => run(async () => {
-                    const res = await otherCleaningAction()
-                    if (!res.error) setNotice('Sonstige Reinigung geloggt.')
-                    return res
-                  })}
-                  title="Flur, Lobby, … — wird nur geloggt"
-                  className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
-                >
-                  <Sparkles className="h-4 w-4" />
-                  Sonstige Reinigung
-                </button>
-              </div>
-            </div>
-
-            {!confirmShiftEnd ? (
-              <button
-                type="button"
-                onClick={() => setConfirmShiftEnd(true)}
-                disabled={pending || Boolean(myCleaningRoomId)}
-                title={myCleaningRoomId ? 'Erst die laufende Reinigung abschließen' : undefined}
-                className="self-start text-sm font-semibold text-ink-muted underline-offset-2 hover:text-ink hover:underline disabled:opacity-40"
-              >
-                Schicht beenden …
-              </button>
-            ) : (
-              <div className="flex flex-col gap-2">
-                <SlideAction
-                  label="Schicht beenden"
-                  variant="danger"
-                  disabled={pending || Boolean(myCleaningRoomId)}
-                  onConfirm={() => run(async () => {
-                    const res = await shiftEndAction()
-                    if (!res.error) setConfirmShiftEnd(false)
-                    return res
-                  })}
-                />
-                <button
-                  type="button"
-                  onClick={() => setConfirmShiftEnd(false)}
-                  className="self-start text-sm font-semibold text-ink-muted hover:text-ink"
-                >
-                  Abbrechen
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {error && (
-          <p className="mt-3 rounded-lg border border-critical-tint-edge bg-critical-tint px-3 py-2 text-sm font-semibold text-critical-strong">
-            {error}
-          </p>
-        )}
-        {notice && !error && (
-          <p className="mt-3 rounded-lg border border-positive-pill-edge bg-positive-tint px-3 py-2 text-sm font-semibold text-positive-deep">
-            {notice}
-          </p>
-        )}
+          )}
+          <Link
+            href="/service/status"
+            className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-bold text-ink-soft hover:border-edge-strong hover:text-ink"
+          >
+            <SlidersHorizontal className="h-4 w-4" /> Status
+          </Link>
+        </div>
       </section>
+
+      {!shift.onShift && (
+        <p className="rounded-xl border border-attention-tint-edge bg-attention-tint px-4 py-3 text-sm font-semibold text-attention-deepest">
+          Du bist nicht auf Schicht — Reinigungen lassen sich erst nach dem
+          Schichtbeginn starten (Button &bdquo;Status&ldquo;).
+        </p>
+      )}
+
+      {error && (
+        <p className="rounded-lg border border-critical-tint-edge bg-critical-tint px-3 py-2 text-sm font-semibold text-critical-strong">
+          {error}
+        </p>
+      )}
+      {notice && !error && (
+        <p className="rounded-lg border border-positive-pill-edge bg-positive-tint px-3 py-2 text-sm font-semibold text-positive-deep">
+          {notice}
+        </p>
+      )}
 
       {/* Ebene 1: Etagen-Übersicht (feste Reihenfolge wie in der Rezeption) */}
       {!myFloor && (

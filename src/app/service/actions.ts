@@ -26,7 +26,7 @@ async function loadShiftState(admin: SupabaseClient, profileId: string): Promise
     .from('staff_log')
     .select('kind, at')
     .eq('profile_id', profileId)
-    .in('kind', ['shift_start', 'shift_end', 'break_start', 'break_end'])
+    .in('kind', ['shift_start', 'shift_end', 'break_start', 'break_end', 'other_start', 'other_end'])
     .order('at', { ascending: false })
     .limit(50)
   return deriveShiftState(data ?? [])
@@ -94,10 +94,15 @@ export async function shiftEndAction(): Promise<ActionResult> {
     return { error: 'Erst die laufende Reinigung abschließen (oder abbrechen).' }
   }
 
-  // Offene Pause implizit schließen — ein vergessener Pausen-Stich soll
-  // das Schichtende nicht blockieren.
+  // Offene Pause bzw. sonstige Reinigung implizit schließen — ein
+  // vergessener Stich soll das Schichtende nicht blockieren, die Zeiträume
+  // müssen aber sauber enden, damit die Auswertung stimmt.
   if (shift.onBreak) {
     const res = await logStitch(admin, ctx, 'break_end')
+    if (res.error) return res
+  }
+  if (shift.onOther) {
+    const res = await logStitch(admin, ctx, 'other_end')
     if (res.error) return res
   }
 
@@ -165,22 +170,35 @@ export async function breakToggleAction(): Promise<ActionResult> {
   const shift = await loadShiftState(admin, ctx.profileId)
   if (!shift.onShift) return { error: 'Pause nur während der Schicht.' }
 
+  // Tätigkeiten dürfen sich nicht überlappen, sonst zählt die Auswertung
+  // dieselbe Minute doppelt: Pausenbeginn beendet die sonstige Reinigung.
+  if (!shift.onBreak && shift.onOther) {
+    const res = await logStitch(admin, ctx, 'other_end')
+    if (res.error) return res
+  }
+
   const res = await logStitch(admin, ctx, shift.onBreak ? 'break_end' : 'break_start')
   if (res.error) return res
   revalidatePath('/service')
   return {}
 }
 
-/** Sonstige Reinigung (Flur, Lobby, …): frei stechbar, wird nur geloggt. */
-export async function otherCleaningAction(): Promise<ActionResult> {
+/**
+ * Sonstige Reinigung (Flur, Lobby, …) als Zeitraum an/aus. Früher ein
+ * einzelner Stich ohne Ende — dadurch war die Dauer nicht auswertbar.
+ */
+export async function otherCleaningToggleAction(): Promise<ActionResult> {
   const ctx = await getMaidContext()
   if (!ctx) return { error: 'Nicht angemeldet.' }
   const admin = createAdminClient()
 
   const shift = await loadShiftState(admin, ctx.profileId)
   if (!shift.onShift) return { error: 'Nur während der Schicht.' }
+  if (!shift.onOther && shift.onBreak) {
+    return { error: 'Erst die Pause beenden.' }
+  }
 
-  const res = await logStitch(admin, ctx, 'other_cleaning')
+  const res = await logStitch(admin, ctx, shift.onOther ? 'other_end' : 'other_start')
   if (res.error) return res
   revalidatePath('/service')
   return {}
@@ -262,6 +280,13 @@ export async function startCleaningAction(roomId: string): Promise<ActionResult>
   if (claimErr) return { error: claimErr.message }
   if (!claimed || claimed.length === 0) {
     return { error: 'Zimmer wurde gerade von einer Kollegin übernommen.' }
+  }
+
+  // Zimmerreinigung beendet eine laufende sonstige Reinigung (keine
+  // Überlappung — siehe breakToggleAction).
+  if (shift.onOther) {
+    const endRes = await logStitch(admin, ctx, 'other_end')
+    if (endRes.error) return endRes
   }
 
   const res = await logStitch(admin, ctx, 'clean_start', roomId)

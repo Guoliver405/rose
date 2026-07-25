@@ -57,8 +57,19 @@ export default function SlideAction({
   const [x, setX] = useState(0)
   const [maxX, setMaxX] = useState(0)
   const [dragging, setDrag] = useState(false)
+  /**
+   * Greifpunkt, Startposition und aktuelle Position des laufenden Zuges.
+   * Bewusst eine Ref und kein State: Zeiger-Ereignisse können schneller
+   * eintreffen, als React neu rendert — mit State-Prüfungen gingen die
+   * ersten Bewegungen einer schnellen Geste verloren.
+   */
+  const dragRef = useRef<{ pointerStart: number; startX: number; currentX: number } | null>(null)
   const HANDLE = 48
   const PADDING = 4
+  /** Antipp-Toleranz um den Griff (dicke Finger auf kleinen Displays). */
+  const GRAB_SLACK = 10
+  /** Praktisch die volle Bahn — der Rest ist nur Finger-Toleranz. */
+  const CONFIRM_RATIO = 0.97
 
   // Wenn done von außen gesetzt wird: Handle ans Ende pinnen, sonst zurücksetzen
   useEffect(() => {
@@ -80,27 +91,45 @@ export default function SlideAction({
     const track = trackRef.current
     if (!track) return
     const rect = track.getBoundingClientRect()
+
+    // Der Zug muss AM GRIFF beginnen. Sprang der Griff wie früher zum
+    // Berührungspunkt, genügte ein Wackeln am rechten Bahnende, um
+    // auszulösen — die Sicherung wäre wirkungslos.
+    const localX = e.clientX - rect.left
+    const handleLeft = PADDING + x
+    if (localX < handleLeft - GRAB_SLACK || localX > handleLeft + HANDLE + GRAB_SLACK) return
+
     setMaxX(rect.width - HANDLE - PADDING * 2)
+    dragRef.current = { pointerStart: e.clientX, startX: x, currentX: x }
     setDrag(true)
-    e.currentTarget.setPointerCapture(e.pointerId)
+    // Capture ist Komfort (Finger darf die Bahn verlassen) — schlägt es fehl,
+    // funktioniert der Zug trotzdem.
+    try { e.currentTarget.setPointerCapture(e.pointerId) } catch {}
   }
 
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (!dragging) return
+    const drag = dragRef.current
+    if (!drag) return
     const track = trackRef.current
     if (!track) return
-    const rect = track.getBoundingClientRect()
-    const max = rect.width - HANDLE - PADDING * 2
-    const next = Math.max(0, Math.min(max, e.clientX - rect.left - HANDLE / 2 - PADDING))
+    const max = track.getBoundingClientRect().width - HANDLE - PADDING * 2
+    // Relative Verschiebung: zurückgelegte Fingerstrecke = zurückgelegte Bahn.
+    const next = Math.max(0, Math.min(max, drag.startX + (e.clientX - drag.pointerStart)))
+    drag.currentX = next
     setX(next)
   }
 
   const onPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (!dragging) return
+    const drag = dragRef.current
+    if (!drag) return
+    const track = trackRef.current
+    const max = track ? track.getBoundingClientRect().width - HANDLE - PADDING * 2 : maxX
+    const finalX = drag.currentX
     setDrag(false)
+    dragRef.current = null
     try { e.currentTarget.releasePointerCapture(e.pointerId) } catch {}
-    if (x >= maxX * 0.85 && maxX > 0) {
-      setX(maxX)
+    if (finalX >= max * CONFIRM_RATIO && max > 0) {
+      setX(max)
       onConfirm()
       // Kurz Erfolg anzeigen, dann zurücksetzen — falls die Komponente nicht
       // ohnehin durch ein Re-Render ihren `done`-Zustand ändert oder verschwindet.
@@ -117,7 +146,7 @@ export default function SlideAction({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
-      className={`relative h-14 w-full select-none touch-none overflow-hidden rounded-xl border ${styles.track} ${inactive && !done ? 'cursor-not-allowed opacity-40' : 'cursor-grab active:cursor-grabbing'}`}
+      className={`relative h-14 w-full select-none touch-none overflow-hidden rounded-xl border ${styles.track} ${inactive && !done ? 'cursor-not-allowed opacity-40' : ''}`}
       role="slider"
       aria-label={label}
       aria-valuemin={0}
@@ -133,7 +162,7 @@ export default function SlideAction({
           transform: `translateX(${x}px)`,
           transition: dragging ? 'none' : 'transform 200ms ease-out',
         }}
-        className={`absolute top-1 flex h-12 w-12 items-center justify-center rounded-lg shadow-lg ${styles.handle}`}
+        className={`absolute top-1 flex h-12 w-12 items-center justify-center rounded-lg shadow-lg ${styles.handle} ${inactive ? '' : 'cursor-grab active:cursor-grabbing'}`}
       >
         {done
           ? <Check className="h-5 w-5 stroke-[3]" />

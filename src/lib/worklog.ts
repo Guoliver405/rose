@@ -32,6 +32,7 @@ export type StaffLogRow = { kind: string; at: string; room_id: string | null }
  */
 export const MAX_SHIFT_HOURS = 16
 export const MAX_BREAK_HOURS = 4
+export const MAX_OTHER_HOURS = 4
 
 export type CleaningRun = {
   roomId: string | null
@@ -60,10 +61,15 @@ export type WorkStats = {
   abortedCount: number
   openCount: number
   implausibleCount: number
+  /** Zeiträume `other_start`→`other_end` */
+  otherCleaningMs: number
   otherCleaningCount: number
+  implausibleOtherCount: number
+  /** Alt-Stiche `other_cleaning` ohne Ende — nur zählbar, keine Dauer */
+  legacyOtherCount: number
   avgCleaningMs: number | null
-  /** Netto minus Zimmerreinigung: Wege, Rüstzeiten, sonstige Reinigung */
-  otherMs: number
+  /** Netto minus Zimmer- und sonstiger Reinigung: Wege, Rüstzeiten */
+  unassignedMs: number
 }
 
 export type Range = { start: Date; end: Date }
@@ -171,6 +177,7 @@ export function computeWorkStats(
 
   const shift = sumIntervals(sorted, 'shift_start', 'shift_end', range, now, MAX_SHIFT_HOURS * 3_600_000)
   const brk = sumIntervals(sorted, 'break_start', 'break_end', range, now, MAX_BREAK_HOURS * 3_600_000)
+  const other = sumIntervals(sorted, 'other_start', 'other_end', range, now, MAX_OTHER_HOURS * 3_600_000)
   const cleanings = extractCleanings(sorted, range, staleMinutes, now)
 
   const counted = cleanings.filter(c => c.outcome === 'done' && !c.implausible)
@@ -190,9 +197,12 @@ export function computeWorkStats(
     abortedCount: cleanings.filter(c => c.outcome === 'aborted').length,
     openCount: cleanings.filter(c => c.outcome === 'open').length,
     implausibleCount: cleanings.filter(c => c.implausible).length,
-    otherCleaningCount: sorted.filter(r => r.kind === 'other_cleaning').length,
+    otherCleaningMs: other.total,
+    otherCleaningCount: other.count,
+    implausibleOtherCount: other.implausible,
+    legacyOtherCount: sorted.filter(r => r.kind === 'other_cleaning').length,
     avgCleaningMs: counted.length > 0 ? Math.round(cleaningMs / counted.length) : null,
-    otherMs: Math.max(0, netMs - cleaningMs),
+    unassignedMs: Math.max(0, netMs - cleaningMs - other.total),
   }
 }
 
@@ -200,8 +210,9 @@ export function emptyStats(): WorkStats {
   return {
     shiftMs: 0, shiftCount: 0, implausibleShiftCount: 0, implausibleBreakCount: 0,
     breakMs: 0, netMs: 0, cleaningMs: 0, cleaningCount: 0, countedCount: 0,
-    abortedCount: 0, openCount: 0, implausibleCount: 0, otherCleaningCount: 0,
-    avgCleaningMs: null, otherMs: 0,
+    abortedCount: 0, openCount: 0, implausibleCount: 0,
+    otherCleaningMs: 0, otherCleaningCount: 0, implausibleOtherCount: 0,
+    legacyOtherCount: 0, avgCleaningMs: null, unassignedMs: 0,
   }
 }
 
@@ -220,9 +231,12 @@ export function sumStats(all: WorkStats[]): WorkStats {
     abortedCount: acc.abortedCount + s.abortedCount,
     openCount: acc.openCount + s.openCount,
     implausibleCount: acc.implausibleCount + s.implausibleCount,
+    otherCleaningMs: acc.otherCleaningMs + s.otherCleaningMs,
     otherCleaningCount: acc.otherCleaningCount + s.otherCleaningCount,
+    implausibleOtherCount: acc.implausibleOtherCount + s.implausibleOtherCount,
+    legacyOtherCount: acc.legacyOtherCount + s.legacyOtherCount,
     avgCleaningMs: null,
-    otherMs: acc.otherMs + s.otherMs,
+    unassignedMs: acc.unassignedMs + s.unassignedMs,
   }), emptyStats())
   // Ø aus den Summen, nicht als Mittel der Mittelwerte (sonst zählte die
   // Kraft mit zwei Reinigungen so schwer wie die mit zwanzig).

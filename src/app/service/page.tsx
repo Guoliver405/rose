@@ -58,6 +58,8 @@ export default async function ServiceBoardPage() {
     (states ?? []).find(
       s => s.cleaning_by === ctx.profileId && isCleaningFresh(s, staleMinutes, now),
     )?.room_id ?? null
+  const myCleaningRoomNumber =
+    (rooms ?? []).find(r => r.id === myCleaningRoomId)?.number ?? null
 
   const boardRooms: BoardRoom[] = (rooms ?? []).map(r => {
     const state = stateByRoom.get(r.id)
@@ -178,9 +180,11 @@ export default async function ServiceBoardPage() {
           shift={{
             onShift: shift.onShift,
             onBreak: shift.onBreak,
+            onOther: shift.onOther,
             shiftStartedAt: shift.shiftStartedAt,
           }}
           myCleaningRoomId={myCleaningRoomId}
+          myCleaningRoomNumber={myCleaningRoomNumber}
           myFloorKey={myPresence ? `${myPresence.building ?? ''}#${myPresence.floor}` : null}
         />
       </main>
