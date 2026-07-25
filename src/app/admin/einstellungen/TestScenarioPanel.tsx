@@ -3,10 +3,14 @@
 // VORÜBERGEHEND — UI zum Test-Szenario-Seeding, siehe test-actions.ts.
 
 import { useState, useTransition } from 'react'
-import { FlaskConical, Loader2, Trash2 } from 'lucide-react'
+import { Dices, FlaskConical, Loader2, Trash2 } from 'lucide-react'
 import { resetTestScenarioAction, seedTestScenarioAction, type SeedSummary } from './test-actions'
 
 const SIGNAL_LABEL = { none: '—', please_clean: 'Reinigung gewünscht', dnd: 'Nicht stören' } as const
+
+function randomSeed() {
+  return Math.floor(Math.random() * 9000) + 1000
+}
 
 export default function TestScenarioPanel({ roomCount }: { roomCount: number }) {
   const [pending, startTransition] = useTransition()
@@ -14,23 +18,27 @@ export default function TestScenarioPanel({ roomCount }: { roomCount: number }) 
   const [summary, setSummary] = useState<SeedSummary | null>(null)
   const [resetDone, setResetDone] = useState(false)
 
-  // Praxisnahe Defaults aus der Zimmerzahl abgeleitet.
-  const defOccupied = Math.max(1, Math.round(roomCount * 0.4))
-  const defCheckedOut = Math.min(roomCount - defOccupied, Math.max(1, Math.round(roomCount * 0.25)))
+  const [seed, setSeed] = useState(randomSeed)
+  const [occupiedPct, setOccupiedPct] = useState(60)
+  const [pleaseCleanPct, setPleaseCleanPct] = useState(50)
+  const [dndPct, setDndPct] = useState(25)
+  const [checkedOutPct, setCheckedOutPct] = useState(50)
+  const [priority, setPriority] = useState(2)
+  const [orders, setOrders] = useState(3)
 
-  function submitSeed(form: HTMLFormElement) {
+  // Live-Vorschau der absoluten Zahlen — gleiche Rundung wie serverseitig.
+  const occupied = Math.round(roomCount * occupiedPct / 100)
+  const free = roomCount - occupied
+  const checkedOut = Math.round(free * checkedOutPct / 100)
+  const pleaseClean = Math.round(occupied * pleaseCleanPct / 100)
+  const dnd = Math.min(Math.round(occupied * dndPct / 100), occupied - pleaseClean)
+
+  function submitSeed() {
     if (!window.confirm('Achtung: Alle aktuellen Aufenthalte werden ausgecheckt und alle Zimmerstatus zurückgesetzt, bevor das Szenario aufgebaut wird. Fortfahren?')) return
-    const fd = new FormData(form)
-    const num = (name: string) => Number(fd.get(name) ?? 0)
     setError(null); setSummary(null); setResetDone(false)
     startTransition(async () => {
       const res = await seedTestScenarioAction({
-        occupied: num('occupied'),
-        pleaseClean: num('pleaseClean'),
-        dnd: num('dnd'),
-        checkedOut: num('checkedOut'),
-        priority: num('priority'),
-        orders: num('orders'),
+        seed, occupiedPct, pleaseCleanPct, dndPct, checkedOutPct, priority, orders,
       })
       if (res.error) { setError(res.error); return }
       setSummary(res.summary ?? null)
@@ -48,20 +56,18 @@ export default function TestScenarioPanel({ roomCount }: { roomCount: number }) 
   }
 
   const inputClass =
-    'w-20 rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink focus:border-action focus:outline-none'
+    'rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink focus:border-action focus:outline-none'
 
-  const fields = [
-    { name: 'occupied', label: 'Belegte Zimmer', def: defOccupied },
-    { name: 'pleaseClean', label: 'davon Reinigungswunsch', def: Math.ceil(defOccupied / 3) },
-    { name: 'dnd', label: 'davon „Nicht stören“', def: defOccupied >= 3 ? 1 : 0 },
-    { name: 'checkedOut', label: 'Ausgecheckt (ungereinigt)', def: defCheckedOut },
-    { name: 'priority', label: 'Priorisiert', def: 1 },
-    { name: 'orders', label: 'Offene Bestellungen', def: Math.min(2, defOccupied) },
+  const sliders: { label: string; value: number; set: (v: number) => void; preview: string }[] = [
+    { label: 'Belegte Zimmer', value: occupiedPct, set: setOccupiedPct, preview: `${occupied} von ${roomCount}` },
+    { label: 'davon Reinigungswunsch', value: pleaseCleanPct, set: setPleaseCleanPct, preview: `${pleaseClean} von ${occupied}` },
+    { label: 'davon „Nicht stören“', value: dndPct, set: setDndPct, preview: `${dnd} von ${occupied}` },
+    { label: 'Freie Zimmer ausgecheckt & ungereinigt', value: checkedOutPct, set: setCheckedOutPct, preview: `${checkedOut} von ${free}` },
   ]
 
   return (
     <form
-      onSubmit={e => { e.preventDefault(); submitSeed(e.currentTarget) }}
+      onSubmit={e => { e.preventDefault(); submitSeed() }}
       className="flex flex-col gap-4 rounded-xl border border-attention-tint-edge bg-attention-tint p-4"
     >
       <h2 className="flex items-center gap-1.5 text-sm font-bold text-attention-deepest">
@@ -69,17 +75,63 @@ export default function TestScenarioPanel({ roomCount }: { roomCount: number }) 
       </h2>
       <p className="text-xs text-ink-muted">
         Erzeugt eine fingierte Belegungs- und Reinigungslage zum Durchspielen der Portale —
-        mit echten Aufenthalten (PINs funktionieren im Gastportal), verteilt über die Etagen.
-        Vorher wird der aktuelle Stand komplett zurückgesetzt.
+        mit echten Aufenthalten (PINs funktionieren im Gastportal), zufällig über die Zimmer
+        verteilt. Gleicher Seed ergibt dieselbe Verteilung. Vorher wird der aktuelle Stand
+        komplett zurückgesetzt.
       </p>
 
-      <div className="flex flex-wrap gap-4">
-        {fields.map(f => (
-          <label key={f.name} className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-            {f.label}
-            <input name={f.name} type="number" min={0} max={roomCount} defaultValue={f.def} className={inputClass} />
+      <div className="flex flex-col gap-3">
+        {sliders.map(s => (
+          <label key={s.label} className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+            <span>
+              {s.label}: <span className="text-ink">{s.value}%</span>
+              <span className="ml-2 font-normal">≈ {s.preview}</span>
+            </span>
+            <input
+              type="range" min={0} max={100} step={5}
+              value={s.value}
+              onChange={e => s.set(Number(e.target.value))}
+              className="w-full max-w-md accent-current"
+            />
           </label>
         ))}
+      </div>
+
+      <div className="flex flex-wrap items-end gap-4">
+        <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+          Priorisiert (absolut)
+          <input
+            type="number" min={0} max={roomCount} value={priority}
+            onChange={e => setPriority(Number(e.target.value))}
+            className={`${inputClass} w-20`}
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+          Bestellungen (absolut)
+          <input
+            type="number" min={0} max={roomCount} value={orders}
+            onChange={e => setOrders(Number(e.target.value))}
+            className={`${inputClass} w-20`}
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+          Seed
+          <span className="flex items-center gap-1">
+            <input
+              type="number" min={1} value={seed}
+              onChange={e => setSeed(Number(e.target.value))}
+              className={`${inputClass} w-28`}
+            />
+            <button
+              type="button"
+              title="Neuen Seed würfeln"
+              onClick={() => setSeed(randomSeed())}
+              className="rounded-lg border border-edge p-2 text-ink-soft hover:border-edge-strong hover:text-ink"
+            >
+              <Dices className="h-4 w-4" />
+            </button>
+          </span>
+        </label>
       </div>
 
       {error && (
@@ -95,7 +147,7 @@ export default function TestScenarioPanel({ roomCount }: { roomCount: number }) 
 
       {summary && !error && (
         <div className="flex flex-col gap-2 rounded-lg border border-edge bg-surface p-3 text-sm text-ink">
-          <p className="font-bold">Szenario steht:</p>
+          <p className="font-bold">Szenario steht (Seed {seed}):</p>
           {summary.stays.length > 0 && (
             <table className="w-fit text-left text-xs">
               <thead>

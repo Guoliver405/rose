@@ -11,10 +11,11 @@ Handy/Tablet funktionieren nur dort).
 
 **Hilfsmittel (vorübergehend, 25.07. eingebaut):** Auf `/admin/einstellungen`
 gibt es unten das Panel „Test-Szenario" (nur Admin). „Szenario erzeugen" setzt
-alles zurück und baut mit wenigen Zahlenangaben eine praxisnahe Lage auf
-(echte Stays mit PINs — werden im Panel angezeigt —, Reinigungswünsche, DND,
-ausgecheckte + priorisierte Zimmer, offene Bestellungen, über die Etagen
-verteilt; jeder zweite Stay ist „seit gestern" für Stayover-Tests).
+alles zurück und baut per Prozent-Reglern + Zufalls-Seed eine praxisnahe Lage
+auf (echte Stays mit PINs — werden im Panel angezeigt —, Reinigungswünsche,
+DND, ausgecheckte + priorisierte Zimmer, offene Bestellungen; zufällig über
+die Zimmer verteilt, gleicher Seed ⇒ identische Verteilung; rund die Hälfte
+der Stays ist „seit gestern" für Stayover-Tests).
 „Alles zurücksetzen" räumt jede Testlage ab (Stays ausgecheckt, Status
 neutral, offene Bestellungen gelöscht). Rückbau nach der Testphase:
 `TestScenarioPanel.tsx` + `test-actions.ts` löschen, Einbindung in

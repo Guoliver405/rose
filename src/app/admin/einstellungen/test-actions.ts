@@ -2,9 +2,10 @@
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VORÜBERGEHEND — Test-Szenario-Seeding für den Testplan-Walkthrough.
-// Erzeugt mit wenigen Angaben eine praxisnahe Belegungs-/Reinigungslage über
-// die ganz normalen Tabellen (stays, room_states, service_orders), damit
-// Realtime, Audit-Trigger und Board-Ableitung exakt wie im Betrieb reagieren.
+// Erzeugt aus Prozent-Angaben + Zufalls-Seed eine praxisnahe Belegungs-/
+// Reinigungslage über die ganz normalen Tabellen (stays, room_states,
+// service_orders), damit Realtime, Audit-Trigger und Board-Ableitung exakt
+// wie im Betrieb reagieren. Gleicher Seed ⇒ identische Verteilung.
 // Rückbau: diese Datei + TestScenarioPanel.tsx löschen, Einbindung in
 // einstellungen/page.tsx entfernen.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -16,11 +17,18 @@ import { getAdminContext } from '@/utils/auth'
 import { generatePin, generateToken, clampPinLength } from '@/lib/ids'
 
 export type SeedInput = {
-  occupied: number
-  pleaseClean: number
-  dnd: number
-  checkedOut: number
+  seed: number
+  /** Anteil belegter Zimmer an allen Zimmern (0–100). */
+  occupiedPct: number
+  /** Anteil der belegten Zimmer mit Reinigungswunsch (0–100). */
+  pleaseCleanPct: number
+  /** Anteil der belegten Zimmer mit DND (0–100). */
+  dndPct: number
+  /** Anteil der FREIEN Zimmer, die ausgecheckt & ungereinigt sind (0–100). */
+  checkedOutPct: number
+  /** Absolut, über alle Zimmer. */
   priority: number
+  /** Absolut, auf belegte Zimmer verteilt. */
   orders: number
 }
 
@@ -38,6 +46,33 @@ function auditFields(userId: string) {
     last_update_source: 'admin',
     last_updated_by: userId,
   }
+}
+
+/** Deterministischer PRNG (mulberry32) — gleicher Seed, gleiche Verteilung. */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0
+  return () => {
+    a = (a + 0x6d2b79f5) | 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+/** Fisher-Yates auf einer Kopie. */
+function shuffle<T>(arr: readonly T[], rng: () => number): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
+function clampPct(value: number): number {
+  const n = Number(value)
+  if (!Number.isFinite(n)) return 0
+  return Math.min(100, Math.max(0, n))
 }
 
 /** Nicht-negative Ganzzahl, geclampt auf [0, max]. */
@@ -91,9 +126,9 @@ export async function resetTestScenarioAction(): Promise<{ error?: string }> {
 }
 
 /**
- * Setzt zuerst alles zurück und baut dann deterministisch ein Szenario auf.
- * Die Zustände werden reihum über die Etagen gestreut, damit sich die
- * Etagenscores auf dem Reinigungsboard sichtbar unterscheiden.
+ * Setzt zuerst alles zurück und baut dann eine seed-randomisierte Lage auf:
+ * die Zimmer werden deterministisch gemischt, die Prozent-Angaben in
+ * absolute Zahlen gerundet und auf die gemischte Reihenfolge verteilt.
  */
 export async function seedTestScenarioAction(
   input: SeedInput,
@@ -102,58 +137,48 @@ export async function seedTestScenarioAction(
   if (!ctx) return { error: 'Keine Berechtigung.' }
   const admin = createAdminClient()
   const notes: string[] = []
+  const rng = mulberry32(Math.floor(Number(input.seed)) || 1)
 
   const { data: roomRows } = await admin
     .from('rooms')
-    .select('id, number, floor, sort_order')
+    .select('id, number, floor')
     .eq('hotel_id', ctx.hotelId)
     .order('floor')
-    .order('sort_order')
     .order('number')
   if (!roomRows || roomRows.length === 0) return { error: 'Keine Zimmer angelegt.' }
 
   await resetScenario(admin, ctx.hotelId, ctx.userId)
 
-  // Reihum über die Etagen verteilen statt Etage für Etage abzufüllen.
-  const byFloor = new Map<number, typeof roomRows>()
-  for (const r of roomRows) {
-    const list = byFloor.get(r.floor) ?? []
-    list.push(r)
-    byFloor.set(r.floor, list)
-  }
-  const floors = [...byFloor.values()]
-  const interleaved: typeof roomRows = []
-  for (let i = 0; interleaved.length < roomRows.length; i++) {
-    for (const floorRooms of floors) if (i < floorRooms.length) interleaved.push(floorRooms[i])
-  }
+  const shuffled = shuffle(roomRows, rng)
 
-  const checkedOutCount = toCount(input.checkedOut, roomRows.length)
-  const occupiedCount = toCount(input.occupied, roomRows.length - checkedOutCount)
-  const pleaseCleanCount = toCount(input.pleaseClean, occupiedCount)
-  const dndCount = toCount(input.dnd, occupiedCount - pleaseCleanCount)
+  // Prozent → absolute Zahlen (gerundet), Bezugsgrößen wie in der UI:
+  // belegt bezieht sich auf alle Zimmer, Signale auf die belegten,
+  // ausgecheckt auf die freien.
+  const occupiedCount = Math.round(roomRows.length * clampPct(input.occupiedPct) / 100)
+  const freeCount = roomRows.length - occupiedCount
+  const checkedOutCount = Math.round(freeCount * clampPct(input.checkedOutPct) / 100)
+  const pleaseCleanCount = Math.round(occupiedCount * clampPct(input.pleaseCleanPct) / 100)
+  const dndCount = Math.min(
+    Math.round(occupiedCount * clampPct(input.dndPct) / 100),
+    occupiedCount - pleaseCleanCount,
+  )
   const ordersCount = toCount(input.orders, occupiedCount)
-  if (toCount(input.checkedOut, 999) + toCount(input.occupied, 999) > roomRows.length) {
-    notes.push(`Mehr Zimmer angefragt als vorhanden (${roomRows.length}) — Zahlen wurden gekappt.`)
+  if (toCount(input.orders, 999) > occupiedCount) {
+    notes.push(`Nur ${occupiedCount} belegte Zimmer — Bestellungen auf ${ordersCount} gekappt.`)
   }
 
-  const checkedOutRooms = interleaved.slice(0, checkedOutCount)
-  const occupiedRooms = interleaved.slice(checkedOutCount, checkedOutCount + occupiedCount)
-  const freeRooms = interleaved.slice(checkedOutCount + occupiedCount)
+  const occupiedRooms = shuffled.slice(0, occupiedCount)
+  const checkedOutRooms = shuffled.slice(occupiedCount, occupiedCount + checkedOutCount)
 
-  // Gast-Signale: erst die Reinigungswünsche, dann die DNDs.
+  // Signale auf die (bereits zufällig geordneten) belegten Zimmer verteilen.
   const signalByRoom = new Map<string, 'none' | 'please_clean' | 'dnd'>()
   occupiedRooms.forEach((r, i) => {
     signalByRoom.set(r.id, i < pleaseCleanCount ? 'please_clean' : i < pleaseCleanCount + dndCount ? 'dnd' : 'none')
   })
 
-  // Priorität: bevorzugt ausgecheckte Zimmer (typischer Rezeptions-Eingriff),
-  // dann belegte ohne DND, zuletzt freie.
-  const priorityPool = [
-    ...checkedOutRooms,
-    ...occupiedRooms.filter(r => signalByRoom.get(r.id) !== 'dnd'),
-    ...freeRooms,
-  ]
-  const priorityRooms = priorityPool.slice(0, toCount(input.priority, priorityPool.length))
+  // Priorität: absolut, zufällig über ALLE Zimmer (eigene Mischung, damit
+  // die Auswahl nicht mit der Belegungs-Zuteilung korreliert).
+  const priorityRooms = shuffle(roomRows, rng).slice(0, toCount(input.priority, roomRows.length))
   const prioritySet = new Set(priorityRooms.map(r => r.id))
 
   // PINs: kollisionsfrei zu aktiven Aufenthalten auf Zimmern gleicher Nummer
@@ -177,12 +202,13 @@ export async function seedTestScenarioAction(
   const { data: hotel } = await admin.from('hotels').select('policies').eq('id', ctx.hotelId).single()
   const pinLength = clampPinLength((hotel?.policies as { pinLength?: number } | null)?.pinLength)
 
-  // Jeder zweite Aufenthalt ist "seit gestern" da — so lässt sich auch die
-  // Stayover-Routine (ab der zweiten Nacht) direkt mittesten. checked_in_at
-  // immer explizit setzen: supabase-js füllt beim Bulk-Insert fehlende
-  // Spalten mit NULL auf, der DB-Default greift dann nicht.
+  // Rund die Hälfte der Aufenthalte ist "seit gestern" da — so lässt sich
+  // die Stayover-Routine (ab der zweiten Nacht) direkt mittesten.
+  // checked_in_at immer explizit setzen: supabase-js füllt beim Bulk-Insert
+  // fehlende Spalten mit NULL auf, der DB-Default greift dann nicht.
   const yesterday = new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString()
-  const stayRows = occupiedRooms.map((r, i) => {
+  const sinceYesterdayByRoom = new Map(occupiedRooms.map(r => [r.id, rng() < 0.5]))
+  const stayRows = occupiedRooms.map(r => {
     let pin = generatePin(pinLength)
     for (let tries = 0; tries < 50 && takenPins.has(pin); tries++) pin = generatePin(pinLength)
     takenPins.add(pin)
@@ -192,7 +218,7 @@ export async function seedTestScenarioAction(
       pin,
       session_token: generateToken(24),
       created_by: ctx.userId,
-      checked_in_at: i % 2 === 0 ? yesterday : new Date().toISOString(),
+      checked_in_at: sinceYesterdayByRoom.get(r.id) ? yesterday : new Date().toISOString(),
     }
   })
 
@@ -214,8 +240,8 @@ export async function seedTestScenarioAction(
       targetByRoom.set(r.id, { guest_signal: signal, checkout_pending: false, priority: prioritySet.has(r.id) })
     }
   }
-  for (const r of freeRooms) {
-    if (prioritySet.has(r.id)) {
+  for (const r of priorityRooms) {
+    if (!targetByRoom.has(r.id)) {
       targetByRoom.set(r.id, { guest_signal: 'none', checkout_pending: false, priority: true })
     }
   }
@@ -235,7 +261,8 @@ export async function seedTestScenarioAction(
     if (error) return { error: `Zimmerstatus setzen fehlgeschlagen: ${error.message}` }
   }
 
-  // Bestellungen: erster aktiver Service mit seinen Optionen als Vorlage.
+  // Bestellungen: erster aktiver Service mit seinen Optionen als Vorlage,
+  // verteilt auf die ersten N der (zufällig geordneten) belegten Zimmer.
   let placedOrders = 0
   if (ordersCount > 0) {
     const { data: service } = await admin
@@ -274,16 +301,19 @@ export async function seedTestScenarioAction(
   revalidatePath('/admin', 'layout')
   revalidatePath('/service')
 
+  const numberByRoom = new Map(roomRows.map(r => [r.id, r.number]))
   return {
     summary: {
-      stays: occupiedRooms.map((r, i) => ({
-        room: r.number,
-        pin: stayRows[i].pin,
-        sinceYesterday: i % 2 === 0,
-        signal: signalByRoom.get(r.id) ?? 'none',
-      })),
-      checkedOut: checkedOutRooms.map(r => r.number),
-      priority: priorityRooms.map(r => r.number),
+      stays: occupiedRooms
+        .map((r, i) => ({
+          room: r.number,
+          pin: stayRows[i].pin,
+          sinceYesterday: sinceYesterdayByRoom.get(r.id) ?? false,
+          signal: signalByRoom.get(r.id) ?? 'none' as const,
+        }))
+        .sort((a, b) => a.room.localeCompare(b.room, undefined, { numeric: true })),
+      checkedOut: checkedOutRooms.map(r => r.number).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
+      priority: priorityRooms.map(r => numberByRoom.get(r.id) ?? '?').sort((a, b) => a.localeCompare(b, undefined, { numeric: true })),
       orders: placedOrders,
       notes,
     },
