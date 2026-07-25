@@ -60,8 +60,15 @@ export async function checkInAction(roomId: string, force = false): Promise<Chec
   // PIN darf nicht mit einem aktiven Aufenthalt auf einem Zimmer GLEICHER
   // Nummer kollidieren (Nummern sind nur je Gebäudeteil eindeutig; der
   // Gast-Login löst Duplikate über die PIN auf).
+  // ZWINGEND auf das eigene Hotel eingrenzen: ohne den Filter liest der
+  // Admin-Client (RLS-Bypass) Klartext-PINs fremder Mandanten.
   const { data: sameNumberRooms } = await admin
-    .from('rooms').select('id').ilike('number', room.number).neq('id', roomId).limit(10)
+    .from('rooms')
+    .select('id')
+    .eq('hotel_id', ctx.hotelId)
+    .ilike('number', room.number)
+    .neq('id', roomId)
+    .limit(10)
   const takenPins = new Set<string>()
   if (sameNumberRooms && sameNumberRooms.length > 0) {
     const { data: siblingStays } = await admin
@@ -91,6 +98,7 @@ export async function checkInAction(roomId: string, force = false): Promise<Chec
   await admin.from('room_states')
     .update({ guest_signal: 'none', ...auditFields(ctx.userId) })
     .eq('room_id', roomId)
+    .eq('hotel_id', ctx.hotelId)
 
   revalidatePath('/admin', 'layout')
   return { pin }
@@ -119,6 +127,7 @@ export async function checkOutAction(roomId: string): Promise<{ error?: string }
   await admin.from('room_states')
     .update({ checkout_pending: true, guest_signal: 'none', ...auditFields(ctx.userId) })
     .eq('room_id', roomId)
+    .eq('hotel_id', ctx.hotelId)
 
   revalidatePath('/admin', 'layout')
   return {}
@@ -151,7 +160,11 @@ export async function markCleanedAction(roomId: string): Promise<{ error?: strin
   const admin = createAdminClient()
 
   const { data: state } = await admin
-    .from('room_states').select('guest_signal').eq('room_id', roomId).maybeSingle()
+    .from('room_states')
+    .select('guest_signal')
+    .eq('room_id', roomId)
+    .eq('hotel_id', ctx.hotelId)
+    .maybeSingle()
 
   const { error } = await admin.from('room_states')
     .update({

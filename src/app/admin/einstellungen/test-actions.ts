@@ -188,6 +188,7 @@ export async function seedTestScenarioAction(
     const { data: sameNumberRooms } = await admin
       .from('rooms')
       .select('id')
+      .eq('hotel_id', ctx.hotelId)
       .in('number', occupiedRooms.map(r => r.number))
     const foreignIds = (sameNumberRooms ?? [])
       .map(r => r.id)
