@@ -392,6 +392,10 @@ Registrierung an zwei, mit dem Reset an drei Stellen. Jetzt einmal als
 | `/auth/callback` ohne Code | leitet auf `/passwort-vergessen?fehler=link` ✅ |
 | Reset für `.local`-Adresse | „nicht zustellbar", Ursache im Server-Log ✅ |
 | **Vollständiger Durchlauf in Produktion** | Reset angefordert, Mail zugestellt, Link geöffnet, Passwort gesetzt, angemeldet ✅ |
+| **Derselbe Durchlauf auf der eigenen Domain** | Registrierung auf `rose-roomservice.app`, Reset an eine **fremde** Adresse, Versand von `noreply@send.rose-roomservice.app`, Link geöffnet, Passwort gesetzt ✅ |
+
+Damit ist der Weg vollständig: eigene Domain, eigener verifizierter Absender,
+Zustellung an beliebige Empfänger. **Passwort-Reset ist betriebsbereit.**
 
 ### Was die Fehlersuche gekostet hat — und warum
 
@@ -530,28 +534,40 @@ null.
 
 ## 🔖 Wiederaufnahme
 
-**Stand:** Integrationstests laufen ohne jede lokale Infrastruktur, 32 grün.
-Arbeitsbaum committet.
+**Stand am Ende des 26.07.2026:**
+
+- Integrationstests laufen ohne lokale Infrastruktur, 32 grün, auch in CI.
+- **Phase 6b** steht: Self-Service-Registrierung mit Einladungscode.
+- **Passwort-Reset** ist betriebsbereit — eigene Domain, eigener verifizierter
+  Absender, Zustellung an beliebige Empfänger end-to-end verifiziert.
+- Produktionsadresse ist **`https://rose-roomservice.app`**.
+- Die Datenbank ist **leer**. Der einzige Weg hinein: `/registrieren` mit dem
+  Code aus `SIGNUP_INVITE_CODE`.
 
 **Offen, in Reihenfolge:**
 
-1. **Absender-Subdomain in Resend verifizieren.** Ohne sie stellt Resend nur an
-   die eigene Kontoadresse zu — der Reset funktioniert also für **genau einen**
-   Menschen. Das ist die letzte Hürde zwischen „läuft bei mir" und „läuft für
-   Kunden", und sie kostet nur DNS-Einträge.
-2. **Resend-API für eigene Mails** (Teil 2): Einladungen für Manager- und
+1. **Resend-API für eigene Mails** (Teil 2). Einladungen für Manager- und
    Rezeptions-Zugänge statt vorgelesener Passwörter — betrifft beide
-   Anlege-Wege im Personal-Menü. Danach optional E-Mail-Bestätigung bei der
-   Registrierung einschalten (dann echtes `signUp()` statt Admin-API).
-3. **Seite „Mein Zugang"** — Anzeigename und Passwort selbst bearbeitbar (siehe
-   Datenkorrektur oben); heute gibt es nur `…/admin/einstellungen/passwort`.
-3. **Login-Actions abdecken** — `guestLoginAction`, `maidLoginAction` (leiten
-   per `redirect()` um). Wertvollster Einzeltest: *fünf Fehlversuche sperren nur
-   den eigenen Aufenthalt im eigenen Haus* (Befund A aus Phase 6c).
-3. **Phase 6b — Self-Service-Registrierung.**
-4. Ketten-Themen, Resend, Testplan D–G, IP-Rate-Limit — siehe Abschnitt 4 des
-   Übergabe-Dokuments.
+   Anlege-Wege in `…/admin/personal`. Bringt `resend` als Abhängigkeit und
+   `RESEND_API_KEY` als Env-Var (bisher lebt der Schlüssel **nur** in Supabases
+   SMTP-Einstellung, nicht im Projekt).
+2. **Seite „Mein Zugang"** — Anzeigename und Passwort selbst bearbeitbar; heute
+   gibt es nur `…/admin/einstellungen/passwort`. Der Anzeigename fiel als Lücke
+   auf, weil Altkonten „Rezeption" hießen (siehe Datenkorrektur oben).
+3. **Login-Actions testen** — `guestLoginAction`, `maidLoginAction` (leiten per
+   `redirect()` um, brauchen etwas Gerüst). Wertvollster Einzeltest: *fünf
+   Fehlversuche sperren nur den eigenen Aufenthalt im eigenen Haus* (Befund A
+   aus Phase 6c).
+4. **Löschbegehren sauber machen** — `room_state_transitions` hängt an keiner
+   Kaskade. Ein „Konto löschen" lässt den Zustandsverlauf stehen. Vor echten
+   Kunden zu klären.
+5. **Ketten-Themen** (konto-weite Service-Vorschlagsliste, Policy-Vorgaben,
+   konsolidierte Auswertung), **Testplan D–G**, **IP-Rate-Limit** für die
+   Gast-Anmeldung — siehe Abschnitt 4 des Übergabe-Dokuments.
+6. Optional, sobald Teil 2 steht: **E-Mail-Bestätigung bei der Registrierung**
+   einschalten (dann echtes `signUp()` statt Admin-API mit `email_confirm`).
 
-**Nebenbefund, ungeprüft:** `.env.local` enthält Klartext-Passwörter der
-Testzugänge in Kommentarzeilen. Für eine Stage mit Fake-Hotels vertretbar; vor
-echten Kunden gehört das dort raus.
+**Erledigt und damit aus früheren Listen gestrichen:** Absender-Subdomain
+verifizieren, SMTP einrichten, Phase 6b, Domainumzug. Der frühere Nebenbefund
+zu Klartext-Passwörtern in `.env.local` ist gegenstandslos — die betroffenen
+Testzugänge existieren nicht mehr.
