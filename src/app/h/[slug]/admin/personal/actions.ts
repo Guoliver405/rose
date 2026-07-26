@@ -225,14 +225,28 @@ async function ladeEin(opts: {
   displayName: string
   hotelId: string
   hotelSlug: string
+  hotelName: string
   role: 'reception' | 'manager'
 }): Promise<{ einladung?: Einladung; error?: string }> {
-  const { email, displayName, hotelId, hotelSlug, role } = opts
+  const { email, displayName, hotelId, hotelSlug, hotelName, role } = opts
   const admin = createAdminClient()
 
   const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
   const { data: invited, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(email, {
     redirectTo: `${base}/auth/confirm?next=/passwort-neu`,
+    // Landet in `user_metadata` und ist in der Mail-Vorlage als
+    // `{{ .Data.hotel }}` / `{{ .Data.rolle }}` / `{{ .Data.name }}` verfügbar.
+    // Damit liest sich die Einladung als konkrete Nachricht statt als
+    // Rundschreiben — was auch Gmails Einsortierung zugutekommt.
+    //
+    // ACHTUNG: `user_metadata` ist vom Nutzer selbst änderbar. Es ist hier
+    // reine Anzeige für die Mail und darf NIE für Berechtigungen herangezogen
+    // werden — die stehen in `hotel_members` bzw. `account_members`.
+    data: {
+      name: displayName,
+      hotel: hotelName,
+      rolle: role === 'manager' ? 'Manager' : 'Rezeption',
+    },
   })
   if (inviteErr || !invited?.user) {
     if (inviteErr?.message?.toLowerCase().includes('already')) {
@@ -337,7 +351,9 @@ export async function createReceptionAction(
   if (!/^\S+@\S+\.\S+$/.test(email)) return { error: 'Bitte eine gültige E-Mail-Adresse angeben.' }
 
   return ladeEin({
-    email, displayName, hotelId: ctx.hotelId, hotelSlug: ctx.hotelSlug, role: 'reception',
+    email, displayName,
+    hotelId: ctx.hotelId, hotelSlug: ctx.hotelSlug, hotelName: ctx.hotelName,
+    role: 'reception',
   })
 }
 
@@ -428,7 +444,9 @@ export async function createManagerAction(
   if (!/^\S+@\S+\.\S+$/.test(email)) return { error: 'Bitte eine gültige E-Mail-Adresse angeben.' }
 
   const res = await ladeEin({
-    email, displayName, hotelId: ctx.hotelId, hotelSlug: ctx.hotelSlug, role: 'manager',
+    email, displayName,
+    hotelId: ctx.hotelId, hotelSlug: ctx.hotelSlug, hotelName: ctx.hotelName,
+    role: 'manager',
   })
   // Beim Manager gibt es für „schon vergeben" einen zweiten Weg — darauf
   // hinweisen, statt den Nutzer im Regen stehen zu lassen.

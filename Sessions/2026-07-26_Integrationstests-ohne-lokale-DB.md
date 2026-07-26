@@ -580,6 +580,16 @@ Unter **Authentication → Emails → Templates** den Link jeweils ersetzen:
 - *Reset Password*:
   `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/passwort-neu`
 
+**Vorlagen auf Deutsch und mit Bezug.** Die Auslieferungstexte sind englische
+Zweizeiler mit einem einzelnen Link — genau das Muster, das Gmail als Werbung
+einsortiert (beim Test tatsächlich passiert: `Delivered`, aber im
+Werbung-Tab). `ladeEin()` gibt deshalb Metadaten mit, die in der Vorlage als
+`{{ .Data.hotel }}`, `{{ .Data.rolle }}` und `{{ .Data.name }}` verfügbar sind.
+
+> **`user_metadata` ist vom Nutzer selbst änderbar** und dient hier
+> ausschließlich der Anzeige in der Mail. Für Berechtigungen ist es unbrauchbar
+> — die stehen in `hotel_members` bzw. `account_members`.
+
 Quellen:
 [SSR-Auth mit PKCE](https://supabase.com/docs/guides/auth/server-side/email-based-auth-with-pkce-flow-for-ssr),
 [inviteUserByEmail](https://supabase.com/docs/reference/javascript/auth-admin-inviteuserbyemail).
