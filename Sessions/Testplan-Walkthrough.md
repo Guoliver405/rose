@@ -68,11 +68,13 @@ auf beiden Boards.
    Karten-PIN vorsortieren, dann der Reihe nach anmelden.
    Verifiziert: beide Marias kommen in ihr jeweils eigenes Haus, falsche
    PIN bleibt generisch abgewiesen.
-2. **Zimmer-Anlage: Präfix-Option ist per Default an** (Bedienfalle, mild).
-   „Etagennummer voranstellen" ist vorausgewählt, während der Platzhalter
-   volle Nummern vorschlägt („z. B. 101-110"). Wer dem Platzhalter folgt,
-   erzeugt 3301–3306 statt 301–306. Vorschlag: Default aus, oder
-   Platzhalter auf Suffixe ändern („z. B. 01-10").
+2. ~~**Zimmer-Anlage: Präfix-Option ist per Default an**~~ → **behoben am
+   26.07.2026.** „Etagennummer voranstellen" war vorausgewählt, während der
+   Platzhalter volle Nummern vorschlägt („z. B. 101-110") — wer dem Platzhalter
+   folgte, erzeugte 3301–3306 statt 301–306. Die Option startet jetzt
+   ausgeschaltet; wer Etagen-Suffixe eingeben will, hakt sie bewusst an.
+   Verifiziert: „11" auf Etage 1 ergibt in der Vorschau „11", mit Häkchen
+   weiterhin „111".
 
 **Kein Fehler, nur zur Kenntnis:** Das Löschen eines Zimmers nimmt per
 Fremdschlüssel-Kaskade auch dessen Service-Anfragen mit (beim Aufräumen

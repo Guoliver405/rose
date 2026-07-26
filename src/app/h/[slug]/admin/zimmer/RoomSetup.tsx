@@ -58,7 +58,11 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
   const [floor, setFloor] = useState('1')
   const [floorsInput, setFloorsInput] = useState('1-3')
   const [numbersInput, setNumbersInput] = useState('')
-  const [prefixFloor, setPrefixFloor] = useState(true)
+  // Default AUS: die Platzhalter schlagen volle Nummern vor („z. B. 101-110").
+  // Vorausgewählt erzeugte das aus „101" auf Etage 1 stillschweigend „1101"
+  // (Befund 2 des Testplan-Durchlaufs vom 25.07.2026). Wer Etagen-Suffixe
+  // eingeben will, hakt die Option bewusst an.
+  const [prefixFloor, setPrefixFloor] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
