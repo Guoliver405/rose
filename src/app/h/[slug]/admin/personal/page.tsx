@@ -59,7 +59,14 @@ export default async function PersonalPage({
     receptionists = await Promise.all(
       (recProfiles ?? []).map(async p => {
         const { data } = await admin.auth.admin.getUserById(p.user_id)
-        return { id: p.user_id, displayName: p.display_name, email: data?.user?.email ?? '—' }
+        return {
+          id: p.user_id,
+          displayName: p.display_name,
+          email: data?.user?.email ?? '—',
+          // Eingeladen, aber noch nie angenommen: Supabase bestätigt die
+          // Adresse erst, wenn die Person den Link geöffnet hat.
+          pending: !data?.user?.email_confirmed_at,
+        }
       }),
     )
   }
@@ -94,28 +101,22 @@ export default async function PersonalPage({
       nameProUser.set(r.user_id, r.display_name)
     }
 
-    const mail = async (userId: string) => {
+    const zeile = async (userId: string): Promise<ManagerRow> => {
       const { data } = await admin.auth.admin.getUserById(userId)
-      return data?.user?.email ?? '—'
-    }
-
-    managers = await Promise.all(
-      [...hierIds].map(async userId => ({
+      return {
         id: userId,
         displayName: nameProUser.get(userId) ?? '—',
-        email: await mail(userId),
+        email: data?.user?.email ?? '—',
         hotelCount: haeuserProUser.get(userId) ?? 1,
-      })),
-    )
+        pending: !data?.user?.email_confirmed_at,
+      }
+    }
+
+    managers = await Promise.all([...hierIds].map(zeile))
     verfuegbareManager = await Promise.all(
       [...new Set((rows ?? []).map(r => r.user_id))]
         .filter(userId => !hierIds.has(userId))
-        .map(async userId => ({
-          id: userId,
-          displayName: nameProUser.get(userId) ?? '—',
-          email: await mail(userId),
-          hotelCount: haeuserProUser.get(userId) ?? 1,
-        })),
+        .map(zeile),
     )
 
     const nachName = (a: ManagerRow, b: ManagerRow) =>

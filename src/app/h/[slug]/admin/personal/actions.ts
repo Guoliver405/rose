@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/utils/supabase/service'
+import { createClient } from '@/utils/supabase/server'
 import { getAdminContext, getManagementContext } from '@/utils/auth'
 import { generatePin, generateToken } from '@/lib/ids'
 import { buildMaidEmail, normalizeUsername } from '@/lib/maid'
@@ -200,11 +201,116 @@ export async function deleteMaidAction(slug: string, profileId: string): Promise
   return {}
 }
 
-export type ReceptionCredentials = {
-  profileId: string
-  displayName: string
+/** Rückmeldung nach einer verschickten Einladung. */
+export type Einladung = { displayName: string; email: string }
+
+/**
+ * Gemeinsamer Einladungs-Pfad für Rezeption und Manager.
+ *
+ * Statt ein Passwort zu erzeugen und vorlesen zu lassen, verschickt Supabase
+ * eine Einladung über dieselbe SMTP-Strecke wie der Passwort-Reset. Die
+ * eingeladene Person vergibt ihr Passwort selbst — es existiert zu keinem
+ * Zeitpunkt außerhalb ihres Kopfes.
+ *
+ * **Kein Resend-Code nötig:** `inviteUserByEmail` geht denselben Weg wie
+ * `resetPasswordForEmail`. Der Resend-Schlüssel lebt weiterhin ausschließlich
+ * in Supabases SMTP-Einstellung, nicht im Projekt.
+ *
+ * Der Link in der Mail muss auf `/auth/confirm` zeigen (Vorlage in Supabase) —
+ * PKCE scheidet bei Einladungen aus, weil der einladende Browser ein anderer
+ * ist als der annehmende.
+ */
+async function ladeEin(opts: {
   email: string
-  password: string
+  displayName: string
+  hotelId: string
+  hotelSlug: string
+  role: 'reception' | 'manager'
+}): Promise<{ einladung?: Einladung; error?: string }> {
+  const { email, displayName, hotelId, hotelSlug, role } = opts
+  const admin = createAdminClient()
+
+  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
+  const { data: invited, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(email, {
+    redirectTo: `${base}/auth/confirm?next=/passwort-neu`,
+  })
+  if (inviteErr || !invited?.user) {
+    if (inviteErr?.message?.toLowerCase().includes('already')) {
+      return { error: 'Für diese E-Mail-Adresse gibt es bereits einen Zugang.' }
+    }
+    console.error('[inviteUserByEmail]', {
+      status: inviteErr?.status, code: inviteErr?.code, message: inviteErr?.message,
+    })
+    return { error: 'Die Einladung konnte nicht verschickt werden. Bitte die Adresse prüfen.' }
+  }
+  const userId = invited.user.id
+
+  // profiles-Zeile ist PFLICHT, auch für Management: stays.created_by und
+  // service_orders.done_by zeigen darauf. hotel_id = Stammhaus, NICHT die
+  // Berechtigung — die steht in hotel_members.
+  const { error: profileErr } = await admin
+    .from('profiles')
+    .insert({ id: userId, hotel_id: hotelId, display_name: displayName })
+  if (profileErr) {
+    await admin.auth.admin.deleteUser(userId)
+    return { error: `Profil konnte nicht angelegt werden: ${profileErr.message}` }
+  }
+
+  const { error: memberErr } = await admin
+    .from('hotel_members')
+    .insert({ hotel_id: hotelId, user_id: userId, role, display_name: displayName })
+  if (memberErr) {
+    await admin.auth.admin.deleteUser(userId)
+    return { error: `Zuordnung konnte nicht angelegt werden: ${memberErr.message}` }
+  }
+
+  revalidatePath(`/h/${hotelSlug}/admin`, 'layout')
+  revalidatePath('/admin')
+  return { einladung: { displayName, email } }
+}
+
+/**
+ * Einladung erneut schicken — für Zugänge, die noch nicht angenommen wurden.
+ *
+ * Bewusst über `resetPasswordForEmail` statt eines zweiten `invite`: der Nutzer
+ * existiert bereits, eine erneute Einladung würde daran scheitern. Das Ergebnis
+ * ist dasselbe — ein Link, über den sich ein Passwort setzen lässt.
+ */
+export async function resendInvitationAction(
+  slug: string,
+  userId: string,
+): Promise<{ error?: string; email?: string }> {
+  const ctx = await getAdminContext(slug)
+  if (!ctx) return { error: 'Keine Berechtigung.' }
+
+  const admin = createAdminClient()
+
+  // Nur Zugänge DIESES Hauses — die userId kommt aus dem Formular.
+  const { data: member } = await admin
+    .from('hotel_members')
+    .select('role')
+    .eq('hotel_id', ctx.hotelId)
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (!member) return { error: 'Zugang nicht gefunden.' }
+  if (member.role === 'manager' && !ctx.isOwner) {
+    return { error: 'Nur der Kontoinhaber kann Manager verwalten.' }
+  }
+
+  const { data: user } = await admin.auth.admin.getUserById(userId)
+  const email = user?.user?.email
+  if (!email) return { error: 'Zugang hat keine E-Mail-Adresse.' }
+
+  const supabase = await createClient()
+  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${base}/auth/confirm?next=/passwort-neu`,
+  })
+  if (error) {
+    console.error('[resendInvitation]', { status: error.status, message: error.message })
+    return { error: 'Der Link konnte nicht verschickt werden.' }
+  }
+  return { email }
 }
 
 /**
@@ -220,7 +326,7 @@ export type ReceptionCredentials = {
 export async function createReceptionAction(
   slug: string,
   formData: FormData,
-): Promise<{ credentials?: ReceptionCredentials; error?: string }> {
+): Promise<{ einladung?: Einladung; error?: string }> {
   const ctx = await getAdminContext(slug)
   if (!ctx) return { error: 'Keine Berechtigung.' }
 
@@ -230,45 +336,9 @@ export async function createReceptionAction(
   if (displayName.length < 2) return { error: 'Name muss mindestens 2 Zeichen haben.' }
   if (!/^\S+@\S+\.\S+$/.test(email)) return { error: 'Bitte eine gültige E-Mail-Adresse angeben.' }
 
-  const password = generateToken(12)
-  const admin = createAdminClient()
-
-  const { data: authUser, error: authErr } = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true, // kein Bestätigungs-Flow — Zugang wird persönlich übergeben
+  return ladeEin({
+    email, displayName, hotelId: ctx.hotelId, hotelSlug: ctx.hotelSlug, role: 'reception',
   })
-  if (authErr || !authUser.user) {
-    if (authErr?.message?.includes('already')) {
-      return { error: 'Diese E-Mail-Adresse ist bereits vergeben.' }
-    }
-    return { error: authErr?.message ?? 'Konto konnte nicht erstellt werden.' }
-  }
-
-  const { error: profileErr } = await admin.from('profiles').insert({
-    id: authUser.user.id,
-    hotel_id: ctx.hotelId,
-    display_name: displayName,
-  })
-  if (profileErr) {
-    // Rollback: Auth-User ohne Profil wäre eine Leiche
-    await admin.auth.admin.deleteUser(authUser.user.id)
-    return { error: `Profil konnte nicht angelegt werden: ${profileErr.message}` }
-  }
-
-  const { error: memberErr } = await admin.from('hotel_members').insert({
-    hotel_id: ctx.hotelId,
-    user_id: authUser.user.id,
-    role: 'reception',
-    display_name: displayName,
-  })
-  if (memberErr) {
-    await admin.auth.admin.deleteUser(authUser.user.id)
-    return { error: `Zuordnung konnte nicht angelegt werden: ${memberErr.message}` }
-  }
-
-  revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
-  return { credentials: { profileId: authUser.user.id, displayName, email, password } }
 }
 
 /**
@@ -336,13 +406,6 @@ export async function deleteReceptionAction(
 // Mit-Manager ernennt, wäre eine Rechteausweitung. Deshalb `isOwner`.
 // ═══════════════════════════════════════════════════════════════════════════
 
-export type ManagerCredentials = {
-  userId: string
-  displayName: string
-  email: string
-  password: string
-}
-
 /** Kontext für Manager-Verwaltung: nur der Kontoinhaber DIESES Hauses. */
 async function requireOwner(slug: string) {
   const ctx = await getManagementContext(slug)
@@ -354,7 +417,7 @@ async function requireOwner(slug: string) {
 export async function createManagerAction(
   slug: string,
   formData: FormData,
-): Promise<{ credentials?: ManagerCredentials; error?: string }> {
+): Promise<{ einladung?: Einladung; error?: string }> {
   const ctx = await requireOwner(slug)
   if (!ctx) return { error: 'Nur der Kontoinhaber kann Manager verwalten.' }
 
@@ -364,48 +427,15 @@ export async function createManagerAction(
   if (displayName.length < 2) return { error: 'Name muss mindestens 2 Zeichen haben.' }
   if (!/^\S+@\S+\.\S+$/.test(email)) return { error: 'Bitte eine gültige E-Mail-Adresse angeben.' }
 
-  const password = generateToken(12)
-  const admin = createAdminClient()
-
-  const { data: authUser, error: authErr } = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true, // kein Bestätigungs-Flow — Zugang wird persönlich übergeben
+  const res = await ladeEin({
+    email, displayName, hotelId: ctx.hotelId, hotelSlug: ctx.hotelSlug, role: 'manager',
   })
-  if (authErr || !authUser.user) {
-    if (authErr?.message?.includes('already')) {
-      return { error: 'Diese E-Mail-Adresse ist bereits vergeben. Falls die Person schon Manager ist, über „Vorhandenen Manager hinzufügen" auswählen.' }
-    }
-    return { error: authErr?.message ?? 'Konto konnte nicht erstellt werden.' }
+  // Beim Manager gibt es für „schon vergeben" einen zweiten Weg — darauf
+  // hinweisen, statt den Nutzer im Regen stehen zu lassen.
+  if (res.error?.includes('bereits einen Zugang')) {
+    return { error: 'Für diese E-Mail-Adresse gibt es bereits einen Zugang. Ist die Person schon Manager im Konto, über „Vorhandenen Manager hinzufügen" auswählen.' }
   }
-
-  // profiles-Zeile ist PFLICHT, auch für Management: stays.created_by und
-  // service_orders.done_by zeigen darauf. hotel_id = Stammhaus, NICHT die
-  // Berechtigung — die steht in hotel_members.
-  const { error: profileErr } = await admin.from('profiles').insert({
-    id: authUser.user.id,
-    hotel_id: ctx.hotelId,
-    display_name: displayName,
-  })
-  if (profileErr) {
-    await admin.auth.admin.deleteUser(authUser.user.id)
-    return { error: `Profil konnte nicht angelegt werden: ${profileErr.message}` }
-  }
-
-  const { error: memberErr } = await admin.from('hotel_members').insert({
-    hotel_id: ctx.hotelId,
-    user_id: authUser.user.id,
-    role: 'manager',
-    display_name: displayName,
-  })
-  if (memberErr) {
-    await admin.auth.admin.deleteUser(authUser.user.id)
-    return { error: `Zuordnung konnte nicht angelegt werden: ${memberErr.message}` }
-  }
-
-  revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
-  revalidatePath('/admin')
-  return { credentials: { userId: authUser.user.id, displayName, email, password } }
+  return res
 }
 
 /**

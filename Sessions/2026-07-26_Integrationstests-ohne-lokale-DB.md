@@ -532,6 +532,58 @@ ein solcher Gast-Deeplink antwortet mit 200 und der PIN-Eingabe. Der dafür
 angelegte Wegwerf-Mandant ist wieder entfernt, die Datenbank steht erneut auf
 null.
 
+## Einladungen statt vorgelesener Passwörter (Resend, Teil 2)
+
+Der Plan lautete „Resend-API anbinden". Die Recherche ergab, dass das für
+Einladungen **nicht nötig** ist: `inviteUserByEmail` geht über dieselbe
+SMTP-Strecke wie der Passwort-Reset. Keine neue Abhängigkeit, kein
+`RESEND_API_KEY` im Projekt — der Schlüssel lebt weiterhin nur in Supabases
+SMTP-Einstellung. Die Resend-API bräuchte es erst für *eigene* Mails mit
+eigenem Inhalt (Gast-Handout mit QR-Bild, Maid-Karte), nicht für Auth-Mails.
+
+Dabei kam eine echte Schwäche des bestehenden Reset-Flows heraus:
+
+> **PKCE wird bei Einladungen nicht unterstützt** — der einladende Browser ist
+> ein anderer als der annehmende, die Sicherheitsgarantie von PKCE lässt sich
+> dort nicht herstellen. (Ausdrücklich so in der Supabase-Dokumentation.)
+
+Der dokumentierte Weg für serverseitige Apps ist `token_hash` + `verifyOtp`.
+Der Hash hängt am **Konto**, nicht am Browser. Damit funktioniert derselbe
+Mechanismus für Einladung *und* Reset — und die Einschränkung „muss im selben
+Browser geöffnet werden", die weiter oben noch als Bauart-Eigenschaft
+dokumentiert war, **entfällt**. Sie war keine Naturkonstante, sondern Folge des
+gewählten Verfahrens.
+
+**Neu:** `/auth/confirm` löst `token_hash` ein (Typen `invite`, `recovery`,
+`email`, `email_change`), mit demselben Riegel gegen offene Weiterleitung wie
+`/auth/callback`. Letzteres bleibt bestehen, damit bereits verschickte Links
+weiter funktionieren.
+
+**Geändert:** `createReceptionAction` und `createManagerAction` erzeugen kein
+Passwort mehr, sondern laden ein — gemeinsamer Pfad `ladeEin()`, damit die
+beiden nicht auseinanderlaufen. Das Passwort existiert damit zu keinem
+Zeitpunkt außerhalb des Kopfes der eingeladenen Person. Die Liste zeigt
+„Einladung offen", solange `email_confirmed_at` leer ist, mit Knopf „Erneut
+senden" (`resendInvitationAction` — bewusst über `resetPasswordForEmail`, weil
+ein zweites `invite` an einem existierenden Nutzer scheitern würde).
+
+### Voraussetzung im Dashboard
+
+**Ohne angepasste Mail-Vorlagen funktionieren Einladungen nicht.** Die
+Auslieferungsvorlage nutzt `{{ .ConfirmationURL }}`; Supabase gibt die Sitzung
+dann im URL-Fragment zurück, und das kann ein Server nicht lesen.
+
+Unter **Authentication → Emails → Templates** den Link jeweils ersetzen:
+
+- *Invite user*:
+  `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite&next=/passwort-neu`
+- *Reset Password*:
+  `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/passwort-neu`
+
+Quellen:
+[SSR-Auth mit PKCE](https://supabase.com/docs/guides/auth/server-side/email-based-auth-with-pkce-flow-for-ssr),
+[inviteUserByEmail](https://supabase.com/docs/reference/javascript/auth-admin-inviteuserbyemail).
+
 ## 🔖 Wiederaufnahme
 
 **Stand am Ende des 26.07.2026:**

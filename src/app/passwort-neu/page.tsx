@@ -10,9 +10,18 @@ import NewPasswordForm from './NewPasswordForm'
  * oder in einem anderen Browser geöffnet worden; dann wird nicht kommentarlos
  * weitergeleitet, sondern erklärt, was zu tun ist.
  */
-export default async function PasswortNeuPage() {
+export default async function PasswortNeuPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ einladung?: string }>
+}) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+
+  // `/auth/confirm` hängt das an, wenn der Link aus einer Einladung stammt.
+  // Dieselbe Seite, andere Ansprache: hier vergibt jemand sein ERSTES Passwort.
+  const { einladung } = await searchParams
+  const istEinladung = einladung === '1'
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 p-8">
@@ -20,13 +29,16 @@ export default async function PasswortNeuPage() {
         <h1 className="text-3xl font-black text-ink">
           Ro<span className="text-blocked">Se</span>
         </h1>
-        <p className="mt-1 text-sm text-ink-muted">Neues Passwort vergeben</p>
+        <p className="mt-1 text-sm text-ink-muted">
+          {istEinladung ? 'Zugang einrichten' : 'Neues Passwort vergeben'}
+        </p>
       </div>
 
       {user ? (
         <>
           <p className="max-w-sm text-center text-sm text-ink-soft">
-            Für <span className="font-semibold text-ink">{user.email}</span>.
+            {istEinladung ? 'Willkommen! Vergib ein Passwort für ' : 'Für '}
+            <span className="font-semibold text-ink">{user.email}</span>.
             Nach dem Speichern bist du direkt angemeldet.
           </p>
           <NewPasswordForm />

@@ -2,14 +2,15 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
-  Building2, IdCard, KeyRound, Loader2, Plus, Printer, Sparkles, Trash2, UserCheck, UserMinus,
-  UserRound,
+  Building2, IdCard, Loader2, MailCheck, Plus, Printer, Send, Sparkles, Trash2, UserCheck,
+  UserMinus, UserRound,
 } from 'lucide-react'
 import {
   attachManagerAction, createMaidAction, createManagerAction, createReceptionAction,
   deleteMaidAction, deleteReceptionAction, detachManagerAction, issueMaidLoginCardAction,
-  setMaidActiveAction, type ManagerCredentials, type ReceptionCredentials,
+  resendInvitationAction, setMaidActiveAction, type Einladung,
 } from './actions'
 
 export type MaidRow = {
@@ -26,6 +27,8 @@ export type ReceptionRow = {
   id: string
   displayName: string
   email: string
+  /** Eingeladen, aber noch nicht angenommen. */
+  pending: boolean
 }
 
 /** „das übrige Haus bleibt" / „die übrigen 3 Häuser bleiben" — Singular zählt nicht mit. */
@@ -39,6 +42,8 @@ export type ManagerRow = {
   email: string
   /** Wie viele Häuser des Kontos diese Person insgesamt betreut. */
   hotelCount: number
+  /** Eingeladen, aber noch nicht angenommen. */
+  pending: boolean
 }
 
 export default function PersonalManager({
@@ -62,14 +67,15 @@ export default function PersonalManager({
   /** Nur der Kontoinhaber verwaltet Manager — sonst wäre es Rechteausweitung. */
   isOwner: boolean
 }) {
+  const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [confirmDeactivateId, setConfirmDeactivateId] = useState<string | null>(null)
-  const [recCredentials, setRecCredentials] = useState<ReceptionCredentials | null>(null)
+  const [recEinladung, setRecEinladung] = useState<Einladung | null>(null)
   const [confirmRecDeleteId, setConfirmRecDeleteId] = useState<string | null>(null)
-  const [mgrCredentials, setMgrCredentials] = useState<ManagerCredentials | null>(null)
+  const [mgrEinladung, setMgrEinladung] = useState<Einladung | null>(null)
   const [confirmMgrRemoveId, setConfirmMgrRemoveId] = useState<string | null>(null)
 
   const activeMaids = maids.filter(m => !m.deactivatedAt)
@@ -91,13 +97,25 @@ export default function PersonalManager({
   function runCreateReception(form: HTMLFormElement) {
     setError(null)
     setNotice(null)
-    setRecCredentials(null)
+    setRecEinladung(null)
     const formData = new FormData(form)
     startTransition(async () => {
       const res = await createReceptionAction(hotelSlug, formData)
       if (res.error) { setError(res.error); return }
       form.reset()
-      setRecCredentials(res.credentials!)
+      setRecEinladung(res.einladung!)
+      router.refresh()
+    })
+  }
+
+  /** Einladung erneut schicken — für Zugänge, die noch offen sind. */
+  function runResend(userId: string, name: string) {
+    setError(null)
+    setNotice(null)
+    startTransition(async () => {
+      const res = await resendInvitationAction(hotelSlug, userId)
+      if (res.error) { setError(res.error); return }
+      setNotice(`Neuer Link an ${name} verschickt (${res.email}).`)
     })
   }
 
@@ -114,20 +132,21 @@ export default function PersonalManager({
   function runCreateManager(form: HTMLFormElement) {
     setError(null)
     setNotice(null)
-    setMgrCredentials(null)
+    setMgrEinladung(null)
     const formData = new FormData(form)
     startTransition(async () => {
       const res = await createManagerAction(hotelSlug, formData)
       if (res.error) { setError(res.error); return }
       form.reset()
-      setMgrCredentials(res.credentials!)
+      setMgrEinladung(res.einladung!)
+      router.refresh()
     })
   }
 
   function runAttachManager(form: HTMLFormElement) {
     setError(null)
     setNotice(null)
-    setMgrCredentials(null)
+    setMgrEinladung(null)
     const userId = String(new FormData(form).get('userId') ?? '')
     if (!userId) { setError('Bitte einen Manager auswählen.'); return }
     startTransition(async () => {
@@ -479,17 +498,19 @@ export default function PersonalManager({
             <p className="mt-2 text-xs text-ink-muted">
               Rezeptions-Zugänge bedienen das Tagesgeschäft (Check-in/-out, Bestellungen,
               Drucken) — Einstellungen, Zimmer-Setup und Services bleiben dem Admin vorbehalten.
+              Die Person bekommt eine Einladung per E-Mail und vergibt ihr Passwort selbst.
             </p>
           </form>
 
-          {recCredentials && (
-            <div className="rounded-xl border border-action-tint-edge bg-action-tint p-4">
-              <p className="flex items-center gap-1.5 text-sm font-bold text-action-deep">
-                <KeyRound className="h-4 w-4" /> Zugang für {recCredentials.displayName} angelegt —
-                Passwort jetzt notieren, es wird nur einmal angezeigt:
+          {recEinladung && (
+            <div className="rounded-xl border border-positive-pill-edge bg-positive-tint p-4">
+              <p className="flex items-center gap-1.5 text-sm font-bold text-positive-deep">
+                <MailCheck className="h-4 w-4" /> Einladung an {recEinladung.displayName} verschickt
               </p>
-              <p className="mt-2 font-mono text-sm font-bold text-action-deep">
-                {recCredentials.email} &nbsp;/&nbsp; {recCredentials.password}
+              <p className="mt-1 font-mono text-sm text-positive-deep">{recEinladung.email}</p>
+              <p className="mt-2 text-xs text-positive-deep">
+                Sobald die Einladung angenommen ist, verschwindet der Hinweis
+                &bdquo;Einladung offen&ldquo; aus der Liste.
               </p>
             </div>
           )}
@@ -503,6 +524,21 @@ export default function PersonalManager({
                       <p className="font-bold text-ink">{r.displayName}</p>
                       <p className="font-mono text-xs text-ink-muted">{r.email}</p>
                     </div>
+                    {r.pending && (
+                      <>
+                        <span className="rounded-full bg-attention-pill px-2.5 py-0.5 text-xs font-semibold text-attention-deepest">
+                          Einladung offen
+                        </span>
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => runResend(r.id, r.displayName)}
+                          className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-xs font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
+                        >
+                          <Send className="h-3.5 w-3.5" /> Erneut senden
+                        </button>
+                      </>
+                    )}
                     <button
                       type="button"
                       disabled={pending}
@@ -596,7 +632,8 @@ export default function PersonalManager({
             <p className="mt-2 text-xs text-ink-muted">
               Ein Manager verwaltet dieses Haus vollständig — Zimmer, Personal,
               Services, Einstellungen. Auf das Konto (Plan, weitere Häuser,
-              Manager) hat er keinen Zugriff.
+              Manager) hat er keinen Zugriff. Die Person bekommt eine Einladung
+              per E-Mail und vergibt ihr Passwort selbst.
             </p>
           </form>
 
@@ -640,15 +677,12 @@ export default function PersonalManager({
             </form>
           )}
 
-          {mgrCredentials && (
-            <div className="rounded-xl border border-action-tint-edge bg-action-tint p-4">
-              <p className="flex items-center gap-1.5 text-sm font-bold text-action-deep">
-                <KeyRound className="h-4 w-4" /> Zugang für {mgrCredentials.displayName} angelegt —
-                Passwort jetzt notieren, es wird nur einmal angezeigt:
+          {mgrEinladung && (
+            <div className="rounded-xl border border-positive-pill-edge bg-positive-tint p-4">
+              <p className="flex items-center gap-1.5 text-sm font-bold text-positive-deep">
+                <MailCheck className="h-4 w-4" /> Einladung an {mgrEinladung.displayName} verschickt
               </p>
-              <p className="mt-2 font-mono text-sm font-bold text-action-deep">
-                {mgrCredentials.email} &nbsp;/&nbsp; {mgrCredentials.password}
-              </p>
+              <p className="mt-1 font-mono text-sm text-positive-deep">{mgrEinladung.email}</p>
             </div>
           )}
 
@@ -669,6 +703,21 @@ export default function PersonalManager({
                       <span className="rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-semibold text-ink-muted">
                         betreut {m.hotelCount} Häuser
                       </span>
+                    )}
+                    {m.pending && (
+                      <>
+                        <span className="rounded-full bg-attention-pill px-2.5 py-0.5 text-xs font-semibold text-attention-deepest">
+                          Einladung offen
+                        </span>
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => runResend(m.id, m.displayName)}
+                          className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-xs font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
+                        >
+                          <Send className="h-3.5 w-3.5" /> Erneut senden
+                        </button>
+                      </>
                     )}
                     <button
                       type="button"
