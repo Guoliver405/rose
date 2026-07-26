@@ -471,6 +471,29 @@ Quellen: [Custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp),
 [Redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls),
 [Resend → Supabase SMTP](https://resend.com/docs/send-with-supabase-smtp).
 
+## Datenbank geleert (26.07.2026)
+
+Auf Wunsch des Users vollständig abgeräumt: die gewachsenen Testdaten trugen
+überwiegend fiktive Adressen (`@rose.local`, `…rose.svc`), und mit dem
+Einladungscode lässt sich jederzeit ein sauberer Mandant anlegen.
+
+Gelöscht: 6 Konten, 8 Häuser, 13 Auth-Zugänge, 220 Zimmer, 248 Aufenthalte,
+497 Verlaufszeilen, 19 Services, 16 Bestellungen, 69 staff_log-Stiche.
+**Alle Tabellen stehen auf 0**, `auth.users` ebenfalls.
+
+**Fund dabei:** `room_state_transitions` hing als einzige Tabelle **nicht** an
+der Kaskade — `room_id` und `hotel_id` sind dort nackte UUIDs ohne
+Fremdschlüssel. Nach dem Löschen aller Konten blieben 497 verwaiste Zeilen
+stehen und mussten eigens entfernt werden. Für den Arbeitsnachweis ist dieses
+Verhalten gewollt (der Verlauf überlebt eine Fehlbedienung), aber es ist eine
+**offene Flanke für spätere Löschbegehren**: ein „Konto löschen" räumt den
+Zustandsverlauf heute nicht mit ab. In AGENTS.md beim Datenmodell vermerkt.
+
+**Zurück in die Anwendung** führt jetzt ausschließlich `/registrieren` mit dem
+Einladungscode aus `SIGNUP_INVITE_CODE`. Es gibt keinen Zugang mehr, der nicht
+über diesen Weg entstanden ist — und damit erstmals keinen mit einer Adresse,
+an die sich keine Mail zustellen lässt.
+
 ## 🔖 Wiederaufnahme
 
 **Stand:** Integrationstests laufen ohne jede lokale Infrastruktur, 32 grün.

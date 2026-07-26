@@ -206,7 +206,14 @@ Testdateien bleiben gültig, sie laufen dann eben nur in CI.
 - **Pricing-Form**: zimmergenau oder Staffeln.
 - **Hotel zwischen Konten verschieben** (Betreiberwechsel) — vorerst außen vor.
 
-## 5. Testzugänge (Stage)
+## 5. Testzugänge (Stage) — ⚠️ HINFÄLLIG
+
+> Diese Zugänge **existieren nicht mehr.** Die Datenbank wurde am 26.07.2026
+> vollständig geleert (siehe
+> [Integrationstests ohne lokale DB](2026-07-26_Integrationstests-ohne-lokale-DB.md),
+> Abschnitt „Datenbank geleert"). Neue Mandanten entstehen ausschließlich über
+> `/registrieren` mit dem Einladungscode. Der Abschnitt bleibt nur als Beleg
+> stehen, welche Kollisionen bewusst aufgebaut waren.
 
 | Konto | Häuser | Zugänge |
 |---|---|---|
