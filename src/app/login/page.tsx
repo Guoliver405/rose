@@ -1,18 +1,11 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { listAccessibleHotels } from '@/utils/auth'
+import { landingRoute } from '@/utils/auth'
 import LoginForm from './LoginForm'
 
 export default async function LoginPage() {
-  // Wohin nach dem Anmelden? Wer die Häuser-Seite überhaupt bedienen kann —
-  // Inhaber und Manager — landet dort: sie trägt Konto, Häuser und den Weg,
-  // ein weiteres anzulegen. Die Rezeption kennt nur ihr eigenes Haus und hat
-  // dort nichts zu holen, sie geht direkt ins Tagesgeschäft.
-  const hotels = await listAccessibleHotels()
-  if (hotels.length > 0) {
-    const nurRezeption = hotels.every(h => h.role === 'reception')
-    redirect(nurRezeption ? `/h/${hotels[0].slug}/admin` : '/admin')
-  }
+  const ziel = await landingRoute()
+  if (ziel) redirect(ziel)
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 p-8">
@@ -23,6 +16,12 @@ export default async function LoginPage() {
         <p className="mt-1 text-sm text-ink-muted">Rezeption — Anmeldung</p>
       </div>
       <LoginForm />
+
+      <p className="text-sm text-ink-muted">
+        <Link href="/passwort-vergessen" className="font-semibold text-action-strong hover:underline">
+          Passwort vergessen?
+        </Link>
+      </p>
 
       <p className="text-sm text-ink-muted">
         Noch kein Konto?{' '}

@@ -180,6 +180,27 @@ export async function listAccessibleHotels(): Promise<HotelAccess[]> {
 
 type HotelRow = { id: string; slug: string; name: string; account_id: string }
 
+/**
+ * Wohin nach einer erfolgreichen Anmeldung?
+ *
+ * Wer die Häuser-Seite bedienen kann — Inhaber und Manager — landet dort: sie
+ * trägt Konto, Häuser und den Weg, ein weiteres anzulegen. Die Rezeption kennt
+ * nur ihr eigenes Haus und hat dort nichts zu holen, sie geht direkt ins
+ * Tagesgeschäft.
+ *
+ * `null` = kein Zugriff auf irgendein Haus, also nicht (mehr) berechtigt.
+ *
+ * Bewusst an einer Stelle: dieselbe Frage stellt sich nach der Anmeldung, nach
+ * der Registrierung und nach dem Zurücksetzen des Passworts. Dreimal
+ * abgeschrieben liefe das über kurz oder lang auseinander.
+ */
+export async function landingRoute(): Promise<string | null> {
+  const hotels = await listAccessibleHotels()
+  if (hotels.length === 0) return null
+  const nurRezeption = hotels.every(h => h.role === 'reception')
+  return nurRezeption ? `/h/${hotels[0].slug}/admin` : '/admin'
+}
+
 /** Kontoinhaber-Kontext für den Bereich `/konto` (Plan, Häuser, Manager). */
 export type AccountContext = {
   userId: string

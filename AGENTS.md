@@ -160,6 +160,7 @@ Next.js 16 App Router · TypeScript · Tailwind CSS 4 · Supabase (PostgreSQL + 
 | `/guest/r/<token>` · `/service/auto/<token>` | QR-Einstiege | Token global eindeutig → mandantenfrei, leitet auf die Slug-Route weiter |
 | `/guest` · `/service/login` | — | Hinweisseiten ohne Mandant („QR scannen bzw. Hotel-Adresse nutzen"), bewusst ohne Hotel-Auswahl |
 | `/registrieren` | neue Kunden | Self-Service-Registrierung mit Einladungscode (Phase 6b); Angemeldete werden wie auf `/login` weitergeleitet |
+| `/passwort-vergessen` · `/auth/callback` · `/passwort-neu` | Management | Passwort zurücksetzen. Der Versand ist **Supabase-Sache** (`resetPasswordForEmail`) — kein Resend-Code in der Anwendung, nur die SMTP-Einstellung im Projekt. `/auth/callback` tauscht den Code gegen eine Sitzung (**PKCE: derselbe Browser**, in dem angefordert wurde) und leitet auf `/passwort-neu` |
 
 **Cookie-Trennung:** Admin- und Reinigungs-Portal teilen denselben Browser-Origin. Das Reinigungs-Portal nutzt [service-portal.ts](src/utils/supabase/service-portal.ts) mit Präfix `svc_` — nie `createClient()` aus `server.ts` in `/service`-Routen verwenden.
 
@@ -228,6 +229,8 @@ Auf saturierten Buttons per-Family-Foreground verwenden (`bg-attention text-atte
 | Maid-Login mit korrekter PIN wird abgewiesen, QR-Login funktioniert | Derselbe `username` existiert in mehreren Hotels (`unique (hotel_id, username)` ist nur je Hotel eindeutig). Strukturell gelöst seit 26.07.2026: der Slug in der URL grenzt auf genau einen Kandidaten ein. Die Zwischenlösung vom 25.07. (PIN-Vorsortierung + Anmeldeschleife) ist entfernt — sie war ein PIN-Orakel über Mandantengrenzen |
 | Gast/Reinigungskraft sieht Portal unter fremdem Hotelnamen | Sitzungs-Cookies gelten originweit, also auch unter fremden Slugs. Jede Portalseite muss `ctx.hotelId` gegen `requireHotelBySlug(slug)` prüfen — fehlt der Abgleich, rendert das eigene Zimmer/Board unter falschem Branding |
 | Realtime-Updates kommen im Portal nie an (keine Console-Fehler, Board bleibt eingefroren) | `RealtimeListener` ohne `token` gerendert: der Browser-Client verbindet nur mit dem Publishable Key, RLS filtert alle `postgres_changes` weg — auch wenn die Session in den Default-Cookies liegt. Access-Token der Session übergeben (`realtime.setAuth`) + `pollMs`-Fallback gegen Token-Ablauf (~1 h) |
+| Passwort-Reset an einen Testzugang scheitert mit „Email address … is invalid" | Supabase weist **nicht routbare Endungen wie `.local` grundsätzlich ab**, noch vor jedem Versandversuch. Alle Testzugänge des Projekts (`@rose.local`) sind davon betroffen — der Reset ist mit ihnen **nicht** testbar, dafür braucht es einen Zugang mit echter Adresse. Kein Fehler der Anwendung |
+| Reset-Link führt auf „Link ist nicht mehr gültig", obwohl er frisch ist | PKCE: `resetPasswordForEmail` legt den `code_verifier` als Cookie ab, `exchangeCodeForSession` braucht ihn. Der Link muss in **demselben Browser** geöffnet werden, in dem er angefordert wurde — aus dem Mail-Client eines anderen Geräts heraus schlägt der Tausch zwangsläufig fehl |
 
 ## Phasen-Plan
 

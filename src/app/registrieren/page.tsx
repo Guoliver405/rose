@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { listAccessibleHotels } from '@/utils/auth'
+import { landingRoute } from '@/utils/auth'
 import SignupForm from './SignupForm'
 
 /**
@@ -11,11 +11,8 @@ import SignupForm from './SignupForm'
  * wird wie auf der Anmeldeseite weitergeleitet.
  */
 export default async function RegistrierenPage() {
-  const hotels = await listAccessibleHotels()
-  if (hotels.length > 0) {
-    const nurRezeption = hotels.every(h => h.role === 'reception')
-    redirect(nurRezeption ? `/h/${hotels[0].slug}/admin` : '/admin')
-  }
+  const ziel = await landingRoute()
+  if (ziel) redirect(ziel)
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 p-8">

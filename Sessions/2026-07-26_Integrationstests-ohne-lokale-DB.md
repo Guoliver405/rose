@@ -339,6 +339,78 @@ Registrierungsseite verlinken sich gegenseitig.
 **Vor dem Deployen:** `SIGNUP_INVITE_CODE` in Vercel setzen — sonst ist die
 Registrierung dort geschlossen (gewollter Standard, aber man muss es wissen).
 
+## Passwort zurücksetzen (Resend, Teil 1)
+
+Frage des Users: *Lass uns Resend einbauen.* Dabei zeigte sich, dass „Resend
+einbauen" zwei verschiedene Dinge meint:
+
+1. **Custom SMTP in Supabase** — Supabase verschickt seine eigenen Mails
+   (Bestätigung, Reset, Einladung) über Resend. Reine **Dashboard-Einstellung**,
+   kein Anwendungscode.
+2. **Resend-API aus der Anwendung** — für eigene Mails: Einladungen,
+   Gast-Handout, Maid-Karte. Braucht Paket und API-Key.
+
+Der akute Mangel — kein Passwort-Zurücksetzen — hängt an (1). Deshalb steht in
+diesem Schritt **keine Zeile Resend-Code** in der Anwendung; gebaut wurde nur,
+was Supabase nicht mitbringt: die Oberfläche.
+
+**Der Weg, drei Teile:**
+
+- `/passwort-vergessen` → `resetPasswordForEmail` mit
+  `redirectTo = <site>/auth/callback?next=/passwort-neu`.
+- `/auth/callback` (Route Handler, weil Cookies geschrieben werden) → tauscht
+  `?code=` gegen eine Sitzung, leitet weiter.
+- `/passwort-neu` → `updateUser({ password })`, danach direkt angemeldet.
+
+**Zwei Riegel, die leicht zu übersehen sind:**
+
+- **Offener Weiterleiter.** `next` kommt aus der URL. Ohne Prüfung auf relative
+  Ziele (`/…`, aber nicht `//…`) wäre `/auth/callback` ein Sprungbrett auf
+  fremde Seiten unter unserer Domain.
+- **PKCE bindet an den Browser.** `resetPasswordForEmail` legt den
+  `code_verifier` als Cookie ab; `exchangeCodeForSession` braucht ihn. Wer den
+  Link auf einem anderen Gerät öffnet, scheitert zwangsläufig. Das ist kein
+  Fehler, sondern die Bauart — deshalb sagen alle drei Seiten es ausdrücklich.
+
+**Befund beim Testen:** Ein Reset für `alpenblick@rose.local` scheitert mit
+`Email address "alpenblick@rose.local" is invalid`. Supabase weist nicht
+routbare Endungen wie `.local` **grundsätzlich** ab, noch vor jedem
+Versandversuch. **Sämtliche Testzugänge des Projekts sind davon betroffen** —
+der Reset lässt sich mit ihnen nicht end-to-end prüfen, dafür braucht es einen
+Zugang mit echter Adresse. Die Fehlermeldung unterscheidet diesen Fall jetzt von
+einer Störung („nicht zustellbar" statt „später erneut versuchen").
+
+**Nebenbei aufgeräumt:** Die Regel „wohin nach dem Anmelden" stand nach der
+Registrierung an zwei, mit dem Reset an drei Stellen. Jetzt einmal als
+`landingRoute()` in [auth.ts](../src/utils/auth.ts).
+
+**Verifiziert, soweit ohne SMTP möglich:**
+
+| Fall | Ergebnis |
+|---|---|
+| `/passwort-neu` ohne Sitzung | erklärt den Grund, bietet neuen Link an ✅ |
+| `/auth/callback` ohne Code | leitet auf `/passwort-vergessen?fehler=link` ✅ |
+| Reset für `.local`-Adresse | „nicht zustellbar", Ursache im Server-Log ✅ |
+
+Was **nicht** geprüft ist: der vollständige Durchlauf mit echter Mail. Dafür
+fehlen die SMTP-Einstellung und ein Zugang mit echter Adresse — siehe unten.
+
+### Einrichtung, die nur im Dashboard geht
+
+1. **Resend** → Domain verifizieren. Der User hat bereits ein Konto für einen
+   anderen Dienst; eine dort verifizierte Domain darf unter *jeder* Adresse
+   dieser Domain senden, RoSe braucht also keine eigene (z. B.
+   `rose@vorhandene-domain`). API-Key erzeugen.
+2. **Supabase** → Project Settings → Authentication → SMTP Settings:
+   Host `smtp.resend.com`, Port `465`, Benutzer `resend`, Passwort = der
+   Resend-API-Key, Absender = die verifizierte Adresse.
+3. **Supabase** → Authentication → URL Configuration → Redirect URLs:
+   `https://rose-sand-one.vercel.app/auth/callback` **und**
+   `http://localhost:3000/auth/callback`. Fehlt der Eintrag, verweigert
+   Supabase die Weiterleitung und der Link läuft ins Leere.
+4. Zum Testen einen Zugang mit **echter** Adresse anlegen — die
+   `@rose.local`-Konten können das nicht.
+
 ## 🔖 Wiederaufnahme
 
 **Stand:** Integrationstests laufen ohne jede lokale Infrastruktur, 32 grün.
@@ -346,15 +418,15 @@ Arbeitsbaum committet.
 
 **Offen, in Reihenfolge:**
 
-1. **Resend anbinden.** Der nächste Schritt, weil er vier Dinge auf einmal
-   freischaltet: E-Mail-Bestätigung bei der Registrierung (dann echtes
-   `signUp()` statt Admin-API), **Passwort-Zurücksetzen** (fehlt heute
-   komplett — wer sein Passwort vergisst, braucht einen Eingriff),
-   Einladungs-Mails für Manager- und Rezeptions-Zugänge statt vorgelesener
-   Passwörter, und später Gast-Handout und Maid-Karte wahlweise per Mail.
-   In Supabase als Custom SMTP hinterlegen; der eingebaute Sender taugt nicht
-   für den Betrieb.
-2. **Seite „Mein Zugang"** — Anzeigename und Passwort selbst bearbeitbar (siehe
+1. **SMTP einrichten und den Reset end-to-end prüfen** — die vier Schritte im
+   Abschnitt „Einrichtung, die nur im Dashboard geht". Die Anwendungsseite ist
+   fertig; ohne SMTP und einen Zugang mit echter Adresse lässt sie sich nur
+   bis zur Versandgrenze testen.
+2. **Resend-API für eigene Mails** (Teil 2): Einladungen für Manager- und
+   Rezeptions-Zugänge statt vorgelesener Passwörter — betrifft beide
+   Anlege-Wege im Personal-Menü. Danach optional E-Mail-Bestätigung bei der
+   Registrierung einschalten (dann echtes `signUp()` statt Admin-API).
+3. **Seite „Mein Zugang"** — Anzeigename und Passwort selbst bearbeitbar (siehe
    Datenkorrektur oben); heute gibt es nur `…/admin/einstellungen/passwort`.
 3. **Login-Actions abdecken** — `guestLoginAction`, `maidLoginAction` (leiten
    per `redirect()` um). Wertvollster Einzeltest: *fünf Fehlversuche sperren nur

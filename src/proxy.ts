@@ -55,5 +55,11 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/login', '/registrieren', '/service/:path*', '/h/:path*'],
+  matcher: [
+    '/admin/:path*', '/login', '/registrieren',
+    // Passwort-Zurücksetzen: /auth/callback schreibt die Sitzung, die beiden
+    // Seiten lesen sie — alle drei brauchen den Cookie-Durchgriff.
+    '/auth/:path*', '/passwort-vergessen', '/passwort-neu',
+    '/service/:path*', '/h/:path*',
+  ],
 }
