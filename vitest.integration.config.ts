@@ -2,18 +2,21 @@ import { defineConfig } from 'vitest/config'
 import { fileURLToPath } from 'node:url'
 
 /**
- * Integrationstests gegen eine LOKALE Supabase-Instanz (Docker).
+ * Integrationstests gegen die Supabase-Instanz des Projekts.
  *
- *   npm run db:start        einmalig, braucht Docker Desktop
- *   npm run db:reset        Migrationen aus Supabase_sql/archive einspielen
  *   npm run test:integration
  *
- * Bewusst getrennt vom Unit-Lauf: die Unit-Tests brauchen nichts und laufen in
- * CI, diese hier brauchen eine Datenbank.
+ * Kein Docker, kein WSL, keine Supabase-CLI: die Testwelt legt eigene Konten,
+ * Häuser und Nutzer mit einer Lauf-Kennung an und räumt sie wieder ab
+ * (tests/integration/helpers/world.ts). Verbindungsdaten kommen aus
+ * `.env.local` bzw. aus der Job-Umgebung in CI.
  *
- * `fileParallelism: false` ist Pflicht — alle Testdateien teilen sich dieselbe
- * Datenbank und bauen die Testwelt neu auf; parallel würden sie sich
- * gegenseitig die Fixtures unter den Füßen wegräumen.
+ * Bewusst getrennt vom Unit-Lauf: die Unit-Tests brauchen keine Datenbank und
+ * laufen deshalb in jeder Umgebung ohne Secrets.
+ *
+ * `fileParallelism: false`: jede Testdatei baut ihre eigene Welt auf. Die
+ * Lauf-Kennung würde sie zwar auch parallel trennen, aber seriell bleibt der
+ * Fehlerfall lesbar und die Last auf der gemeinsamen Instanz klein.
  */
 export default defineConfig({
   test: {

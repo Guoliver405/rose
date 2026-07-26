@@ -11,10 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "verify": "npm run typecheck && npm run lint && npm run test",
-    "db:start": "supabase start",
-    "db:stop": "supabase stop",
-    "db:reset": "node scripts/sync-migrations.mjs && supabase db reset"
+    "verify": "npm run typecheck && npm run lint && npm run test"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

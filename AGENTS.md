@@ -72,7 +72,7 @@ die im UI unsichtbar falsch sein können: Zeitfenster über Mitternacht,
 Stayover-Fälligkeit, Stale-Timeout, Schicht-Paarbildung mit Klammerung und
 Plausibilitätsgrenzen, Abrechnungsregel je Zimmer.
 
-**Integration (`tests/integration/`) gegen eine LOKALE Supabase-Instanz** —
+**Integration (`tests/integration/`) gegen die Supabase-Instanz des Projekts** —
 hier liegt das größte Risiko, denn beide ernsten Funde vom 26.07.2026 waren
 Isolationslücken. Zwei Ebenen:
 
@@ -89,16 +89,31 @@ den Kollisionen, die uns eingeholt haben: dieselbe Zimmernummer in zwei Häusern
 derselbe Maid-Benutzername in zwei Häusern.
 
 ```bash
-npm run db:start          # einmalig, braucht Docker Desktop
-npm run db:reset          # sync-migrations + supabase db reset
 npm run test:integration
 ```
 
-`supabase/migrations/` wird aus `Supabase_sql/archive/` **erzeugt**
-(`scripts/sync-migrations.mjs`, läuft in `db:reset`) und ist gitignored —
-einzige Quelle der Wahrheit bleibt die Projekt-Ablage. Die Verbindungsdaten
-liest `tests/integration/setup.ts` aus `supabase status`; nichts ist
-hartkodiert, und ein Riegel bricht ab, falls die URL nicht auf localhost zeigt.
+**Kein Docker, kein WSL, keine Supabase-CLI.** Die Tests laufen neben den echten
+Daten in derselben Instanz; möglich macht das eine einzige, strikt
+durchgehaltene Regel: *angefasst wird ausschließlich, was der Lauf selbst
+erzeugt hat.* Drei Schichten setzen sie um — (1) jeder Lauf zieht eine zufällige
+Kennung und schreibt sie in **jeden** Namen (`itest-<lauf>-…`: Konto, Slug,
+E-Mail, Benutzername), (2) `destroyWorld()` löscht nur über eingesammelte IDs,
+nie über Aufzählen oder Muster, (3) vor jedem Löschen wird die Zeile gelesen und
+auf die Kennung geprüft — fehlt sie, bricht der Lauf ab, statt zu löschen. Ein
+Fehler in der Aufräumroutine kostet damit einen roten Test, keine Daten. Reste
+abgestürzter Läufe kehrt `sweepStaleRuns()` nach zwei Stunden auf.
+
+Der ursprüngliche Entwurf löschte beim Aufbau schlicht **alle** Konten und
+Auth-Nutzer der Datenbank. Genau das — und nur das — erzwang eine eigene lokale
+Instanz samt Docker und WSL. Die Regel oben ersetzt den ganzen Unterbau. Preis:
+`supabase db reset` fällt weg, die Migrationen werden also nicht mehr gegen eine
+leere DB nachgespielt. Das war ohnehin kein echter Verlust, weil Migrationen
+laut Konvention von Hand im SQL-Editor eingespielt werden.
+
+Verbindungsdaten liest `tests/integration/setup.ts` aus bereits gesetzten
+Umgebungsvariablen, sonst aus `.env.local` — nichts ist hartkodiert. In CI
+laufen die Integrationstests bislang **nicht**: dafür müssten die drei
+Supabase-Schlüssel als GitHub-Secrets hinterlegt werden.
 
 **Noch nicht abgedeckt:** die Login-Actions selbst (`guestLoginAction`,
 `maidLoginAction`) — sie leiten per `redirect()` um und brauchen etwas mehr
@@ -234,7 +249,8 @@ Solange es keine Self-Service-Registrierung gibt (Phase 6b), werden Mandanten ma
 
 Wie in HotCord: Protokolle unter `Sessions/` ablegen, aktuellsten Stand hier verlinken.
 
-- [Sessions/2026-07-26_Testinfrastruktur-und-Uebergabe.md](Sessions/2026-07-26_Testinfrastruktur-und-Uebergabe.md) — **HIER STARTEN.** Übergabe-Dokument: Teststand (Unit + CI laufen, Integrationstests stehen bereit, sind aber nie ausgeführt), was an der lokalen Windows-Umgebung installiert wurde und **wie man es rückgängig macht**, sowie alle offenen Schritte in Reihenfolge samt Testzugängen.
+- [Sessions/2026-07-26_Integrationstests-ohne-lokale-DB.md](Sessions/2026-07-26_Integrationstests-ohne-lokale-DB.md) — **HIER STARTEN.** Die Integrationstests laufen ohne lokale Datenbank direkt gegen die Projekt-Instanz (32 Tests grün); Docker, WSL und Supabase-CLI sind für das Projekt entbehrlich geworden. Enthält die Isolationsregel, die das trägt, die Verifikation, den gefahrlosen Rückbau der lokalen Umgebung und den Wiederaufnahme-Block.
+- [Sessions/2026-07-26_Testinfrastruktur-und-Uebergabe.md](Sessions/2026-07-26_Testinfrastruktur-und-Uebergabe.md) — Übergabe-Dokument, **Abschnitte 2 und 4 überholt** (siehe oben). Weiterhin gültig: Abschnitt 3 (was an der lokalen Windows-Umgebung installiert wurde und wie man es rückgängig macht) und Abschnitt 5 (Testzugänge der Stage).
 - [Sessions/2026-07-26_Phase-6d_Konten-und-Manager.md](Sessions/2026-07-26_Phase-6d_Konten-und-Manager.md) — **Fachlich aktueller Stand.** Ein Konto trägt beliebig viele Häuser (Zielgruppe Hotelketten), neue Manager-Rolle über eine Teilmenge der Häuser, Rezeptions-Portal unter `/h/<slug>/admin`, Haus-Auswahl auf `/admin`, Konto-Bereich `/konto`. Acht Abnahmekriterien verifiziert. **Für Wiederaufnahme: „🔖 Wiederaufnahme"-Block am Ende des Protokolls lesen.**
 - [Sessions/2026-07-26_Phase-6c_Mandantenfaehigkeit.md](Sessions/2026-07-26_Phase-6c_Mandantenfaehigkeit.md) — Mandant in die URL (`/h/<slug>/guest`, `/h/<slug>/service/login`), beide Formular-Logins hotel-scoped, Zwischenlösung vom 25.07. entfernt, Branding-Leak geschlossen, PIN-Default 6, Slug im Einstellungsdialog. Fünf Abnahmekriterien end-to-end verifiziert. **Für Wiederaufnahme: „🔖 Wiederaufnahme"-Block am Ende des Protokolls lesen.**
 - [Sessions/2026-07-05_Phase-0-1_Fundament-und-Admin-Portal.md](Sessions/2026-07-05_Phase-0-1_Fundament-und-Admin-Portal.md) — Alle Phasen 0–5 umgesetzt und end-to-end verifiziert: Rezeptions-Portal (Zimmer, Check-in/-out + PIN, Priorisieren, Personal mit QR-Karten, Service-Konfigurator, Orders-Tab, Einstellungen mit Policies + Passwort, QR-Aushänge + Gast-Handout), Gastportal (Zimmernummer/QR-Deep-Link + PIN mit Rate-Limit, Reinigen/DND, Service-Bestellung), Reinigungsboard (QR-/PIN-Login, Etagen-Score, Schicht/Pause, Slider, Stale-Timeout, Stayover-Routine). **Für Wiederaufnahme: „🔖 Wiederaufnahme"-Block am Ende des Protokolls lesen.**

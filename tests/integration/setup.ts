@@ -1,72 +1,70 @@
-import { execSync } from 'node:child_process'
+import { existsSync, readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 
 /**
- * Setup-Datei der Integrationstests: legt die Verbindungsdaten der LOKALEN
- * Supabase-Instanz als Umgebungsvariablen ab, bevor irgendein Test lädt.
+ * Setup-Datei der Integrationstests: legt die Verbindungsdaten als
+ * Umgebungsvariablen ab, bevor irgendein Test lädt.
  *
- * Läuft bewusst als `setupFiles` (einmal je Worker) statt als `globalSetup` —
- * so stehen die Variablen garantiert in dem Prozess, der die Tests ausführt.
- * `fileParallelism: false` in der Config sorgt dafür, dass es genau ein Worker
- * bleibt; alle Tests teilen sich dieselbe Datenbank und dürfen sich nicht
- * gegenseitig die Fixtures wegräumen.
+ * Die Tests laufen gegen die **gemeinsame Supabase-Instanz des Projekts**, nicht
+ * gegen eine lokale Kopie — kein Docker, kein WSL, keine Supabase-CLI. Das ist
+ * gefahrlos, weil die Testwelt rein additiv arbeitet: jeder Lauf erzeugt eigene
+ * Konten, Häuser und Nutzer, die eine Lauf-Kennung im Namen tragen
+ * (`itest-<lauf>-…`), und räumt am Ende genau diese Zeilen wieder ab. Nichts
+ * Fremdes wird verändert; die Aufräumroutine bricht ab, sobald eine Zeile die
+ * Kennung nicht trägt. Details in helpers/world.ts.
  *
- * Nichts ist hartkodiert: die Schlüssel der lokalen Instanz stehen zwar fest,
- * aber ein kopierter Schlüssel im Repo lädt dazu ein, ihn irgendwann gegen die
- * echte Datenbank zu richten.
+ * Läuft bewusst als `setupFiles` (im Testprozess selbst) statt als
+ * `globalSetup` — so stehen die Variablen garantiert in dem Prozess, der die
+ * Tests ausführt.
+ *
+ * Reihenfolge der Quellen:
+ *   1. bereits gesetzte Umgebungsvariablen — so füttert CI seine Secrets ein
+ *   2. `.env.local` im Projektwurzelverzeichnis — der Entwicklerrechner
  */
-type Status = Record<string, string>
+const REQUIRED = [
+  'NEXT_PUBLIC_SUPABASE_URL',
+  'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
+  'SUPABASE_SECRET_KEY',
+] as const
 
-function readStatus(): Status {
-  // execSync statt execFileSync mit shell:true — sonst warnt Node (DEP0190)
-  // über nicht escapte Argumente. Das Kommando ist hier fest, nichts kommt
-  // von außen.
-  const raw = execSync('npx supabase status -o json', {
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  })
-  return JSON.parse(raw) as Status
-}
+/**
+ * Minimaler .env-Parser. Bewusst kein `dotenv` als Abhängigkeit: gebraucht wird
+ * `KEY=VALUE`, Kommentarzeilen raus, umschließende Anführungszeichen weg.
+ */
+function parseEnvFile(path: string): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const line of readFileSync(path, 'utf8').split(/\r?\n/)) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith('#')) continue
 
-/** CLI-Versionen benennen die Felder leicht unterschiedlich. */
-function pick(status: Status, ...names: string[]): string | undefined {
-  const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, '')
-  for (const name of names) {
-    const hit = Object.entries(status).find(([key]) => norm(key) === norm(name))
-    if (hit?.[1]) return hit[1]
+    // Werte dürfen '=' enthalten (JWTs tun das) — nur am ersten trennen.
+    const eq = trimmed.indexOf('=')
+    if (eq === -1) continue
+
+    const key = trimmed.slice(0, eq).trim()
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) continue
+
+    out[key] = trimmed.slice(eq + 1).trim().replace(/^(['"])(.*)\1$/, '$2')
   }
-  return undefined
+  return out
 }
 
-let status: Status
-try {
-  status = readStatus()
-} catch {
+const envPath = fileURLToPath(new URL('../../.env.local', import.meta.url))
+const fromFile = existsSync(envPath) ? parseEnvFile(envPath) : {}
+
+for (const key of REQUIRED) {
+  // Kein `??=` — eine fehlende Datei würde sonst den String "undefined" setzen.
+  if (!process.env[key] && fromFile[key]) process.env[key] = fromFile[key]
+}
+if (!process.env.NEXT_PUBLIC_SITE_URL) {
+  process.env.NEXT_PUBLIC_SITE_URL = fromFile.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+}
+
+const missing = REQUIRED.filter((key) => !process.env[key])
+if (missing.length > 0) {
   throw new Error(
-    '\nLokale Supabase-Instanz nicht erreichbar.\n' +
-    '  1. Docker Desktop starten\n' +
-    '  2. npm run db:start\n' +
-    '  3. npm run db:reset   (spielt die Migrationen aus Supabase_sql/archive ein)\n',
+    '\nVerbindungsdaten für die Integrationstests fehlen: ' + missing.join(', ') + '\n' +
+    `  lokal: in .env.local eintragen (${envPath})\n` +
+    '  in CI: als Secrets in die Job-Umgebung legen\n',
   )
 }
-
-const url = pick(status, 'API_URL', 'apiUrl')
-const anon = pick(status, 'ANON_KEY', 'anonKey', 'PUBLISHABLE_KEY')
-const service = pick(status, 'SERVICE_ROLE_KEY', 'serviceRoleKey', 'SECRET_KEY')
-
-if (!url || !anon || !service) {
-  throw new Error(
-    `supabase status lieferte keine vollständigen Verbindungsdaten. Felder: ${Object.keys(status).join(', ')}`,
-  )
-}
-
-// Sicherheitsnetz: niemals versehentlich gegen die echte Stage laufen.
-if (!/^https?:\/\/(127\.0\.0\.1|localhost)/.test(url)) {
-  throw new Error(`Integrationstests laufen nur lokal — erhalten: ${url}`)
-}
-
-// Die App liest genau diese Namen; dadurch arbeiten die echten Client-Fabriken
-// aus src/utils/supabase unverändert gegen die lokale Instanz.
-process.env.NEXT_PUBLIC_SUPABASE_URL = url
-process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = anon
-process.env.SUPABASE_SECRET_KEY = service
-process.env.NEXT_PUBLIC_SITE_URL = 'http://localhost:3000'

@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { buildMaidEmail } from '@/lib/maid'
 
@@ -6,18 +7,50 @@ import { buildMaidEmail } from '@/lib/maid'
  * uns in der Praxis eingeholt haben.
  *
  *   Konto Alpha
- *     Haus A1 „test-alpha-eins"  — Zimmer 101, 102 · Rezeption · Reinigung @maria
- *     Haus A2 „test-alpha-zwei"  — Zimmer 201     · Manager (NUR hier)
+ *     Haus A1 — Zimmer 101, 102 · Rezeption · Reinigung @maria-…
+ *     Haus A2 — Zimmer 201      · Manager (NUR hier)
  *     Inhaber: alle Häuser des Kontos
  *   Konto Beta
- *     Haus B1 „test-beta-eins"   — Zimmer 101 (gleiche Nummer wie A1!)
- *                                · Reinigung @maria (gleicher Benutzername!)
+ *     Haus B1 — Zimmer 101 (gleiche Nummer wie A1!)
+ *             · Reinigung mit dem GLEICHEN Benutzernamen wie in A1
  *     Inhaber: nur Beta
  *
  * Zimmernummer und Benutzername sind absichtlich doppelt vergeben — sie sind
  * laut Schema nur JE HOTEL eindeutig, und genau daran hingen die Fehler aus
  * Phase 6c.
+ *
+ * ── Warum diese Welt neben echten Daten leben darf ──────────────────────────
+ *
+ * Die Tests laufen gegen die gemeinsame Supabase-Instanz des Projekts. Damit
+ * das gefahrlos ist, gilt hier eine einzige, strikt durchgehaltene Regel:
+ *
+ *   **Angefasst wird ausschließlich, was dieser Lauf selbst erzeugt hat.**
+ *
+ * Umgesetzt in drei Schichten:
+ *   1. Jeder Lauf zieht eine zufällige Kennung und schreibt sie in JEDEN Namen
+ *      (Konto, Slug, E-Mail, Benutzername). Zwei Läufe kollidieren nie —
+ *      auch nicht lokal-gegen-CI.
+ *   2. `destroyWorld()` löscht ausschließlich über eingesammelte IDs, nie über
+ *      Aufzählen oder Muster.
+ *   3. Vor jedem Löschen wird die Zeile gelesen und geprüft, ob sie die Kennung
+ *      DIESES Laufs trägt. Trifft das nicht zu, bricht der Lauf ab, statt zu
+ *      löschen. Ein Fehler in der Aufräumroutine kostet damit einen roten Test,
+ *      keine Daten.
+ *
+ * Ein früherer Entwurf hat schlicht alle Konten und alle Auth-Nutzer der
+ * Datenbank gelöscht. Das erzwang eine eigene lokale Instanz (Docker + WSL +
+ * CLI) und war der einzige Grund dafür. Die Regel oben ersetzt den ganzen
+ * Unterbau.
  */
+
+/** Erkennungsmarke in jedem erzeugten Namen. Nichts Echtes trägt sie je. */
+const MARKER = 'itest'
+
+/** Muster einer vollständigen Lauf-Kennung, z. B. `itest-3f9a12`. */
+const TOKEN_RE = /itest-[0-9a-f]{6}/
+
+/** Reste eines abgestürzten Laufs gelten ab hier als verwaist. */
+const STALE_MS = 2 * 60 * 60 * 1000
 
 const PW = 'IntegrationTest!2026'
 
@@ -25,6 +58,10 @@ export type UserHandle = { id: string; email: string; password: string }
 export type HotelHandle = { id: string; slug: string; name: string; rooms: Record<string, string> }
 
 export type World = {
+  /** Kennung dieses Laufs, z. B. `3f9a12`. Steckt in jedem erzeugten Namen. */
+  runId: string
+  /** Vollständige Marke, z. B. `itest-3f9a12` — der Riegel der Aufräumroutine. */
+  token: string
   alpha: {
     accountId: string
     owner: UserHandle
@@ -40,6 +77,9 @@ export type World = {
     maid: UserHandle & { username: string }
     b1: HotelHandle
   }
+  /** Was dieser Lauf erzeugt hat — die einzige Grundlage des Aufräumens. */
+  createdAccountIds: string[]
+  createdUserIds: string[]
 }
 
 export function serviceClient(): SupabaseClient {
@@ -79,30 +119,88 @@ export async function clientAs(user: UserHandle): Promise<SupabaseClient> {
   )
 }
 
-/** Räumt die lokale Testdatenbank vollständig ab. */
-export async function resetDatabase(): Promise<void> {
+// ── Aufräumen ───────────────────────────────────────────────────────────────
+
+/**
+ * Der Riegel. Jedes Löschen läuft hierdurch: trägt der gelesene Name bzw. die
+ * E-Mail nicht die Kennung DIESES Laufs, wird nicht gelöscht, sondern
+ * abgebrochen.
+ */
+function assertOwnedByRun(label: string, token: string, was: string): void {
+  if (label.includes(token)) return
+  throw new Error(
+    `Aufräumen abgebrochen: ${was} „${label}" trägt nicht die Lauf-Kennung ${token}. ` +
+    'Es wurde nichts gelöscht.',
+  )
+}
+
+/**
+ * Räumt genau die Zeilen ab, die `buildWorld()` erzeugt hat.
+ *
+ * Reihenfolge: erst die Konten (die Kaskade nimmt Häuser, Zimmer, Aufenthalte,
+ * Zustände, Service-Katalog und Bestellungen mit), dann die Auth-Nutzer (die
+ * Kaskade nimmt `profiles`, `account_members` und `hotel_members` mit).
+ */
+export async function destroyWorld(world: World): Promise<void> {
   const admin = serviceClient()
 
-  // Konten kaskadieren auf Hotels und damit auf Zimmer, Aufenthalte, Zustände,
-  // Service-Katalog und Bestellungen.
-  const { data: accounts } = await admin.from('accounts').select('id')
-  for (const a of accounts ?? []) await admin.from('accounts').delete().eq('id', a.id)
+  for (const id of world.createdAccountIds) {
+    const { data } = await admin.from('accounts').select('id, name').eq('id', id).maybeSingle()
+    if (!data) continue
+    assertOwnedByRun(data.name, world.token, 'Konto')
+    await admin.from('accounts').delete().eq('id', id)
+  }
 
-  // Häuser ohne Konto kann es nach der Migration nicht geben — sicherheitshalber.
-  const { data: hotels } = await admin.from('hotels').select('id')
-  for (const h of hotels ?? []) await admin.from('hotels').delete().eq('id', h.id)
-
-  // Auth-Nutzer kaskadieren auf profiles, account_members und hotel_members.
-  for (let page = 1; page <= 20; page++) {
-    const { data } = await admin.auth.admin.listUsers({ page, perPage: 50 })
-    const users = data?.users ?? []
-    if (users.length === 0) break
-    for (const u of users) await admin.auth.admin.deleteUser(u.id)
-    if (users.length < 50) break
+  for (const id of world.createdUserIds) {
+    const { data } = await admin.auth.admin.getUserById(id)
+    const email = data?.user?.email
+    if (!email) continue
+    assertOwnedByRun(email, world.token, 'Auth-Nutzer')
+    await admin.auth.admin.deleteUser(id)
   }
 }
 
-async function createAuthUser(email: string): Promise<UserHandle> {
+/**
+ * Kehrt Reste abgestürzter Läufe auf — Läufe, die vor `destroyWorld()`
+ * abgebrochen sind.
+ *
+ * Bewusst eng: gelöscht wird nur, was das vollständige Muster `itest-<6 hex>`
+ * im Namen trägt UND älter als zwei Stunden ist. Die Altersgrenze schützt
+ * einen parallel laufenden zweiten Lauf.
+ */
+async function sweepStaleRuns(): Promise<void> {
+  const admin = serviceClient()
+  const cutoff = new Date(Date.now() - STALE_MS).toISOString()
+
+  const { data: accounts } = await admin
+    .from('accounts')
+    .select('id, name')
+    .like('name', `${MARKER}-%`)
+    .lt('created_at', cutoff)
+
+  for (const a of accounts ?? []) {
+    if (!TOKEN_RE.test(a.name)) continue
+    await admin.from('accounts').delete().eq('id', a.id)
+  }
+
+  // Auth-Nutzer hängen an keiner Kaskade der Konten und müssen einzeln weg.
+  for (let page = 1; page <= 20; page++) {
+    const { data } = await admin.auth.admin.listUsers({ page, perPage: 200 })
+    const users = data?.users ?? []
+    if (users.length === 0) break
+
+    for (const u of users) {
+      if (!u.email || !TOKEN_RE.test(u.email)) continue
+      if (u.created_at && u.created_at > cutoff) continue
+      await admin.auth.admin.deleteUser(u.id)
+    }
+    if (users.length < 200) break
+  }
+}
+
+// ── Aufbau ──────────────────────────────────────────────────────────────────
+
+async function createAuthUser(email: string, tracker: string[]): Promise<UserHandle> {
   const admin = serviceClient()
   const { data, error } = await admin.auth.admin.createUser({
     email,
@@ -110,6 +208,7 @@ async function createAuthUser(email: string): Promise<UserHandle> {
     email_confirm: true,
   })
   if (error || !data.user) throw new Error(`createUser(${email}): ${error?.message}`)
+  tracker.push(data.user.id)
   return { id: data.user.id, email, password: PW }
 }
 
@@ -134,7 +233,7 @@ async function createHotel(
       .insert({ hotel_id: hotel.id, number, floor: Number(number[0]) || 0 })
       .select('id')
       .single()
-    if (error || !room) throw new Error(`createRoom(${slug}/${number}): ${roomErr?.message}`)
+    if (roomErr || !room) throw new Error(`createRoom(${slug}/${number}): ${roomErr?.message}`)
     await admin.from('room_states').insert({ room_id: room.id, hotel_id: hotel.id })
     rooms[number] = room.id
   }
@@ -152,8 +251,9 @@ async function createManagementUser(
   email: string,
   displayName: string,
   stammhausId: string,
+  tracker: string[],
 ): Promise<UserHandle> {
-  const user = await createAuthUser(email)
+  const user = await createAuthUser(email, tracker)
   const admin = serviceClient()
   const { error } = await admin
     .from('profiles')
@@ -166,9 +266,12 @@ async function createMaid(
   hotelId: string,
   username: string,
   displayName: string,
+  tracker: string[],
 ): Promise<UserHandle & { username: string }> {
+  // Die E-Mail baut die Anwendung selbst — Benutzername + Hotel-ID. Die
+  // Lauf-Kennung steckt deshalb im Benutzernamen, damit sie auch hier greift.
   const email = buildMaidEmail(username, hotelId)
-  const user = await createAuthUser(email)
+  const user = await createAuthUser(email, tracker)
   const admin = serviceClient()
   const { error } = await admin
     .from('profiles')
@@ -178,51 +281,72 @@ async function createMaid(
 }
 
 export async function buildWorld(): Promise<World> {
-  await resetDatabase()
+  await sweepStaleRuns()
+
+  const runId = randomBytes(3).toString('hex')
+  const token = `${MARKER}-${runId}`
   const admin = serviceClient()
+
+  const createdAccountIds: string[] = []
+  const createdUserIds: string[] = []
 
   const account = async (name: string) => {
     const { data, error } = await admin.from('accounts').insert({ name }).select('id').single()
     if (error || !data) throw new Error(`createAccount(${name}): ${error?.message}`)
+    createdAccountIds.push(data.id as string)
     return data.id as string
   }
 
   // ── Konto Alpha ────────────────────────────────────────────────────────
-  const alphaId = await account('Konto Alpha')
-  const a1 = await createHotel(alphaId, 'Alpha Eins', 'test-alpha-eins', ['101', '102'])
-  const a2 = await createHotel(alphaId, 'Alpha Zwei', 'test-alpha-zwei', ['201'])
+  const alphaId = await account(`${token}-alpha`)
+  const a1 = await createHotel(alphaId, `${token} Alpha Eins`, `${token}-alpha-eins`, ['101', '102'])
+  const a2 = await createHotel(alphaId, `${token} Alpha Zwei`, `${token}-alpha-zwei`, ['201'])
 
-  const alphaOwner = await createManagementUser('alpha-owner@test.local', 'Alpha Inhaber', a1.id)
+  const alphaOwner = await createManagementUser(
+    `${token}-alpha-owner@rose-itest.local`, 'Alpha Inhaber', a1.id, createdUserIds,
+  )
   await admin.from('account_members').insert({
     account_id: alphaId, user_id: alphaOwner.id, role: 'owner', display_name: 'Alpha Inhaber',
   })
 
   // Manager NUR für A2 — die Teilmenge ist der Kern der Rolle.
-  const alphaManager = await createManagementUser('alpha-manager@test.local', 'Alpha Manager', a2.id)
+  const alphaManager = await createManagementUser(
+    `${token}-alpha-manager@rose-itest.local`, 'Alpha Manager', a2.id, createdUserIds,
+  )
   await admin.from('hotel_members').insert({
     hotel_id: a2.id, user_id: alphaManager.id, role: 'manager', display_name: 'Alpha Manager',
   })
 
-  const alphaReception = await createManagementUser('alpha-reception@test.local', 'Alpha Rezeption', a1.id)
+  const alphaReception = await createManagementUser(
+    `${token}-alpha-reception@rose-itest.local`, 'Alpha Rezeption', a1.id, createdUserIds,
+  )
   await admin.from('hotel_members').insert({
     hotel_id: a1.id, user_id: alphaReception.id, role: 'reception', display_name: 'Alpha Rezeption',
   })
 
-  const alphaMaid = await createMaid(a1.id, 'maria', 'Maria Alpha')
+  // Derselbe Benutzername in beiden Häusern — die Kollision ist der Testzweck.
+  const maidName = `maria-${token}`
+  const alphaMaid = await createMaid(a1.id, maidName, 'Maria Alpha', createdUserIds)
 
   // ── Konto Beta ─────────────────────────────────────────────────────────
-  const betaId = await account('Konto Beta')
-  const b1 = await createHotel(betaId, 'Beta Eins', 'test-beta-eins', ['101'])
+  const betaId = await account(`${token}-beta`)
+  const b1 = await createHotel(betaId, `${token} Beta Eins`, `${token}-beta-eins`, ['101'])
 
-  const betaOwner = await createManagementUser('beta-owner@test.local', 'Beta Inhaber', b1.id)
+  const betaOwner = await createManagementUser(
+    `${token}-beta-owner@rose-itest.local`, 'Beta Inhaber', b1.id, createdUserIds,
+  )
   await admin.from('account_members').insert({
     account_id: betaId, user_id: betaOwner.id, role: 'owner', display_name: 'Beta Inhaber',
   })
 
-  const betaMaid = await createMaid(b1.id, 'maria', 'Maria Beta')
+  const betaMaid = await createMaid(b1.id, maidName, 'Maria Beta', createdUserIds)
 
   return {
+    runId,
+    token,
     alpha: { accountId: alphaId, owner: alphaOwner, manager: alphaManager, reception: alphaReception, maid: alphaMaid, a1, a2 },
     beta: { accountId: betaId, owner: betaOwner, maid: betaMaid, b1 },
+    createdAccountIds,
+    createdUserIds,
   }
 }

@@ -1,5 +1,5 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { buildWorld, type World } from './helpers/world'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { buildWorld, destroyWorld, type World } from './helpers/world'
 import { signedInStore, type FakeCookieStore } from './helpers/cookies'
 
 /**
@@ -47,6 +47,11 @@ function abgemeldet(): void {
 
 beforeAll(async () => {
   world = await buildWorld()
+}, 120_000)
+
+// Die Testwelt lebt neben den echten Daten — sie muss wieder verschwinden.
+afterAll(async () => {
+  if (world) await destroyWorld(world)
 }, 120_000)
 
 describe('getManagementContext — Kontoinhaber', () => {

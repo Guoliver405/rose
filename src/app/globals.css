@@ -10,7 +10,6 @@
 @source not "../../Sessions/*.md";
 @source not "../../Supabase_sql/*.sql";
 @source not "../../Supabase_sql/archive/*.sql";
-@source not "../../supabase/migrations/*.sql";
 @source not "../../tests/**/*.ts";
 
 /* ─────────────────────────────────────────────────────────────────

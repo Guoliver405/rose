@@ -1,5 +1,14 @@
 # Testinfrastruktur, lokale Umgebung und Übergabe (26.07.2026)
 
+> ⚠️ **Teilweise überholt.** Abschnitt 2 („Steht bereit, ist aber NIE
+> GELAUFEN") und Abschnitt 4 („Sofort nach dem Neustart") sind hinfällig: die
+> Integrationstests laufen seit demselben Tag **ohne lokale Datenbank** direkt
+> gegen die Projekt-Instanz, 32 Tests grün. Docker, WSL und Supabase-CLI werden
+> nicht mehr gebraucht. Siehe
+> [Integrationstests ohne lokale DB](2026-07-26_Integrationstests-ohne-lokale-DB.md).
+> **Abschnitt 3 (Rückbau der lokalen Umgebung) und Abschnitt 5 (Testzugänge)
+> gelten weiter.**
+
 > **Übergabe an die nächste Session.** Dieses Dokument ist so geschrieben, dass
 > man ohne Vorwissen einsteigen kann. Es deckt drei Dinge ab:
 > 1. was an Tests und CI entstanden ist (Abschnitt 1–2),

@@ -1,6 +1,6 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { anonClient, buildWorld, clientAs, serviceClient, type World } from './helpers/world'
+import { anonClient, buildWorld, clientAs, destroyWorld, serviceClient, type World } from './helpers/world'
 
 /**
  * Mandanten- und Rollengrenzen **an der Quelle** — direkt gegen die
@@ -19,6 +19,11 @@ async function sichtbareZimmer(client: SupabaseClient, hotelId: string): Promise
 
 beforeAll(async () => {
   world = await buildWorld()
+}, 120_000)
+
+// Die Testwelt lebt neben den echten Daten — sie muss wieder verschwinden.
+afterAll(async () => {
+  if (world) await destroyWorld(world)
 }, 120_000)
 
 describe('Unangemeldet', () => {
@@ -79,7 +84,9 @@ describe('Rezeption', () => {
       hotel_id: world.alpha.a1.id,
       room_id: world.alpha.a1.rooms['101'],
       pin: '123456',
-      session_token: 'token-rezeption-test',
+      // Lauf-gebunden: session_token ist global eindeutig, ein fester Wert
+      // würde einen zweiten Lauf blockieren.
+      session_token: `${world.token}-rezeption`,
     })
     const client = await clientAs(world.alpha.reception)
     const { data } = await client.from('stays').select('id').eq('hotel_id', world.alpha.a1.id)
