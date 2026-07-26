@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getMaidContext } from '@/utils/maid-auth'
+import { requireHotelBySlug } from '@/utils/hotel'
 import { createAdminClient } from '@/utils/supabase/service'
 import { deriveShiftState } from '@/lib/shift'
 import { clampStaleMinutes, isCleaningFresh } from '@/lib/board'
@@ -11,9 +12,16 @@ import StatusPanel from './StatusPanel'
  * Seite (eigene Route statt Overlay, damit die Zurück-Taste am Handy greift).
  * Das Board trägt dadurch nur noch eine kompakte Statusleiste.
  */
-export default async function ServiceStatusPage() {
+export default async function ServiceStatusPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params
+  const hotel = await requireHotelBySlug(slug)
+
   const ctx = await getMaidContext()
-  if (!ctx) redirect('/service/login')
+  if (!ctx || ctx.hotelId !== hotel.id) redirect(`/h/${hotel.slug}/service/login`)
 
   const admin = createAdminClient()
   const today = dayKey(new Date())
@@ -55,6 +63,7 @@ export default async function ServiceStatusPage() {
 
   return (
     <StatusPanel
+      hotelSlug={ctx.hotelSlug}
       displayName={ctx.displayName}
       shift={{
         onShift: shift.onShift,

@@ -5,6 +5,8 @@ export type ManagementContext = {
   hotelId: string
   displayName: string
   hotelName: string
+  /** Mandant in der URL — für Portal-Links auf Aushängen und Handouts. */
+  hotelSlug: string
   /** 'admin' = Inhaber/Management (alles), 'reception' = Tagesgeschäft. */
   role: 'admin' | 'reception'
 }
@@ -31,15 +33,17 @@ export async function getManagementContext(): Promise<ManagementContext | null> 
 
   const { data: hotel } = await supabase
     .from('hotels')
-    .select('name')
+    .select('name, slug')
     .eq('id', profile.hotel_id)
     .single()
+  if (!hotel) return null
 
   return {
     userId: user.id,
     hotelId: profile.hotel_id,
     displayName: profile.display_name,
-    hotelName: hotel?.name ?? 'Hotel',
+    hotelName: hotel.name ?? 'Hotel',
+    hotelSlug: hotel.slug,
     role: profile.role === 'reception' ? 'reception' : 'admin',
   }
 }

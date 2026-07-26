@@ -121,7 +121,7 @@ export async function resetTestScenarioAction(): Promise<{ error?: string }> {
   await resetScenario(createAdminClient(), ctx.hotelId, ctx.userId)
 
   revalidatePath('/admin', 'layout')
-  revalidatePath('/service')
+  revalidatePath(`/h/${ctx.hotelSlug}/service`)
   return {}
 }
 
@@ -300,7 +300,7 @@ export async function seedTestScenarioAction(
   }
 
   revalidatePath('/admin', 'layout')
-  revalidatePath('/service')
+  revalidatePath(`/h/${ctx.hotelSlug}/service`)
 
   const numberByRoom = new Map(roomRows.map(r => [r.id, r.number]))
   return {

@@ -160,7 +160,7 @@ export async function setMaidActiveAction(
   if (!active) await admin.from('maid_presence').delete().eq('profile_id', profileId)
 
   revalidatePath('/admin', 'layout')
-  revalidatePath('/service')
+  revalidatePath(`/h/${ctx.hotelSlug}/service`)
   return {}
 }
 

@@ -25,6 +25,6 @@ export async function markOrderDoneAction(orderId: string): Promise<{ error?: st
   if (!updated || updated.length === 0) return { error: 'Bestellung ist bereits erledigt.' }
 
   revalidatePath('/admin', 'layout')
-  revalidatePath('/guest/status')
+  revalidatePath(`/h/${ctx.hotelSlug}/guest/status`)
   return {}
 }

@@ -8,14 +8,20 @@ import { NextResponse, type NextRequest } from 'next/server'
  * die Token-Rotation nach Ablauf des Access-Tokens verloren gehen und die
  * Session mit "refresh_token_already_used" sterben.
  *
- * /admin + /login nutzen die Default-Supabase-Cookies, /service den
- * svc_-Namespace (Präfix wird beim Lesen entfernt, beim Schreiben
+ * /admin + /login nutzen die Default-Supabase-Cookies, das Reinigungs-Portal
+ * den svc_-Namespace (Präfix wird beim Lesen entfernt, beim Schreiben
  * hinzugefügt) — beide Sessions koexistieren im selben Browser.
+ *
+ * Das Reinigungs-Portal liegt seit dem Mandanten-Umbau unter
+ * `/h/<slug>/service/…`; nur der Auto-Login der QR-Karte hängt weiterhin
+ * mandantenfrei unter `/service/auto/<token>`. Beide Formen müssen den
+ * svc_-Namespace treffen — sonst schriebe der Auto-Login in die Admin-Cookies.
  */
 const SVC = 'svc_'
+const SERVICE_PATH = /^\/(service|h\/[^/]+\/service)(\/|$)/
 
 export async function proxy(request: NextRequest) {
-  const isService = request.nextUrl.pathname.startsWith('/service')
+  const isService = SERVICE_PATH.test(request.nextUrl.pathname)
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -49,5 +55,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/login', '/service/:path*'],
+  matcher: ['/admin/:path*', '/login', '/service/:path*', '/h/:path*'],
 }

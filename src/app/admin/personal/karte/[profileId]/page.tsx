@@ -36,8 +36,11 @@ export default async function MaidCardPage({
 
   if (!profile?.username || !card) notFound()
 
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
-  const loginUrl = `${origin.replace(/\/$/, '')}/service/auto/${card.token}`
+  const origin = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/$/, '')
+  // QR-Ziel bleibt mandantenfrei (Token ist global eindeutig); der Weg von
+  // Hand braucht die Hotel-Adresse, weil Benutzernamen nur je Hotel eindeutig sind.
+  const loginUrl = `${origin}/service/auto/${card.token}`
+  const manualUrl = `${origin}/h/${ctx.hotelSlug}/service/login`
 
   return (
     <div className="flex flex-col items-center gap-5 py-6">
@@ -54,6 +57,7 @@ export default async function MaidCardPage({
         username={profile.username}
         pin={card.pin}
         loginUrl={loginUrl}
+        manualUrl={manualUrl}
       />
     </div>
   )

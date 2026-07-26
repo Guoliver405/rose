@@ -7,7 +7,8 @@ import QRCode from 'qrcode'
 /**
  * Druckbare QR-Login-Karte für Reinigungskräfte (Pattern aus HotCord).
  * QR → /service/auto/<token> loggt das Tablet ohne Eingabe ein;
- * PIN ist der manuelle Fallback (Benutzername + PIN auf /service/login).
+ * PIN ist der manuelle Fallback (Benutzername + PIN auf der Hotel-Adresse
+ * /h/<slug>/service/login — Benutzernamen sind nur je Hotel eindeutig).
  */
 export default function MaidPinCard({
   hotelName,
@@ -15,12 +16,15 @@ export default function MaidPinCard({
   username,
   pin,
   loginUrl,
+  manualUrl,
 }: {
   hotelName: string
   displayName: string
   username: string
   pin: string
   loginUrl: string // vollständige URL inkl. Origin
+  /** Abtippbare Anmeldeadresse des Hotels für den PIN-Weg. */
+  manualUrl: string
 }) {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
 
@@ -82,6 +86,12 @@ export default function MaidPinCard({
           {/* Klartext-Link als Fallback, falls der QR-Scan nicht klappt */}
           <p className="break-all border-t border-dashed border-attention-tint-edge pt-2 text-[10px] text-ink-muted">
             {loginUrl}
+          </p>
+
+          {/* Adresse für den Weg von Hand — ohne den Hotel-Slug ist der
+              Benutzername nicht eindeutig und die Anmeldung findet nicht statt. */}
+          <p className="break-all text-[10px] text-ink-muted">
+            Anmeldung von Hand: {manualUrl}
           </p>
         </div>
       </div>

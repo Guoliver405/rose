@@ -6,6 +6,10 @@ import { updateSettingsAction } from './actions'
 
 export type HotelSettingsInitial = {
   hotelName: string
+  /** Mandanten-Kennung in der URL (`/h/<slug>/guest`). */
+  slug: string
+  /** Basis-Adresse für die Vorschau (NEXT_PUBLIC_SITE_URL). */
+  portalOrigin: string
   pinLength: number
   cleaningStaleMinutes: number
   stayoverAutoClean: boolean
@@ -21,6 +25,7 @@ export default function HotelSettingsForm({ initial }: { initial: HotelSettingsI
   const [saved, setSaved] = useState(false)
   const [stayoverOn, setStayoverOn] = useState(initial.stayoverAutoClean)
   const [windowOn, setWindowOn] = useState(initial.cleaningWindowEnabled)
+  const [slug, setSlug] = useState(initial.slug)
 
   function submitSettings(form: HTMLFormElement) {
     setError(null)
@@ -47,6 +52,36 @@ export default function HotelSettingsForm({ initial }: { initial: HotelSettingsI
         Hotelname
         <input name="hotelName" required minLength={2} defaultValue={initial.hotelName} className={`${inputClass} w-72`} />
       </label>
+
+      <div className="rounded-lg border border-edge bg-surface-sunken p-3">
+        <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+          Adresse des Hauses (nur Kleinbuchstaben, Ziffern, Bindestriche)
+          <input
+            name="slug"
+            required
+            value={slug}
+            onChange={e => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+            className={`${inputClass} w-72 font-mono`}
+          />
+        </label>
+        <p className="mt-2 text-xs text-ink-muted">
+          Gastportal:{' '}
+          <span className="break-all font-mono text-ink-soft">
+            {initial.portalOrigin}/h/{slug || '…'}/guest
+          </span>
+          <br />
+          Reinigung:{' '}
+          <span className="break-all font-mono text-ink-soft">
+            {initial.portalOrigin}/h/{slug || '…'}/service/login
+          </span>
+        </p>
+        <p className="mt-2 text-xs text-ink-muted">
+          Zimmernummern und Benutzernamen sind nur innerhalb des Hauses eindeutig —
+          deshalb steht die Adresse in beiden Anmeldungen. Gedruckte QR-Codes
+          (Zimmer-Aushang, Zugangskarte) bleiben bei einer Änderung gültig; nur die
+          abgetippte Adresse auf älteren Handouts stimmt dann nicht mehr.
+        </p>
+      </div>
 
       <div className="flex flex-wrap gap-4">
         <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">

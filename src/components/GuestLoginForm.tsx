@@ -1,16 +1,21 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { guestLoginAction } from './actions'
+import { guestLoginAction } from '@/app/guest/actions'
 
 type Props = {
+  /**
+   * Mandant aus der URL. Pflicht beim Weg über die Zimmernummer — „101" ist
+   * nur je Hotel eindeutig. Beim QR-Deep-Link trägt der Token den Mandanten.
+   */
+  hotelSlug?: string
   /** QR-Deep-Link: Zimmer ist über den Token vorbestimmt. */
   roomToken?: string
   /** Anzeige-Nummer beim Deep-Link (rein informativ). */
   roomNumber?: string
 }
 
-export default function GuestLoginForm({ roomToken, roomNumber }: Props) {
+export default function GuestLoginForm({ hotelSlug, roomToken, roomNumber }: Props) {
   const [number, setNumber] = useState('')
   const [pin, setPin] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -21,7 +26,7 @@ export default function GuestLoginForm({ roomToken, roomNumber }: Props) {
     setError(null)
     startTransition(async () => {
       const res = await guestLoginAction(
-        roomToken ? { roomToken, pin } : { roomNumber: number, pin },
+        roomToken ? { roomToken, pin } : { hotelSlug, roomNumber: number, pin },
       )
       if (res?.error) setError(res.error)
     })
@@ -59,7 +64,7 @@ export default function GuestLoginForm({ roomToken, roomNumber }: Props) {
           autoComplete="one-time-code"
           value={pin}
           onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
-          placeholder="••••"
+          placeholder="••••••"
           className="rounded-xl border border-edge bg-surface-elevated px-4 py-3 text-center font-mono text-2xl tracking-[0.4em] text-ink outline-none focus:border-active"
         />
       </label>

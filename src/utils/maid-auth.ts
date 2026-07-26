@@ -10,6 +10,8 @@ export type MaidContext = {
   displayName: string
   username: string
   hotelName: string
+  /** Mandant in der URL — für Redirects nach `/h/<slug>/service/…`. */
+  hotelSlug: string
   policies: Record<string, unknown>
   /** Access-Token der svc_-Session — fürs Realtime-Auth im Browser (RLS). */
   accessToken: string
@@ -41,17 +43,19 @@ export async function getMaidContext(): Promise<MaidContext | null> {
 
   const { data: hotel } = await admin
     .from('hotels')
-    .select('name, policies')
+    .select('name, slug, policies')
     .eq('id', profile.hotel_id)
     .single()
+  if (!hotel) return null
 
   return {
     profileId: session.user.id,
     hotelId: profile.hotel_id,
     displayName: profile.display_name,
     username: profile.username,
-    hotelName: hotel?.name ?? 'Hotel',
-    policies: (hotel?.policies ?? {}) as Record<string, unknown>,
+    hotelName: hotel.name ?? 'Hotel',
+    hotelSlug: hotel.slug,
+    policies: (hotel.policies ?? {}) as Record<string, unknown>,
     accessToken: session.access_token,
   }
 }

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { LogOut } from 'lucide-react'
 import { getMaidContext } from '@/utils/maid-auth'
+import { requireHotelBySlug } from '@/utils/hotel'
 import { createAdminClient } from '@/utils/supabase/service'
 import { deriveShiftState } from '@/lib/shift'
 import {
@@ -11,9 +12,19 @@ import RealtimeListener from '@/components/RealtimeListener'
 import { maidLogoutAction } from './login/actions'
 import ServiceBoard, { type BoardFloor, type BoardRoom } from './ServiceBoard'
 
-export default async function ServiceBoardPage() {
+export default async function ServiceBoardPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params
+  const hotel = await requireHotelBySlug(slug)
+
+  // Die svc_-Sitzung gilt originweit, also auch unter fremden Slugs — der
+  // Abgleich mit dem Hotel aus der URL verhindert, dass eine Kraft unter der
+  // Adresse eines anderen Hauses ihr eigenes Board unter falschem Namen sieht.
   const ctx = await getMaidContext()
-  if (!ctx) redirect('/service/login')
+  if (!ctx || ctx.hotelId !== hotel.id) redirect(`/h/${hotel.slug}/service/login`)
 
   // Board-Daten über den Admin-Client: die Maid-RLS sieht fremde profiles
   // nicht („Kollegin in Zimmer X" braucht aber deren Namen) und stays gar
@@ -160,6 +171,7 @@ export default async function ServiceBoardPage() {
           <div className="ml-auto flex items-center gap-3">
             <span className="text-sm font-semibold text-ink-soft">{ctx.displayName}</span>
             <form action={maidLogoutAction}>
+              <input type="hidden" name="slug" value={ctx.hotelSlug} />
               <button
                 type="submit"
                 className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink"
@@ -176,6 +188,7 @@ export default async function ServiceBoardPage() {
 
       <main className="mx-auto w-full max-w-[1100px] flex-1 p-4">
         <ServiceBoard
+          hotelSlug={ctx.hotelSlug}
           floors={floors}
           shift={{
             onShift: shift.onShift,

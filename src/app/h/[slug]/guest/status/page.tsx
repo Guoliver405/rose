@@ -1,14 +1,26 @@
 import { redirect } from 'next/navigation'
 import { getGuestContext } from '@/utils/guest'
+import { requireHotelBySlug } from '@/utils/hotel'
 import { createAdminClient } from '@/utils/supabase/service'
 import { isWithinCleaningWindow, parseCleaningWindow } from '@/lib/board'
-import { guestLogoutAction } from '../actions'
+import { guestLogoutAction } from '@/app/guest/actions'
 import GuestSignalPanel from './GuestSignalPanel'
 import GuestServicesPanel, { type GuestOrder, type GuestService } from './GuestServicesPanel'
 
-export default async function GuestStatusPage() {
+export default async function GuestStatusPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params
+  const hotel = await requireHotelBySlug(slug)
+
+  // Die Sitzung muss zu DIESEM Haus gehören: alle Mandanten teilen sich den
+  // Origin, das Gast-Cookie gilt also auch unter fremden Slugs. Ohne diesen
+  // Abgleich sähe ein Gast unter /h/fremdes-hotel/guest/status sein eigenes
+  // Zimmer unter falschem Hotelnamen.
   const ctx = await getGuestContext()
-  if (!ctx) redirect('/guest')
+  if (!ctx || ctx.hotelId !== hotel.id) redirect(`/h/${hotel.slug}/guest`)
 
   const cleaningWindow = parseCleaningWindow(ctx.policies)
 

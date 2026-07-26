@@ -1,43 +1,22 @@
-import { redirect } from 'next/navigation'
-import { KeyRound, User } from 'lucide-react'
-import {
-  createServicePortalClient,
-  getServicePortalSession,
-} from '@/utils/supabase/service-portal'
-import { createAdminClient } from '@/utils/supabase/service'
-import { getMaidContext } from '@/utils/maid-auth'
-import { maidLoginAction } from './actions'
+import { KeyRound, QrCode } from 'lucide-react'
 
-export default async function ServiceLoginPage({
+/**
+ * Mandantenfreie Reinigungs-Anmeldung — bewusst nur ein Hinweis.
+ *
+ * Benutzernamen sind nur je Hotel eindeutig, die Anmeldung braucht also den
+ * Mandanten aus der URL (`/h/<slug>/service/login`). Hier wird KEIN Hotel zur
+ * Auswahl gestellt: das wäre ein Verzeichnis aller Kunden.
+ *
+ * Zusätzlich landet hier der Auto-Login, wenn die QR-Karte ungültig ist —
+ * dann ist der Mandant unbekannt und die Kraft braucht eine neue Karte.
+ */
+export default async function ServiceGenericLoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>
 }) {
   const { error } = await searchParams
-
-  // Bereits eingeloggt → direkt aufs Board. Maßgeblich ist getMaidContext,
-  // NICHT die rohe Session: eine deaktivierte Kraft behält ihr Cookie, darf
-  // aber nicht aufs Board — mit `if (session)` entstünde eine Redirect-
-  // Schleife zwischen Login und Board.
-  const svcClient = await createServicePortalClient()
-  const { session } = await getServicePortalSession(svcClient)
-  const maid = session ? await getMaidContext() : null
-  if (maid) redirect('/service')
-  const deactivated = Boolean(session) && !maid
-
-  // Hotelname fürs Branding (Single-Property: das eine Hotel).
-  const { data: hotel } = await createAdminClient()
-    .from('hotels')
-    .select('name')
-    .limit(1)
-    .maybeSingle()
-
-  const errorMessage =
-    error === 'invalid' ? 'Benutzername oder PIN ist falsch.' :
-    error === 'missing' ? 'Bitte alle Felder ausfüllen.' :
-    error === 'auto_login_failed'
-      ? 'QR-Code ist nicht mehr gültig. Bitte mit Benutzername und PIN anmelden oder eine neue Karte beim Management anfordern.'
-      : null
+  const cardFailed = error === 'auto_login_failed'
 
   return (
     <div className="flex min-h-screen flex-1 items-center justify-center bg-surface-sunken p-6">
@@ -49,71 +28,24 @@ export default async function ServiceLoginPage({
           <h1 className="text-2xl font-black text-ink">
             Ro<span className="text-blocked">Se</span> Reinigungsboard
           </h1>
-          {hotel?.name && <p className="mt-1 font-medium text-ink-muted">{hotel.name}</p>}
         </div>
 
-        {deactivated && !errorMessage && (
-          <div className="rounded-xl border border-caution-pill-edge bg-caution-tint px-4 py-3 text-center text-sm font-bold text-caution-deepest">
-            Dieser Zugang ist nicht mehr aktiv. Bitte wende dich an die Rezeption.
-          </div>
-        )}
-
-        {errorMessage && (
+        {cardFailed && (
           <div className="rounded-xl border border-critical-tint-edge bg-critical-tint px-4 py-3 text-center text-sm font-bold text-critical-strong">
-            {errorMessage}
+            QR-Code ist nicht mehr gültig. Bitte eine neue Zugangskarte beim
+            Management anfordern.
           </div>
         )}
 
-        <form action={maidLoginAction} className="space-y-4">
-          <div className="space-y-1.5">
-            <label htmlFor="username" className="text-xs font-bold uppercase tracking-wider text-ink-muted">
-              Benutzername
-            </label>
-            <div className="relative">
-              <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
-              <input
-                id="username"
-                name="username"
-                type="text"
-                required
-                autoComplete="username"
-                autoCapitalize="none"
-                placeholder="benutzername"
-                className="w-full rounded-xl border border-edge bg-surface-elevated py-4 pl-11 pr-4 text-lg font-bold text-ink placeholder:text-ink-muted focus:border-transparent focus:outline-none focus:ring-2 focus:ring-attention"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label htmlFor="pin" className="text-xs font-bold uppercase tracking-wider text-ink-muted">
-              PIN
-            </label>
-            <div className="relative">
-              <KeyRound className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
-              <input
-                id="pin"
-                name="pin"
-                type="password"
-                required
-                inputMode="numeric"
-                maxLength={6}
-                placeholder="••••••"
-                className="w-full rounded-xl border border-edge bg-surface-elevated py-4 pl-11 pr-4 text-2xl font-black tracking-[0.5em] text-ink placeholder:text-ink-muted focus:border-transparent focus:outline-none focus:ring-2 focus:ring-attention"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="mt-2 w-full rounded-xl bg-attention py-4 text-lg font-black text-attention-foreground shadow-lg transition-all hover:opacity-90 active:scale-95"
-          >
-            Anmelden
-          </button>
-        </form>
-
-        <p className="text-center text-xs text-ink-muted">
-          Zugangskarte mit QR-Code verloren? Das Management kann jederzeit eine neue drucken.
-        </p>
+        <div className="space-y-4 rounded-xl border border-edge bg-surface-elevated px-5 py-6 text-center">
+          <QrCode className="mx-auto h-10 w-10 text-ink-muted" />
+          <p className="font-bold text-ink">Bitte die Zugangskarte scannen.</p>
+          <p className="text-sm leading-relaxed text-ink-soft">
+            Für die Anmeldung mit Benutzername und PIN wird die Adresse deines
+            Hotels gebraucht — sie steht auf der Zugangskarte. Das Management
+            kann jederzeit eine neue Karte drucken.
+          </p>
+        </div>
       </div>
     </div>
   )

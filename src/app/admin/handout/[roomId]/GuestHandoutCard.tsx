@@ -10,6 +10,7 @@ export default function GuestHandoutCard({
   building,
   pin,
   url,
+  manualUrl,
   deepLink,
 }: {
   hotelName: string
@@ -17,6 +18,8 @@ export default function GuestHandoutCard({
   building: string | null
   pin: string
   url: string
+  /** Abtippbare Hotel-Adresse (`/h/<slug>/guest`) — Weg ohne QR-Code. */
+  manualUrl: string
   deepLink: boolean
 }) {
   return (
@@ -60,6 +63,14 @@ export default function GuestHandoutCard({
           <p className="break-all border-t border-dashed border-edge pt-2 text-[10px] text-ink-muted">
             {url}
           </p>
+
+          {/* Der Deep-Link-Token ist zu lang zum Abtippen — die Hotel-Adresse
+              ist der Weg von Hand (Zimmernummer + PIN). */}
+          {deepLink && (
+            <p className="break-all text-[10px] text-ink-muted">
+              Ohne QR-Code: {manualUrl}
+            </p>
+          )}
         </div>
       </div>
 

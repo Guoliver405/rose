@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { Check, CheckCircle2, ChevronDown, Clock } from 'lucide-react'
 import { formatCents } from '@/lib/money'
-import { placeOrderAction } from '../actions'
+import { placeOrderAction } from '@/app/guest/actions'
 
 export type GuestService = {
   id: string

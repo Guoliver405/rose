@@ -14,7 +14,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 1. **Check-in** = ein Klick der Rezeption auf ein Zimmer → erzeugt anonymen `stays`-Eintrag + 4-stellige Gast-PIN (sofort am Bildschirm ablesbar, nichts muss gedruckt werden).
 2. **Gast** erreicht sein Portal über zwei gleichwertige Wege (beide immer aktiv):
-   - **Baseline**: generische URL/QR → `/guest` → Zimmernummer + PIN eingeben.
+   - **Baseline**: Hotel-Adresse → `/h/<slug>/guest` → Zimmernummer + PIN eingeben (steht auf dem Check-in-Handout).
    - **Komfort**: statischer Zimmer-QR (einmal gedruckt, klebt im Zimmer) → `/guest/r/<token>` → nur PIN eingeben.
    Nach PIN-Erfolg: Session-Cookie (`stays.session_token`), keine erneute Eingabe.
 3. **Während des Aufenthalts**: Gast wählt „Zimmer reinigen" / „DND", bestellt Services aus dem Baukasten.
@@ -39,7 +39,8 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Standard-Services**: [service-templates.json](src/lib/service-templates.json) („Technischer Dienst" kostenfrei/dringend, „Wäscheservice" mit Preis-Optionen) wird bei `create-tenant.mjs` automatisch geseedet; im leeren Service-Konfigurator gibt es zusätzlich „Beispiel-Services anlegen" (skippt vorhandene Namen). Ganz normale Services — Hotels können sie archivieren.
 - **Deaktivieren statt Löschen** (25.07.2026): Ausgeschiedene Reinigungskräfte bekommen `profiles.deactivated_at` — Login wird an allen drei Stellen abgewiesen (`getMaidContext` wirft auch bestehende Sessions raus, `maidLoginAction`, QR-Auto-Login-Route), `maid_presence` wird geräumt, die Login-Karte bleibt gespeichert (wirkungslos, ermöglicht nahtlose Reaktivierung). Hartes Löschen bleibt als Notausgang für Fehlanlagen, ist aber im UI hinter „Deaktiviert" versteckt — die FK-Kaskade nimmt sonst den `staff_log` mit und zerstört den Arbeitsnachweis. **Fallstrick:** Die Login-Seite darf NICHT auf die rohe Session prüfen (`if (session) redirect('/service')`) — eine deaktivierte Kraft behält ihr Cookie, Board und Login schöben sich sonst gegenseitig im Kreis. Maßgeblich ist `getMaidContext()`; liegt eine Session ohne Kontext vor, erklärt die Login-Seite den gesperrten Zugang.
 - **Auswertung Reinigung** (25.07.2026): `/admin/auswertung` (Admin-only, Kachel im Einstellungen-Hub) rechnet aus `staff_log` Arbeits-/Pausen-/Reinigungszeiten — Hausbilanz, Tabelle je Kraft (inkl. deaktivierter) und Tagesprotokoll je Kraft. Zeitraum über GET-Parameter `from`/`to`/`maid`, damit Stände teil- und druckbar bleiben. Rechenlogik ohne I/O in [worklog.ts](src/lib/worklog.ts): Paarbildung der Stiche, Klammerung an den Zeitraum (Schichten über Mitternacht), Reinigungen ohne Abschluss oder länger als `cleaningStaleMinutes` sowie Schichten über `MAX_SHIFT_HOURS` (16 h, vergessenes Schichtende) und Pausen über `MAX_BREAK_HOURS` (4 h) gelten als unplausibel und bleiben aus den Summen draußen (separat als „Auffällig" ausgewiesen) — ohne diese Regel schleppt eine offene Schicht tagelang weiter und macht die Arbeitszeit unbrauchbar. „Sonstige Reinigung" läuft seit 25.07.2026 als Zeitraum (`other_start`/`other_end`) und wird als eigene Position ausgewiesen; „Übrige Zeit" = Netto − Zimmerreinigung − sonstige Reinigung (Wege, Rüstzeit). Alt-Stiche `other_cleaning` (ohne Ende) bleiben gültig und werden separat als „Alt-Stiche ohne Dauer" gezählt.
-- **Multi-Tenant**: `hotel_id` überall im Schema; Eindeutigkeiten bewusst NUR je Hotel (`unique (hotel_id, username)`, `unique (hotel_id, number)`). **Konsequenz, die im Code noch nicht überall gezogen ist:** Zimmernummer und Benutzername sind nicht global eindeutig — jede Auflösung einer solchen Kennung MUSS auf ein Hotel eingegrenzt sein. Die beiden öffentlichen Formular-Logins tun das noch nicht; Umbau siehe [Mandantenfaehigkeit-Plan.md](Sessions/Mandantenfaehigkeit-Plan.md). Faustregel für `createAdminClient()` (umgeht RLS): jede Query trägt `.eq('hotel_id', …)`, sofern sie nicht über einen global eindeutigen Token/eine UUID eingegrenzt ist.
+- **Multi-Tenant** (Umbau 26.07.2026): `hotel_id` überall im Schema; Eindeutigkeiten bewusst NUR je Hotel (`unique (hotel_id, username)`, `unique (hotel_id, number)`). Zimmernummer und Benutzername sind also **nicht global eindeutig** — jede Auflösung einer solchen Kennung MUSS auf ein Hotel eingegrenzt sein. Dafür trägt `hotels.slug` den Mandanten in die URL: die beiden öffentlichen Formular-Logins liegen unter `/h/<slug>/guest` und `/h/<slug>/service/login`, der Slug wird serverseitig über `requireHotelBySlug` in [hotel.ts](src/utils/hotel.ts) aufgelöst (unbekannt ⇒ 404, **kein** öffentliches Hotel-Verzeichnis). **Token-Routen bleiben mandantenfrei** (`/guest/r/<token>`, `/service/auto/<token>`) — der Token ist global eindeutig und trägt den Mandanten selbst, gedruckte QR-Codes überleben damit jeden Routing-Umbau. Weil alle Mandanten denselben Origin teilen, gilt das Sitzungs-Cookie auch unter fremden Slugs: **jede Portalseite gleicht `ctx.hotelId` gegen das Hotel aus der URL ab** und schickt bei Abweichung auf die dortige Anmeldung.
+- **Checkliste `createAdminClient()`** (umgeht RLS — hier fällt kein Fehler an, sondern nur die Mandantengrenze): jede Query trägt `.eq('hotel_id', …)`, **außer** sie grenzt über einen global eindeutigen Token oder eine UUID ein. Bei Schreibzugriffen zusätzlich prüfen, ob die betroffene Zeile wirklich dem eigenen Haus gehört (`row.hotel_id !== ctx.hotelId → Abbruch`), bevor per `id` geschrieben wird. Bewusste Ausnahme: die Slug-Eindeutigkeitsprüfung in `updateSettingsAction` fragt global — der Slug IST global eindeutig.
 - **Service-Baukasten abgespeckt**: nur urgent-Flag, Lifecycle nur `open → done`, Preise optional (Anzeige-Info).
 
 ---
@@ -65,9 +66,11 @@ Next.js 16 App Router · TypeScript · Tailwind CSS 4 · Supabase (PostgreSQL + 
 
 | Route | Nutzer | Auth |
 |---|---|---|
-| `/admin` | Rezeption/Management | Supabase Auth (E-Mail) |
-| `/service` | Reinigungskräfte | Eigener Cookie-Namespace `svc_` (`createServicePortalClient`) |
-| `/guest` | Gäste | Anonym: Zimmernummer/Zimmer-Token + Stay-PIN → Session-Cookie |
+| `/admin` | Rezeption/Management | Supabase Auth (E-Mail) — global eindeutig, Hotel kommt aus dem Profil, **kein** Slug-Präfix |
+| `/h/<slug>/service` | Reinigungskräfte | Eigener Cookie-Namespace `svc_` (`createServicePortalClient`) |
+| `/h/<slug>/guest` | Gäste | Anonym: Zimmernummer + Stay-PIN → Session-Cookie |
+| `/guest/r/<token>` · `/service/auto/<token>` | QR-Einstiege | Token global eindeutig → mandantenfrei, leitet auf die Slug-Route weiter |
+| `/guest` · `/service/login` | — | Hinweisseiten ohne Mandant („QR scannen bzw. Hotel-Adresse nutzen"), bewusst ohne Hotel-Auswahl |
 
 **Cookie-Trennung:** Admin- und Reinigungs-Portal teilen denselben Browser-Origin. Das Reinigungs-Portal nutzt [service-portal.ts](src/utils/supabase/service-portal.ts) mit Präfix `svc_` — nie `createClient()` aus `server.ts` in `/service`-Routen verwenden.
 
@@ -88,7 +91,7 @@ Env-Vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `S
 
 Siehe [supabase_schema_v1.sql](Supabase_sql/supabase_schema_v1.sql). Kern:
 
-- `hotels` — Mandant + `policies` JSONB (stayoverAutoClean, pinLength, cleaningStaleMinutes, cleaningWindow*)
+- `hotels` — Mandant + `slug` (unique, `[a-z0-9-]`, = Mandanten-Kennung in der URL) + `policies` JSONB (stayoverAutoClean, pinLength — Default **6** seit 26.07.2026, cleaningStaleMinutes, cleaningWindow*)
 - `profiles` — Personal; Discriminator: `username IS NOT NULL` = Reinigungskraft; Management-Logins tragen `role` (`admin` | `reception`); `deactivated_at` = ausgeschieden (siehe unten)
 - `rooms` — Nummer + Etage + optional Gebäude, keine Geometrie
 - `room_guest_tokens` — statischer QR-Token pro Zimmer (PK = room_id)
@@ -133,7 +136,8 @@ Auf saturierten Buttons per-Family-Foreground verwenden (`bg-attention text-atte
 | `revalidatePath('/admin')` invalidiert keine Unterseiten | `revalidatePath('/admin', 'layout')` |
 | Login auf Vercel scheitert mit `TypeError: Cannot convert argument to a ByteString` | Env-Var-Wert enthält Unicode-Müll (PowerShell-Pipe in `vercel env add`) → Werte aus Git Bash mit `printf '%s' '…' \| vercel env add` setzen, danach redeployen |
 | User anlegen/löschen scheitert mit `invalid JWT: … unrecognized JWT kid <nil> for algorithm ES256` (nur auf Vercel, lokal ok) | `SUPABASE_SECRET_KEY` in Vercel war noch der Legacy-`service_role`-JWT: PostgREST akzeptiert ihn weiter, aber die Auth-Admin-API verifiziert gegen die neuen ES256-Signatur-Schlüssel → Env-Var auf den `sb_secret_…`-Wert aus `.env.local` setzen (Git-Bash-`printf`-Muster!), redeployen (behoben 25.07.2026) |
-| Maid-Login mit korrekter PIN wird abgewiesen, QR-Login funktioniert | Derselbe `username` existiert in mehreren Hotels (`unique (hotel_id, username)` ist nur je Hotel eindeutig, alle Mandanten teilen die Login-Seite). `maidLoginAction` darf deshalb NICHT das erstbeste Profil nehmen — die PIN entscheidet, welcher Zugang gemeint ist (behoben 25.07.2026) |
+| Maid-Login mit korrekter PIN wird abgewiesen, QR-Login funktioniert | Derselbe `username` existiert in mehreren Hotels (`unique (hotel_id, username)` ist nur je Hotel eindeutig). Strukturell gelöst seit 26.07.2026: der Slug in der URL grenzt auf genau einen Kandidaten ein. Die Zwischenlösung vom 25.07. (PIN-Vorsortierung + Anmeldeschleife) ist entfernt — sie war ein PIN-Orakel über Mandantengrenzen |
+| Gast/Reinigungskraft sieht Portal unter fremdem Hotelnamen | Sitzungs-Cookies gelten originweit, also auch unter fremden Slugs. Jede Portalseite muss `ctx.hotelId` gegen `requireHotelBySlug(slug)` prüfen — fehlt der Abgleich, rendert das eigene Zimmer/Board unter falschem Branding |
 | Realtime-Updates kommen im Portal nie an (keine Console-Fehler, Board bleibt eingefroren) | `RealtimeListener` ohne `token` gerendert: der Browser-Client verbindet nur mit dem Publishable Key, RLS filtert alle `postgres_changes` weg — auch wenn die Session in den Default-Cookies liegt. Access-Token der Session übergeben (`realtime.setAuth`) + `pollMs`-Fallback gegen Token-Ablauf (~1 h) |
 
 ## Phasen-Plan
@@ -145,7 +149,7 @@ Auf saturierten Buttons per-Family-Foreground verwenden (`bg-attention text-atte
 - **Phase 4** — Service-Baukasten: Konfigurator, Gast-Bestellung, Orders-Tab Rezeption ✅
 - **Phase 5** — Politur: Etagenscore-Feintuning, Policies-UI, QR-Druckseiten (Zimmer-Aushang + Check-in-Handout), Stayover-Automatik ✅
 - **Phase 6a** — Marketing-Landing auf `/` (Hero, Portale, Ablauf, Features, Use-Cases, Platzhalter-Pricing, FAQ); Signup-CTA verweist auf „Registrierung öffnet in Kürze" ✅
-- **Phase 6c (vorgezogen)** — **Mandantenfähigkeit**: Mandant in die URL (`hotels.slug`), Gast- und Reinigungs-Login pro Hotel auflösen. Muss VOR 6b passieren, sonst wandern die Single-Property-Annahmen in echte Kundendaten. Siehe [Mandantenfaehigkeit-Plan.md](Sessions/Mandantenfaehigkeit-Plan.md).
+- **Phase 6c (vorgezogen)** — **Mandantenfähigkeit**: Mandant in die URL (`hotels.slug`), Gast- und Reinigungs-Login pro Hotel auflösen ✅ (26.07.2026, siehe [Mandantenfaehigkeit-Plan.md](Sessions/Mandantenfaehigkeit-Plan.md))
 - **Phase 6b** — Self-Service-Registrierung/Onboarding (Hotel + Management-Konto entstehen beim Signup, Wizard für Hotelname/Zimmer; braucht Supabase-E-Mail-Bestätigung) — geplant
 
 Kernphasen 0–5 sind umgesetzt. Nach jeder Phase: Review mit dem User (enger Dialog vereinbart).
@@ -160,12 +164,13 @@ Vercel-Projekt `guoliver405s-projects/rose`, Produktions-URL **https://rose-sand
 
 Env-Vars liegen in Vercel (Production): die drei Supabase-Keys + `NEXT_PUBLIC_SITE_URL=https://rose-sand-one.vercel.app` (Basis der QR-Links). Bei Domain-Wechsel `NEXT_PUBLIC_SITE_URL` anpassen und redeployen, sonst zeigen Aushänge/Handouts/Maid-Karten auf die alte URL.
 
-Solange es keine Self-Service-Registrierung gibt (Phase 6b), werden Mandanten manuell angelegt: `node scripts/create-tenant.mjs "Hotelname" mail@rose.local [passwort]` erzeugt Hotel + Auth-User + Management-Profil (Zugangsdaten im Session-Protokoll).
+Solange es keine Self-Service-Registrierung gibt (Phase 6b), werden Mandanten manuell angelegt: `node scripts/create-tenant.mjs "Hotelname" mail@rose.local [passwort]` erzeugt Hotel + Slug + Auth-User + Management-Profil und gibt die beiden Portal-Adressen aus (Zugangsdaten im Session-Protokoll). Der Slug ist danach unter Einstellungen → Hotel & Regeln änderbar.
 
 ## Session-Protokolle
 
 Wie in HotCord: Protokolle unter `Sessions/` ablegen, aktuellsten Stand hier verlinken.
 
-- [Sessions/2026-07-05_Phase-0-1_Fundament-und-Admin-Portal.md](Sessions/2026-07-05_Phase-0-1_Fundament-und-Admin-Portal.md) — **Aktueller Stand.** Alle Phasen 0–5 umgesetzt und end-to-end verifiziert: Rezeptions-Portal (Zimmer, Check-in/-out + PIN, Priorisieren, Personal mit QR-Karten, Service-Konfigurator, Orders-Tab, Einstellungen mit Policies + Passwort, QR-Aushänge + Gast-Handout), Gastportal (Zimmernummer/QR-Deep-Link + PIN mit Rate-Limit, Reinigen/DND, Service-Bestellung), Reinigungsboard (QR-/PIN-Login, Etagen-Score, Schicht/Pause, Slider, Stale-Timeout, Stayover-Routine). **Für Wiederaufnahme: „🔖 Wiederaufnahme"-Block am Ende des Protokolls lesen.**
-- [Sessions/Mandantenfaehigkeit-Plan.md](Sessions/Mandantenfaehigkeit-Plan.md) — **NÄCHSTER SCHRITT (26.07.2026), vor allem anderen.** RoSe soll SaaS für hunderte Hotels werden; die beiden öffentlichen Formular-Logins (Gast per Zimmernummer, Reinigung per Benutzername) kennen den Mandanten nicht und lösen Namen über alle Hotels hinweg auf. Enthält Befunde, Umbauplan (Mandant in die URL via `hotels.slug`), Reihenfolge, Abnahmekriterien und offene Entscheidungen.
+- [Sessions/2026-07-26_Phase-6c_Mandantenfaehigkeit.md](Sessions/2026-07-26_Phase-6c_Mandantenfaehigkeit.md) — **Aktueller Stand.** Mandant in die URL (`/h/<slug>/guest`, `/h/<slug>/service/login`), beide Formular-Logins hotel-scoped, Zwischenlösung vom 25.07. entfernt, Branding-Leak geschlossen, PIN-Default 6, Slug im Einstellungsdialog. Fünf Abnahmekriterien end-to-end verifiziert. **Für Wiederaufnahme: „🔖 Wiederaufnahme"-Block am Ende des Protokolls lesen.**
+- [Sessions/2026-07-05_Phase-0-1_Fundament-und-Admin-Portal.md](Sessions/2026-07-05_Phase-0-1_Fundament-und-Admin-Portal.md) — Alle Phasen 0–5 umgesetzt und end-to-end verifiziert: Rezeptions-Portal (Zimmer, Check-in/-out + PIN, Priorisieren, Personal mit QR-Karten, Service-Konfigurator, Orders-Tab, Einstellungen mit Policies + Passwort, QR-Aushänge + Gast-Handout), Gastportal (Zimmernummer/QR-Deep-Link + PIN mit Rate-Limit, Reinigen/DND, Service-Bestellung), Reinigungsboard (QR-/PIN-Login, Etagen-Score, Schicht/Pause, Slider, Stale-Timeout, Stayover-Routine). **Für Wiederaufnahme: „🔖 Wiederaufnahme"-Block am Ende des Protokolls lesen.**
+- [Sessions/Mandantenfaehigkeit-Plan.md](Sessions/Mandantenfaehigkeit-Plan.md) — Analyse und Begründung des Umbaus (25.07.2026), **umgesetzt am 26.07.** Bleibt als Nachschlagewerk: warum die Eindeutigkeiten je Hotel liegen, welche Stellen betroffen waren, was bewusst mandantenfrei bleibt.
 - [Sessions/Testplan-Walkthrough.md](Sessions/Testplan-Walkthrough.md) — Schritt-für-Schritt-Test aller Portale; **komplett durchlaufen am 25.07.2026**, Befunde und Haken dort dokumentiert.

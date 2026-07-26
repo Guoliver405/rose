@@ -115,12 +115,15 @@ function pickRecommendedFloor(floors: BoardFloor[]): string | null {
 }
 
 export default function ServiceBoard({
+  hotelSlug,
   floors,
   shift,
   myCleaningRoomId,
   myFloorKey,
   myCleaningRoomNumber,
 }: {
+  /** Mandant aus der URL — alle Portal-Links tragen ihn mit. */
+  hotelSlug: string
   floors: BoardFloor[]
   shift: ShiftInfo
   myCleaningRoomId: string | null
@@ -208,7 +211,7 @@ export default function ServiceBoard({
             </span>
           )}
           <Link
-            href="/service/status"
+            href={`/h/${hotelSlug}/service/status`}
             className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-bold text-ink-soft hover:border-edge-strong hover:text-ink"
           >
             <SlidersHorizontal className="h-4 w-4" /> Status

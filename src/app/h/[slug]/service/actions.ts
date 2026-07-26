@@ -12,6 +12,14 @@ import {
 
 type ActionResult = { error?: string }
 
+/**
+ * Board-Pfad des eigenen Mandanten. Die Revalidierung muss den Slug tragen —
+ * `/service` allein ist seit dem Mandanten-Umbau keine Seite mehr.
+ */
+function boardPath(ctx: MaidContext): string {
+  return `/h/${ctx.hotelSlug}/service`
+}
+
 /** Attribution-Trio für room_states-Writes (Audit-Trigger liest source/by). */
 function auditFields(profileId: string) {
   return {
@@ -76,7 +84,7 @@ export async function shiftStartAction(): Promise<ActionResult> {
 
   const res = await logStitch(admin, ctx, 'shift_start')
   if (res.error) return res
-  revalidatePath('/service')
+  revalidatePath(boardPath(ctx))
   return {}
 }
 
@@ -112,7 +120,7 @@ export async function shiftEndAction(): Promise<ActionResult> {
   // Etagen-Verortung endet mit der Schicht.
   await admin.from('maid_presence').delete().eq('profile_id', ctx.profileId)
 
-  revalidatePath('/service')
+  revalidatePath(boardPath(ctx))
   revalidatePath('/admin', 'layout')
   return {}
 }
@@ -144,7 +152,7 @@ export async function enterFloorAction(
   )
   if (error) return { error: `Einbuchen fehlgeschlagen: ${error.message}` }
 
-  revalidatePath('/service')
+  revalidatePath(boardPath(ctx))
   revalidatePath('/admin', 'layout')
   return {}
 }
@@ -157,7 +165,7 @@ export async function leaveFloorAction(): Promise<ActionResult> {
 
   await admin.from('maid_presence').delete().eq('profile_id', ctx.profileId)
 
-  revalidatePath('/service')
+  revalidatePath(boardPath(ctx))
   revalidatePath('/admin', 'layout')
   return {}
 }
@@ -179,7 +187,7 @@ export async function breakToggleAction(): Promise<ActionResult> {
 
   const res = await logStitch(admin, ctx, shift.onBreak ? 'break_end' : 'break_start')
   if (res.error) return res
-  revalidatePath('/service')
+  revalidatePath(boardPath(ctx))
   return {}
 }
 
@@ -200,7 +208,7 @@ export async function otherCleaningToggleAction(): Promise<ActionResult> {
 
   const res = await logStitch(admin, ctx, shift.onOther ? 'other_end' : 'other_start')
   if (res.error) return res
-  revalidatePath('/service')
+  revalidatePath(boardPath(ctx))
   return {}
 }
 
@@ -292,7 +300,7 @@ export async function startCleaningAction(roomId: string): Promise<ActionResult>
   const res = await logStitch(admin, ctx, 'clean_start', roomId)
   if (res.error) return res
 
-  revalidatePath('/service')
+  revalidatePath(boardPath(ctx))
   revalidatePath('/admin', 'layout')
   return {}
 }
@@ -330,7 +338,7 @@ export async function finishCleaningAction(roomId: string): Promise<ActionResult
   const res = await logStitch(admin, ctx, 'clean_done', roomId)
   if (res.error) return res
 
-  revalidatePath('/service')
+  revalidatePath(boardPath(ctx))
   revalidatePath('/admin', 'layout')
   return {}
 }
@@ -364,7 +372,7 @@ export async function abortCleaningAction(roomId: string): Promise<ActionResult>
   const res = await logStitch(admin, ctx, 'clean_aborted', roomId)
   if (res.error) return res
 
-  revalidatePath('/service')
+  revalidatePath(boardPath(ctx))
   revalidatePath('/admin', 'layout')
   return {}
 }

@@ -14,7 +14,7 @@ export default async function HotelSettingsPage() {
   const supabase = await createClient()
   const { data: hotel } = await supabase
     .from('hotels')
-    .select('name, policies')
+    .select('name, slug, policies')
     .eq('id', ctx.hotelId)
     .single()
 
@@ -37,6 +37,8 @@ export default async function HotelSettingsPage() {
       <HotelSettingsForm
         initial={{
           hotelName: hotel?.name ?? '',
+          slug: hotel?.slug ?? '',
+          portalOrigin: (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/$/, ''),
           pinLength: clampPinLength(policies.pinLength),
           cleaningStaleMinutes: clampStaleMinutes(policies.cleaningStaleMinutes),
           stayoverAutoClean: stayover.enabled,

@@ -6,12 +6,13 @@ import { createClient } from '@/utils/supabase/server'
 import { getAdminContext, getManagementContext } from '@/utils/auth'
 import { clampPinLength } from '@/lib/ids'
 import { clampStaleMinutes } from '@/lib/board'
+import { isValidSlug, SLUG_MAX_LENGTH } from '@/lib/slug'
 
 type ActionResult = { error?: string }
 
 /**
- * Hotelname + Policies speichern. Policies werden gemergt (nicht ersetzt),
- * damit künftige Policy-Schlüssel nicht verloren gehen.
+ * Hotelname + Adresse (Slug) + Policies speichern. Policies werden gemergt
+ * (nicht ersetzt), damit künftige Policy-Schlüssel nicht verloren gehen.
  */
 export async function updateSettingsAction(formData: FormData): Promise<ActionResult> {
   const ctx = await getAdminContext()
@@ -19,6 +20,13 @@ export async function updateSettingsAction(formData: FormData): Promise<ActionRe
 
   const name = ((formData.get('hotelName') as string) ?? '').trim()
   if (name.length < 2) return { error: 'Hotelname muss mindestens 2 Zeichen haben.' }
+
+  const slug = ((formData.get('slug') as string) ?? '').trim().toLowerCase()
+  if (!isValidSlug(slug)) {
+    return {
+      error: `Die Adresse darf nur Kleinbuchstaben, Ziffern und Bindestriche enthalten (max. ${SLUG_MAX_LENGTH} Zeichen, nicht mit einem Bindestrich beginnen oder enden).`,
+    }
+  }
 
   const pinLength = clampPinLength(Number(formData.get('pinLength')))
   const cleaningStaleMinutes = clampStaleMinutes(Number(formData.get('cleaningStaleMinutes')))
@@ -41,6 +49,13 @@ export async function updateSettingsAction(formData: FormData): Promise<ActionRe
   }
 
   const admin = createAdminClient()
+
+  // Der Slug ist global eindeutig (er IST die Mandanten-Kennung in der URL) —
+  // hier bewusst OHNE hotel_id-Filter, dafür mit Ausschluss des eigenen Hauses.
+  const { data: taken } = await admin
+    .from('hotels').select('id').eq('slug', slug).neq('id', ctx.hotelId).maybeSingle()
+  if (taken) return { error: 'Diese Adresse ist bereits vergeben.' }
+
   const { data: hotel } = await admin
     .from('hotels').select('policies').eq('id', ctx.hotelId).single()
 
@@ -57,10 +72,13 @@ export async function updateSettingsAction(formData: FormData): Promise<ActionRe
 
   const { error } = await admin
     .from('hotels')
-    .update({ name, policies: merged })
+    .update({ name, slug, policies: merged })
     .eq('id', ctx.hotelId)
   if (error) return { error: error.message }
 
+  // Die Portalseiten unter /h/<slug> sind durchweg dynamisch (Cookie-Zugriff),
+  // haben also keinen Full-Route-Cache, der nach einer Umbenennung veralten
+  // könnte — hier reicht das Admin-Layout.
   revalidatePath('/admin', 'layout')
   return {}
 }

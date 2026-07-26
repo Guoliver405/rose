@@ -1,11 +1,14 @@
 # Mandantenfähigkeit — Problem, Plan und Fixes
 
-> **Status: geplant, noch nicht umgesetzt.** Arbeitsgrundlage für die nächste
-> Session (ab 26.07.2026). Dieses Dokument ist so geschrieben, dass man ohne
-> Vorwissen aus der letzten Session einsteigen kann.
+> **Status: UMGESETZT am 26.07.2026.** Alle sechs Schritte sind gebaut und
+> verifiziert — Ergebnis, Entscheidungen und Abnahme stehen im
+> [Session-Protokoll](2026-07-26_Phase-6c_Mandantenfaehigkeit.md). Dieses
+> Dokument bleibt als Analyse und Begründung erhalten; die offenen
+> Entscheidungen in Abschnitt 7 sind dort beantwortet.
 >
 > Analyse und Teilfixes: 25.07.2026, Commits `87915b5` (Zwischenlösung
-> Maid-Login) und `9d669ef` (Härtung Admin-Client).
+> Maid-Login, inzwischen wieder entfernt) und `9d669ef` (Härtung
+> Admin-Client).
 
 ## 1. Warum das jetzt kommt
 

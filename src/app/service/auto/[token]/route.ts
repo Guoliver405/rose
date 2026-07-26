@@ -5,7 +5,11 @@
  *   1. Token via Admin-Client in maid_login_tokens nachschlagen.
  *   2. Synthetische E-Mail aus username + hotel_id bauen.
  *   3. Service-Portal-Client (svc_-Cookies) → signInWithPassword(email, pin).
- *   4. Erfolg → /service, sonst → Login-Seite mit Fehler-Code.
+ *   4. Erfolg → /h/<slug>/service, sonst → Anmeldung mit Fehler-Code.
+ *
+ * Diese Route bleibt bewusst OHNE Mandanten-Präfix: der Token ist global
+ * eindeutig und trägt den Mandanten selbst. Dadurch bleiben bereits gedruckte
+ * Zugangskarten über jeden Routing-Umbau hinweg gültig.
  *
  * Kein Time-Expiry: Token gilt, bis das Management eine neue Karte erzeugt
  * (UPSERT überschreibt die Zeile → alte Karte als Einheit tot).
@@ -23,8 +27,14 @@ export async function GET(
 ) {
   const { token } = await params
   const origin = new URL(request.url).origin
-  const fail = () =>
-    NextResponse.redirect(`${origin}/service/login?error=auto_login_failed`)
+
+  // Ohne bekannten Mandanten bleibt nur die mandantenfreie Hinweisseite.
+  const fail = (slug?: string) =>
+    NextResponse.redirect(
+      slug
+        ? `${origin}/h/${slug}/service/login?error=auto_login_failed`
+        : `${origin}/service/login?error=auto_login_failed`,
+    )
 
   if (!token || token.length < 16) return fail()
 
@@ -37,20 +47,20 @@ export async function GET(
     .maybeSingle()
   if (!row) return fail()
 
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('username, deactivated_at')
-    .eq('id', row.profile_id)
-    .maybeSingle()
+  const [{ data: profile }, { data: hotel }] = await Promise.all([
+    admin.from('profiles').select('username, deactivated_at').eq('id', row.profile_id).maybeSingle(),
+    admin.from('hotels').select('slug').eq('id', row.hotel_id).maybeSingle(),
+  ])
+  if (!hotel) return fail()
   // Deaktivierte Kraft: gedruckte Karte ist damit wirkungslos.
-  if (!profile?.username || profile.deactivated_at) return fail()
+  if (!profile?.username || profile.deactivated_at) return fail(hotel.slug)
 
   const supabase = await createServicePortalClient()
   const { error } = await supabase.auth.signInWithPassword({
     email: buildMaidEmail(profile.username, row.hotel_id),
     password: row.pin,
   })
-  if (error) return fail()
+  if (error) return fail(hotel.slug)
 
-  return NextResponse.redirect(`${origin}/service`)
+  return NextResponse.redirect(`${origin}/h/${hotel.slug}/service`)
 }

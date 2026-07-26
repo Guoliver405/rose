@@ -40,8 +40,30 @@ const { data: userData, error: userErr } = await admin.auth.admin.createUser({
 })
 if (userErr) { console.error('FEHLER User:', userErr.message); process.exit(1) }
 
+// Slug = Mandanten-Kennung in der URL (/h/<slug>/guest). Spiegelt die Regeln
+// aus src/lib/slug.ts — der Node-Skript-Kontext kann das TS-Modul nicht laden.
+const slugify = (raw) =>
+  raw
+    .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue')
+    .replace(/Ä/g, 'ae').replace(/Ö/g, 'oe').replace(/Ü/g, 'ue')
+    .replace(/ß/g, 'ss')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(new RegExp('[\\u0300-\\u036f]', 'g'), '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+    .replace(/-+$/g, '') || 'hotel'
+
+const { data: existing } = await admin.from('hotels').select('slug')
+const taken = new Set((existing ?? []).map((h) => h.slug))
+const base = slugify(hotelName)
+let slug = base
+for (let n = 2; taken.has(slug); n++) slug = `${base.slice(0, 60 - String(n).length - 1)}-${n}`
+
 const { data: hotel, error: hotelErr } = await admin
-  .from('hotels').insert({ name: hotelName }).select('id').single()
+  .from('hotels').insert({ name: hotelName, slug }).select('id').single()
 if (hotelErr) {
   await admin.auth.admin.deleteUser(userData.user.id)
   console.error('FEHLER Hotel:', hotelErr.message)
@@ -84,8 +106,12 @@ for (const t of templates) {
   }
 }
 
+const origin = (env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 console.log(`Angelegt: ${hotelName}`)
 console.log(`  Login:    ${email}`)
 console.log(`  Passwort: ${password}`)
 console.log(`  hotel_id: ${hotel.id}`)
+console.log(`  Slug:     ${slug}`)
+console.log(`  Gast:     ${origin}/h/${slug}/guest`)
+console.log(`  Reinigung:${origin}/h/${slug}/service/login`)
 console.log(`  Beispiel-Services: ${templates.map((t) => t.name).join(', ')}`)

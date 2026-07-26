@@ -15,6 +15,8 @@ export type GuestContext = {
   roomNumber: string
   hotelId: string
   hotelName: string
+  /** Mandant in der URL — für Redirects nach `/h/<slug>/guest/…`. */
+  hotelSlug: string
   guestSignal: 'none' | 'please_clean' | 'dnd'
   cleaningActive: boolean
   policies: Record<string, unknown>
@@ -37,18 +39,19 @@ export async function getGuestContext(): Promise<GuestContext | null> {
   const [{ data: room }, { data: state }, { data: hotel }] = await Promise.all([
     admin.from('rooms').select('number').eq('id', stay.room_id).single(),
     admin.from('room_states').select('guest_signal, cleaning_by').eq('room_id', stay.room_id).maybeSingle(),
-    admin.from('hotels').select('name, policies').eq('id', stay.hotel_id).single(),
+    admin.from('hotels').select('name, slug, policies').eq('id', stay.hotel_id).single(),
   ])
-  if (!room) return null
+  if (!room || !hotel) return null
 
   return {
     stayId: stay.id,
     roomId: stay.room_id,
     roomNumber: room.number,
     hotelId: stay.hotel_id,
-    hotelName: hotel?.name ?? 'Hotel',
+    hotelName: hotel.name ?? 'Hotel',
+    hotelSlug: hotel.slug,
     guestSignal: (state?.guest_signal ?? 'none') as GuestContext['guestSignal'],
     cleaningActive: Boolean(state?.cleaning_by),
-    policies: (hotel?.policies ?? {}) as Record<string, unknown>,
+    policies: (hotel.policies ?? {}) as Record<string, unknown>,
   }
 }

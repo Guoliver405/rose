@@ -32,11 +32,14 @@ function clockLabel(iso: string | null): string {
 }
 
 export default function StatusPanel({
+  hotelSlug,
   displayName,
   shift,
   cleaning,
   today,
 }: {
+  /** Mandant aus der URL — der Weg zurück aufs Board trägt ihn mit. */
+  hotelSlug: string
   displayName: string
   shift: StatusShift
   cleaning: { roomNumber: string; startedAt: string | null } | null
@@ -71,7 +74,7 @@ export default function StatusPanel({
     <div className="mx-auto flex w-full max-w-[600px] flex-col gap-4 p-4">
       <div className="flex items-center gap-3">
         <Link
-          href="/service"
+          href={`/h/${hotelSlug}/service`}
           className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink"
         >
           <ArrowLeft className="h-4 w-4" /> Board

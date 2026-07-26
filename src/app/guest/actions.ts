@@ -4,8 +4,16 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/utils/supabase/service'
+import { findHotelBySlug } from '@/utils/hotel'
 import { getGuestContext, GUEST_COOKIE } from '@/utils/guest'
 import { isWithinCleaningWindow, parseCleaningWindow } from '@/lib/board'
+
+/*
+ * Server-Actions des Gast-Portals. Liegen bewusst hier und nicht unter
+ * `/h/[slug]/guest`, weil sie von beiden Eingängen gebraucht werden: dem
+ * mandantengebundenen Formular (`/h/<slug>/guest`) und dem global gültigen
+ * Zimmer-QR (`/guest/r/<token>`).
+ */
 
 const MAX_ATTEMPTS = 5
 const LOCK_MINUTES = 15
@@ -14,6 +22,8 @@ const LOCK_MINUTES = 15
 const FAIL = { error: 'Anmeldung fehlgeschlagen — Zimmernummer oder PIN falsch.' }
 
 export type GuestLoginInput = {
+  /** Mandant aus der URL — Pflicht beim Weg über die Zimmernummer. */
+  hotelSlug?: string
   roomNumber?: string
   roomToken?: string
   pin: string
@@ -25,25 +35,33 @@ export async function guestLoginAction(input: GuestLoginInput): Promise<{ error?
 
   const admin = createAdminClient()
 
-  // Zimmer auflösen: QR-Deep-Link-Token (eindeutig) ODER Zimmernummer.
-  // Nummern sind nur je Gebäudeteil eindeutig — dieselbe Nummer kann in
-  // mehreren Gebäuden existieren; dann entscheidet die PIN, welcher
-  // Aufenthalt gemeint ist.
+  // Zimmer auflösen. Zwei Wege, beide auf GENAU EIN Hotel eingegrenzt:
+  //   - Zimmer-Token: global eindeutig, trägt den Mandanten selbst.
+  //   - Zimmernummer: nur je Hotel eindeutig (`unique (hotel_id, number)`) —
+  //     ohne den Slug aus der URL wäre „101" in hunderten Häusern mehrdeutig.
+  // Innerhalb eines Hauses kann dieselbe Nummer weiterhin in mehreren
+  // Gebäuden existieren; dort entscheidet die PIN.
   let roomIds: string[] = []
   if (input.roomToken) {
     const { data } = await admin
       .from('room_guest_tokens').select('room_id').eq('token', input.roomToken).maybeSingle()
     if (data?.room_id) roomIds = [data.room_id]
   } else if (input.roomNumber?.trim()) {
+    const hotel = input.hotelSlug ? await findHotelBySlug(input.hotelSlug) : null
+    if (!hotel) return FAIL
     const { data } = await admin
-      .from('rooms').select('id').ilike('number', input.roomNumber.trim()).limit(10)
+      .from('rooms')
+      .select('id')
+      .eq('hotel_id', hotel.id)
+      .ilike('number', input.roomNumber.trim())
+      .limit(10)
     roomIds = (data ?? []).map(r => r.id)
   }
   if (roomIds.length === 0) return FAIL
 
   const { data: candidates } = await admin
     .from('stays')
-    .select('id, pin, session_token, pin_attempts, pin_locked_until')
+    .select('id, hotel_id, pin, session_token, pin_attempts, pin_locked_until')
     .in('room_id', roomIds)
     .is('checked_out_at', null)
   if (!candidates || candidates.length === 0) return FAIL
@@ -77,6 +95,12 @@ export async function guestLoginAction(input: GuestLoginInput): Promise<{ error?
     await admin.from('stays').update({ pin_attempts: 0, pin_locked_until: null }).eq('id', stay.id)
   }
 
+  // Ziel-Slug kommt aus dem Aufenthalt, nicht aus der Eingabe — beim
+  // Token-Weg gibt es gar keinen Slug in der URL.
+  const { data: hotel } = await admin
+    .from('hotels').select('slug').eq('id', stay.hotel_id).single()
+  if (!hotel) return FAIL
+
   const cookieStore = await cookies()
   cookieStore.set(GUEST_COOKIE, stay.session_token, {
     httpOnly: true,
@@ -85,7 +109,7 @@ export async function guestLoginAction(input: GuestLoginInput): Promise<{ error?
     maxAge: 60 * 60 * 24 * 30, // Cookie-Lebensdauer; effektive Grenze ist der Check-out
   })
 
-  redirect('/guest/status')
+  redirect(`/h/${hotel.slug}/guest/status`)
 }
 
 /** Gast-Signal setzen: Zimmer reinigen / DND / zurücknehmen. */
@@ -117,10 +141,11 @@ export async function setGuestSignalAction(
       last_update_source: 'guest',
       last_updated_by: null,
     })
+    .eq('hotel_id', ctx.hotelId)
     .eq('room_id', ctx.roomId)
   if (error) return { error: 'Speichern fehlgeschlagen — bitte erneut versuchen.' }
 
-  revalidatePath('/guest/status')
+  revalidatePath(`/h/${ctx.hotelSlug}/guest/status`)
   return {}
 }
 
@@ -171,12 +196,15 @@ export async function placeOrderAction(
   })
   if (error) return { error: 'Bestellung fehlgeschlagen — bitte erneut versuchen.' }
 
-  revalidatePath('/guest/status')
+  revalidatePath(`/h/${ctx.hotelSlug}/guest/status`)
   return {}
 }
 
 export async function guestLogoutAction(): Promise<void> {
+  // Slug vor dem Abmelden merken — danach ist der Kontext weg und wir wüssten
+  // nicht mehr, auf welche Hotel-Anmeldung zurückgeschickt werden soll.
+  const ctx = await getGuestContext()
   const cookieStore = await cookies()
   cookieStore.set(GUEST_COOKIE, '', { maxAge: 0, path: '/' })
-  redirect('/guest')
+  redirect(ctx ? `/h/${ctx.hotelSlug}/guest` : '/guest')
 }

@@ -8,7 +8,7 @@ import GuestHandoutCard from './GuestHandoutCard'
 /**
  * Druckbares Gast-Handout nach dem Check-in: Zimmernummer + PIN + QR.
  * QR bevorzugt den Zimmer-Deep-Link (nur PIN tippen); ohne Zimmer-Token
- * fällt er auf die Baseline /guest (Zimmernummer + PIN) zurück.
+ * fällt er auf die Hotel-Adresse /h/<slug>/guest (Zimmernummer + PIN) zurück.
  */
 export default async function HandoutPage({
   params,
@@ -35,7 +35,10 @@ export default async function HandoutPage({
   if (!room) notFound()
 
   const origin = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/$/, '')
-  const url = token ? `${origin}/guest/r/${token.token}` : `${origin}/guest`
+  // Baseline-Adresse trägt den Mandanten: Zimmernummern sind nur je Hotel
+  // eindeutig, `/guest` allein ist seit dem Mandanten-Umbau nur ein Hinweis.
+  const manualUrl = `${origin}/h/${ctx.hotelSlug}/guest`
+  const url = token ? `${origin}/guest/r/${token.token}` : manualUrl
 
   return (
     <div className="flex flex-col items-center gap-5 py-6">
@@ -57,6 +60,7 @@ export default async function HandoutPage({
           building={room.building}
           pin={stay.pin}
           url={url}
+          manualUrl={manualUrl}
           deepLink={Boolean(token)}
         />
       )}

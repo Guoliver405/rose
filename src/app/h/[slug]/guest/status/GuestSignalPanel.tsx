@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Clock, Moon, Sparkles, CheckCircle2 } from 'lucide-react'
-import { setGuestSignalAction } from '../actions'
+import { setGuestSignalAction } from '@/app/guest/actions'
 
 type Signal = 'none' | 'please_clean' | 'dnd'
 
