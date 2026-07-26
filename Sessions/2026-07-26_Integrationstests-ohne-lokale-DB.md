@@ -147,6 +147,15 @@ GitHub dorthin keine Secrets reicht.
 Bewusst **keine** `concurrency`-Gruppe: die lauf-gebundenen Fixtures vertragen
 parallele Läufe, ein Abbruch mitten im Aufräumen dagegen hinterlässt Reste.
 
+**Erster Lauf verifiziert**
+([30208848551](https://github.com/Guoliver405/rose/actions/runs/30208848551)):
+`verify` grün in 55 s, `integration` grün in 54 s, davon 36 s im Schritt
+„Integrationstests" — also tatsächlich ausgeführt, nicht übersprungen. Die
+Datenbank danach erneut geprüft: keine `itest`-Rückstände, alle vier Hotels und
+zehn Nutzer unverändert. Damit hat erstmals ein fremder Runner Konten und Häuser
+in der gemeinsamen Instanz angelegt und wieder abgeräumt, ohne fremde Zeilen zu
+berühren.
+
 ## 🔖 Wiederaufnahme
 
 **Stand:** Integrationstests laufen ohne jede lokale Infrastruktur, 32 grün.
