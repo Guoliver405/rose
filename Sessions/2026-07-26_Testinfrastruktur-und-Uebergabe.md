@@ -5,7 +5,7 @@
 > Integrationstests laufen seit demselben Tag **ohne lokale Datenbank** direkt
 > gegen die Projekt-Instanz, 32 Tests grün. Docker, WSL und Supabase-CLI werden
 > nicht mehr gebraucht. Siehe
-> [Integrationstests ohne lokale DB](2026-07-26_Integrationstests-ohne-lokale-DB.md).
+> [Tests, Domain, Mailversand und Zugänge](2026-07-26_Tests-Domain-Mail-und-Zugaenge.md).
 > **Abschnitt 3 (Rückbau der lokalen Umgebung) und Abschnitt 5 (Testzugänge)
 > gelten weiter.**
 
@@ -210,7 +210,7 @@ Testdateien bleiben gültig, sie laufen dann eben nur in CI.
 
 > Diese Zugänge **existieren nicht mehr.** Die Datenbank wurde am 26.07.2026
 > vollständig geleert (siehe
-> [Integrationstests ohne lokale DB](2026-07-26_Integrationstests-ohne-lokale-DB.md),
+> [Tests, Domain, Mailversand und Zugänge](2026-07-26_Tests-Domain-Mail-und-Zugaenge.md),
 > Abschnitt „Datenbank geleert"). Neue Mandanten entstehen ausschließlich über
 > `/registrieren` mit dem Einladungscode. Der Abschnitt bleibt nur als Beleg
 > stehen, welche Kollisionen bewusst aufgebaut waren.

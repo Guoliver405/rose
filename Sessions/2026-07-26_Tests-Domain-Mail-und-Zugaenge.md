@@ -1,8 +1,24 @@
-# Integrationstests ohne lokale Datenbank (26.07.2026)
+# Tests, Domain, Mailversand und Zugänge (26.07.2026)
 
-> Korrigiert die Testinfrastruktur vom selben Tag
-> ([Übergabe-Dokument](2026-07-26_Testinfrastruktur-und-Uebergabe.md)). Docker,
-> WSL und die Supabase-CLI werden für dieses Projekt **nicht mehr gebraucht**.
+> Tagesprotokoll. Begonnen als Korrektur der Testinfrastruktur
+> ([Übergabe-Dokument](2026-07-26_Testinfrastruktur-und-Uebergabe.md)),
+> gewachsen bis zu einer betriebsbereiten Zugangsverwaltung mit eigener Domain.
+> **Für die Wiederaufnahme genügt der Block ganz unten.**
+
+## Was an diesem Tag entstand
+
+| Abschnitt | Ergebnis |
+|---|---|
+| [Integrationstests ohne lokale DB](#die-eigentliche-ursache) | Docker, WSL und Supabase-CLI wurden entbehrlich; 32 Tests grün |
+| [Tests in CI](#integrationstests-in-ci) | zweiter Job, erster Lauf verifiziert |
+| [Sackgasse für Einzelhaus-Konten](#nachgelagerter-fund-sackgasse-für-einzelhaus-konten) | Inhaber mit einem Haus kamen nie an ihr Konto |
+| [Häuser und Konto auf einem Bildschirm](#zweiter-anlauf-die-trennung-war-das-problem-nicht-die-sichtbarkeit) | `/konto` entfällt, Manager wandern ins Personal-Menü |
+| [Phase 6b](#phase-6b--self-service-registrierung) | Self-Service-Registrierung mit Einladungscode |
+| [Passwort-Reset](#passwort-zurücksetzen-resend-teil-1) | über Resend, end-to-end verifiziert |
+| [Datenbank geleert](#datenbank-geleert-26072026) | Neustart mit sauberen Zugängen |
+| [Eigene Domain](#umzug-auf-die-eigene-domain-26072026) | `rose-roomservice.app` |
+| [Einladungen statt Passwörter](#einladungen-statt-vorgelesener-passwörter-resend-teil-2) | `token_hash` statt PKCE, browserübergreifend |
+| [Mein Zugang](#mein-zugang--anzeigename-und-passwort-selbst-ändern) | Anzeigename und Passwort selbst änderbar |
 
 ## Der Auslöser
 
