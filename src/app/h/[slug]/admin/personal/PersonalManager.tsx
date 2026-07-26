@@ -3,11 +3,13 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import {
-  IdCard, KeyRound, Loader2, Plus, Printer, Sparkles, Trash2, UserCheck, UserMinus, UserRound,
+  Building2, IdCard, KeyRound, Loader2, Plus, Printer, Sparkles, Trash2, UserCheck, UserMinus,
+  UserRound,
 } from 'lucide-react'
 import {
-  createMaidAction, createReceptionAction, deleteMaidAction, deleteReceptionAction,
-  issueMaidLoginCardAction, setMaidActiveAction, type ReceptionCredentials,
+  attachManagerAction, createMaidAction, createManagerAction, createReceptionAction,
+  deleteMaidAction, deleteReceptionAction, detachManagerAction, issueMaidLoginCardAction,
+  setMaidActiveAction, type ManagerCredentials, type ReceptionCredentials,
 } from './actions'
 
 export type MaidRow = {
@@ -26,17 +28,39 @@ export type ReceptionRow = {
   email: string
 }
 
+/** „das übrige Haus bleibt" / „die übrigen 3 Häuser bleiben" — Singular zählt nicht mit. */
+function uebrigeHaeuser(n: number): string {
+  return n === 1 ? 'das übrige Haus bleibt' : `die übrigen ${n} Häuser bleiben`
+}
+
+export type ManagerRow = {
+  id: string
+  displayName: string
+  email: string
+  /** Wie viele Häuser des Kontos diese Person insgesamt betreut. */
+  hotelCount: number
+}
+
 export default function PersonalManager({
   hotelSlug,
   maids,
   receptionists,
+  managers,
+  verfuegbareManager,
   canManage,
+  isOwner,
 }: {
   hotelSlug: string
   maids: MaidRow[]
   receptionists: ReceptionRow[]
+  /** Manager DIESES Hauses. */
+  managers: ManagerRow[]
+  /** Manager des Kontos, die hier noch nicht eingesetzt sind. */
+  verfuegbareManager: ManagerRow[]
   /** false = Rezeptions-Rolle: nur Liste ansehen + Karten drucken. */
   canManage: boolean
+  /** Nur der Kontoinhaber verwaltet Manager — sonst wäre es Rechteausweitung. */
+  isOwner: boolean
 }) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -45,6 +69,8 @@ export default function PersonalManager({
   const [confirmDeactivateId, setConfirmDeactivateId] = useState<string | null>(null)
   const [recCredentials, setRecCredentials] = useState<ReceptionCredentials | null>(null)
   const [confirmRecDeleteId, setConfirmRecDeleteId] = useState<string | null>(null)
+  const [mgrCredentials, setMgrCredentials] = useState<ManagerCredentials | null>(null)
+  const [confirmMgrRemoveId, setConfirmMgrRemoveId] = useState<string | null>(null)
 
   const activeMaids = maids.filter(m => !m.deactivatedAt)
   const inactiveMaids = maids.filter(m => m.deactivatedAt)
@@ -82,6 +108,51 @@ export default function PersonalManager({
       const res = await deleteReceptionAction(hotelSlug, profileId)
       if (res.error) { setError(res.error); return }
       setConfirmRecDeleteId(null)
+    })
+  }
+
+  function runCreateManager(form: HTMLFormElement) {
+    setError(null)
+    setNotice(null)
+    setMgrCredentials(null)
+    const formData = new FormData(form)
+    startTransition(async () => {
+      const res = await createManagerAction(hotelSlug, formData)
+      if (res.error) { setError(res.error); return }
+      form.reset()
+      setMgrCredentials(res.credentials!)
+    })
+  }
+
+  function runAttachManager(form: HTMLFormElement) {
+    setError(null)
+    setNotice(null)
+    setMgrCredentials(null)
+    const userId = String(new FormData(form).get('userId') ?? '')
+    if (!userId) { setError('Bitte einen Manager auswählen.'); return }
+    startTransition(async () => {
+      const res = await attachManagerAction(hotelSlug, userId)
+      if (res.error) { setError(res.error); return }
+      form.reset()
+      setNotice('Manager diesem Haus zugeordnet — der Zugriff gilt sofort.')
+    })
+  }
+
+  function runDetachManager(userId: string, name: string) {
+    setError(null)
+    setNotice(null)
+    startTransition(async () => {
+      const res = await detachManagerAction(hotelSlug, userId)
+      if (res.error) { setError(res.error); return }
+      setConfirmMgrRemoveId(null)
+      const rest = res.nochInHaeusern ?? 0
+      setNotice(
+        rest > 0
+          ? `${name} verwaltet dieses Haus nicht mehr — ${uebrigeHaeuser(rest)} unberührt.`
+          : res.kept
+            ? `${name} verwaltet kein Haus mehr. Der Zugang ist entzogen; der Datensatz bleibt als Nachweis früherer Vorgänge bestehen.`
+            : `${name} entfernt.`,
+      )
     })
   }
 
@@ -460,6 +531,176 @@ export default function PersonalManager({
                         <button
                           type="button"
                           onClick={() => setConfirmRecDeleteId(null)}
+                          className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft"
+                        >
+                          Abbrechen
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Manager — nur der Kontoinhaber. Hausbezogen wie Rezeption und
+          Reinigung: hier stehen die Manager DIESES Hauses. Wer jemanden über
+          mehrere Häuser einsetzt, trägt ihn im jeweiligen Haus ein — beim
+          zweiten Mal ohne neuen Zugang über die Auswahl. */}
+      {isOwner && (
+        <>
+          <div className="mt-2 flex flex-wrap items-center gap-3">
+            <h2 className="text-xl font-black text-ink">Personal — Manager</h2>
+            <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-semibold text-ink-soft">
+              {managers.length} {managers.length === 1 ? 'Zugang' : 'Zugänge'}
+            </span>
+          </div>
+
+          <form
+            onSubmit={e => { e.preventDefault(); runCreateManager(e.currentTarget) }}
+            className="rounded-xl border border-edge bg-surface p-4"
+          >
+            <h3 className="mb-3 text-sm font-bold text-ink-soft">Neuen Manager anlegen</h3>
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+                Anzeigename
+                <input
+                  name="displayName"
+                  required
+                  minLength={2}
+                  placeholder="z. B. Nina Berg"
+                  className="w-48 rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink placeholder:text-ink-muted focus:border-action focus:outline-none"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+                E-Mail (Login)
+                <input
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="z. B. nina@meinhotel.de"
+                  className="w-64 rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink placeholder:text-ink-muted focus:border-action focus:outline-none"
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={pending}
+                className="flex items-center gap-1.5 rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
+              >
+                {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                Anlegen
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-ink-muted">
+              Ein Manager verwaltet dieses Haus vollständig — Zimmer, Personal,
+              Services, Einstellungen. Auf das Konto (Plan, weitere Häuser,
+              Manager) hat er keinen Zugriff.
+            </p>
+          </form>
+
+          {verfuegbareManager.length > 0 && (
+            <form
+              onSubmit={e => { e.preventDefault(); runAttachManager(e.currentTarget) }}
+              className="rounded-xl border border-edge bg-surface p-4"
+            >
+              <h3 className="mb-3 text-sm font-bold text-ink-soft">
+                Vorhandenen Manager hinzufügen
+              </h3>
+              <div className="flex flex-wrap items-end gap-3">
+                <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+                  Manager aus diesem Konto
+                  <select
+                    name="userId"
+                    defaultValue=""
+                    className="w-80 rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink focus:border-action focus:outline-none"
+                  >
+                    <option value="" disabled>Bitte auswählen …</option>
+                    {verfuegbareManager.map(m => (
+                      <option key={m.id} value={m.id}>
+                        {m.displayName} — {m.email}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="submit"
+                  disabled={pending}
+                  className="flex items-center gap-1.5 rounded-lg border border-edge px-4 py-2 text-sm font-bold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
+                >
+                  {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Building2 className="h-4 w-4" />}
+                  Hinzufügen
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-ink-muted">
+                Dieselbe Person, derselbe Zugang — sie betreut dieses Haus dann
+                zusätzlich.
+              </p>
+            </form>
+          )}
+
+          {mgrCredentials && (
+            <div className="rounded-xl border border-action-tint-edge bg-action-tint p-4">
+              <p className="flex items-center gap-1.5 text-sm font-bold text-action-deep">
+                <KeyRound className="h-4 w-4" /> Zugang für {mgrCredentials.displayName} angelegt —
+                Passwort jetzt notieren, es wird nur einmal angezeigt:
+              </p>
+              <p className="mt-2 font-mono text-sm font-bold text-action-deep">
+                {mgrCredentials.email} &nbsp;/&nbsp; {mgrCredentials.password}
+              </p>
+            </div>
+          )}
+
+          {managers.length === 0 ? (
+            <p className="rounded-xl border border-edge bg-surface px-4 py-3 text-sm text-ink-muted">
+              Für dieses Haus ist kein Manager eingetragen.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {managers.map(m => (
+                <div key={m.id} className="rounded-xl border border-edge bg-surface px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="min-w-40">
+                      <p className="font-bold text-ink">{m.displayName}</p>
+                      <p className="font-mono text-xs text-ink-muted">{m.email}</p>
+                    </div>
+                    {m.hotelCount > 1 && (
+                      <span className="rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-semibold text-ink-muted">
+                        betreut {m.hotelCount} Häuser
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => setConfirmMgrRemoveId(m.id)}
+                      className="ml-auto rounded-lg border border-critical-pill-edge p-1.5 text-critical-strong hover:bg-critical-tint disabled:opacity-50"
+                      aria-label={`${m.displayName} aus diesem Haus entfernen`}
+                    >
+                      <UserMinus className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {confirmMgrRemoveId === m.id && (
+                    <div className="mt-3 rounded-lg border border-edge bg-surface-sunken p-3">
+                      <p className="text-sm font-semibold text-ink">
+                        {m.displayName} aus diesem Haus entfernen? Der Zugriff endet sofort.
+                        {m.hotelCount > 1
+                          ? ` ${uebrigeHaeuser(m.hotelCount - 1).replace(/^./, c => c.toUpperCase())} unberührt.`
+                          : ' Es ist das letzte Haus dieser Person.'}
+                      </p>
+                      <div className="mt-2 flex gap-2">
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => runDetachManager(m.id, m.displayName)}
+                          className="rounded-lg bg-critical px-3 py-1.5 text-sm font-bold text-critical-foreground disabled:opacity-50"
+                        >
+                          {pending ? 'Entfernen …' : 'Ja, entfernen'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmMgrRemoveId(null)}
                           className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft"
                         >
                           Abbrechen

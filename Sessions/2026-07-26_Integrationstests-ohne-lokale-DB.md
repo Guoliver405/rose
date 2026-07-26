@@ -198,9 +198,63 @@ sieht ohnehin keinen der beiden Wege.
 `/konto` als Alpenblick geöffnet: „Haus anlegen" und „Manager anlegen"
 vorhanden. Keine Konsolenfehler, `npm run verify` grün.
 
-**Offener Nit:** Der Zurück-Link auf `/konto` heißt „Häuser" und führt bei einem
-Einzelhaus-Konto in dessen einziges Haus. Das Ziel stimmt, die Beschriftung ist
-irreführend.
+### Zweiter Anlauf: die Trennung war das Problem, nicht die Sichtbarkeit
+
+Der erste Fix machte „Häuser" ab dem zweiten Haus sichtbar und stellte „Konto"
+daneben. Einwand des Users, zu Recht: *unnötig kompliziert und inkonsistent,
+wenn man von einem Haus auf mehrere erweitert.* Zwei Knöpfe, deren Sichtbarkeit
+sich unterschiedlich verhält, sind schwerer zu erklären als einer, der immer da
+ist. Also nicht die Sichtbarkeit reparieren, sondern die Trennung aufheben:
+
+- **`/admin` trägt jetzt Häuser UND Konto.** Konto-Kasten (Plan, Zimmerzahlen,
+  Abrechnungsregel) oben — nur für den Inhaber —, darunter alle erreichbaren
+  Häuser mit Lagebild, dazu „Haus anlegen". Auch bei genau einem Haus.
+- **`/admin` leitet nie mehr weiter.** Wohin man nach dem Anmelden kommt, ist
+  eine Frage des Einstiegs und liegt jetzt auf der Login-Seite: Inhaber und
+  Manager landen auf der Häuser-Seite, die Rezeption direkt im Haus (für sie
+  gibt es dort nichts).
+- **`/konto` ist entfallen** — Ordner gelöscht, Matcher in `proxy.ts` bereinigt.
+  Das ungenutzte `renameHotelSlugAction` ging mit; die Slug-Änderung läuft über
+  `updateSettingsAction` im Einstellungs-Hub.
+- **„Häuser" in der Kopfzeile ist immer sichtbar** (außer für die Rezeption).
+
+### Manager sind Personal, kein Konto-Thema
+
+Ebenfalls auf Zuruf des Users: die Manager-Verwaltung gehört zu den anderen
+Personenarten. Neuer Abschnitt „Personal — Manager" auf `…/admin/personal`,
+neben Reinigung und Rezeption.
+
+Hausbezogen wie die anderen beiden: die Seite von Haus X zeigt und ändert
+ausschließlich die Manager VON Haus X. Wer jemanden über mehrere Häuser
+einsetzt, trägt ihn je Haus ein — ab dem zweiten Mal über „Vorhandenen Manager
+hinzufügen" aus den Managern des Kontos, ohne neuen Zugang. Entfernen wirkt nur
+auf dieses Haus; ein Abzeichen „betreut N Häuser" und der Bestätigungstext
+machen das vorher sichtbar.
+
+Der Riegel ist hier **strenger** als bei Reinigung und Rezeption: nicht
+`getAdminContext` (das ließe Manager durch), sondern `isOwner`. Ein Manager, der
+Mit-Manager ernennt, wäre eine Rechteausweitung.
+
+### Verifiziert im Browser
+
+| Fall | Ergebnis |
+|---|---|
+| Inhaber, 1 Haus (Alpenblick) | Konto-Kasten, Haus, „Haus anlegen" ✅ |
+| Inhaber, 2 Häuser | dito, beide Häuser mit Lagebild ✅ |
+| Manager (Nina) | nur Häuser-Liste, **kein** Konto-Kasten, **kein** „Haus anlegen" ✅ |
+| Manager sieht „Personal — Manager" | **nein** ✅ (Rechteausweitung verhindert) |
+| Manager anlegen → 2. Haus zuordnen | Auswahl bietet ihn an, danach „betreut 2 Häuser" ✅ |
+| Aus einem Haus entfernen | anderes Haus unberührt, er kehrt in die Auswahl zurück ✅ |
+| Aus dem letzten Haus entfernen | Zugang gelöscht (keine Historie), Datenbank rückstandsfrei ✅ |
+
+Keine Konsolenfehler, `npm run verify` grün. Beim Testen fiel ein Sprachfehler
+auf („die übrigen 1 Haus bleibt") — behoben über einen kleinen Helfer, der den
+Singular richtig bildet.
+
+**Fallstrick unterwegs:** Nach dem Löschen von `src/app/konto/` scheiterte
+`tsc` an `.next/types/validator.ts`, das die entfernte Route noch importierte.
+`.next/` löschen und den Dev-Server neu starten — steht so in der
+Fallstrick-Tabelle und galt hier wörtlich.
 
 ## 🔖 Wiederaufnahme
 

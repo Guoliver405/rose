@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { getManagementContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/service'
-import PersonalManager, { type MaidRow, type ReceptionRow } from './PersonalManager'
+import PersonalManager, { type MaidRow, type ManagerRow, type ReceptionRow } from './PersonalManager'
 
 export default async function PersonalPage({
   params,
@@ -64,12 +64,75 @@ export default async function PersonalPage({
     )
   }
 
+  // Manager DIESES Hauses — und die übrigen Manager des Kontos, die sich hier
+  // zusätzlich einsetzen lassen. Beides nur für den Kontoinhaber: ein Manager,
+  // der Mit-Manager ernennt, wäre eine Rechteausweitung.
+  let managers: ManagerRow[] = []
+  let verfuegbareManager: ManagerRow[] = []
+  if (ctx.isOwner) {
+    const admin = createAdminClient()
+
+    const { data: ownHotels } = await admin
+      .from('hotels').select('id').eq('account_id', ctx.accountId)
+    const ownIds = (ownHotels ?? []).map(h => h.id)
+
+    const { data: rows } = await admin
+      .from('hotel_members')
+      .select('user_id, hotel_id, display_name')
+      .eq('role', 'manager')
+      .in('hotel_id', ownIds)
+
+    const hierIds = new Set(
+      (rows ?? []).filter(r => r.hotel_id === ctx.hotelId).map(r => r.user_id),
+    )
+    // Wie viele Häuser betreut die Person insgesamt? Macht sichtbar, dass ein
+    // Entzug hier die anderen Häuser nicht berührt.
+    const haeuserProUser = new Map<string, number>()
+    const nameProUser = new Map<string, string>()
+    for (const r of rows ?? []) {
+      haeuserProUser.set(r.user_id, (haeuserProUser.get(r.user_id) ?? 0) + 1)
+      nameProUser.set(r.user_id, r.display_name)
+    }
+
+    const mail = async (userId: string) => {
+      const { data } = await admin.auth.admin.getUserById(userId)
+      return data?.user?.email ?? '—'
+    }
+
+    managers = await Promise.all(
+      [...hierIds].map(async userId => ({
+        id: userId,
+        displayName: nameProUser.get(userId) ?? '—',
+        email: await mail(userId),
+        hotelCount: haeuserProUser.get(userId) ?? 1,
+      })),
+    )
+    verfuegbareManager = await Promise.all(
+      [...new Set((rows ?? []).map(r => r.user_id))]
+        .filter(userId => !hierIds.has(userId))
+        .map(async userId => ({
+          id: userId,
+          displayName: nameProUser.get(userId) ?? '—',
+          email: await mail(userId),
+          hotelCount: haeuserProUser.get(userId) ?? 1,
+        })),
+    )
+
+    const nachName = (a: ManagerRow, b: ManagerRow) =>
+      a.displayName.localeCompare(b.displayName, 'de')
+    managers.sort(nachName)
+    verfuegbareManager.sort(nachName)
+  }
+
   return (
     <PersonalManager
       hotelSlug={ctx.hotelSlug}
       maids={maids}
       receptionists={receptionists}
+      managers={managers}
+      verfuegbareManager={verfuegbareManager}
       canManage={ctx.role !== 'reception'}
+      isOwner={ctx.isOwner}
     />
   )
 }

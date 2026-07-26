@@ -3,10 +3,15 @@ import { listAccessibleHotels } from '@/utils/auth'
 import LoginForm from './LoginForm'
 
 export default async function LoginPage() {
-  // Kein einzelnes Haus mehr prüfbar — wer irgendwo Zugriff hat, geht auf die
-  // Haus-Auswahl; die leitet bei genau einem Haus direkt weiter.
+  // Wohin nach dem Anmelden? Wer die Häuser-Seite überhaupt bedienen kann —
+  // Inhaber und Manager — landet dort: sie trägt Konto, Häuser und den Weg,
+  // ein weiteres anzulegen. Die Rezeption kennt nur ihr eigenes Haus und hat
+  // dort nichts zu holen, sie geht direkt ins Tagesgeschäft.
   const hotels = await listAccessibleHotels()
-  if (hotels.length > 0) redirect('/admin')
+  if (hotels.length > 0) {
+    const nurRezeption = hotels.every(h => h.role === 'reception')
+    redirect(nurRezeption ? `/h/${hotels[0].slug}/admin` : '/admin')
+  }
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 p-8">

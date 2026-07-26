@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/utils/supabase/service'
-import { getAdminContext } from '@/utils/auth'
+import { getAdminContext, getManagementContext } from '@/utils/auth'
 import { generatePin, generateToken } from '@/lib/ids'
 import { buildMaidEmail, normalizeUsername } from '@/lib/maid'
 
@@ -320,4 +320,189 @@ export async function deleteReceptionAction(
 
   revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
   return { kept: true }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MANAGER — hausbezogen, wie Rezeption und Reinigung.
+//
+// Ein Manager kann mehrere Häuser betreuen; verwaltet wird er trotzdem je
+// Haus: die Personal-Seite von Haus X zeigt und ändert ausschließlich die
+// Manager VON Haus X. Wer jemanden über drei Häuser einsetzen will, trägt ihn
+// in drei Häusern ein — beim zweiten und dritten Mal per Auswahl aus den
+// bereits vorhandenen Managern des Kontos, ohne neuen Zugang.
+//
+// Der Riegel ist hier bewusst STRENGER als bei Reinigung und Rezeption:
+// `getAdminContext` ließe auch Manager durch, und ein Manager, der sich
+// Mit-Manager ernennt, wäre eine Rechteausweitung. Deshalb `isOwner`.
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type ManagerCredentials = {
+  userId: string
+  displayName: string
+  email: string
+  password: string
+}
+
+/** Kontext für Manager-Verwaltung: nur der Kontoinhaber DIESES Hauses. */
+async function requireOwner(slug: string) {
+  const ctx = await getManagementContext(slug)
+  if (!ctx || !ctx.isOwner) return null
+  return ctx
+}
+
+/** Neuen Manager anlegen und diesem Haus zuordnen. */
+export async function createManagerAction(
+  slug: string,
+  formData: FormData,
+): Promise<{ credentials?: ManagerCredentials; error?: string }> {
+  const ctx = await requireOwner(slug)
+  if (!ctx) return { error: 'Nur der Kontoinhaber kann Manager verwalten.' }
+
+  const displayName = ((formData.get('displayName') as string) ?? '').trim()
+  const email = ((formData.get('email') as string) ?? '').trim().toLowerCase()
+
+  if (displayName.length < 2) return { error: 'Name muss mindestens 2 Zeichen haben.' }
+  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: 'Bitte eine gültige E-Mail-Adresse angeben.' }
+
+  const password = generateToken(12)
+  const admin = createAdminClient()
+
+  const { data: authUser, error: authErr } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true, // kein Bestätigungs-Flow — Zugang wird persönlich übergeben
+  })
+  if (authErr || !authUser.user) {
+    if (authErr?.message?.includes('already')) {
+      return { error: 'Diese E-Mail-Adresse ist bereits vergeben. Falls die Person schon Manager ist, über „Vorhandenen Manager hinzufügen" auswählen.' }
+    }
+    return { error: authErr?.message ?? 'Konto konnte nicht erstellt werden.' }
+  }
+
+  // profiles-Zeile ist PFLICHT, auch für Management: stays.created_by und
+  // service_orders.done_by zeigen darauf. hotel_id = Stammhaus, NICHT die
+  // Berechtigung — die steht in hotel_members.
+  const { error: profileErr } = await admin.from('profiles').insert({
+    id: authUser.user.id,
+    hotel_id: ctx.hotelId,
+    display_name: displayName,
+  })
+  if (profileErr) {
+    await admin.auth.admin.deleteUser(authUser.user.id)
+    return { error: `Profil konnte nicht angelegt werden: ${profileErr.message}` }
+  }
+
+  const { error: memberErr } = await admin.from('hotel_members').insert({
+    hotel_id: ctx.hotelId,
+    user_id: authUser.user.id,
+    role: 'manager',
+    display_name: displayName,
+  })
+  if (memberErr) {
+    await admin.auth.admin.deleteUser(authUser.user.id)
+    return { error: `Zuordnung konnte nicht angelegt werden: ${memberErr.message}` }
+  }
+
+  revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
+  revalidatePath('/admin')
+  return { credentials: { userId: authUser.user.id, displayName, email, password } }
+}
+
+/**
+ * Vorhandenen Manager des Kontos zusätzlich diesem Haus zuordnen.
+ *
+ * Der Weg für den zweiten und jeden weiteren Einsatzort — kein neuer Zugang,
+ * dieselbe Person.
+ */
+export async function attachManagerAction(slug: string, userId: string): Promise<{ error?: string }> {
+  const ctx = await requireOwner(slug)
+  if (!ctx) return { error: 'Nur der Kontoinhaber kann Manager verwalten.' }
+
+  const admin = createAdminClient()
+
+  // Die userId kommt aus dem Formular, ist also ungeprüft: sie muss zu einem
+  // Manager gehören, der bereits in EINEM Haus DIESES Kontos sitzt.
+  const { data: ownHotels } = await admin
+    .from('hotels').select('id').eq('account_id', ctx.accountId)
+  const ownIds = (ownHotels ?? []).map(h => h.id)
+
+  const { data: existing } = await admin
+    .from('hotel_members')
+    .select('display_name, hotel_id, role')
+    .eq('user_id', userId)
+    .eq('role', 'manager')
+    .in('hotel_id', ownIds)
+  if (!existing || existing.length === 0) return { error: 'Manager nicht gefunden.' }
+  if (existing.some(e => e.hotel_id === ctx.hotelId)) {
+    return { error: 'Diese Person ist hier bereits Manager.' }
+  }
+
+  const { error } = await admin.from('hotel_members').insert({
+    hotel_id: ctx.hotelId,
+    user_id: userId,
+    role: 'manager',
+    display_name: existing[0].display_name,
+  })
+  if (error) return { error: error.message }
+
+  revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
+  revalidatePath('/admin')
+  return {}
+}
+
+/**
+ * Manager aus DIESEM Haus entfernen. Andere Häuser bleiben unberührt.
+ *
+ * Der Auth-User wird nur gelöscht, wenn nach dem Entzug nichts mehr an ihm
+ * hängt — `profiles` ist Ziel von `stays.created_by` und
+ * `service_orders.done_by` (`on delete set null`), ein hartes Löschen risse
+ * sonst die Attribution aus Zimmer-Verlauf und Bestell-Historie. Der Entzug
+ * der Berechtigung wirkt in jedem Fall sofort: die RLS kennt für Management
+ * keinen profiles-Zweig mehr.
+ */
+export async function detachManagerAction(
+  slug: string,
+  userId: string,
+): Promise<{ error?: string; kept?: boolean; nochInHaeusern?: number }> {
+  const ctx = await requireOwner(slug)
+  if (!ctx) return { error: 'Nur der Kontoinhaber kann Manager verwalten.' }
+  if (userId === ctx.userId) return { error: 'Der eigene Zugang lässt sich hier nicht entfernen.' }
+
+  const admin = createAdminClient()
+
+  const { data: member } = await admin
+    .from('hotel_members')
+    .select('role')
+    .eq('hotel_id', ctx.hotelId)
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (!member || member.role !== 'manager') return { error: 'Manager nicht gefunden.' }
+
+  await admin.from('hotel_members')
+    .delete().eq('hotel_id', ctx.hotelId).eq('user_id', userId)
+
+  const [{ data: rest }, { data: owner }, { data: stays }, { data: orders }, { data: log }] =
+    await Promise.all([
+      admin.from('hotel_members').select('hotel_id').eq('user_id', userId),
+      admin.from('account_members').select('account_id').eq('user_id', userId).limit(1),
+      admin.from('stays').select('id').eq('created_by', userId).limit(1),
+      admin.from('service_orders').select('id').eq('done_by', userId).limit(1),
+      admin.from('staff_log').select('id').eq('profile_id', userId).limit(1),
+    ])
+
+  const nochInHaeusern = (rest ?? []).length
+  const stillUsed = nochInHaeusern > 0 || (owner ?? []).length > 0
+  const hasHistory =
+    (stays ?? []).length > 0 || (orders ?? []).length > 0 || (log ?? []).length > 0
+
+  revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
+  revalidatePath('/admin')
+
+  if (!stillUsed && !hasHistory) {
+    const { error } = await admin.auth.admin.deleteUser(userId)
+    if (error) return { error: error.message }
+    return { nochInHaeusern }
+  }
+
+  return { kept: true, nochInHaeusern }
 }
