@@ -397,19 +397,36 @@ fehlen die SMTP-Einstellung und ein Zugang mit echter Adresse — siehe unten.
 
 ### Einrichtung, die nur im Dashboard geht
 
-1. **Resend** → Domain verifizieren. Der User hat bereits ein Konto für einen
-   anderen Dienst; eine dort verifizierte Domain darf unter *jeder* Adresse
-   dieser Domain senden, RoSe braucht also keine eigene (z. B.
-   `rose@vorhandene-domain`). API-Key erzeugen.
-2. **Supabase** → Project Settings → Authentication → SMTP Settings:
+> Die Dashboard-Pfade unten sind am 26.07.2026 gegen die Dokumentation geprüft.
+> Supabase hat sie umbenannt: SMTP liegt **nicht** mehr unter „Project
+> Settings", sondern unter Authentication.
+
+1. **Resend** → API-Key erzeugen. Für RoSe ein **eigenes Konto** statt des
+   bestehenden: trennt Sendereputation, Kontingent, Logs und Schlüssel.
+   Achtung, dieselbe Wurzeldomain lässt sich nicht sauber in zwei Konten
+   verifizieren — beide beanspruchten denselben DKIM-Eintrag
+   (`resend._domainkey`). Für das zweite Konto eine **Subdomain** nehmen
+   (`rose.domain.tld`); das ist ohnehin gängige Trennung für Transaktionsmail.
+2. **Supabase** → **Authentication → Emails → SMTP Settings**, direkt:
+   `https://supabase.com/dashboard/project/<ref>/auth/smtp`
    Host `smtp.resend.com`, Port `465`, Benutzer `resend`, Passwort = der
-   Resend-API-Key, Absender = die verifizierte Adresse.
-3. **Supabase** → Authentication → URL Configuration → Redirect URLs:
+   Resend-API-Key, dazu Absenderadresse und -name.
+   **Gleich danach die Rate Limits prüfen:** nach dem Einschalten von Custom
+   SMTP setzt Supabase ein niedriges Startlimit von **30 Mails pro Stunde**.
+3. **Supabase** → **Authentication → URL Configuration**, direkt:
+   `https://supabase.com/dashboard/project/<ref>/auth/url-configuration`
+   Bei „Redirect URLs" eintragen:
    `https://rose-sand-one.vercel.app/auth/callback` **und**
-   `http://localhost:3000/auth/callback`. Fehlt der Eintrag, verweigert
-   Supabase die Weiterleitung und der Link läuft ins Leere.
+   `http://localhost:3000/**`. Fehlt der Eintrag, verweigert Supabase die
+   Weiterleitung und der Link läuft ins Leere. Wildcards sind erlaubt.
+   Die „Site URL" sollte auf die Produktionsadresse zeigen — sie ist die
+   Rückfallebene, wenn ein Aufruf kein `redirectTo` mitgibt.
 4. Zum Testen einen Zugang mit **echter** Adresse anlegen — die
-   `@rose.local`-Konten können das nicht.
+   `@rose.local`-Konten können das nicht (siehe Befund oben).
+
+Quellen: [Custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp),
+[Redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls),
+[Resend → Supabase SMTP](https://resend.com/docs/send-with-supabase-smtp).
 
 ## 🔖 Wiederaufnahme
 
