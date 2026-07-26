@@ -72,13 +72,38 @@ die im UI unsichtbar falsch sein können: Zeitfenster über Mitternacht,
 Stayover-Fälligkeit, Stale-Timeout, Schicht-Paarbildung mit Klammerung und
 Plausibilitätsgrenzen, Abrechnungsregel je Zimmer.
 
-**Integration (Server-Actions + RLS) fehlt noch** — und dort liegt das größte
-Risiko: die beiden ernsten Funde vom 26.07.2026 (RLS grenzt seit Phase 6d nicht
-mehr auf ein Haus ein; der `profiles`-Zweig hätte einen Rechte-Entzug
-wirkungslos gemacht) wären genau dort aufgeschlagen. Geplant als
-Isolationsmatrix Rolle × eigenes/fremdes Haus × eigenes/fremdes Konto gegen eine
-Test-Datenbank. **Bis dahin bleiben Mandanten- und Rollengrenzen von Hand zu
-prüfen.**
+**Integration (`tests/integration/`) gegen eine LOKALE Supabase-Instanz** —
+hier liegt das größte Risiko, denn beide ernsten Funde vom 26.07.2026 waren
+Isolationslücken. Zwei Ebenen:
+
+- `rls.test.ts` — die Grenzen **an der Quelle**: was geben `is_hotel_member` /
+  `is_hotel_management` tatsächlich frei? Inklusive der Probe, dass ein
+  **Rechte-Entzug sofort wirkt** (die `profiles`-Zeile darf keine Hintertür
+  offenhalten).
+- `guards.test.ts` — was die App daraus macht: `getManagementContext(slug)`,
+  `getAdminContext`, `listAccessibleHotels`, `getAccountContext`. `next/headers`
+  ist ersetzt, der Cookie-Speicher enthält eine **echte** Supabase-Session.
+
+Die Testwelt (`tests/integration/helpers/world.ts`) baut zwei Konten mit genau
+den Kollisionen, die uns eingeholt haben: dieselbe Zimmernummer in zwei Häusern,
+derselbe Maid-Benutzername in zwei Häusern.
+
+```bash
+npm run db:start          # einmalig, braucht Docker Desktop
+npm run db:reset          # sync-migrations + supabase db reset
+npm run test:integration
+```
+
+`supabase/migrations/` wird aus `Supabase_sql/archive/` **erzeugt**
+(`scripts/sync-migrations.mjs`, läuft in `db:reset`) und ist gitignored —
+einzige Quelle der Wahrheit bleibt die Projekt-Ablage. Die Verbindungsdaten
+liest `tests/integration/setup.ts` aus `supabase status`; nichts ist
+hartkodiert, und ein Riegel bricht ab, falls die URL nicht auf localhost zeigt.
+
+**Noch nicht abgedeckt:** die Login-Actions selbst (`guestLoginAction`,
+`maidLoginAction`) — sie leiten per `redirect()` um und brauchen etwas mehr
+Gerüst. Der Gast-Rate-Limit-Test („fünf Fehlversuche sperren nur das eigene
+Haus") wäre der nächste sinnvolle Schritt.
 
 **Manuell bleibt** ohnehin: Druck-Layouts, Farbsprache, Bedien-Eindruck — siehe
 [Testplan-Walkthrough.md](Sessions/Testplan-Walkthrough.md).

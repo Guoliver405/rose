@@ -5,8 +5,13 @@
    Doku-Prosa als reale Utilities auf — gefährlich bei Beispielen mit
    Arbitrary-Value-Klammern, die kein gültiges CSS sind. */
 @source not "../../CLAUDE.md";
+@source not "../../AGENTS.md";
 @source not "../../docs/*.md";
+@source not "../../Sessions/*.md";
 @source not "../../Supabase_sql/*.sql";
+@source not "../../Supabase_sql/archive/*.sql";
+@source not "../../supabase/migrations/*.sql";
+@source not "../../tests/**/*.ts";
 
 /* ─────────────────────────────────────────────────────────────────
    PRIMITIVE — Rohe Farb-Werte. Niemals direkt in Komponenten.
