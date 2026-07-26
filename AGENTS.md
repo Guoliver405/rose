@@ -256,9 +256,11 @@ Reine Loader-Ableitung, kein Cron, kein persistentes Flag: Ein belegtes Zimmer i
 
 ## Deployment (Test-Stage)
 
-Vercel-Projekt `guoliver405s-projects/rose`, Produktions-URL **https://rose-sand-one.vercel.app** — läuft gegen dieselbe Supabase-DB wie lokal. **Auto-Deploy aktiv:** jeder Push auf `main` baut und deployt Production (verifiziert 08.07.). Manuell geht weiterhin `vercel deploy --prod --yes` aus dem Projektordner.
+Vercel-Projekt `guoliver405s-projects/rose`, Produktions-URL seit 26.07.2026 **https://rose-roomservice.app** (`www.` ebenfalls verbunden); `https://rose-sand-one.vercel.app` bleibt als Rückweg erreichbar. Läuft gegen dieselbe Supabase-DB wie lokal. **Auto-Deploy aktiv:** jeder Push auf `main` baut und deployt Production (verifiziert 08.07.). Manuell geht weiterhin `vercel deploy --prod --yes` aus dem Projektordner.
 
-Env-Vars liegen in Vercel (Production): die drei Supabase-Keys + `NEXT_PUBLIC_SITE_URL=https://rose-sand-one.vercel.app` (Basis der QR-Links). Bei Domain-Wechsel `NEXT_PUBLIC_SITE_URL` anpassen und redeployen, sonst zeigen Aushänge/Handouts/Maid-Karten auf die alte URL.
+**Die Domain liegt bei Porkbun, die Nameserver bleiben dort** — Vercel bietet aktiv an, sie zu übernehmen, was die gesamte Zone ersetzen und damit die Resend-Einträge für den Mailversand löschen würde. Verbunden ist stattdessen über `A rose-roomservice.app → 76.76.21.21` und `CNAME www → cname.vercel-dns.com`. `.app` steht auf der HSTS-Preload-Liste: HTTPS ist erzwungen, vor Ausstellung des Zertifikats antwortet die Domain gar nicht (dauerte hier ~3 Minuten).
+
+Env-Vars liegen in Vercel (Production): die drei Supabase-Keys + `NEXT_PUBLIC_SITE_URL=https://rose-roomservice.app` (Basis der QR-Links) + `SIGNUP_INVITE_CODE`. Bei Domain-Wechsel `NEXT_PUBLIC_SITE_URL` anpassen und redeployen, sonst zeigen Aushänge/Handouts/Maid-Karten auf die alte URL — und **vorher** in Supabase die Redirect URLs und die Site URL nachziehen, sonst verwirft GoTrue das neue Ziel stillschweigend. Die Variablen sind als *Sensitive* markiert und lassen sich mit `vercel env pull` **nicht** auslesen; zum Ändern `vercel env rm` + `vercel env add` (Wert aus Git Bash mit `printf '%s' '…' |` einspeisen).
 
 Solange es keine Self-Service-Registrierung gibt (Phase 6b), werden Mandanten manuell angelegt: `node scripts/create-tenant.mjs "Hotelname" mail@rose.local [passwort]` erzeugt Hotel + Slug + Auth-User + Management-Profil und gibt die beiden Portal-Adressen aus (Zugangsdaten im Session-Protokoll). Der Slug ist danach unter Einstellungen → Hotel & Regeln änderbar.
 

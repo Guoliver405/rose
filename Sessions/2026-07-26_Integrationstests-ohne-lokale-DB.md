@@ -494,6 +494,40 @@ Einladungscode aus `SIGNUP_INVITE_CODE`. Es gibt keinen Zugang mehr, der nicht
 über diesen Weg entstanden ist — und damit erstmals keinen mit einer Adresse,
 an die sich keine Mail zustellen lässt.
 
+## Umzug auf die eigene Domain (26.07.2026)
+
+`rose-roomservice.app` (Porkbun) ist jetzt die Produktionsadresse, `www.`
+mitverbunden. `rose-sand-one.vercel.app` bleibt als Rückweg erreichbar.
+
+**Nameserver bleiben bei Porkbun.** Vercel bietet die Übernahme an — das hätte
+die gesamte Zone ersetzt und die vier Resend-Einträge gelöscht. Verbunden ist
+über `A → 76.76.21.21` und `CNAME www → cname.vercel-dns.com`.
+
+**Der Fallstrick, der zweimal zuschlug:** Porkbuns HOST-Feld ist **relativ**.
+Wer den vollen Namen einträgt, erzeugt `rose-roomservice.app.rose-roomservice.app`
+— und die Oberfläche zeigt das gespeicherte Ergebnis so an, dass es richtig
+aussieht. Aufgefallen ist es erst bei der Abfrage am autoritativen Nameserver:
+
+```
+nslookup -type=A rose-roomservice.app curitiba.ns.porkbun.com
+```
+
+**Lehre:** DNS nie über die Oberfläche des Anbieters beurteilen, sondern gegen
+den autoritativen Server abfragen — der zeigt auch gleich, ob ein Doppel-Name
+entstanden ist. Öffentliche Resolver taugen dafür nicht, weil sie negative
+Antworten zwischenspeichern.
+
+Weiteres zur Endung: `.app` steht auf der HSTS-Preload-Liste, HTTPS ist also
+erzwungen. Vor Ausstellung des Zertifikats antwortet die Domain **gar nicht** —
+hier gut drei Minuten lang. Das ist normal und kein Konfigurationsfehler.
+
+**Verifiziert:** Wurzel und `www` liefern HTTP 200, `/login` rendert,
+Registrierung über die neue Adresse legt einen Mandanten an, und die
+**QR-Aushänge tragen die neue Domain** (`rose-roomservice.app/guest/r/<token>`);
+ein solcher Gast-Deeplink antwortet mit 200 und der PIN-Eingabe. Der dafür
+angelegte Wegwerf-Mandant ist wieder entfernt, die Datenbank steht erneut auf
+null.
+
 ## 🔖 Wiederaufnahme
 
 **Stand:** Integrationstests laufen ohne jede lokale Infrastruktur, 32 grün.
