@@ -590,6 +590,22 @@ Werbung-Tab). `ladeEin()` gibt deshalb Metadaten mit, die in der Vorlage als
 > ausschließlich der Anzeige in der Mail. Für Berechtigungen ist es unbrauchbar
 > — die stehen in `hotel_members` bzw. `account_members`.
 
+### Verifiziert
+
+Einladung erzeugt → Mail über die eigene Domain zugestellt → Link **in einem
+anderen Browser** geöffnet → Passwort vergeben → als Rezeption im Haus
+gelandet. Der Schritt „anderer Browser" ist der Beleg dafür, dass der Umbau von
+PKCE auf `token_hash` seinen Zweck erfüllt; vorher war das ausgeschlossen.
+
+**Offen bleibt allein die Einsortierung bei Gmail** — die Mail kommt an
+(`Delivered`), landet aber im Werbung- bzw. Spam-Ordner. Das ist kein Fehler im
+Ablauf, sondern fehlende Sendereputation einer Domain, die es seit wenigen
+Stunden gibt. SPF, DKIM und DMARC sind gesetzt; was jetzt zählt, ist Zeit und
+regelmäßiger Versand ohne Beschwerden. Nächster sinnvoller Schritt zur
+Absicherung: in Gmail „Original anzeigen" und die `Authentication-Results`
+prüfen — stehen dort dreimal `pass`, ist die Technik erledigt und es geht
+ausschließlich um Reputation.
+
 Quellen:
 [SSR-Auth mit PKCE](https://supabase.com/docs/guides/auth/server-side/email-based-auth-with-pkce-flow-for-ssr),
 [inviteUserByEmail](https://supabase.com/docs/reference/javascript/auth-admin-inviteuserbyemail).
@@ -602,17 +618,21 @@ Quellen:
 - **Phase 6b** steht: Self-Service-Registrierung mit Einladungscode.
 - **Passwort-Reset** ist betriebsbereit — eigene Domain, eigener verifizierter
   Absender, Zustellung an beliebige Empfänger end-to-end verifiziert.
+- **Einladungen** ersetzen vorgelesene Passwörter für Rezeption und Manager.
+  Verifiziert bis zur Anmeldung, ausdrücklich auch **browserübergreifend**.
+  Kein Passwort existiert je außerhalb des Kopfes der eingeladenen Person.
 - Produktionsadresse ist **`https://rose-roomservice.app`**.
-- Die Datenbank ist **leer**. Der einzige Weg hinein: `/registrieren` mit dem
-  Code aus `SIGNUP_INVITE_CODE`.
+- Die Datenbank enthält nur, was seit dem Leeren neu entstanden ist. Der
+  einzige Weg hinein: `/registrieren` mit dem Code aus `SIGNUP_INVITE_CODE`.
 
 **Offen, in Reihenfolge:**
 
-1. **Resend-API für eigene Mails** (Teil 2). Einladungen für Manager- und
-   Rezeptions-Zugänge statt vorgelesener Passwörter — betrifft beide
-   Anlege-Wege in `…/admin/personal`. Bringt `resend` als Abhängigkeit und
-   `RESEND_API_KEY` als Env-Var (bisher lebt der Schlüssel **nur** in Supabases
-   SMTP-Einstellung, nicht im Projekt).
+1. **Zustellbarkeit bei Gmail.** Die Einladung kommt an, landet aber im
+   Werbung-/Spam-Ordner. Kein Ablauffehler — fehlende Sendereputation. Erst
+   `Authentication-Results` einer zugestellten Mail prüfen (dreimal `pass`?),
+   danach hilft nur regelmäßiger Versand über Tage. Praktische Relevanz
+   vermutlich begrenzt: Hotels nutzen überwiegend eigene Mail-Domains, nicht
+   Gmail.
 2. **Seite „Mein Zugang"** — Anzeigename und Passwort selbst bearbeitbar; heute
    gibt es nur `…/admin/einstellungen/passwort`. Der Anzeigename fiel als Lücke
    auf, weil Altkonten „Rezeption" hießen (siehe Datenkorrektur oben).
