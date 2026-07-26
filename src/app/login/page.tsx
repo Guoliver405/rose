@@ -1,10 +1,12 @@
 import { redirect } from 'next/navigation'
-import { getManagementContext } from '@/utils/auth'
+import { listAccessibleHotels } from '@/utils/auth'
 import LoginForm from './LoginForm'
 
 export default async function LoginPage() {
-  const ctx = await getManagementContext()
-  if (ctx) redirect('/admin')
+  // Kein einzelnes Haus mehr prüfbar — wer irgendwo Zugriff hat, geht auf die
+  // Haus-Auswahl; die leitet bei genau einem Haus direkt weiter.
+  const hotels = await listAccessibleHotels()
+  if (hotels.length > 0) redirect('/admin')
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-8 p-8">

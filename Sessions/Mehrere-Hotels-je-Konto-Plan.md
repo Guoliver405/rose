@@ -115,9 +115,43 @@ rolleImHotel(user, hotel) =
  ODER hotel_members(hotel.id, user).role              → 'manager' | 'reception'
 ```
 
-`profiles.role` (heute `admin` | `reception`) wird damit abgelöst: das heutige
-per-Haus-`admin` **ist** der Manager, nur bisher auf ein Haus beschränkt.
-`profiles` behält allein die Reinigungskräfte.
+`profiles.role` (heute `admin` | `reception`) verliert damit seine
+Zuständigkeit für den Zugriff: das heutige per-Haus-`admin` **ist** der
+Manager, nur bisher auf ein Haus beschränkt.
+
+### `profiles` bleibt der Identitäts-Anker — auch für Management
+
+**Management-Zeilen dürfen NICHT aus `profiles` verschwinden.** Zwei
+Fremdschlüssel zeigen darauf und sind `on delete set null`:
+
+```sql
+stays.created_by        uuid references profiles(id) on delete set null
+service_orders.done_by  uuid references profiles(id) on delete set null
+```
+
+Ein Löschen risse also die Attribution im Zimmer-Verlauf („Check-in ·
+Rezeption") und in der Bestell-Historie („Historie nennt Bearbeiter") weg —
+dieselbe Klasse Fehler wie die Kaskade beim Personal-Löschen. `profiles`
+bleibt daher der Datensatz **jeder Person** (Anzeigename + FK-Ziel);
+`profiles.hotel_id` bedeutet für Management künftig nur noch „Stammhaus" und
+ist **nicht mehr maßgeblich für den Zugriff**.
+
+### Daraus folgt eine zwingende Einschränkung in der RLS
+
+Bliebe der `profiles.hotel_id`-Zweig unverändert, würde der **Entzug** von
+Manager-Rechten nicht greifen: die alte Zeile gewährte weiter Zugang. Der
+Zweig muss deshalb auf Reinigungskräfte begrenzt werden:
+
+```sql
+is_hotel_member(h) =
+     profiles(auth.uid()).hotel_id = h AND username IS NOT NULL   -- Reinigung
+  OR hotel_members(h, auth.uid())                                 -- Manager/Rezeption
+  OR account_members(hotels(h).account_id, auth.uid())            -- Inhaber
+
+is_hotel_management(h) =
+     hotel_members(h, auth.uid())
+  OR account_members(hotels(h).account_id, auth.uid())
+```
 
 ### Der wichtigste Befund für den Aufwand
 
@@ -276,15 +310,37 @@ Zugangs- und Plandaten. Eigener Guard — siehe Risiko 3.
    Zwischenseite durchgeleitet.
 8. Gedruckte QR-Codes (Zimmer-Aushang, Zugangskarte) funktionieren unverändert.
 
-## 12. Offene Entscheidungen
+## 12. Entschieden am 26.07.2026
+
+**Service-Vorlagen.** Der Admin darf die **Vorschlagsliste** des Kontos
+erweitern (heute die statische [service-templates.json](../src/lib/service-templates.json)).
+Admin **und** Manager dürfen den Katalog je Haus individuell anpassen. Also
+kein vererbter Zwangskatalog, sondern kuratierte Vorschläge plus freie
+Anpassung im Haus — deutlich billiger als echte Vererbung und für Ketten
+ausreichend. Kommt als eigener Schritt direkt nach diesem Umbau.
+
+**E-Mail-Versand (Resend), mittelfristig.** Ziel ist, sämtliche Konten-
+Einladungen auf das E-Mail-Verfahren zu verlagern: Manager- und
+Rezeptions-Zugänge per Einladung statt per direkt vergebenem Passwort.
+Zusätzlich als **Alternative zum Ausdruck**: Gast-Handout und
+Reinigungs-Zugangskarte per Mail versendbar. Keine Eile — bis dahin legt der
+Admin Zugänge wie heute mit Passwort an. Siehe Abschnitt 13.
+
+## 13. Später eingeplant
+
+- **Konto-weite Service-Vorschlagsliste** (siehe oben) — direkt nach 6d.
+- **Kontoweite Policy-Vorgaben** mit Abweichung je Haus (Abschnitt 7).
+- **Konsolidierte Auswertung** über alle Häuser (Abschnitt 7).
+- **Resend-Anbindung**: Einladungs-Mails für Manager- und Rezeptions-Zugänge;
+  danach Gast-Handout und Maid-Karte wahlweise drucken **oder** mailen.
+- **Zimmer weich deaktivieren** — Frist: vor dem ersten echten Kunden
+  (Abschnitt 6).
+
+## 14. Weiterhin offen
 
 1. **Zimmer-Zustände**: reicht ein `deactivated_at`, oder braucht es „außer
    Betrieb" (Renovierung) getrennt von „abbestellt"? Preisentscheidung.
 2. **Pricing-Form**: zimmergenau oder Staffeln. Beeinflusst nur die
    Rechnungsseite, nicht das Datenmodell — die Messgröße bleibt dieselbe.
-3. **Manager-Einladung**: per E-Mail-Einladung (Supabase-Bestätigung) oder legt
-   der Admin Zugang und Passwort direkt an, wie heute bei der Rezeption?
-4. **Konto-weite Vorlagen** (Services, Policies) — direkt nach diesem Umbau,
-   wie in Abschnitt 7 vorgeschlagen, oder später?
-5. **Hotel zwischen Konten verschieben** (Betreiberwechsel) — vorerst außen
+3. **Hotel zwischen Konten verschieben** (Betreiberwechsel) — vorerst außen
    vor, oder gleich mitdenken?

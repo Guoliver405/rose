@@ -1,160 +1,159 @@
 import Link from 'next/link'
-import { createClient } from '@/utils/supabase/server'
-import {
-  clampStaleMinutes, isCleaningFresh, isPresenceFresh, isStayoverDue, parseStayoverPolicy, todayStartIso,
-} from '@/lib/board'
-import RoomGrid, { type FloorGroup, type RoomTileData } from './RoomGrid'
+import { redirect } from 'next/navigation'
+import { Building2, ChevronRight, ConciergeBell, LogOut, Settings2, Sparkles } from 'lucide-react'
+import { listAccessibleHotels, getAccountContext } from '@/utils/auth'
+import { createAdminClient } from '@/utils/supabase/service'
+import { logoutAction } from '@/app/login/actions'
+import { isRoomActive } from '@/lib/board'
 
-export default async function AdminOverviewPage() {
-  const supabase = await createClient()
+/**
+ * Haus-Auswahl — der Einstieg ins Management-Portal.
+ *
+ * Für eine Kette ist das kein Menü, sondern das Lagebild: offene Reinigungen
+ * und dringende Service-Anfragen je Haus auf einen Blick, mit Absprung ins
+ * Haus. Bei genau einem Haus wird ohne Zwischenseite durchgeleitet — der
+ * Einzelhaus-Kunde merkt von der Auswahl nichts.
+ */
+export default async function HotelPickerPage() {
+  const hotels = await listAccessibleHotels()
+  if (hotels.length === 0) redirect('/login')
+  if (hotels.length === 1) redirect(`/h/${hotels[0].slug}/admin`)
 
-  const [{ data: rooms }, { data: states }, { data: stays }, { data: hotel }, { data: cleanedToday }, { data: openOrders }, { data: presence }, { data: profiles }] = await Promise.all([
-    supabase.from('rooms').select('id, number, floor, building').order('number'),
-    supabase.from('room_states').select('room_id, guest_signal, checkout_pending, priority, cleaning_by, cleaning_started_at'),
-    supabase.from('stays').select('id, room_id, pin, checked_in_at').is('checked_out_at', null),
-    supabase.from('hotels').select('policies').limit(1).maybeSingle(),
-    supabase.from('staff_log').select('room_id').eq('kind', 'clean_done').gte('at', todayStartIso()),
-    supabase.from('service_orders').select('room_id, service_definitions(urgent)').eq('status', 'open'),
-    supabase.from('maid_presence').select('profile_id, building, floor, entered_at'),
-    supabase.from('profiles').select('id, display_name'),
+  const account = await getAccountContext()
+
+  // Lagebild je Haus. Admin-Client mit explizitem Filter auf die Häuser, auf
+  // die der Nutzer Zugriff hat — RLS würde hier zwar auch greifen, der
+  // explizite Filter ist aber die Projekt-Faustregel.
+  const admin = createAdminClient()
+  const hotelIds = hotels.map(h => h.id)
+  const [{ data: states }, { data: orders }] = await Promise.all([
+    admin
+      .from('room_states')
+      .select('hotel_id, guest_signal, checkout_pending, priority, cleaning_by')
+      .in('hotel_id', hotelIds),
+    admin
+      .from('service_orders')
+      .select('hotel_id, service_definitions(urgent)')
+      .in('hotel_id', hotelIds)
+      .eq('status', 'open'),
   ])
 
-  const policies = (hotel?.policies ?? {}) as Record<string, unknown>
-  const staleMinutes = clampStaleMinutes(policies.cleaningStaleMinutes)
-  const stayoverPolicy = parseStayoverPolicy(policies)
-  const cleanedRoomsToday = new Set((cleanedToday ?? []).map(c => c.room_id))
-  const now = new Date()
+  const openByHotel = new Map<string, number>()
+  const cleaningByHotel = new Map<string, number>()
+  for (const s of states ?? []) {
+    if (isRoomActive(s)) openByHotel.set(s.hotel_id, (openByHotel.get(s.hotel_id) ?? 0) + 1)
+    if (s.cleaning_by) cleaningByHotel.set(s.hotel_id, (cleaningByHotel.get(s.hotel_id) ?? 0) + 1)
+  }
 
-  const stateByRoom = new Map((states ?? []).map(s => [s.room_id, s]))
-  const stayByRoom = new Map((stays ?? []).map(s => [s.room_id, s]))
-
-  // Offene Service-Anfragen je Zimmer (dringend, wenn mindestens eine
-  // auf einem als dringend markierten Service basiert). Der FK-Join kommt
-  // je nach Supabase-Version als Objekt oder Array zurück.
-  const ordersByRoom = new Map<string, { count: number; urgent: boolean }>()
-  for (const o of openOrders ?? []) {
+  const ordersByHotel = new Map<string, { count: number; urgent: boolean }>()
+  for (const o of orders ?? []) {
     const def = Array.isArray(o.service_definitions) ? o.service_definitions[0] : o.service_definitions
-    const entry = ordersByRoom.get(o.room_id) ?? { count: 0, urgent: false }
+    const entry = ordersByHotel.get(o.hotel_id) ?? { count: 0, urgent: false }
     entry.count++
     if (def?.urgent) entry.urgent = true
-    ordersByRoom.set(o.room_id, entry)
+    ordersByHotel.set(o.hotel_id, entry)
   }
-
-  const tiles: RoomTileData[] = (rooms ?? []).map(r => {
-    const state = stateByRoom.get(r.id)
-    const stay = stayByRoom.get(r.id)
-    const guestSignal = (state?.guest_signal ?? 'none') as RoomTileData['guestSignal']
-    return {
-      id: r.id,
-      number: r.number,
-      floor: r.floor,
-      building: r.building,
-      occupied: Boolean(stay),
-      pin: stay?.pin ?? null,
-      checkedInAt: stay?.checked_in_at ?? null,
-      guestSignal,
-      checkoutPending: state?.checkout_pending ?? false,
-      priority: state?.priority ?? false,
-      // Stale-Timeout (vergessener Abschluss) zählt nicht mehr als „in Arbeit"
-      cleaningActive: state ? isCleaningFresh(state, staleMinutes, now) : false,
-      openOrders: ordersByRoom.get(r.id)?.count ?? 0,
-      urgentOrders: ordersByRoom.get(r.id)?.urgent ?? false,
-      stayoverDue: isStayoverDue({
-        policy: stayoverPolicy,
-        occupied: Boolean(stay),
-        checkedInAt: stay?.checked_in_at ?? null,
-        guestSignal,
-        cleanedToday: cleanedRoomsToday.has(r.id),
-        now,
-      }),
-    }
-  })
-
-  // Etagen-Verortung der Reinigungskräfte (maid_presence, mit Stale-Guard)
-  const nameByProfile = new Map((profiles ?? []).map(p => [p.id, p.display_name]))
-  const maidsByFloor = new Map<string, string[]>()
-  for (const p of (presence ?? []).filter(p => isPresenceFresh(p.entered_at, now))) {
-    const key = `${p.building ?? ''}#${p.floor}`
-    const list = maidsByFloor.get(key) ?? []
-    list.push(nameByProfile.get(p.profile_id) ?? 'Reinigungskraft')
-    maidsByFloor.set(key, list)
-  }
-
-  // Gruppierung: Gebäude (alphabetisch, ohne zuerst) → Etage absteigend
-  const groups = new Map<string, FloorGroup>()
-  for (const t of tiles) {
-    const key = `${t.building ?? ''}#${t.floor}`
-    if (!groups.has(key)) {
-      groups.set(key, { building: t.building, floor: t.floor, rooms: [], maids: maidsByFloor.get(key) ?? [] })
-    }
-    groups.get(key)!.rooms.push(t)
-  }
-  const floorGroups = [...groups.values()].sort((a, b) => {
-    const ba = a.building ?? ''
-    const bb = b.building ?? ''
-    if (ba !== bb) return ba.localeCompare(bb, 'de')
-    return b.floor - a.floor
-  })
-  for (const g of floorGroups) {
-    g.rooms.sort((a, b) => a.number.localeCompare(b.number, 'de', { numeric: true }))
-  }
-
-  // KPIs — „bereit" = frei & gereinigt (freie ungereinigte Zimmer sind
-  // zwangsläufig checkout_pending oder priorisiert und stecken in „zu reinigen").
-  const total = tiles.length
-  const occupied = tiles.filter(t => t.occupied).length
-  const ready = tiles.filter(t => !t.occupied && !t.checkoutPending && !t.priority && !t.cleaningActive).length
-  const toClean = tiles.filter(t => t.checkoutPending || t.priority || t.guestSignal === 'please_clean' || t.stayoverDue).length
-  const dnd = tiles.filter(t => t.guestSignal === 'dnd').length
-  const inProgress = tiles.filter(t => t.cleaningActive).length
 
   return (
-    <div className="flex flex-col gap-5">
-      {/* Sticky unterhalb des App-Headers (dessen Höhe = top-Offset, im
-          Browser nachgemessen); -mx/-mt + Padding, damit der Hintergrund
-          beim Scrollen die Kacheln sauber abdeckt. */}
-      <div className="sticky top-[57px] z-30 -mx-4 -mt-4 bg-surface-sunken px-4 pb-2 pt-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-xl font-black text-ink">Zimmer-Übersicht</h1>
-          <div className="ml-auto flex flex-wrap gap-2 text-sm">
-            <Kpi label="Zimmer" value={total} />
-            <Kpi label="belegt" value={occupied} tone={occupied > 0 ? 'fresh' : undefined} />
-            <Kpi label="bereit" value={ready} tone={ready > 0 ? 'positive' : undefined} />
-            <Kpi label="zu reinigen" value={toClean} tone={toClean > 0 ? 'attention' : 'positive'} />
-            <Kpi label="DND" value={dnd} tone={dnd > 0 ? 'blocked' : undefined} />
-            <Kpi label="in Arbeit" value={inProgress} tone={inProgress > 0 ? 'positive' : undefined} />
+    <div className="flex min-h-screen flex-1 flex-col bg-surface-sunken">
+      <header className="border-b border-edge bg-surface">
+        <div className="mx-auto flex max-w-[900px] items-center gap-4 px-4 py-3">
+          <span className="text-lg font-black text-ink">
+            Ro<span className="text-blocked">Se</span>
+          </span>
+          <div className="ml-auto flex items-center gap-3">
+            {account && (
+              <Link
+                href="/konto"
+                className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink"
+              >
+                <Settings2 className="h-4 w-4" />
+                Konto
+              </Link>
+            )}
+            <form action={logoutAction}>
+              <button
+                type="submit"
+                className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink"
+              >
+                <LogOut className="h-4 w-4" />
+                Abmelden
+              </button>
+            </form>
           </div>
         </div>
-      </div>
+      </header>
 
-      {total === 0 ? (
-        <div className="rounded-xl border border-edge bg-surface p-8 text-center">
-          <p className="font-semibold text-ink">Noch keine Zimmer angelegt.</p>
-          <p className="mt-1 text-sm text-ink-muted">
-            Lege unter{' '}
-            <Link href="/admin/zimmer" className="font-semibold text-action underline">
-              Zimmer
-            </Link>{' '}
-            die Zimmer deines Hauses an — Nummer, Etage, optional Gebäudeteil.
-          </p>
+      <main className="mx-auto w-full max-w-[900px] flex-1 p-4">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <h1 className="text-xl font-black text-ink">Häuser</h1>
+          <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-semibold text-ink-soft">
+            {hotels.length}
+          </span>
         </div>
-      ) : (
-        <RoomGrid floorGroups={floorGroups} />
-      )}
-    </div>
-  )
-}
 
-function Kpi({ label, value, tone }: { label: string; value: number; tone?: 'fresh' | 'attention' | 'blocked' | 'positive' }) {
-  const toneClass =
-    tone === 'fresh' ? 'text-fresh-deep bg-fresh-pill' :
-    tone === 'attention' ? 'text-attention-deepest bg-attention-pill' :
-    tone === 'blocked' ? 'text-blocked-deepest bg-blocked-pill' :
-    tone === 'positive' ? 'text-positive-deepest bg-positive-pill' :
-    'text-ink-soft bg-surface-muted'
-  return (
-    <span className={`rounded-full px-3 py-1 font-semibold ${toneClass}`}>
-      {value} {label}
-    </span>
+        <div className="flex flex-col gap-2">
+          {hotels.map(h => {
+            const open = openByHotel.get(h.id) ?? 0
+            const cleaning = cleaningByHotel.get(h.id) ?? 0
+            const ord = ordersByHotel.get(h.id)
+            return (
+              <Link
+                key={h.id}
+                href={`/h/${h.slug}/admin`}
+                className={`flex items-center gap-4 rounded-xl border bg-surface p-4 hover:border-edge-strong ${
+                  ord?.urgent ? 'border-critical blink-ring-overdue' : 'border-edge'
+                }`}
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-muted text-ink-soft">
+                  <Building2 className="h-5 w-5" />
+                </span>
+
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold text-ink">{h.name}</span>
+                  <span className="block truncate font-mono text-xs text-ink-muted">/{h.slug}</span>
+                </span>
+
+                <span className="flex shrink-0 flex-wrap items-center gap-1.5 text-xs font-semibold">
+                  {open > 0 && (
+                    <span className="rounded-full bg-attention-pill px-2.5 py-0.5 text-attention-deepest">
+                      {open} zu reinigen
+                    </span>
+                  )}
+                  {cleaning > 0 && (
+                    <span className="flex items-center gap-1 rounded-full bg-positive-pill px-2.5 py-0.5 text-positive-deepest">
+                      <Sparkles className="h-3 w-3" /> {cleaning}
+                    </span>
+                  )}
+                  {ord && ord.count > 0 && (
+                    <span
+                      className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 ${
+                        ord.urgent
+                          ? 'blink-icon bg-critical-pill text-critical-deepest'
+                          : 'bg-action-tint text-action-strong'
+                      }`}
+                    >
+                      <ConciergeBell className="h-3 w-3" /> {ord.count}
+                    </span>
+                  )}
+                  {open === 0 && cleaning === 0 && !ord && (
+                    <span className="rounded-full bg-positive-pill px-2.5 py-0.5 text-positive-deepest">
+                      alles bereit
+                    </span>
+                  )}
+                  {h.role === 'manager' && (
+                    <span className="rounded-full bg-surface-muted px-2.5 py-0.5 text-ink-muted">
+                      Manager
+                    </span>
+                  )}
+                </span>
+
+                <ChevronRight className="h-4 w-4 shrink-0 text-ink-muted" />
+              </Link>
+            )
+          })}
+        </div>
+      </main>
+    </div>
   )
 }

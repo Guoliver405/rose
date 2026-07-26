@@ -17,6 +17,8 @@ export type HotelHandle = {
   id: string
   name: string
   slug: string
+  /** Konto, dem das Haus gehört — Grundlage der Inhaber-Berechtigung. */
+  accountId: string
   policies: Record<string, unknown>
 }
 
@@ -31,7 +33,7 @@ export const findHotelBySlug = cache(
 
     const { data } = await createAdminClient()
       .from('hotels')
-      .select('id, name, slug, policies')
+      .select('id, name, slug, account_id, policies')
       .eq('slug', normalized)
       .maybeSingle()
 
@@ -40,6 +42,7 @@ export const findHotelBySlug = cache(
       id: data.id,
       name: data.name,
       slug: data.slug,
+      accountId: data.account_id,
       policies: (data.policies ?? {}) as Record<string, unknown>,
     }
   },

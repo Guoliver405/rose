@@ -1,6 +1,6 @@
 /**
  * Test-Mandant anlegen (solange es keine Self-Service-Registrierung gibt):
- * Hotel-Zeile + Auth-User + Management-Profil in einem Rutsch.
+ * Konto + Hotel + Auth-User + Inhaber-Zuordnung in einem Rutsch.
  *
  *   node scripts/create-tenant.mjs "Hotelname" email@rose.local [passwort]
  *
@@ -62,21 +62,46 @@ const base = slugify(hotelName)
 let slug = base
 for (let n = 2; taken.has(slug); n++) slug = `${base.slice(0, 60 - String(n).length - 1)}-${n}`
 
+// Konto = zahlender Kunde. Ein Hotel gehoert immer genau einem Konto;
+// der angelegte Nutzer wird dessen Inhaber und damit Admin ueber alle
+// Haeuser, die er spaeter unter /konto anlegt.
+const { data: account, error: accErr } = await admin
+  .from('accounts').insert({ name: hotelName }).select('id').single()
+if (accErr) {
+  await admin.auth.admin.deleteUser(userData.user.id)
+  console.error('FEHLER Konto:', accErr.message)
+  process.exit(1)
+}
+
 const { data: hotel, error: hotelErr } = await admin
-  .from('hotels').insert({ name: hotelName, slug }).select('id').single()
+  .from('hotels').insert({ name: hotelName, slug, account_id: account.id }).select('id').single()
 if (hotelErr) {
   await admin.auth.admin.deleteUser(userData.user.id)
+  await admin.from('accounts').delete().eq('id', account.id)
   console.error('FEHLER Hotel:', hotelErr.message)
   process.exit(1)
 }
 
+// profiles-Zeile ist auch fuer Management Pflicht: stays.created_by und
+// service_orders.done_by zeigen darauf. hotel_id = Stammhaus, nicht
+// massgeblich fuer den Zugriff.
 const { error: profErr } = await admin
   .from('profiles')
-  .insert({ id: userData.user.id, hotel_id: hotel.id, display_name: 'Rezeption' })
+  .insert({ id: userData.user.id, hotel_id: hotel.id, display_name: 'Inhaber' })
 if (profErr) {
   await admin.auth.admin.deleteUser(userData.user.id)
-  await admin.from('hotels').delete().eq('id', hotel.id)
+  await admin.from('accounts').delete().eq('id', account.id)
   console.error('FEHLER Profil:', profErr.message)
+  process.exit(1)
+}
+
+const { error: ownerErr } = await admin
+  .from('account_members')
+  .insert({ account_id: account.id, user_id: userData.user.id, role: 'owner', display_name: 'Inhaber' })
+if (ownerErr) {
+  await admin.auth.admin.deleteUser(userData.user.id)
+  await admin.from('accounts').delete().eq('id', account.id)
+  console.error('FEHLER Inhaber:', ownerErr.message)
   process.exit(1)
 }
 
@@ -111,6 +136,7 @@ console.log(`Angelegt: ${hotelName}`)
 console.log(`  Login:    ${email}`)
 console.log(`  Passwort: ${password}`)
 console.log(`  hotel_id: ${hotel.id}`)
+console.log(`  account:  ${account.id}`)
 console.log(`  Slug:     ${slug}`)
 console.log(`  Gast:     ${origin}/h/${slug}/guest`)
 console.log(`  Reinigung:${origin}/h/${slug}/service/login`)
