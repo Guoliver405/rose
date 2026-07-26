@@ -69,12 +69,21 @@ auf beiden Boards.
    Verifiziert: beide Marias kommen in ihr jeweils eigenes Haus, falsche
    PIN bleibt generisch abgewiesen.
 2. ~~**Zimmer-Anlage: Präfix-Option ist per Default an**~~ → **behoben am
-   26.07.2026.** „Etagennummer voranstellen" war vorausgewählt, während der
-   Platzhalter volle Nummern vorschlägt („z. B. 101-110") — wer dem Platzhalter
-   folgte, erzeugte 3301–3306 statt 301–306. Die Option startet jetzt
-   ausgeschaltet; wer Etagen-Suffixe eingeben will, hakt sie bewusst an.
-   Verifiziert: „11" auf Etage 1 ergibt in der Vorschau „11", mit Häkchen
-   weiterhin „111".
+   26.07.2026.** „Etagennummer voranstellen" war in **beiden** Modi
+   vorausgewählt. Im Modus „Etagen individuell" schlägt der Platzhalter aber
+   volle Nummern vor („z. B. 101-110") — wer ihm folgte, erzeugte 1101–1110
+   statt 101–110.
+
+   Die Vorbelegung hängt jetzt am Modus: **individuell → aus**, **identisch →
+   an**. Bei „Etagen identisch" ist das Voranstellen ja gerade der Zweck
+   (symmetrisches Haus, einmal „01-10" für alle Etagen); ohne die Option
+   kollidieren die Etagen miteinander. Der Moduswechsel setzt die Vorbelegung
+   zurück, weil sich mit ihm die Bedeutung des Nummernfelds ändert.
+
+   Verifiziert: Start individuell → Häkchen aus, „11" auf Etage 1 ergibt „11".
+   Wechsel auf identisch → Häkchen an, „01-03" über Etagen 1–3 ergibt
+   101, 102, 103, 201, 202, 203, 301, 302, 303. Zurück auf individuell →
+   Häkchen wieder aus.
 
 **Kein Fehler, nur zur Kenntnis:** Das Löschen eines Zimmers nimmt per
 Fremdschlüssel-Kaskade auch dessen Service-Anfragen mit (beim Aufräumen
