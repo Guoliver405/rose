@@ -424,11 +424,21 @@ die Ursache.
 ### Einrichtung, die nur im Dashboard geht — Stand
 
 Erledigt: eigenes Resend-Konto, SMTP in Supabase, Redirect URLs, Testzugang mit
-echter Adresse. **Offen:** (a) Site URL auf die Produktionsadresse (hier nicht
-die Ursache gewesen, wird aber für Mails ohne eigenes `redirectTo` gebraucht),
-(b) verifizierte Absender-Subdomain — solange `onboarding@resend.dev` sendet,
-stellt Resend **ausschließlich an die eigene Kontoadresse** zu. Ein zweiter
-Kunde bekäme heute nichts.
+echter Adresse, **eigene Domain `rose-roomservice.app`** (Porkbun) mit
+verifizierter Sende-Subdomain `send.rose-roomservice.app` (DKIM, SPF, MX, DMARC
+per DNS-Abfrage bestätigt). **Zustellung an Fremdadresse verifiziert** —
+damit funktioniert der Reset nicht mehr nur für den Kontoinhaber.
+
+**Der Fallstrick beim Umstellen:** Nach dem Verifizieren der Domain blieb in
+Supabase die *Sender email* auf `onboarding@resend.dev` stehen (nur der
+*Sender name* war geändert). Resend stellt von dieser Adresse ausschließlich an
+die eigene Kontoadresse zu — jeder andere Empfänger wurde abgelehnt, sichtbar
+als der übliche leere 500er. Aufgelöst hat es der **Resend-Log-Eintrag**, der
+das tatsächliche `from` zeigt. Merke: bei Mail-Problemen zuerst dorthin
+schauen, nicht in die eigenen Logs — dort steht nur, *dass* es scheiterte.
+
+**Offen:** Site URL auf die Produktionsadresse (hier nie die Ursache gewesen,
+wird aber für Mails ohne eigenes `redirectTo` gebraucht).
 
 > Die Dashboard-Pfade unten sind am 26.07.2026 gegen die Dokumentation geprüft.
 > Supabase hat sie umbenannt: SMTP liegt **nicht** mehr unter „Project
