@@ -1,16 +1,27 @@
 # Mehrere Hotels je Konto — Problem, Zielmodell und Umbauplan
 
 > **Status: geplant, noch nicht umgesetzt.** Arbeitsgrundlage, entstanden am
-> 26.07.2026 aus der Frage „Warum bleibt `/admin` ohne Slug-Präfix?".
-> Voraussetzung ist [Phase 6c](2026-07-26_Phase-6c_Mandantenfaehigkeit.md)
-> (Mandant in der URL) — die ist umgesetzt.
+> 26.07.2026 aus der Frage „Warum bleibt `/admin` ohne Slug-Präfix?" und im
+> Dialog verfeinert. Voraussetzung ist
+> [Phase 6c](2026-07-26_Phase-6c_Mandantenfaehigkeit.md) (Mandant in der URL) —
+> die ist umgesetzt.
 >
 > **Gehört vor Phase 6b (Self-Service-Registrierung).** Beim Signup wird die
 > Beziehung Konto ↔ Hotel ↔ Rechte zum ersten Mal in echte Kundendaten
 > geschrieben; danach ist die Korrektur ungleich teurer. Gleiches Argument wie
 > bei 6c.
 
-## 1. Warum `/admin` heute zu Recht ohne Slug auskommt
+## 1. Zielgruppe: Hotelketten
+
+Der eigentliche Antrieb für dieses Vorhaben ist **nicht** das Einzelhaus mit
+zwei Standorten, sondern die **Hotelkette** als Kundschaft. Daraus folgt mehr
+als „ein Konto darf mehrere Hotels haben" — siehe Abschnitt 7, der die drei
+Stellen benennt, an denen der Dienst für eine Kette sonst unbrauchbar bleibt.
+
+Geschäftsmodell: der Admin ist der zahlende Kunde, zahlt **je Zimmer** und darf
+beliebig viele Häuser anlegen. Kein Hotel-Kontingent.
+
+## 2. Warum `/admin` heute zu Recht ohne Slug auskommt
 
 Die drei Kennungen unterscheiden sich in der Reichweite ihrer Eindeutigkeit:
 
@@ -20,9 +31,8 @@ Die drei Kennungen unterscheiden sich in der Reichweite ihrer Eindeutigkeit:
 | Maid-Benutzername | nur je Hotel (`unique (hotel_id, username)`) | ohne Mandant mehrdeutig → Slug nötig |
 | Management-E-Mail | **global** (`auth.users`) | trifft genau ein Konto, egal bei wie vielen Mandanten |
 
-Hunderte oder tausende Management-Konten sind deshalb kein Problem:
-Eindeutigkeit liefert Supabase Auth, die feste Hotel-Zuordnung liefert
-`profiles.hotel_id`. Nach dem Login ist der Mandant bekannt.
+Hunderte Management-Konten sind deshalb kein Problem: Eindeutigkeit liefert
+Supabase Auth, die feste Hotel-Zuordnung liefert `profiles.hotel_id`.
 
 Ein Slug in der Admin-URL wäre **heute sogar schädlich**: er wäre dekorativ,
 entscheiden würde weiterhin die Session. Ein dekorativer Mandanten-Parameter
@@ -30,14 +40,10 @@ muss auf jeder Seite gegen Manipulation abgesichert werden (die
 `ctx.hotelId !== hotel.id`-Prüfung aus 6c). Wird sie einmal vergessen, lügt
 die URL darüber, welches Haus man sieht.
 
-## 2. Was das Zielbild daran ändert
+## 3. Was das Zielbild daran ändert
 
-Geplant ist: Kunden registrieren sich auf der Landing-Page, vereinbaren je
-nach Pricing einen Plan und sind dann **Admin für ein oder mehrere Hotels**.
-Sie legen Zimmer und operative Nutzer an; diese arbeiten im System.
-
-Damit fällt die Begründung aus Abschnitt 1 für den Kontoinhaber weg — und
-zwar strukturell:
+Sobald ein Konto mehrere Häuser trägt, ist der Mandant **nicht mehr aus der
+Identität ableitbar**, sondern eine *Auswahl*. Und zwar strukturell:
 
 ```sql
 create table profiles (
@@ -46,33 +52,40 @@ create table profiles (
   ...
 ```
 
-Ein Login = eine Zeile = ein Hotel. Sobald ein Konto mehrere Häuser trägt, ist
-der Mandant **nicht mehr aus der Identität ableitbar**, sondern eine
-*Auswahl*. Eine Auswahl gehört in die URL:
+Eine Auswahl gehört in die URL:
 
 - zwei Häuser gleichzeitig in zwei Tabs (mit einem „aktuelles Hotel"-Cookie
   unmöglich — der letzte Wechsel würde den anderen Tab umschalten),
 - Lesezeichen und Deep-Links aus Reports zeigen auf das richtige Haus,
 - der Guard wird überall derselbe: Slug auflösen → „darf dieser Nutzer hier?".
 
-## 3. Entscheidungen (26.07.2026)
+## 4. Entscheidungen (26.07.2026)
 
-1. **Mehrfach-Zuordnung nur für den Kontoinhaber.** Rezeption und Reinigung
-   bleiben je einem Haus zugeordnet. Das hält `profiles` unverändert und
-   spart eine Mitgliedschaftstabelle je Hotel.
-2. **Alles unter `/h/<slug>/`**, auch das Rezeptions-Portal. `/admin` wird zur
+1. **Alles unter `/h/<slug>/`**, auch das Rezeptions-Portal. `/admin` wird zur
    Haus-Auswahl; bei genau einem Haus wird direkt durchgeleitet.
-3. Erst dieses Dokument, dann der Umbau.
+2. **Vier Rollen**, zwei davon hausübergreifend:
+   - **Admin** = Kontoinhaber, zahlender Kunde. Alle Häuser seines Kontos,
+     plus Konto- und Plandaten.
+   - **Manager** = darf eine **Teilmenge der Häuser** verwalten, dort aber
+     alles außer Konto- und Plandaten. *Teilmenge der Häuser, nicht der
+     Rechte* — bewusst kein Fähigkeitssystem (siehe Risiko 2).
+   - **Rezeption** und **Reinigung** bleiben hausintern, unverändert.
+3. **Abrechnung je Zimmer — vertagt**, aber die Definition steht:
+   > Jedes Zimmer, das in der Abrechnungsperiode **auch nur vorübergehend
+   > aktiv war**, zählt. Zimmer, die über die ganze Periode deaktiviert waren,
+   > zählen nicht.
 
-## 4. Zielmodell
+   Ob zimmergenau oder in Staffeln, ist offen. Konsequenzen in Abschnitt 6.
+4. Kein Hotel-Kontingent (`max_hotels` aus der ersten Fassung entfällt).
 
-Neu sind zwei Tabellen und eine Spalte — **rein additiv**, `profiles` bleibt
-unangetastet:
+## 5. Zielmodell
+
+Rein additiv — `profiles` bleibt für die Reinigung unangetastet:
 
 ```sql
--- Der zahlende Kunde. Plan und Kontingente hängen hier, nicht am Hotel.
+-- Der zahlende Kunde. Plan und Abrechnung hängen hier, nicht am Hotel.
 accounts (
-  id, name, plan, max_hotels, created_at
+  id, name, plan, created_at
 )
 
 -- Wer gehört zum Konto. Heute nur 'owner'; Platz für 'billing' o. ä.
@@ -85,20 +98,26 @@ account_members (
 hotels (
   ..., account_id not null references accounts(id)
 )
+
+-- Hausbezogene Management-Zuordnung. Der Manager bekommt eine Zeile
+-- je Haus, das er verwalten darf — daher die Teilmenge.
+hotel_members (
+  hotel_id, user_id, role, display_name,
+  primary key (hotel_id, user_id)
+)
 ```
 
 **Rechte-Auflösung** — zwei Wege, beide führen auf eine Rolle je Haus:
 
 ```
-darfInHotel(user, hotel) =
-    account_members(hotel.account_id, user, 'owner')   → Rolle 'admin'
- ODER profiles(user).hotel_id = hotel.id               → profiles.role
+rolleImHotel(user, hotel) =
+    account_members(hotel.account_id, user, 'owner')  → 'admin'
+ ODER hotel_members(hotel.id, user).role              → 'manager' | 'reception'
 ```
 
-Damit bleiben beide Welten nebeneinander gültig: der Kontoinhaber ist Admin in
-**allen** Häusern seines Kontos, und ein einzelnes Haus kann weiterhin eigene
-Management-Zugänge haben (`profiles.role` = `admin` | `reception`) — etwa ein
-Hausleiter, der genau ein Haus verwaltet.
+`profiles.role` (heute `admin` | `reception`) wird damit abgelöst: das heutige
+per-Haus-`admin` **ist** der Manager, nur bisher auf ein Haus beschränkt.
+`profiles` behält allein die Reinigungskräfte.
 
 ### Der wichtigste Befund für den Aufwand
 
@@ -110,106 +129,162 @@ is_hotel_member(h)      -- profiles.id = auth.uid() and profiles.hotel_id = h
 is_hotel_management(h)  -- ... zusätzlich username is null
 ```
 
-Der Owner-Zweig muss also nur in diese beiden Funktionen — die Policies selbst
-bleiben unverändert. Und weil der Zweig nur **hinzufügt**, verliert niemand
-Zugriff; die Reinigungs-RLS wird nicht weiter, weil Reinigungskräfte nie
-`account_members` sind.
+Die neuen Zweige kommen nur dort hinein — die Policies selbst bleiben
+unverändert. Weil die Zweige nur **hinzufügen**, verliert niemand Zugriff, und
+die Reinigungs-RLS wird nicht weiter (Reinigungskräfte stehen nie in
+`account_members` oder `hotel_members`).
 
-### Wo lebt der Anzeigename des Inhabers?
+## 6. Zimmer-Lebenszyklus — vertagt, aber mit Frist
 
-`profiles.hotel_id` ist `not null` — ein Inhaber ohne festes Haus kann dort
-keine Zeile haben. Deshalb trägt `account_members.display_name` den Namen.
-`getManagementContext` liest ihn künftig aus beiden Quellen (Inhaber →
-`account_members`, Hausleitung/Rezeption → `profiles`).
+`rooms` hat heute **kein** `deactivated_at`; es gibt nur hartes Löschen, und
+das kaskadiert auf `room_guest_tokens`, `stays`, `room_states` und
+`service_orders`. (`staff_log.room_id` ist `on delete set null` — der
+Arbeitsnachweis überlebt, verliert aber die Zimmer-Zuordnung.)
 
-## 5. Umbauschritte (in dieser Reihenfolge)
+Die Abrechnungsdefinition aus Abschnitt 4 ist die **billigste denkbare**: sie
+braucht weder Snapshots noch Cron, sondern genau eine Abfrage —
 
-**Schritt 1 — Migration, additiv.**
-`accounts` + `account_members` anlegen, `hotels.account_id` zunächst nullable.
-Backfill: je bestehendem Hotel ein Konto; Inhaber wird der vorhandene
-`profiles`-Eintrag mit `role='admin'`; danach `account_id` auf `not null`.
-Kein Bruch für laufenden Code — die Spalten werden noch nicht gelesen.
+```sql
+where created_at < periode_ende
+  and (deactivated_at is null or deactivated_at > periode_start)
+```
 
-**Schritt 2 — RLS-Funktionen erweitern.**
-Owner-Zweig in `is_hotel_member` und `is_hotel_management`. Additiv, alle 14
-Policies profitieren ohne eigene Änderung.
+— das passt zur Projektlinie („reine Loader-Ableitung, kein Cron", wie bei der
+Stayover-Automatik). **Voraussetzung ist aber, dass Zimmer nicht mehr hart
+gelöscht werden.**
 
-**Schritt 3 — Kontext slug-parametrisiert.**
-`getManagementContext(slug)` / `getAdminContext(slug)` lösen das Hotel aus dem
-Slug auf und prüfen die Berechtigung über beide Wege. **Der Parameter wird
-Pflicht** — dann findet der Type-Check alle **25 Aufrufstellen**, statt dass
-eine übersehen wird.
+> **Frist:** Der Stichtag ist nicht „wenn wir die Abrechnung bauen", sondern
+> **bevor der erste echte Kunde existiert**, also vor Phase 6b. Wird bis dahin
+> hart gelöscht, ist die erste Abrechnungsperiode nicht rekonstruierbar. In
+> der jetzigen Testphase mit fiktiven Hotels ist das folgenlos.
 
-**Schritt 4 — Routing.**
-`/admin/**` wandert nach `/h/<slug>/admin/**`. `/admin` wird zur Haus-Auswahl:
-Liste der Häuser, auf die der Nutzer Zugriff hat; bei genau einem Haus
-Weiterleitung ohne Zwischenseite (der heutige Einzelhaus-Kunde merkt nichts).
+Das Muster kennt das Projekt bereits von den Reinigungskräften
+(„Deaktivieren statt Löschen", `profiles.deactivated_at`), und der
+[Testplan](Testplan-Walkthrough.md) hat es für Zimmer schon als Risiko notiert.
+Offen bleibt, ob „außer Betrieb" (Renovierung) und „abbestellt" **zwei**
+Zustände brauchen — sonst wird Renovierung zum Weg, die Zimmergebühr zu
+umgehen. Das ist eine Preisentscheidung.
+
+## 7. Was Ketten zusätzlich brauchen
+
+Mehrere Häuser je Konto sind für eine Kette **notwendig, aber nicht
+hinreichend**. Drei Dinge sind heute strikt hausgebunden und würden eine Kette
+in stumpfe Fleißarbeit zwingen:
+
+| Heute je Hotel | Erwartung einer Kette |
+|---|---|
+| Service-Baukasten (`service_definitions`, `service_items`) | ein Katalog fürs ganze Konto, je Haus abweichbar — sonst pflegt man „Wäscheservice" 30-mal |
+| Policies (PIN-Länge, Reinigungsfenster, Stayover, Stale-Timeout) | Kettenvorgabe als Standard, Haus darf abweichen |
+| Auswertung (`/admin/auswertung`) | ein Blick über alle Häuser statt 30 Einzelaufrufe |
+
+Dazu die Haus-Auswahl selbst: für eine Kette ist sie kein Menü, sondern das
+**Lagebild** — offene Reinigungen und dringende Service-Anfragen je Haus auf
+einen Blick, mit Absprung ins Haus.
+
+Das ist **nicht** Teil dieses Umbaus, gehört aber in die Reihenfolgeplanung:
+ohne diese drei Punkte ist „mehrere Hotels" für die Zielgruppe eher eine
+Ankündigung als ein Angebot. Vorschlag: Konto-weite Vorlagen für Services und
+Policies direkt nach diesem Umbau, die konsolidierte Auswertung danach.
+
+## 8. Umbauschritte (in dieser Reihenfolge)
+
+**Schritt 1 — Migration, additiv.** `accounts`, `account_members`,
+`hotel_members` anlegen, `hotels.account_id` zunächst nullable. Backfill: je
+bestehendem Hotel ein Konto; Inhaber wird der vorhandene `profiles`-Eintrag mit
+`role='admin'`; bestehende `role='reception'`-Profile werden zu
+`hotel_members`-Zeilen; danach `account_id` auf `not null`. Kein Bruch — die
+neuen Spalten werden noch nicht gelesen.
+
+**Schritt 2 — RLS-Funktionen erweitern.** Owner- und `hotel_members`-Zweig in
+`is_hotel_member` / `is_hotel_management`. Additiv, alle 14 Policies
+profitieren ohne eigene Änderung.
+
+**Schritt 3 — Kontext slug-parametrisiert.** `getManagementContext(slug)` /
+`getAdminContext(slug)` lösen das Hotel aus dem Slug auf und prüfen die
+Berechtigung über beide Wege. **Der Parameter wird Pflicht** — dann findet der
+Type-Check alle **25 Aufrufstellen**, statt dass eine übersehen wird.
+
+**Schritt 4 — Routing.** `/admin/**` wandert nach `/h/<slug>/admin/**`.
+`/admin` wird zur Haus-Auswahl; bei genau einem Haus Weiterleitung ohne
+Zwischenseite (der heutige Einzelhaus-Kunde merkt nichts).
 
 **Fallstrick:** Ein Layout schützt **keine Server-Actions**. Der Guard im
-Layout deckt die Seiten ab, jede Action muss den Slug selbst entgegennehmen
-und erneut prüfen. Der Slug darf dabei ruhig vom Client kommen — er wird ja
-gegen die Berechtigung geprüft, genau wie beim Gast-Login aus 6c.
+Layout deckt die Seiten ab, jede Action muss den Slug selbst entgegennehmen und
+erneut prüfen. Der Slug darf vom Client kommen — er wird ja gegen die
+Berechtigung geprüft, genau wie beim Gast-Login aus 6c.
 
-**Schritt 5 — Anlage-Wege.**
-`create-tenant.mjs` erzeugt künftig Konto + Hotel + Inhaber.
-`/admin/personal` schreibt `hotel_id` des **ausgewählten** Hauses, nicht „das
-Hotel des Anlegenden". Druckseiten (Aushang, Handout, Zugangskarte) bauen ihre
-URLs aus dem Slug des ausgewählten Hauses.
+**Schritt 5 — Konto-Bereich.** Eigener Bereich außerhalb von `/h/<slug>/`
+(z. B. `/konto`): Häuser anlegen, Manager einladen und Häusern zuordnen,
+Zugangs- und Plandaten. Eigener Guard — siehe Risiko 3.
 
-**Schritt 6 — Plan und Kontingente.**
-`accounts.plan` / `max_hotels` beim Anlegen eines Hotels durchsetzen. Der Rest
-(Preise, Zahlungsanbieter) gehört zu Phase 6b.
+**Schritt 6 — Anlage-Wege.** `create-tenant.mjs` erzeugt künftig Konto + Hotel
++ Inhaber. `/admin/personal` schreibt in das **ausgewählte** Haus, nicht in
+„das Hotel des Anlegenden". Druckseiten bauen ihre URLs aus dessen Slug.
 
-## 6. Was sich NICHT ändert
+## 9. Was sich NICHT ändert
 
-- **Gast- und Reinigungs-Portal** bleiben wie in 6c gebaut — sie sind bereits
-  slug-basiert und kennen keine Konten.
+- **Gast- und Reinigungs-Portal** bleiben wie in 6c gebaut.
 - **Token-Routen** (`/guest/r/<token>`, `/service/auto/<token>`) bleiben
-  mandantenfrei. Gedruckte QR-Codes bleiben gültig.
-- **`profiles`** bleibt unverändert: operative Nutzer gehören genau einem Haus.
+  mandantenfrei; gedruckte QR-Codes bleiben gültig.
+- **`profiles`** bleibt für Reinigungskräfte: genau ein Haus.
 - **Slug bleibt global eindeutig** — er ist der URL-Schlüssel, nicht je Konto
-  eindeutig. Zwei Kunden können nicht beide `krone` haben.
+  eindeutig. Zwei Ketten können nicht beide `krone` haben.
 
-## 7. Risiken
+## 10. Risiken
 
-- **25 Aufrufstellen** von `getManagementContext`/`getAdminContext`. Wird eine
-  übersehen, arbeitet sie auf dem falschen oder auf keinem Haus. Gegenmittel:
-  Pflicht-Parameter (Schritt 3), der Compiler zeigt jede Stelle.
-- **Server-Actions ohne Layout-Schutz** — siehe Fallstrick oben. Jede
-  schreibende Action braucht ihren eigenen Guard.
-- **RLS-Erweiterung ist die riskanteste Änderung**, weil 14 Policies daran
-  hängen. Sie ist zwar additiv, aber ein Fehler in `is_hotel_member` öffnet
-  Türen in fremde Häuser. Vor dem Umbau der Anwendung separat prüfen: mit
-  einem Testkonto über zwei Hotels und einem Nachbar-Konto gegenchecken.
-- **Kein destruktiver Schritt nötig.** Der gesamte Umbau ist additiv, die
-  Migration kann also vor dem Code eingespielt werden — kein enges
-  Deploy-Fenster wie bei Constraint-Wechseln.
+1. **25 Aufrufstellen** von `getManagementContext`/`getAdminContext`. Wird eine
+   übersehen, arbeitet sie auf dem falschen oder auf keinem Haus. Gegenmittel:
+   Pflicht-Parameter (Schritt 3), der Compiler zeigt jede Stelle.
+2. **Rollen statt Fähigkeiten.** Der Manager bekommt eine Häuser-Teilmenge, im
+   Haus aber alles. Wird später „darf Zimmer, aber nicht Personal" verlangt,
+   wird aus jeder Rollenprüfung eine Fähigkeitsprüfung — an 25+ Stellen, mit
+   dauerhafter Pflege. Bewusst vertagt; die Zuordnungstabelle steht dem nicht
+   im Weg.
+3. **Der Konto-Bereich ist eine zweite Auth-Fläche** außerhalb von
+   `/h/<slug>/`, mit eigenem Guard. Dort liegen Plan- und Zugangsdaten — leicht
+   zu vergessen, hoher Schaden.
+4. **RLS-Erweiterung ist die riskanteste Änderung**, weil 14 Policies daran
+   hängen. Additiv, aber ein Fehler in `is_hotel_member` öffnet Türen in fremde
+   Häuser. Separat prüfen: Testkonto mit zwei Hotels plus ein Nachbar-Konto.
+5. **Unbegrenztes Anlegen + Self-Service = Missbrauchsfläche.** Slugs sind
+   global und werden nach „wer zuerst kommt" vergeben; ohne Bremse kann jemand
+   Namen horten. Vor 6b bedenken.
+6. **Hotel-Löschung muss weich werden**, sobald Rechnungen daran hängen —
+   heute kaskadiert `hotels` auf schlicht alles.
+7. **Altlast Diskriminator.** `username IS NOT NULL` trägt heute zwei
+   Bedeutungen: „ist Reinigungskraft" *und* „ist kein Management". Mit Owner
+   und Manager darüber wird das brüchig; beim Umzug sollte `profiles` sauber zu
+   „operatives Personal des Hauses" werden.
+8. **Kein destruktiver Schritt nötig.** Der Umbau ist additiv, die Migration
+   kann vor dem Code eingespielt werden — kein enges Deploy-Fenster.
 
-## 8. Abnahmekriterien
+## 11. Abnahmekriterien
 
 1. Inhaber mit zwei Häusern sieht beide auf `/admin` und kann sie **gleichzeitig
    in zwei Tabs** offen haben, jeweils mit den Daten des richtigen Hauses.
-2. Inhaber, der den Slug eines Hauses aus einem **fremden Konto** einträgt,
+2. Manager mit Zugriff auf Haus A und C kommt in A und C, **nicht** in B —
+   obwohl alle drei demselben Konto gehören.
+3. Manager kommt **nicht** in den Konto-Bereich (Plan, Rechnungsdaten, weitere
+   Häuser anlegen).
+4. Inhaber, der den Slug eines Hauses aus einem **fremden Konto** einträgt,
    bekommt 404 bzw. eine Abweisung.
-3. Rezeptions-Zugang von Haus A kommt nicht in Haus B — auch nicht, wenn
-   beide Häuser demselben Konto gehören.
-4. Reinigungs-RLS unverändert: eine Reinigungskraft sieht exakt das, was sie
+5. Rezeptions-Zugang von Haus A kommt nicht in Haus B, auch nicht im selben
+   Konto.
+6. Reinigungs-RLS unverändert: eine Reinigungskraft sieht exakt das, was sie
    vorher sah (Regressionsprüfung gegen Abschnitt C des Testplans).
-5. Bestandskunde mit genau einem Haus wird von `/admin` ohne sichtbare
+7. Bestandskunde mit genau einem Haus wird von `/admin` ohne sichtbare
    Zwischenseite durchgeleitet.
-6. Anlegen eines Hotels über das Kontingent des Plans hinaus wird abgewiesen.
-7. Gedruckte QR-Codes (Zimmer-Aushang, Zugangskarte) funktionieren unverändert.
+8. Gedruckte QR-Codes (Zimmer-Aushang, Zugangskarte) funktionieren unverändert.
 
-## 9. Offene Entscheidungen
+## 12. Offene Entscheidungen
 
-1. **Anlegen neuer Häuser**: direkt aus der Haus-Auswahl (`/admin`) oder in
-   einem eigenen Konto-Bereich?
-2. **Konto-Verwaltung** (Plan, Rechnungsdaten, weitere Inhaber): eigener
-   Bereich außerhalb von `/h/<slug>/` — z. B. `/konto`?
-3. **Hausleiter-Rolle**: bleibt `profiles.role='admin'` je Haus bestehen, oder
-   soll „Admin" künftig ausschließlich der Kontoinhaber sein? Abschnitt 4 hält
-   beides offen; Vereinfachung wäre möglich.
-4. **Hotel zwischen Konten verschieben** (Betreiberwechsel) — vorerst außen
+1. **Zimmer-Zustände**: reicht ein `deactivated_at`, oder braucht es „außer
+   Betrieb" (Renovierung) getrennt von „abbestellt"? Preisentscheidung.
+2. **Pricing-Form**: zimmergenau oder Staffeln. Beeinflusst nur die
+   Rechnungsseite, nicht das Datenmodell — die Messgröße bleibt dieselbe.
+3. **Manager-Einladung**: per E-Mail-Einladung (Supabase-Bestätigung) oder legt
+   der Admin Zugang und Passwort direkt an, wie heute bei der Rezeption?
+4. **Konto-weite Vorlagen** (Services, Policies) — direkt nach diesem Umbau,
+   wie in Abschnitt 7 vorgeschlagen, oder später?
+5. **Hotel zwischen Konten verschieben** (Betreiberwechsel) — vorerst außen
    vor, oder gleich mitdenken?
-5. **Anzeigename des Inhabers je Haus** — ein Name fürs ganze Konto (so wie in
-   Abschnitt 4 vorgesehen) oder pro Haus unterschiedlich?
