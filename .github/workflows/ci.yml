@@ -1,0 +1,45 @@
+name: CI
+
+# Läuft bei jedem Push auf main und bei jedem Pull Request.
+#
+# WICHTIG: Vercel deployt bei Push auf main unabhängig von diesem Workflow —
+# ein rotes CI verhindert das Deployment NICHT. Der Lauf ist die Rückmeldung,
+# nicht die Bremse. Wer das Deployment wirklich blocken will, arbeitet über
+# Pull Requests und macht diesen Job zum Required Check.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit-Tests
+        run: npm run test
+
+      # Der Build braucht die öffentlichen Supabase-Variablen, weil Module sie
+      # beim Import lesen. Es genügen Platzhalter — gebaut wird ohne DB-Zugriff,
+      # alle datenführenden Seiten sind dynamisch (Cookie-Zugriff).
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder
+          SUPABASE_SECRET_KEY: placeholder
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000

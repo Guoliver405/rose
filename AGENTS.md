@@ -55,9 +55,39 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ```bash
 npm run dev        # Dev-Server (Turbopack)
 npm run build      # Produktions-Build
+npm run verify     # typecheck + lint + test — vor jedem Commit
+npm run typecheck  # tsc --noEmit
 npm run lint       # ESLint
-npx tsc --noEmit   # Type-Check ohne Build
+npm run test       # Vitest (einmalig)
+npm run test:watch # Vitest im Watch-Modus
 ```
+
+## Tests
+
+**Unit (Vitest, `src/lib/*.test.ts`)** — die reine Rechenlogik, kein I/O, keine
+DB, kein React. Das Projekt hält diese Logik bewusst I/O-frei (`board.ts`,
+`worklog.ts`, `shift.ts`, `slug.ts`, `rooms.ts`, `ids.ts`, `maid.ts`,
+`money.ts`); genau das macht sie testbar. Schwerpunkt liegt auf den Randfällen,
+die im UI unsichtbar falsch sein können: Zeitfenster über Mitternacht,
+Stayover-Fälligkeit, Stale-Timeout, Schicht-Paarbildung mit Klammerung und
+Plausibilitätsgrenzen, Abrechnungsregel je Zimmer.
+
+**Integration (Server-Actions + RLS) fehlt noch** — und dort liegt das größte
+Risiko: die beiden ernsten Funde vom 26.07.2026 (RLS grenzt seit Phase 6d nicht
+mehr auf ein Haus ein; der `profiles`-Zweig hätte einen Rechte-Entzug
+wirkungslos gemacht) wären genau dort aufgeschlagen. Geplant als
+Isolationsmatrix Rolle × eigenes/fremdes Haus × eigenes/fremdes Konto gegen eine
+Test-Datenbank. **Bis dahin bleiben Mandanten- und Rollengrenzen von Hand zu
+prüfen.**
+
+**Manuell bleibt** ohnehin: Druck-Layouts, Farbsprache, Bedien-Eindruck — siehe
+[Testplan-Walkthrough.md](Sessions/Testplan-Walkthrough.md).
+
+CI läuft über [.github/workflows/ci.yml](.github/workflows/ci.yml) bei Push auf
+`main` und bei Pull Requests: typecheck, lint, test, build. **Achtung:** Vercel
+deployt bei Push auf `main` unabhängig davon — ein rotes CI bremst das
+Deployment nicht. Wer es blocken will, arbeitet über Pull Requests und macht den
+Job zum Required Check.
 
 Alias `@/` zeigt auf `src/`.
 
