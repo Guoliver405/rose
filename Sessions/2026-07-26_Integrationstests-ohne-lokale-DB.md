@@ -156,6 +156,52 @@ zehn Nutzer unverändert. Damit hat erstmals ein fremder Runner Konten und Häus
 in der gemeinsamen Instanz angelegt und wieder abgeräumt, ohne fremde Zeilen zu
 berühren.
 
+## Nachgelagerter Fund: Sackgasse für Einzelhaus-Konten
+
+Beim Durchklicken mit den Testzugängen aufgefallen (Frage des Users: *„Wie soll
+der Admin unter diesen Voraussetzungen ein weiteres Haus anlegen?"*).
+
+**Der Fehler:** Der einzige Link auf `/konto` im gesamten Code stand in
+`src/app/admin/page.tsx` — auf der Haus-Auswahl. Die leitet bei genau einem Haus
+schon vorher weiter (`if (hotels.length === 1) redirect(...)`), der Link wurde
+also nie gerendert. Ein Kontoinhaber mit einem Haus kam damit über die
+Oberfläche **nicht an sein Konto**: kein zweites Haus, kein Manager, kein Plan.
+Die Route selbst war intakt, nur unerreichbar — `/konto` von Hand eingetippt
+funktionierte.
+
+Tragweite: nicht der Randfall, sondern der Normalfall. Ab Phase 6b
+(Self-Service-Registrierung) landet **jeder neue Kunde** genau dort — ein Haus,
+kein Weg zu wachsen.
+
+**Behoben** in `src/app/h/[slug]/admin/layout.tsx`: beide Wege aus dem Haus
+heraus hängen jetzt in der Kopfzeile des Hauses.
+
+- „Häuser" → `/admin`, sichtbar erst ab dem **zweiten** erreichbaren Haus
+  (`listAccessibleHotels()`). Vorher hing die Sichtbarkeit nur an der Rolle,
+  weshalb Einzelhaus-Inhaber einen Knopf sahen, der sie dorthin zurückwarf, wo
+  sie herkamen — genau der Eindruck, der die Frage ausgelöst hat.
+- „Konto" → `/konto`, sichtbar bei `ctx.isOwner`, also unter derselben
+  Bedingung, die `getAccountContext()` durchlässt.
+
+Für die Rezeption wird `listAccessibleHotels()` gar nicht erst aufgerufen — sie
+sieht ohnehin keinen der beiden Wege.
+
+**Verifiziert im Browser, alle vier Rollen:**
+
+| Zugang | Rolle | „Häuser" | „Konto" |
+|---|---|---|---|
+| `alpenblick@rose.local` | Inhaber, 1 Haus | nein | **ja** ← war die Sackgasse |
+| `rezeption@rose.local` | Inhaber, 2 Häuser | ja | ja |
+| `nina@rose.local` | Manager, 1 Haus | nein | nein |
+| `frontdesk-krone@rose.local` | Rezeption | nein | nein |
+
+`/konto` als Alpenblick geöffnet: „Haus anlegen" und „Manager anlegen"
+vorhanden. Keine Konsolenfehler, `npm run verify` grün.
+
+**Offener Nit:** Der Zurück-Link auf `/konto` heißt „Häuser" und führt bei einem
+Einzelhaus-Konto in dessen einziges Haus. Das Ziel stimmt, die Beschriftung ist
+irreführend.
+
 ## 🔖 Wiederaufnahme
 
 **Stand:** Integrationstests laufen ohne jede lokale Infrastruktur, 32 grün.

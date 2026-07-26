@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Building2, LogOut } from 'lucide-react'
-import { getManagementContext } from '@/utils/auth'
+import { Building2, LogOut, Settings2 } from 'lucide-react'
+import { getManagementContext, listAccessibleHotels } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import { logoutAction } from '@/app/login/actions'
 import RealtimeListener from '@/components/RealtimeListener'
@@ -17,6 +17,10 @@ export default async function AdminLayout({
   if (!ctx) redirect('/admin')
 
   const base = `/h/${ctx.hotelSlug}/admin`
+
+  // Die beiden Wege aus dem Haus heraus. Die Rezeption hat keinen von beiden —
+  // sie kennt nur ihr Haus —, deshalb wird für sie gar nicht erst gefragt.
+  const accessibleHotels = ctx.role === 'reception' ? [] : await listAccessibleHotels()
 
   // Offene Service-Anfragen als Nav-Badge — Realtime-Refresh + revalidatePath
   // halten den Zähler aktuell. urgent kommt aus der Service-Definition; bei
@@ -71,15 +75,33 @@ export default async function AdminLayout({
           </nav>
 
           <div className="ml-auto flex items-center gap-3">
-            {/* Weg zurück zur Haus-Auswahl — nur für Rollen, die mehrere
-                Häuser haben können. */}
-            {ctx.role !== 'reception' && (
+            {/* Weg zurück zur Haus-Auswahl — erst ab dem ZWEITEN Haus. Bei
+                genau einem leitet /admin sofort hierher zurück; der Knopf täte
+                sichtbar nichts und ließe die Anwendung kaputt wirken. */}
+            {accessibleHotels.length > 1 && (
               <Link
                 href="/admin"
                 className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink"
               >
                 <Building2 className="h-4 w-4" />
                 <span className="hidden sm:inline">Häuser</span>
+              </Link>
+            )}
+
+            {/* Weg ins Konto. MUSS hier hängen: vorher war der einzige Link
+                darauf die Haus-Auswahl — die ein Einzelhaus-Konto nie zu sehen
+                bekommt. Ein Inhaber mit einem Haus kam damit nicht an sein
+                Konto und konnte folglich kein zweites Haus anlegen, keinen
+                Manager und keinen Plan sehen. Ab Phase 6b wäre das der Zustand
+                JEDES neu registrierten Kunden. Dieselbe Bedingung, die auch
+                getAccountContext() durchlässt. */}
+            {ctx.isOwner && (
+              <Link
+                href="/konto"
+                className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink"
+              >
+                <Settings2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Konto</span>
               </Link>
             )}
             <span className="hidden text-sm text-ink-muted sm:inline">{ctx.displayName}</span>
