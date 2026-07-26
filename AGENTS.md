@@ -160,7 +160,7 @@ Next.js 16 App Router · TypeScript · Tailwind CSS 4 · Supabase (PostgreSQL + 
 | `/guest/r/<token>` · `/service/auto/<token>` | QR-Einstiege | Token global eindeutig → mandantenfrei, leitet auf die Slug-Route weiter |
 | `/guest` · `/service/login` | — | Hinweisseiten ohne Mandant („QR scannen bzw. Hotel-Adresse nutzen"), bewusst ohne Hotel-Auswahl |
 | `/registrieren` | neue Kunden | Self-Service-Registrierung mit Einladungscode (Phase 6b); Angemeldete werden wie auf `/login` weitergeleitet |
-| `/passwort-vergessen` · `/auth/callback` · `/passwort-neu` | Management | Passwort zurücksetzen. Der Versand ist **Supabase-Sache** (`resetPasswordForEmail`) — kein Resend-Code in der Anwendung, nur die SMTP-Einstellung im Projekt. `/auth/callback` tauscht den Code gegen eine Sitzung (**PKCE: derselbe Browser**, in dem angefordert wurde) und leitet auf `/passwort-neu` |
+| `/passwort-vergessen` · `/auth/callback` · `/passwort-neu` | Management | Passwort zurücksetzen, **end-to-end in Produktion verifiziert** (26.07.2026). Der Versand ist **Supabase-Sache** (`resetPasswordForEmail`) — kein Resend-Code in der Anwendung, nur Custom SMTP im Projekt (Resend). `/auth/callback` tauscht den Code gegen eine Sitzung (**PKCE: derselbe Browser**, in dem angefordert wurde) und leitet auf `/passwort-neu`. **Noch keine verifizierte Absender-Domain:** solange `onboarding@resend.dev` sendet, stellt Resend nur an die eigene Resend-Kontoadresse zu — für Kunden unbrauchbar |
 
 **Cookie-Trennung:** Admin- und Reinigungs-Portal teilen denselben Browser-Origin. Das Reinigungs-Portal nutzt [service-portal.ts](src/utils/supabase/service-portal.ts) mit Präfix `svc_` — nie `createClient()` aus `server.ts` in `/service`-Routen verwenden.
 

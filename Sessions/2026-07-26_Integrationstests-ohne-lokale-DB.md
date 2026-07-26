@@ -391,11 +391,44 @@ Registrierung an zwei, mit dem Reset an drei Stellen. Jetzt einmal als
 | `/passwort-neu` ohne Sitzung | erklärt den Grund, bietet neuen Link an ✅ |
 | `/auth/callback` ohne Code | leitet auf `/passwort-vergessen?fehler=link` ✅ |
 | Reset für `.local`-Adresse | „nicht zustellbar", Ursache im Server-Log ✅ |
+| **Vollständiger Durchlauf in Produktion** | Reset angefordert, Mail zugestellt, Link geöffnet, Passwort gesetzt, angemeldet ✅ |
 
-Was **nicht** geprüft ist: der vollständige Durchlauf mit echter Mail. Dafür
-fehlen die SMTP-Einstellung und ein Zugang mit echter Adresse — siehe unten.
+### Was die Fehlersuche gekostet hat — und warum
 
-### Einrichtung, die nur im Dashboard geht
+Der erste echte Versuch lieferte einen leeren Fehler: `AuthRetryableFetchError`,
+Status 500, `message: '{}'`. Das ist GoTrues Art, einen serverseitig
+gescheiterten SMTP-Versand zu melden. **Lehre:** das Log muss `name`, `status`
+und `code` mitschreiben, sonst steht dort nur `{}` und die Ursache liegt
+außerhalb der Anwendung — nachzusehen in **Resend → Logs** und
+**Supabase → Authentication → Audit Logs**.
+
+Danach zwei Fehlschlüsse, beide meine:
+
+1. *„Der Link zeigt auf localhost, also wurde er auf localhost angefordert."*
+   Falsch — der User war auf der Live-Stage. Die Localhost-Links stammten mit
+   hoher Wahrscheinlichkeit aus **meinen eigenen Diagnose-Anfragen**, die ich
+   vom Dev-Server aus an `test@rose.org` geschickt hatte. **Lehre:** wer beim
+   Debuggen selbst Mails auslöst, muss dazusagen, aus welcher Umgebung — sonst
+   mischen sich die Belege.
+2. *„Supabase fällt auf die Site URL zurück, weil `redirect_to` nicht in der
+   Freigabeliste steht."* Ebenfalls falsch. Der rohe Link zeigte
+   `redirect_to=https://rose-sand-one.vercel.app/auth/callback?next=/passwort-neu`
+   — Ziel korrekt, Freigabe erteilt, `NEXT_PUBLIC_SITE_URL` in Vercel richtig.
+   **Lehre:** der rohe Link aus der Mail beantwortet die Frage in fünf Sekunden;
+   ihn früher anzufordern hätte zwei Vermutungen erspart.
+
+Der Rückfall-Mechanismus (nicht freigegebenes `redirect_to` ⇒ stillschweigend
+Site URL) existiert und bleibt als Fallstrick notiert — er war hier nur nicht
+die Ursache.
+
+### Einrichtung, die nur im Dashboard geht — Stand
+
+Erledigt: eigenes Resend-Konto, SMTP in Supabase, Redirect URLs, Testzugang mit
+echter Adresse. **Offen:** (a) Site URL auf die Produktionsadresse (hier nicht
+die Ursache gewesen, wird aber für Mails ohne eigenes `redirectTo` gebraucht),
+(b) verifizierte Absender-Subdomain — solange `onboarding@resend.dev` sendet,
+stellt Resend **ausschließlich an die eigene Kontoadresse** zu. Ein zweiter
+Kunde bekäme heute nichts.
 
 > Die Dashboard-Pfade unten sind am 26.07.2026 gegen die Dokumentation geprüft.
 > Supabase hat sie umbenannt: SMTP liegt **nicht** mehr unter „Project
@@ -435,10 +468,10 @@ Arbeitsbaum committet.
 
 **Offen, in Reihenfolge:**
 
-1. **SMTP einrichten und den Reset end-to-end prüfen** — die vier Schritte im
-   Abschnitt „Einrichtung, die nur im Dashboard geht". Die Anwendungsseite ist
-   fertig; ohne SMTP und einen Zugang mit echter Adresse lässt sie sich nur
-   bis zur Versandgrenze testen.
+1. **Absender-Subdomain in Resend verifizieren.** Ohne sie stellt Resend nur an
+   die eigene Kontoadresse zu — der Reset funktioniert also für **genau einen**
+   Menschen. Das ist die letzte Hürde zwischen „läuft bei mir" und „läuft für
+   Kunden", und sie kostet nur DNS-Einträge.
 2. **Resend-API für eigene Mails** (Teil 2): Einladungen für Manager- und
    Rezeptions-Zugänge statt vorgelesener Passwörter — betrifft beide
    Anlege-Wege im Personal-Menü. Danach optional E-Mail-Bestätigung bei der
