@@ -4,11 +4,13 @@
 > Supabase-DB, alle Portale). Ergebnis: 2 Befunde, siehe „Befunde" unten.
 > Haken im Plan = an diesem Tag verifiziert.
 >
-> **Nachlauf 26.07.2026:** Abschnitte **B und C komplett wiederholt** mit den
-> Mandanten-Adressen aus [Phase 6c](2026-07-26_Phase-6c_Mandantenfaehigkeit.md)
-> — alle Haken bestätigt, **keine neuen Befunde**. Details unten unter
-> „Nachlauf B + C". Abschnitte A, D, E, F, G sind vom Umbau nicht berührt
-> (`/admin` bleibt ohne Slug-Präfix) und wurden nicht erneut durchlaufen.
+> **Nachlauf 26.07.2026:** Abschnitte **A, B und C komplett wiederholt** —
+> B und C nach [Phase 6c](2026-07-26_Phase-6c_Mandantenfaehigkeit.md)
+> (Mandant in der URL), A nach [Phase 6d](2026-07-26_Phase-6d_Konten-und-Manager.md)
+> (Konten/Manager, Rezeptions-Portal unter `/h/<slug>/admin`) und der
+> Zimmer-Deaktivierung. Alle Haken bestätigt, **keine neuen Befunde**; beide
+> Befunde des Erstdurchlaufs sind behoben. Details unten unter „Nachlauf A"
+> und „Nachlauf B + C". D, E, F und G stehen noch aus.
 
 Für die nächste Session vereinbart: alles einmal von Hand durchtesten, in
 dieser Reihenfolge. Haken setzen, Auffälligkeiten direkt notieren.
@@ -117,6 +119,37 @@ Rate-Limit-Test 15 Minuten gesperrt. Die Seed-Testlage (5 belegte Zimmer,
 - [x] Priorisieren → violette Blink-Kachel mit Flagge (nicht mehr rot,
       siehe Symbolik-Update); Aufheben
 - [x] „Reinigung als erledigt markieren" räumt orange/violett weg
+
+## Nachlauf A (26.07.2026, nach Phase 6d + Zimmer-Deaktivierung)
+
+Durchlaufen in **Strandhaus Nord** (`/h/strandhaus-nord/admin`) — leeres Haus,
+damit die Testlage von „Mein Hotel" unberührt bleibt. Alle Haken bestätigt,
+**keine neuen Befunde**.
+
+- **Login:** falsches Passwort → „Anmeldung fehlgeschlagen — E-Mail oder
+  Passwort falsch." (nennt nicht, welches von beiden). Korrekt → Haus-Auswahl
+  mit Lagebild, von dort ins Haus.
+- **Zimmer anlegen** in allen drei Eingabearten: `301` einzeln,
+  `302, 303, 305` als Komma-Liste, `306-308` als Bereich — Nummern kommen
+  jetzt unverändert an (Befund 2 behoben). 305 anschließend wieder gelöscht:
+  außer Betrieb nehmen → endgültig löschen, in der DB verschwunden.
+- **Belegtes Zimmer** hat im Setup gar keinen Knopf, nur das Bett-Symbol.
+  Server-Riegel gegengeprüft über die Etagen-Aktion: „5 Zimmer außer Betrieb,
+  **1 belegte übersprungen**"; danach alle 6 zurückgeholt.
+- **Check-in** → PIN groß sichtbar (`201645`, sechsstellig seit 6c), KPI
+  „1 belegt". Dialog erneut geöffnet → PIN weiterhin da, mit Check-in-Zeit.
+- **Check-out** → Kachel `bg-caution` mit Tür-Symbol, KPI „1 zu reinigen".
+- **Check-in auf ungereinigtes Zimmer** → Warnung „Das Zimmer ist seit dem
+  letzten Check-out noch nicht gereinigt." → „Trotzdem einchecken" ging durch,
+  neue PIN, Status „Belegt · Reinigung nach Check-out offen".
+- **Priorisieren** → violetter Balken (`bg-accent`), Flagge, violetter
+  Blink-Ring (`blink-ring-priority`); Aufheben stellt orange wieder her.
+- **„Reinigung als erledigt markieren"** räumt orange **und** violett zugleich
+  weg → Kachel `bg-fresh` „Belegt", KPI „0 zu reinigen".
+
+**Zustand danach:** Strandhaus Nord hat 6 freie, bereite Zimmer (301–303,
+306–308) — bleibt als zweites bestücktes Testhaus stehen. Konsole und
+Server-Log fehlerfrei.
 
 ## Nachlauf B + C (26.07.2026, nach dem Mandanten-Umbau)
 
