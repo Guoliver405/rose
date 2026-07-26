@@ -39,8 +39,18 @@ export async function requestPasswordResetAction(
     // Unbekannte Adressen melden KEINEN Fehler — Supabase antwortet dort
     // bewusst wie bei Erfolg, damit sich keine Konten ausprobieren lassen.
     // Was hier ankommt, sind echte Störungen: Rate-Limit oder SMTP.
-    console.error('[resetPasswordForEmail]', error.message)
-    const text = error.message.toLowerCase()
+    //
+    // Vollständig protokollieren: bei SMTP-Problemen ist `message` regelmäßig
+    // leer, und erst `status`/`code` sagen, woran es lag. Ein blankes `{}` im
+    // Log kostet sonst eine ganze Debug-Runde.
+    console.error('[resetPasswordForEmail]', {
+      name: error.name,
+      status: error.status,
+      code: error.code,
+      message: error.message,
+      roh: JSON.stringify(error),
+    })
+    const text = (error.message ?? '').toLowerCase()
 
     if (text.includes('security purposes') || text.includes('rate limit')) {
       return { error: 'Zu viele Anfragen in kurzer Folge. Bitte eine Minute warten.' }
