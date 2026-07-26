@@ -43,3 +43,60 @@ jobs:
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder
           SUPABASE_SECRET_KEY: placeholder
           NEXT_PUBLIC_SITE_URL: http://localhost:3000
+
+  # ---------------------------------------------------------------------------
+  # Integrationstests gegen die gemeinsame Supabase-Instanz des Projekts.
+  #
+  # Keine lokale Datenbank, kein Docker: die Testwelt legt eigene Konten, Häuser
+  # und Nutzer mit einer Lauf-Kennung (`itest-<6 hex>`) an und räumt am Ende
+  # genau diese Zeilen wieder ab. Deshalb dürfen mehrere Läufe gleichzeitig
+  # laufen — lokal gegen CI, oder zwei CI-Läufe nebeneinander — ohne sich zu
+  # stören. Aus demselben Grund gibt es hier bewusst KEINE `concurrency`-Gruppe:
+  # die würde überzählige Läufe mitten im Aufräumen abbrechen. Reste eines
+  # abgebrochenen Laufs kehrt `sweepStaleRuns()` nach zwei Stunden auf.
+  #
+  # Läuft erst, wenn `verify` grün ist — Integrationstests auf Code zu fahren,
+  # der nicht mal typecheckt, schreibt nur sinnlos in die gemeinsame Datenbank.
+  # ---------------------------------------------------------------------------
+  integration:
+    needs: verify
+    runs-on: ubuntu-latest
+
+    # Aus einem Fork heraus reicht GitHub keine Secrets durch; der Job müsste
+    # zwangsläufig scheitern. Also nur für Läufe aus diesem Repository.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+
+    # tests/integration/setup.ts liest zuerst die Umgebung und erst danach
+    # .env.local — in CI greift also dieser Block.
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Ohne diese Vorprüfung äußert sich ein fehlendes Secret als Stapel
+      # unverständlicher Supabase-Fehler tief im Testlauf.
+      - name: Secrets vorhanden?
+        run: |
+          missing=""
+          for v in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY SUPABASE_SECRET_KEY; do
+            if [ -z "${!v}" ]; then missing="$missing $v"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Fehlende GitHub-Secrets:$missing — unter Settings → Secrets and variables → Actions hinterlegen."
+            exit 1
+          fi
+          echo "Alle drei Secrets sind gesetzt."
+
+      - name: Integrationstests
+        run: npm run test:integration

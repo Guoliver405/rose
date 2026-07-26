@@ -111,9 +111,9 @@ leere DB nachgespielt. Das war ohnehin kein echter Verlust, weil Migrationen
 laut Konvention von Hand im SQL-Editor eingespielt werden.
 
 Verbindungsdaten liest `tests/integration/setup.ts` aus bereits gesetzten
-Umgebungsvariablen, sonst aus `.env.local` — nichts ist hartkodiert. In CI
-laufen die Integrationstests bislang **nicht**: dafür müssten die drei
-Supabase-Schlüssel als GitHub-Secrets hinterlegt werden.
+Umgebungsvariablen, sonst aus `.env.local` — nichts ist hartkodiert. Genau diese
+Reihenfolge lässt denselben Testcode in CI laufen, wo die drei Schlüssel als
+GitHub-Secrets aus der Job-Umgebung kommen.
 
 **Noch nicht abgedeckt:** die Login-Actions selbst (`guestLoginAction`,
 `maidLoginAction`) — sie leiten per `redirect()` um und brauchen etwas mehr
@@ -124,10 +124,22 @@ Haus") wäre der nächste sinnvolle Schritt.
 [Testplan-Walkthrough.md](Sessions/Testplan-Walkthrough.md).
 
 CI läuft über [.github/workflows/ci.yml](.github/workflows/ci.yml) bei Push auf
-`main` und bei Pull Requests: typecheck, lint, test, build. **Achtung:** Vercel
-deployt bei Push auf `main` unabhängig davon — ein rotes CI bremst das
-Deployment nicht. Wer es blocken will, arbeitet über Pull Requests und macht den
-Job zum Required Check.
+`main` und bei Pull Requests, in zwei Jobs:
+
+- `verify` — typecheck, lint, Unit-Tests, Build (Build mit Platzhalter-Keys,
+  ohne DB-Zugriff).
+- `integration` — `npm run test:integration` gegen die echte Instanz, `needs:
+  verify`. Die drei Schlüssel liegen als **GitHub-Secrets**
+  (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
+  `SUPABASE_SECRET_KEY`); eine Vorprüfung bricht mit klarer Meldung ab, wenn
+  eines fehlt. Aus Fork-Pull-Requests wird der Job übersprungen, weil GitHub
+  dorthin keine Secrets reicht. Bewusst **keine** `concurrency`-Gruppe: die
+  lauf-gebundenen Fixtures vertragen parallele Läufe, ein Abbruch mitten im
+  Aufräumen dagegen hinterlässt Reste.
+
+**Achtung:** Vercel deployt bei Push auf `main` unabhängig davon — ein rotes CI
+bremst das Deployment nicht. Wer es blocken will, arbeitet über Pull Requests
+und macht die Jobs zu Required Checks.
 
 Alias `@/` zeigt auf `src/`.
 

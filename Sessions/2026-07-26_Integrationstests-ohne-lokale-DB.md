@@ -99,23 +99,53 @@ Ehrlich bilanziert, es ist wenig:
 - **Ein Service-Key mit Löschrechten**, sobald die Tests in CI laufen. Die
   ID-gebundene Löschung plus Riegel ist die Antwort darauf.
 
-## Lokale Umgebung — Rückbau jetzt gefahrlos
+## Lokale Umgebung — Rückbau durchgeführt
 
-Abschnitt 3 des [Übergabe-Dokuments](2026-07-26_Testinfrastruktur-und-Uebergabe.md)
-gilt unverändert, ist aber jetzt **folgenlos** für die Tests:
+Am selben Tag zurückgebaut, weil nichts mehr daran hängt:
 
-```
-reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "Docker Desktop" /f
-wsl --unregister Ubuntu
-wsl --uninstall
-```
-Danach Docker Desktop über Einstellungen → Apps entfernen. Windows-Features
-*Windows-Subsystem für Linux* und *Plattform für virtuelle Computer*
-abschalten — Letzteres nur, wenn nichts anderes es braucht.
+| Schritt | Ergebnis |
+|---|---|
+| `wsl --unregister Ubuntu`, `wsl --uninstall` | ✅ `wsl --status` meldet „nicht installiert" |
+| Docker Desktop deinstalliert | ✅ keine Prozesse, keine Dienste, nicht mehr in der Programmliste |
+| Restordner `AppData\Local\Docker`, `.docker`, `AppData\Local\Programs\DockerDesktop`, `AppData\Roaming\Docker` | ✅ gelöscht, ~1,7 GB frei |
+| Autostart-Eintrag `HKCU\…\Run\Docker Desktop` | ✅ entfernt |
+| Windows-Feature *Windows-Subsystem für Linux* | Haken abwählen, Neustart — braucht Administratorrechte |
+| Windows-Feature *Plattform für virtuelle Computer* | **bewusst gelassen** |
+
+**Zwei Fallen, beide real aufgetreten:**
+
+1. **`HKCU` in einer Administrator-Shell ist nicht dein Profil.** `reg delete`
+   und `Remove-ItemProperty` meldeten „nicht vorhanden", während der Wert
+   nachweislich existierte — sie liefen gegen die Registry-Hälfte des
+   Administratorkontos. Belegt über den Änderungszeitstempel des Schlüssels: der
+   blieb über beide Versuche hinweg unverändert. Dasselbe gilt für
+   `$env:LOCALAPPDATA` und `$env:APPDATA`. **Benutzerprofil-Kram gehört in ein
+   normales Fenster**, nur die Windows-Features brauchen Administratorrechte.
+2. **Der Docker-Deinstallierer lässt den Autostart-Eintrag stehen** — er zeigte
+   danach auf eine gelöschte Datei, die Windows bei jeder Anmeldung erfolglos zu
+   starten versuchte.
 
 > **Weiterhin nicht tun:** `bcdedit /set hypervisorlaunchtype off`. Das nimmt
 > Memory Integrity mit, ein echter Sicherheitsverlust. VBS war auf diesem
-> Rechner schon vor der WSL-Installation aktiv.
+> Rechner schon vor der WSL-Installation aktiv — der Hypervisor läuft also
+> ohnehin. Genau deshalb bringt auch das Abschalten von *Plattform für virtuelle
+> Computer* nichts und bleibt stehen.
+
+## Integrationstests in CI
+
+Zweiter Job `integration` in [ci.yml](../.github/workflows/ci.yml), `needs:
+verify` — Integrationstests auf Code zu fahren, der nicht typecheckt, schreibt
+nur sinnlos in die gemeinsame Datenbank.
+
+Die drei Schlüssel kommen als GitHub-Secrets aus der Job-Umgebung;
+`setup.ts` liest die Umgebung vor `.env.local`, derselbe Testcode läuft also
+unverändert lokal und in CI. Eine Vorprüfung bricht mit klarer Meldung ab, wenn
+ein Secret fehlt — sonst äußert sich das als Stapel unverständlicher
+Supabase-Fehler tief im Testlauf. Fork-Pull-Requests überspringen den Job, weil
+GitHub dorthin keine Secrets reicht.
+
+Bewusst **keine** `concurrency`-Gruppe: die lauf-gebundenen Fixtures vertragen
+parallele Läufe, ein Abbruch mitten im Aufräumen dagegen hinterlässt Reste.
 
 ## 🔖 Wiederaufnahme
 
@@ -124,13 +154,7 @@ Arbeitsbaum committet.
 
 **Offen, in Reihenfolge:**
 
-1. **Integrationstests in CI aufnehmen** — zweiter Job in
-   [ci.yml](../.github/workflows/ci.yml), der `npm run test:integration` fährt.
-   Voraussetzung: `NEXT_PUBLIC_SUPABASE_URL`,
-   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` und `SUPABASE_SECRET_KEY` als
-   GitHub-Secrets. Entscheidung des Users, weil der Secret Key damit in
-   GitHub liegt.
-2. **Login-Actions abdecken** — `guestLoginAction`, `maidLoginAction` (leiten
+1. **Login-Actions abdecken** — `guestLoginAction`, `maidLoginAction` (leiten
    per `redirect()` um). Wertvollster Einzeltest: *fünf Fehlversuche sperren nur
    den eigenen Aufenthalt im eigenen Haus* (Befund A aus Phase 6c).
 3. **Phase 6b — Self-Service-Registrierung.**
