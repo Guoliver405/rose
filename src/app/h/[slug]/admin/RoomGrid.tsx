@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import {
   AlertTriangle, Ban, BedDouble, ConciergeBell, DoorOpen, Flag, History, Loader2,
-  Printer, RefreshCw, Sparkles, Users, X,
+  PowerOff, Printer, RefreshCw, Sparkles, Users, X,
 } from 'lucide-react'
 import {
   checkInAction, checkOutAction, markCleanedAction, setPriorityAction,
@@ -16,6 +16,8 @@ export type RoomTileData = {
   number: string
   floor: number
   building: string | null
+  /** Außer Betrieb — kein Check-in, keine Reinigung, nicht auf dem Maid-Board. */
+  deactivated: boolean
   occupied: boolean
   pin: string | null
   checkedInAt: string | null
@@ -41,6 +43,7 @@ export type FloorGroup = {
     Eine LAUFENDE Reinigung ändert den Balken bewusst NICHT (nur Spinner-Icon):
     die Grundfarbe bleibt stehen, bis der Abschluss den Status wirklich ändert. */
 function tileBar(t: RoomTileData): string {
+  if (t.deactivated) return 'bg-edge-strong'
   if (t.priority) return 'bg-accent'
   if (t.checkoutPending) return 'bg-caution'
   if (t.guestSignal === 'please_clean' || t.stayoverDue) return 'bg-attention'
@@ -66,6 +69,7 @@ function historyTime(at: string): string {
 }
 
 function statusLabel(t: RoomTileData): string {
+  if (t.deactivated) return 'Außer Betrieb'
   const ready = !t.occupied && !t.checkoutPending && !t.priority && !t.cleaningActive
   const parts: string[] = []
   parts.push(t.occupied ? 'Belegt' : ready ? 'Frei & bereit' : 'Frei')
@@ -156,14 +160,16 @@ function RoomTile({ room, onClick }: { room: RoomTileData; onClick: () => void }
       type="button"
       onClick={onClick}
       title={statusLabel(room)}
-      className={`flex w-20 flex-col overflow-hidden rounded-lg border bg-surface-elevated text-left shadow-sm hover:border-edge-strong ${
+      className={`flex w-20 flex-col overflow-hidden rounded-lg border text-left shadow-sm hover:border-edge-strong ${
         // Nur ein Ring kann blinken: Rot (dringender Service) schlägt
         // Violett (Prio) — die Prio bleibt über Balken + Flagge sichtbar.
-        room.urgentOrders
-          ? 'border-critical blink-ring-overdue'
-          : room.priority
-            ? 'border-accent blink-ring-priority'
-            : 'border-edge'
+        room.deactivated
+          ? 'border-dashed border-edge-strong bg-surface-muted opacity-60'
+          : room.urgentOrders
+            ? 'border-critical bg-surface-elevated blink-ring-overdue'
+            : room.priority
+              ? 'border-accent bg-surface-elevated blink-ring-priority'
+              : 'border-edge bg-surface-elevated'
       }`}
     >
       <span className={`h-1.5 w-full ${tileBar(room)}`} />
@@ -183,6 +189,7 @@ function RoomTile({ room, onClick }: { room: RoomTileData; onClick: () => void }
           )}
         </span>
         <span className="flex h-4 items-center gap-0.5">
+          {room.deactivated && <PowerOff className="h-3.5 w-3.5 text-ink-muted" />}
           {room.occupied && <BedDouble className="h-3.5 w-3.5 text-active-strong" />}
           {room.guestSignal === 'dnd' && <Ban className="h-3.5 w-3.5 text-blocked-strong" />}
           {room.guestSignal === 'please_clean' && <Sparkles className="h-3.5 w-3.5 text-attention-strong" />}
@@ -349,8 +356,18 @@ function RoomDialog({ hotelSlug, room, onClose }: { hotelSlug: string; room: Roo
         )}
 
         <div className="flex flex-col gap-2">
+          {/* Außer Betrieb: keine Tagesgeschäft-Aktionen. Zurückholen geht
+              bewusst nur im Zimmer-Setup, nicht nebenbei aus der Übersicht. */}
+          {room.deactivated && (
+            <p className="rounded-xl border border-edge bg-surface-sunken px-4 py-3 text-sm text-ink-soft">
+              Dieses Zimmer ist außer Betrieb — kein Check-in, keine Reinigung.
+              Unter <span className="font-semibold">Einstellungen → Zimmer</span>{' '}
+              lässt es sich wieder in Betrieb nehmen.
+            </p>
+          )}
+
           {/* Check-in / Check-out */}
-          {!room.occupied && !freshPin && !warning && (
+          {!room.deactivated && !room.occupied && !freshPin && !warning && (
             <button
               type="button"
               disabled={pending}
@@ -397,21 +414,23 @@ function RoomDialog({ hotelSlug, room, onClose }: { hotelSlug: string; room: Roo
           )}
 
           {/* Priorisierte Reinigung */}
-          <button
-            type="button"
-            disabled={pending}
-            onClick={() => runPriority(!room.priority)}
-            className={`rounded-xl px-4 py-3 font-bold disabled:opacity-50 ${
-              room.priority
-                ? 'bg-accent text-accent-foreground hover:bg-accent-strong'
-                : 'border border-accent-pill-edge bg-accent-tint text-accent-strong hover:bg-accent-pill'
-            }`}
-          >
-            {room.priority ? 'Priorisierung aufheben' : 'Reinigung priorisieren'}
-          </button>
+          {!room.deactivated && (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => runPriority(!room.priority)}
+              className={`rounded-xl px-4 py-3 font-bold disabled:opacity-50 ${
+                room.priority
+                  ? 'bg-accent text-accent-foreground hover:bg-accent-strong'
+                  : 'border border-accent-pill-edge bg-accent-tint text-accent-strong hover:bg-accent-pill'
+              }`}
+            >
+              {room.priority ? 'Priorisierung aufheben' : 'Reinigung priorisieren'}
+            </button>
+          )}
 
           {/* Status-Korrektur */}
-          {needsCleaning && (
+          {!room.deactivated && needsCleaning && (
             <button
               type="button"
               disabled={pending}

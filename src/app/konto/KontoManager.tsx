@@ -18,12 +18,16 @@ export default function KontoManager({
   hotels,
   managers,
   roomsByHotel,
+  billableByHotel,
 }: {
   accountName: string
   plan: string
   hotels: AccountHotel[]
   managers: AccountManager[]
+  /** Zimmer in Betrieb je Haus. */
   roomsByHotel: Record<string, number>
+  /** Abrechenbare Zimmer im laufenden Monat je Haus. */
+  billableByHotel: Record<string, number>
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -35,6 +39,7 @@ export default function KontoManager({
   const [copied, setCopied] = useState(false)
 
   const totalRooms = hotels.reduce((n, h) => n + (roomsByHotel[h.id] ?? 0), 0)
+  const totalBillable = hotels.reduce((n, h) => n + (billableByHotel[h.id] ?? 0), 0)
 
   function run(fn: () => Promise<{ error?: string }>, after?: () => void) {
     setError(null)
@@ -64,12 +69,18 @@ export default function KontoManager({
             {hotels.length} {hotels.length === 1 ? 'Haus' : 'Häuser'}
           </span>
           <span className="rounded-full bg-surface-muted px-3 py-1 font-semibold text-ink-soft">
-            {totalRooms} Zimmer
+            {totalRooms} Zimmer in Betrieb
+          </span>
+          <span className="rounded-full bg-action-tint px-3 py-1 font-semibold text-action-strong">
+            {totalBillable} abrechenbar (laufender Monat)
           </span>
         </div>
         <p className="mt-2 text-xs text-ink-muted">
-          Die Abrechnung erfolgt je Zimmer. Rechnungsstellung und Zahlungsdaten
-          folgen — aktuell läuft das Konto ohne Berechnung.
+          Die Abrechnung erfolgt je Zimmer: gezählt wird jedes Zimmer, das im
+          Monat <em>auch nur vorübergehend</em> in Betrieb war — ein mitten im
+          Monat außer Betrieb genommenes Zimmer zählt also noch mit.
+          Rechnungsstellung und Zahlungsdaten folgen; aktuell läuft das Konto
+          ohne Berechnung.
         </p>
       </section>
 
@@ -136,8 +147,13 @@ export default function KontoManager({
                   <span className="block text-sm font-bold text-ink">{h.name}</span>
                   <span className="block truncate font-mono text-xs text-ink-muted">/h/{h.slug}</span>
                 </span>
-                <span className="shrink-0 text-xs font-semibold text-ink-muted">
-                  {roomsByHotel[h.id] ?? 0} Zimmer
+                <span className="shrink-0 text-right text-xs font-semibold text-ink-muted">
+                  {roomsByHotel[h.id] ?? 0} in Betrieb
+                  {(billableByHotel[h.id] ?? 0) !== (roomsByHotel[h.id] ?? 0) && (
+                    <span className="block text-action-strong">
+                      {billableByHotel[h.id] ?? 0} abrechenbar
+                    </span>
+                  )}
                 </span>
                 <Link
                   href={`/h/${h.slug}/admin`}

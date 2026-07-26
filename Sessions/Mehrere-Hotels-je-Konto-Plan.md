@@ -168,7 +168,13 @@ unverändert. Weil die Zweige nur **hinzufügen**, verliert niemand Zugriff, und
 die Reinigungs-RLS wird nicht weiter (Reinigungskräfte stehen nie in
 `account_members` oder `hotel_members`).
 
-## 6. Zimmer-Lebenszyklus — vertagt, aber mit Frist
+## 6. Zimmer-Lebenszyklus — UMGESETZT am 26.07.2026
+
+> Nachtrag: direkt nach dem 6d-Umbau umgesetzt, also deutlich vor der unten
+> genannten Frist. Details im
+> [Session-Protokoll](2026-07-26_Phase-6d_Konten-und-Manager.md), Abschnitt
+> „Nachtrag: Zimmer weich deaktivieren". Der folgende Abschnitt beschreibt die
+> Begründung und bleibt als solche stehen.
 
 `rooms` hat heute **kein** `deactivated_at`; es gibt nur hartes Löschen, und
 das kaskadiert auf `room_guest_tokens`, `stays`, `room_states` und
@@ -338,8 +344,10 @@ Admin Zugänge wie heute mit Passwort an. Siehe Abschnitt 13.
 
 ## 14. Weiterhin offen
 
-1. **Zimmer-Zustände**: reicht ein `deactivated_at`, oder braucht es „außer
-   Betrieb" (Renovierung) getrennt von „abbestellt"? Preisentscheidung.
+1. **Zimmer-Zustände**: umgesetzt ist **ein** Zustand (`deactivated_at`). Ob
+   „außer Betrieb" (Renovierung) getrennt von „abbestellt" gebraucht wird,
+   bleibt offen — reine Preisentscheidung, die Messgröße ändert sich dadurch
+   nicht.
 2. **Pricing-Form**: zimmergenau oder Staffeln. Beeinflusst nur die
    Rechnungsseite, nicht das Datenmodell — die Messgröße bleibt dieselbe.
 3. **Hotel zwischen Konten verschieben** (Betreiberwechsel) — vorerst außen

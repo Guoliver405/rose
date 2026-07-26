@@ -20,7 +20,8 @@ export default async function AushangPage({
 
   const supabase = await createClient()
   const [{ data: rooms }, { data: tokens }] = await Promise.all([
-    supabase.from('rooms').select('id, number, floor, building').eq('hotel_id', ctx.hotelId),
+    // Für Zimmer außer Betrieb wird kein Aushang gedruckt.
+    supabase.from('rooms').select('id, number, floor, building').eq('hotel_id', ctx.hotelId).is('deactivated_at', null),
     supabase.from('room_guest_tokens').select('room_id, token').eq('hotel_id', ctx.hotelId),
   ])
 

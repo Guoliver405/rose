@@ -19,7 +19,13 @@ export default async function RoomSetupPage({
   const supabase = await createClient()
 
   const [{ data: rooms }, { data: stays }] = await Promise.all([
-    supabase.from('rooms').select('id, number, floor, building').eq('hotel_id', ctx.hotelId).order('number'),
+    // Deaktivierte Zimmer gehören hierher — nur hier lassen sie sich
+    // zurückholen. Auf den Boards und im Aushang sind sie ausgeblendet.
+    supabase
+      .from('rooms')
+      .select('id, number, floor, building, deactivated_at')
+      .eq('hotel_id', ctx.hotelId)
+      .order('number'),
     supabase.from('stays').select('room_id').eq('hotel_id', ctx.hotelId).is('checked_out_at', null),
   ])
 
@@ -31,6 +37,7 @@ export default async function RoomSetupPage({
     floor: r.floor,
     building: r.building,
     occupied: occupiedRooms.has(r.id),
+    deactivated: Boolean(r.deactivated_at),
   }))
 
   return (

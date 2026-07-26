@@ -144,6 +144,7 @@ export async function seedTestScenarioAction(
     .from('rooms')
     .select('id, number, floor')
     .eq('hotel_id', ctx.hotelId)
+    .is('deactivated_at', null)
     .order('floor')
     .order('number')
   if (!roomRows || roomRows.length === 0) return { error: 'Keine Zimmer angelegt.' }
@@ -190,6 +191,7 @@ export async function seedTestScenarioAction(
       .from('rooms')
       .select('id')
       .eq('hotel_id', ctx.hotelId)
+      .is('deactivated_at', null)
       .in('number', occupiedRooms.map(r => r.number))
     const foreignIds = (sameNumberRooms ?? [])
       .map(r => r.id)

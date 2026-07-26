@@ -114,11 +114,49 @@ Umgesetzt sind Phasen 0–5, 6a, 6c und 6d. **Nächster Schritt bleibt Phase 6b
 Rechte-Beziehung stehen: Signup erzeugt `accounts` + `hotels` + `account_members`,
 Slug über `slugify`/`uniqueSlug`.
 
-**Vorher zwingend** (siehe Plan, Abschnitt 6): **Zimmer weich deaktivieren**
-(`rooms.deactivated_at` statt hartem Löschen). Abrechnung läuft je Zimmer nach
-der Regel „in der Periode auch nur vorübergehend aktiv = zählt"; hartes Löschen
-macht die erste Abrechnungsperiode unrekonstruierbar. In der Testphase
-folgenlos, ab dem ersten echten Kunden nicht mehr.
+## Nachtrag: Zimmer weich deaktivieren (26.07.2026)
+
+Direkt im Anschluss umgesetzt — die Voraussetzung für die Abrechnung je Zimmer.
+
+Migration [2026-07-26_rooms_deactivated.sql](../Supabase_sql/archive/2026-07-26_rooms_deactivated.sql):
+`rooms.deactivated_at` plus Teil-Index auf die aktiven Zimmer.
+
+- **Deaktivieren ist der Normalweg.** `setRoomActiveAction` nimmt ein Zimmer
+  (oder eine ganze Etage) außer Betrieb und holt es zurück; belegte Zimmer
+  werden übersprungen. Beim Deaktivieren werden offene Reinigungs-Signale
+  geräumt (`guest_signal`, `checkout_pending`, `priority`, laufende Reinigung) —
+  sonst stünden sie für immer auf den Zählern.
+- **Löschen ist der Notausgang.** `deleteRoomAction` prüft auf Historie
+  (Aufenthalte, Service-Anfragen, Reinigungs-Stiche, Status-Änderungen) und
+  verweigert, sobald etwas daran hängt. Im UI hinter „außer Betrieb" versteckt,
+  wie beim Personal.
+- **Ausgeblendet** bei: Reinigungsboard, QR-Aushängen, Test-Szenario-Seeding,
+  allen Betriebs-KPIs. Check-in wird serverseitig abgewiesen.
+- **Sichtbar** bleibt das Zimmer in der Rezeptions-Übersicht: gestrichelte,
+  ausgegraute Kachel mit `PowerOff`-Icon und eigener KPI „außer Betrieb". Der
+  Dialog zeigt statt Aktionen einen Hinweis; zurückholen geht nur im
+  Zimmer-Setup.
+- **Messgröße** in [rooms.ts](../src/lib/rooms.ts): `isBillable` /
+  `countBillableRooms` setzen die Regel um — wer im Monat auch nur
+  vorübergehend aktiv war, zählt. Der Konto-Bereich zeigt „X in Betrieb" **und**
+  „Y abrechenbar (laufender Monat)".
+
+**Verifiziert:** Zimmer 105 (Mein Hotel) außer Betrieb → Übersicht `7 Zimmer /
+3 zu reinigen / 1 außer Betrieb` (sein `checkout_pending` war geräumt),
+Reinigungsboard und Aushang ohne 105, Dialog ohne Aktionen **mit vollständigem
+Verlauf**, Konto `7 in Betrieb / 8 abrechenbar` — genau die Regel, weil 105
+diesen Monat noch aktiv war. Hartes Löschen von 105 abgewiesen
+(„… lässt sich nur außer Betrieb nehmen"); ein frisch angelegtes Zimmer ohne
+Historie ließ sich löschen. Rückweg geprüft: 105 wieder in Betrieb → 8/8.
+
+Bewusst **ein** Zustand statt zweier: „außer Betrieb" (Renovierung) und
+„abbestellt" sind nicht getrennt, weil die Abrechnungsregel einstufig
+formuliert ist und das Pricing vertagt bleibt. Falls Renovierung später
+weiterberechnet werden soll, ist das ein zweites Feld — die Messgröße bliebe
+dieselbe. Nebenwirkung: die Zimmernummer bleibt belegt, ein deaktiviertes
+Zimmer gibt sie nicht frei.
+
+## 🔖 Wiederaufnahme (Fortsetzung)
 
 Danach eingeplant (Plan, Abschnitt 13):
 

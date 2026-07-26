@@ -100,7 +100,7 @@ Siehe [supabase_schema_v1.sql](Supabase_sql/supabase_schema_v1.sql). Kern:
 
 - `hotels` — Mandant + `slug` (unique, `[a-z0-9-]`, = Mandanten-Kennung in der URL) + `policies` JSONB (stayoverAutoClean, pinLength — Default **6** seit 26.07.2026, cleaningStaleMinutes, cleaningWindow*)
 - `profiles` — Personal; Discriminator: `username IS NOT NULL` = Reinigungskraft; Management-Logins tragen `role` (`admin` | `reception`); `deactivated_at` = ausgeschieden (siehe unten)
-- `rooms` — Nummer + Etage + optional Gebäude, keine Geometrie
+- `rooms` — Nummer + Etage + optional Gebäude, keine Geometrie; `deactivated_at` = **außer Betrieb** (26.07.2026). Deaktivierte Zimmer verschwinden von Reinigungsboard, QR-Aushang und den Betriebs-KPIs, nehmen keinen Check-in an und behalten ihre komplette Historie. **Gelöscht wird nicht mehr** — `deleteRoomAction` verweigert, sobald Aufenthalte, Service-Anfragen, Reinigungs-Stiche oder Status-Änderungen existieren (Notausgang für Fehlanlagen, im UI hinter „außer Betrieb" versteckt). Grund: die Kaskade nähme `stays`, `service_orders`, `room_states` und `room_guest_tokens` mit — und damit die Belege der Abrechnung. Die Zimmernummer bleibt belegt (`unique (hotel_id, building, number)` gilt weiter).
 - `room_guest_tokens` — statischer QR-Token pro Zimmer (PK = room_id)
 - `stays` — anonymer Aufenthalt: PIN, session_token, Rate-Limit-Felder; Partial-Unique `room_id WHERE checked_out_at IS NULL` verhindert Doppel-Check-in strukturell
 - `room_states` — event-getriebener Status: `guest_signal` (none/please_clean/dnd), `checkout_pending`, `priority`, `cleaning_by`/`cleaning_started_at`; `last_updated_at` wird von jeder statusrelevanten Action getoucht (Realtime-Kick)
@@ -158,7 +158,7 @@ Auf saturierten Buttons per-Family-Foreground verwenden (`bg-attention text-atte
 - **Phase 6a** — Marketing-Landing auf `/` (Hero, Portale, Ablauf, Features, Use-Cases, Platzhalter-Pricing, FAQ); Signup-CTA verweist auf „Registrierung öffnet in Kürze" ✅
 - **Phase 6c (vorgezogen)** — **Mandantenfähigkeit**: Mandant in die URL (`hotels.slug`), Gast- und Reinigungs-Login pro Hotel auflösen ✅ (26.07.2026, siehe [Mandantenfaehigkeit-Plan.md](Sessions/Mandantenfaehigkeit-Plan.md))
 - **Phase 6d (vorgezogen)** — **Mehrere Hotels je Konto**, Zielgruppe Hotelketten: `accounts` + `account_members` + `hotel_members`, vier Rollen (Admin = zahlender Kunde über alle Häuser · Manager = Teilmenge der Häuser · Rezeption/Reinigung hausintern), Rezeptions-Portal unter `/h/<slug>/admin`, `/admin` ist Haus-Auswahl, Konto-Bereich `/konto` ✅ (26.07.2026)
-- **Vor 6b zwingend** — **Zimmer weich deaktivieren** (`rooms.deactivated_at` statt hartem Löschen). Abrechnung läuft je Zimmer nach der Regel „in der Periode auch nur vorübergehend aktiv = zählt"; hartes Löschen macht die erste Abrechnungsperiode unrekonstruierbar. In der Testphase folgenlos, ab dem ersten echten Kunden nicht mehr.
+- **Zimmer weich deaktivieren** ✅ (26.07.2026) — `rooms.deactivated_at` statt hartem Löschen. Abrechnung je Zimmer nach der Regel „in der Periode auch nur vorübergehend aktiv = zählt"; Messgröße in [rooms.ts](src/lib/rooms.ts) (`isBillable`, `countBillableRooms`) — reine Ableitung aus `created_at`/`deactivated_at`, kein Snapshot, kein Cron.
 - **Phase 6b** — Self-Service-Registrierung/Onboarding (Konto + Hotel + Inhaber entstehen beim Signup, Wizard für Hotelname/Zimmer; braucht Supabase-E-Mail-Bestätigung) — geplant
 
 Kernphasen 0–5 sind umgesetzt. Nach jeder Phase: Review mit dem User (enger Dialog vereinbart).

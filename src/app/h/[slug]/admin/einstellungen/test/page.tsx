@@ -20,6 +20,7 @@ export default async function TestScenarioPage({
     .from('rooms')
     .select('id', { count: 'exact', head: true })
     .eq('hotel_id', ctx.hotelId)
+    .is('deactivated_at', null)
 
   return (
     <div className="flex max-w-2xl flex-col gap-5">

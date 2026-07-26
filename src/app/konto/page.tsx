@@ -4,6 +4,7 @@ import { ArrowLeft, LogOut } from 'lucide-react'
 import { getAccountContext } from '@/utils/auth'
 import { createAdminClient } from '@/utils/supabase/service'
 import { logoutAction } from '@/app/login/actions'
+import { isBillable, monthPeriod } from '@/lib/rooms'
 import KontoManager, { type AccountHotel, type AccountManager } from './KontoManager'
 
 /**
@@ -51,12 +52,26 @@ export default async function KontoPage() {
     slug: h.slug,
   }))
 
-  // Zimmerzahl je Haus — Grundlage der späteren Abrechnung je Zimmer.
+  // Zimmerzahlen je Haus. „In Betrieb" ist die Betriebssicht; „abrechenbar"
+  // folgt der Abrechnungsregel: wer im laufenden Monat auch nur vorübergehend
+  // aktiv war, zählt — ein mitten im Monat außer Betrieb genommenes Zimmer
+  // also noch. Reine Ableitung aus created_at/deactivated_at, kein Snapshot.
   const { data: roomRows } = hotelIds.length
-    ? await admin.from('rooms').select('hotel_id').in('hotel_id', hotelIds)
-    : { data: [] as { hotel_id: string }[] }
+    ? await admin
+        .from('rooms')
+        .select('hotel_id, created_at, deactivated_at')
+        .in('hotel_id', hotelIds)
+    : { data: [] as { hotel_id: string; created_at: string; deactivated_at: string | null }[] }
+
+  const period = monthPeriod(new Date())
   const roomsByHotel = new Map<string, number>()
-  for (const r of roomRows ?? []) roomsByHotel.set(r.hotel_id, (roomsByHotel.get(r.hotel_id) ?? 0) + 1)
+  const billableByHotel = new Map<string, number>()
+  for (const r of roomRows ?? []) {
+    if (!r.deactivated_at) roomsByHotel.set(r.hotel_id, (roomsByHotel.get(r.hotel_id) ?? 0) + 1)
+    if (isBillable(r, period)) {
+      billableByHotel.set(r.hotel_id, (billableByHotel.get(r.hotel_id) ?? 0) + 1)
+    }
+  }
 
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-surface-sunken">
@@ -91,6 +106,7 @@ export default async function KontoPage() {
           hotels={accountHotels}
           managers={[...byUser.values()].sort((a, b) => a.displayName.localeCompare(b.displayName, 'de'))}
           roomsByHotel={Object.fromEntries(roomsByHotel)}
+          billableByHotel={Object.fromEntries(billableByHotel)}
         />
       </main>
     </div>

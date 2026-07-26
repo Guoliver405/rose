@@ -21,7 +21,7 @@ export default async function AdminOverviewPage({
   // Jede Abfrage trägt `hotel_id` — RLS allein grenzt seit Phase 6d NICHT
   // mehr auf ein Haus ein: der Kontoinhaber sieht alle Häuser seines Kontos.
   const [{ data: rooms }, { data: states }, { data: stays }, { data: hotel }, { data: cleanedToday }, { data: openOrders }, { data: presence }, { data: profiles }] = await Promise.all([
-    supabase.from('rooms').select('id, number, floor, building').eq('hotel_id', ctx.hotelId).order('number'),
+    supabase.from('rooms').select('id, number, floor, building, deactivated_at').eq('hotel_id', ctx.hotelId).order('number'),
     supabase.from('room_states').select('room_id, guest_signal, checkout_pending, priority, cleaning_by, cleaning_started_at').eq('hotel_id', ctx.hotelId),
     supabase.from('stays').select('id, room_id, pin, checked_in_at').eq('hotel_id', ctx.hotelId).is('checked_out_at', null),
     supabase.from('hotels').select('policies').eq('id', ctx.hotelId).maybeSingle(),
@@ -61,6 +61,7 @@ export default async function AdminOverviewPage({
       number: r.number,
       floor: r.floor,
       building: r.building,
+      deactivated: Boolean(r.deactivated_at),
       occupied: Boolean(stay),
       pin: stay?.pin ?? null,
       checkedInAt: stay?.checked_in_at ?? null,
@@ -113,12 +114,16 @@ export default async function AdminOverviewPage({
 
   // KPIs — „bereit" = frei & gereinigt (freie ungereinigte Zimmer sind
   // zwangsläufig checkout_pending oder priorisiert und stecken in „zu reinigen").
-  const total = tiles.length
-  const occupied = tiles.filter(t => t.occupied).length
-  const ready = tiles.filter(t => !t.occupied && !t.checkoutPending && !t.priority && !t.cleaningActive).length
-  const toClean = tiles.filter(t => t.checkoutPending || t.priority || t.guestSignal === 'please_clean' || t.stayoverDue).length
-  const dnd = tiles.filter(t => t.guestSignal === 'dnd').length
-  const inProgress = tiles.filter(t => t.cleaningActive).length
+  // Zimmer außer Betrieb zählen in keiner Betriebs-Kennzahl mit; sie stehen
+  // separat, damit die Zahlen des laufenden Betriebs sauber bleiben.
+  const inService = tiles.filter(t => !t.deactivated)
+  const total = inService.length
+  const deactivated = tiles.length - total
+  const occupied = inService.filter(t => t.occupied).length
+  const ready = inService.filter(t => !t.occupied && !t.checkoutPending && !t.priority && !t.cleaningActive).length
+  const toClean = inService.filter(t => t.checkoutPending || t.priority || t.guestSignal === 'please_clean' || t.stayoverDue).length
+  const dnd = inService.filter(t => t.guestSignal === 'dnd').length
+  const inProgress = inService.filter(t => t.cleaningActive).length
 
   return (
     <div className="flex flex-col gap-5">
@@ -135,6 +140,7 @@ export default async function AdminOverviewPage({
             <Kpi label="zu reinigen" value={toClean} tone={toClean > 0 ? 'attention' : 'positive'} />
             <Kpi label="DND" value={dnd} tone={dnd > 0 ? 'blocked' : undefined} />
             <Kpi label="in Arbeit" value={inProgress} tone={inProgress > 0 ? 'positive' : undefined} />
+            {deactivated > 0 && <Kpi label="außer Betrieb" value={deactivated} />}
           </div>
         </div>
       </div>

@@ -31,8 +31,11 @@ export async function checkInAction(slug: string, roomId: string, force = false)
   const admin = createAdminClient()
 
   const { data: room } = await admin
-    .from('rooms').select('id, hotel_id, number').eq('id', roomId).single()
+    .from('rooms').select('id, hotel_id, number, deactivated_at').eq('id', roomId).single()
   if (!room || room.hotel_id !== ctx.hotelId) return { error: 'Zimmer nicht gefunden.' }
+  if (room.deactivated_at) {
+    return { error: 'Zimmer ist außer Betrieb — erst unter Einstellungen → Zimmer zurückholen.' }
+  }
 
   const { data: activeStay } = await admin
     .from('stays').select('id').eq('room_id', roomId).is('checked_out_at', null).maybeSingle()

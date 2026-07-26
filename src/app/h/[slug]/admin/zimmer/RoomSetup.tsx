@@ -1,8 +1,10 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
-import { BedDouble, Trash2 } from 'lucide-react'
-import { createRoomsAction, deleteFloorRoomsAction, deleteRoomAction } from './actions'
+import { BedDouble, PowerOff, RotateCcw, Trash2 } from 'lucide-react'
+import {
+  createRoomsAction, deleteRoomAction, setFloorRoomsActiveAction, setRoomActiveAction,
+} from './actions'
 
 export type SetupRoom = {
   id: string
@@ -10,6 +12,8 @@ export type SetupRoom = {
   floor: number
   building: string | null
   occupied: boolean
+  /** Außer Betrieb — nicht auf den Boards, kein Check-in, kein QR-Aushang. */
+  deactivated: boolean
 }
 
 /**
@@ -94,28 +98,51 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
     })
   }
 
-  function handleDelete(room: SetupRoom) {
-    if (!window.confirm(`Zimmer ${room.number} wirklich löschen?`)) return
+  function handleToggleRoom(room: SetupRoom) {
     setMessage(null)
     setError(null)
     startTransition(async () => {
-      const res = await deleteRoomAction(hotelSlug, room.id)
-      if (res.error) setError(res.error)
+      const res = await setRoomActiveAction(hotelSlug, room.id, room.deactivated)
+      if (res.error) { setError(res.error); return }
+      setMessage(
+        room.deactivated
+          ? `Zimmer ${room.number} ist wieder in Betrieb.`
+          : `Zimmer ${room.number} ist außer Betrieb — Historie bleibt erhalten.`,
+      )
     })
   }
 
-  function handleDeleteFloor(group: { building: string | null; floor: number; rooms: SetupRoom[] }) {
-    const label = `${group.building ? `${group.building} · ` : ''}Etage ${group.floor}`
+  /** Endgültiges Löschen: nur für Fehlanlagen ohne Historie (Server prüft). */
+  function handleDelete(room: SetupRoom) {
     if (!window.confirm(
-      `Alle ${group.rooms.length} Zimmer von ${label} löschen? Belegte Zimmer bleiben erhalten.`,
+      `Zimmer ${room.number} endgültig löschen? Das geht nur, solange es keine Aufenthalte oder Vorgänge gab.`,
     )) return
     setMessage(null)
     setError(null)
     startTransition(async () => {
-      const res = await deleteFloorRoomsAction(hotelSlug, group.building, group.floor)
+      const res = await deleteRoomAction(hotelSlug, room.id)
+      if (res.error) { setError(res.error); return }
+      setMessage(`Zimmer ${room.number} gelöscht.`)
+    })
+  }
+
+  function handleToggleFloor(
+    group: { building: string | null; floor: number; rooms: SetupRoom[] },
+    active: boolean,
+  ) {
+    const label = `${group.building ? `${group.building} · ` : ''}Etage ${group.floor}`
+    if (!active && !window.confirm(
+      `Alle Zimmer von ${label} außer Betrieb nehmen? Belegte Zimmer bleiben in Betrieb.`,
+    )) return
+    setMessage(null)
+    setError(null)
+    startTransition(async () => {
+      const res = await setFloorRoomsActiveAction(hotelSlug, group.building, group.floor, active)
       if (res.error) { setError(res.error); return }
       setMessage(
-        `${res.deleted} Zimmer gelöscht${res.skippedOccupied ? `, ${res.skippedOccupied} belegte übersprungen` : ''}.`,
+        active
+          ? `${res.changed} Zimmer wieder in Betrieb.`
+          : `${res.changed} Zimmer außer Betrieb${res.skippedOccupied ? `, ${res.skippedOccupied} belegte übersprungen` : ''}.`,
       )
     })
   }
@@ -289,36 +316,85 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
             >
               <h3 className="mb-2 flex items-center text-sm font-bold text-ink-soft">
                 {group.building ? `${group.building} · ` : ''}Etage {group.floor}
-                <span className="ml-2 font-normal text-ink-muted">{group.rooms.length} Zimmer</span>
+                <span className="ml-2 font-normal text-ink-muted">
+                  {group.rooms.length} Zimmer
+                  {group.rooms.some(r => r.deactivated) &&
+                    ` · ${group.rooms.filter(r => r.deactivated).length} außer Betrieb`}
+                </span>
+                {group.rooms.some(r => r.deactivated) && (
+                  <button
+                    type="button"
+                    onClick={() => handleToggleFloor(group, true)}
+                    disabled={pending}
+                    className="ml-auto flex items-center gap-1 rounded-md px-1.5 py-1 text-ink-muted hover:text-positive-deep disabled:opacity-50"
+                    title="Alle Zimmer dieser Etage wieder in Betrieb nehmen"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => handleDeleteFloor(group)}
+                  onClick={() => handleToggleFloor(group, false)}
                   disabled={pending}
-                  className="ml-auto flex items-center gap-1 rounded-md px-1.5 py-1 text-ink-muted hover:text-critical-strong disabled:opacity-50"
-                  aria-label={`Alle Zimmer von Etage ${group.floor} löschen`}
-                  title="Alle Zimmer dieser Etage löschen"
+                  className={`flex items-center gap-1 rounded-md px-1.5 py-1 text-ink-muted hover:text-caution-deepest disabled:opacity-50 ${
+                    group.rooms.some(r => r.deactivated) ? '' : 'ml-auto'
+                  }`}
+                  aria-label={`Alle Zimmer von Etage ${group.floor} außer Betrieb nehmen`}
+                  title="Alle Zimmer dieser Etage außer Betrieb nehmen"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <PowerOff className="h-4 w-4" />
                 </button>
               </h3>
               <div className="flex flex-wrap gap-2">
                 {group.rooms.map(room => (
                   <span
                     key={room.id}
-                    className="flex items-center gap-1.5 rounded-lg border border-edge bg-surface-elevated px-2.5 py-1.5 text-sm font-semibold text-ink"
+                    className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm font-semibold ${
+                      room.deactivated
+                        ? 'border-dashed border-edge-strong bg-surface-muted text-ink-muted'
+                        : 'border-edge bg-surface-elevated text-ink'
+                    }`}
+                    title={room.deactivated ? 'Außer Betrieb' : undefined}
                   >
                     {room.number}
                     {room.occupied ? (
                       <BedDouble className="h-3.5 w-3.5 text-active-strong" aria-label="belegt" />
+                    ) : room.deactivated ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleToggleRoom(room)}
+                          disabled={pending}
+                          className="text-ink-muted hover:text-positive-deep disabled:opacity-50"
+                          aria-label={`Zimmer ${room.number} wieder in Betrieb nehmen`}
+                          title="Wieder in Betrieb nehmen"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" />
+                        </button>
+                        {/* Endgültiges Löschen bleibt der Notausgang für
+                            Fehlanlagen — deshalb nur hier, hinter „außer
+                            Betrieb", nicht im Normalbetrieb. */}
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(room)}
+                          disabled={pending}
+                          className="text-ink-muted hover:text-critical-strong disabled:opacity-50"
+                          aria-label={`Zimmer ${room.number} endgültig löschen`}
+                          title="Endgültig löschen (nur ohne Historie möglich)"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </>
                     ) : (
                       <button
                         type="button"
-                        onClick={() => handleDelete(room)}
+                        onClick={() => handleToggleRoom(room)}
                         disabled={pending}
-                        className="text-ink-muted hover:text-critical-strong disabled:opacity-50"
-                        aria-label={`Zimmer ${room.number} löschen`}
+                        className="text-ink-muted hover:text-caution-deepest disabled:opacity-50"
+                        aria-label={`Zimmer ${room.number} außer Betrieb nehmen`}
+                        title="Außer Betrieb nehmen"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <PowerOff className="h-3.5 w-3.5" />
                       </button>
                     )}
                   </span>

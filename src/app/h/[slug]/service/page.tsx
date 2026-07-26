@@ -32,7 +32,8 @@ export default async function ServiceBoardPage({
   const admin = createAdminClient()
   const [{ data: rooms }, { data: states }, { data: stays }, { data: maids }, { data: myLog }, { data: cleanedToday }, { data: presence }] =
     await Promise.all([
-      admin.from('rooms').select('id, number, floor, building').eq('hotel_id', ctx.hotelId),
+      // Zimmer außer Betrieb gehören nicht aufs Reinigungsboard.
+      admin.from('rooms').select('id, number, floor, building').eq('hotel_id', ctx.hotelId).is('deactivated_at', null),
       admin
         .from('room_states')
         .select('room_id, guest_signal, checkout_pending, priority, cleaning_by, cleaning_started_at')
