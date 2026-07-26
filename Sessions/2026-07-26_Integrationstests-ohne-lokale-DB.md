@@ -610,6 +610,46 @@ Quellen:
 [SSR-Auth mit PKCE](https://supabase.com/docs/guides/auth/server-side/email-based-auth-with-pkce-flow-for-ssr),
 [inviteUserByEmail](https://supabase.com/docs/reference/javascript/auth-admin-inviteuserbyemail).
 
+## „Mein Zugang" — Anzeigename und Passwort selbst ändern
+
+Löst `…/admin/einstellungen/passwort` ab (Route und Komponente entfernt, die
+Kachel im Hub heißt jetzt „Mein Zugang", für alle Rollen).
+
+**Warum der Anzeigename dazugehört:** Er war bis dahin **gar nicht** änderbar.
+Die Kontoinhaber der ersten Stunde hießen in der Kopfzeile „Rezeption", weil
+die Phase-6d-Migration den Namen aus den Alt-Profilen übernommen hatte — und es
+gab keinen Weg, das selbst zu korrigieren. Genau diese Beobachtung hat die
+Seite ausgelöst.
+
+**Der Name steht an drei Stellen und wird gemeinsam gesetzt:**
+
+| Tabelle | wofür |
+|---|---|
+| `profiles.display_name` | Identitäts-Anker — Attribution im Zimmer-Verlauf und in der Bestell-Historie |
+| `account_members.display_name` | Kontoinhaber; das zeigt die Kopfzeile |
+| `hotel_members.display_name` | Manager und Rezeption, je Haus (mehrere Zeilen bei mehreren Häusern) |
+
+Würde man nur eine davon ändern, entstünde exakt der Zustand, der die Seite
+nötig gemacht hat. Der Filter ist immer `user_id = ctx.userId` — die Kennung
+kommt aus der geprüften Sitzung, nie aus dem Formular.
+
+**Passwortwechsel verlangt jetzt das aktuelle Passwort.** Vorher genügte eine
+bestehende Sitzung; an einem unbeaufsichtigten Rezeptionsrechner reicht das,
+um jemanden aus seinem eigenen Zugang auszusperren. Die Gegenprobe läuft über
+einen **eigenständigen Client ohne Cookie-Anbindung** — mit dem Session-Client
+würde die Prüf-Anmeldung die laufende Sitzung überschreiben.
+
+**Verifiziert im Browser** (Wegwerf-Mandant, danach entfernt):
+
+| Fall | Ergebnis |
+|---|---|
+| Seite zeigt E-Mail und Rolle | ✅ |
+| Anzeigename ändern | gespeichert, Kopfzeile sofort aktualisiert ✅ |
+| Name in der Datenbank | `profiles` **und** `account_members` gesetzt ✅ |
+| Passwortwechsel mit falschem aktuellem Passwort | „Das aktuelle Passwort stimmt nicht." ✅ |
+| Passwortwechsel mit richtigem | geändert ✅ |
+| Anmeldung mit dem neuen Passwort | erfolgreich, Kopfzeile trägt den neuen Namen ✅ |
+
 ## 🔖 Wiederaufnahme
 
 **Stand am Ende des 26.07.2026:**
@@ -633,20 +673,17 @@ Quellen:
    danach hilft nur regelmäßiger Versand über Tage. Praktische Relevanz
    vermutlich begrenzt: Hotels nutzen überwiegend eigene Mail-Domains, nicht
    Gmail.
-2. **Seite „Mein Zugang"** — Anzeigename und Passwort selbst bearbeitbar; heute
-   gibt es nur `…/admin/einstellungen/passwort`. Der Anzeigename fiel als Lücke
-   auf, weil Altkonten „Rezeption" hießen (siehe Datenkorrektur oben).
-3. **Login-Actions testen** — `guestLoginAction`, `maidLoginAction` (leiten per
+2. **Login-Actions testen** — `guestLoginAction`, `maidLoginAction` (leiten per
    `redirect()` um, brauchen etwas Gerüst). Wertvollster Einzeltest: *fünf
    Fehlversuche sperren nur den eigenen Aufenthalt im eigenen Haus* (Befund A
    aus Phase 6c).
-4. **Löschbegehren sauber machen** — `room_state_transitions` hängt an keiner
+3. **Löschbegehren sauber machen** — `room_state_transitions` hängt an keiner
    Kaskade. Ein „Konto löschen" lässt den Zustandsverlauf stehen. Vor echten
    Kunden zu klären.
-5. **Ketten-Themen** (konto-weite Service-Vorschlagsliste, Policy-Vorgaben,
+4. **Ketten-Themen** (konto-weite Service-Vorschlagsliste, Policy-Vorgaben,
    konsolidierte Auswertung), **Testplan D–G**, **IP-Rate-Limit** für die
    Gast-Anmeldung — siehe Abschnitt 4 des Übergabe-Dokuments.
-6. Optional, sobald Teil 2 steht: **E-Mail-Bestätigung bei der Registrierung**
+5. Optional: **E-Mail-Bestätigung bei der Registrierung**
    einschalten (dann echtes `signUp()` statt Admin-API mit `email_confirm`).
 
 **Erledigt und damit aus früheren Listen gestrichen:** Absender-Subdomain

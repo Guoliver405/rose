@@ -42,8 +42,8 @@ const ADMIN_TILES: Tile[] = [
     description: 'Zimmer-Aushänge mit QR-Code zum Drucken',
   },
   {
-    path: '/einstellungen/passwort', icon: KeyRound, title: 'Passwort',
-    description: 'Eigenes Anmelde-Passwort ändern',
+    path: '/einstellungen/zugang', icon: KeyRound, title: 'Mein Zugang',
+    description: 'Eigenen Anzeigenamen und das Anmelde-Passwort ändern',
   },
   {
     path: '/einstellungen/test', icon: FlaskConical, title: 'Test-Szenario',
@@ -63,8 +63,8 @@ const RECEPTION_TILES: Tile[] = [
     description: 'QR-Login-Karten der Reinigungskräfte ansehen und drucken',
   },
   {
-    path: '/einstellungen/passwort', icon: KeyRound, title: 'Passwort',
-    description: 'Eigenes Anmelde-Passwort ändern',
+    path: '/einstellungen/zugang', icon: KeyRound, title: 'Mein Zugang',
+    description: 'Eigenen Anzeigenamen und das Anmelde-Passwort ändern',
   },
 ]
 

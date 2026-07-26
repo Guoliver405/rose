@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { createClient as createPlainClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/utils/supabase/service'
 import { createClient } from '@/utils/supabase/server'
 import { getAdminContext, getManagementContext } from '@/utils/auth'
@@ -88,18 +89,87 @@ export async function updateSettingsAction(slug: string, formData: FormData): Pr
   return {}
 }
 
-/** Passwort des eingeloggten Management-Users ändern (Supabase Auth). */
+/**
+ * Eigenen Anzeigenamen ändern.
+ *
+ * Der Name steht an bis zu drei Stellen, und alle drei gehören derselben
+ * Person — deshalb werden sie gemeinsam gesetzt:
+ *
+ * - `profiles.display_name` — der Identitäts-Anker. Hieraus speist sich die
+ *   Attribution im Zimmer-Verlauf und in der Bestell-Historie.
+ * - `account_members.display_name` — für Kontoinhaber; das ist, was die
+ *   Kopfzeile zeigt.
+ * - `hotel_members.display_name` — für Manager und Rezeption, je Haus. Ein
+ *   Manager über mehrere Häuser hat mehrere Zeilen; sie tragen denselben
+ *   Namen und werden alle mitgezogen.
+ *
+ * Ohne diese Klammer liefen die Stellen auseinander — genau das war der
+ * Zustand, in dem Kontoinhaber in der Kopfzeile „Rezeption" hießen.
+ */
+export async function updateDisplayNameAction(
+  slug: string,
+  formData: FormData,
+): Promise<ActionResult> {
+  const ctx = await getManagementContext(slug)
+  if (!ctx) return { error: 'Nicht angemeldet.' }
+
+  const displayName = ((formData.get('displayName') as string) ?? '').trim()
+  if (displayName.length < 2) return { error: 'Name muss mindestens 2 Zeichen haben.' }
+  if (displayName.length > 60) return { error: 'Name ist zu lang (höchstens 60 Zeichen).' }
+
+  const admin = createAdminClient()
+
+  // Ausschließlich die eigenen Zeilen: `ctx.userId` kommt aus der geprüften
+  // Sitzung, nicht aus dem Formular.
+  const [profil, konto, haus] = await Promise.all([
+    admin.from('profiles').update({ display_name: displayName }).eq('id', ctx.userId),
+    admin.from('account_members').update({ display_name: displayName }).eq('user_id', ctx.userId),
+    admin.from('hotel_members').update({ display_name: displayName }).eq('user_id', ctx.userId),
+  ])
+  const fehler = profil.error ?? konto.error ?? haus.error
+  if (fehler) return { error: `Speichern fehlgeschlagen: ${fehler.message}` }
+
+  revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
+  revalidatePath('/admin')
+  return {}
+}
+
+/**
+ * Passwort des eingeloggten Management-Users ändern (Supabase Auth).
+ *
+ * Verlangt das **aktuelle** Passwort. Ohne diese Prüfung genügte eine offen
+ * stehende Sitzung, um jemanden aus seinem eigenen Zugang auszusperren — an
+ * einem Rezeptionstresen kein theoretischer Fall.
+ */
 export async function changePasswordAction(slug: string, formData: FormData): Promise<ActionResult> {
   const ctx = await getManagementContext(slug)
   if (!ctx) return { error: 'Nicht angemeldet.' }
 
+  const current = (formData.get('currentPassword') as string) ?? ''
   const password = (formData.get('password') as string) ?? ''
   const confirm = (formData.get('passwordConfirm') as string) ?? ''
   if (password.length < 8) return { error: 'Passwort braucht mindestens 8 Zeichen.' }
   if (password !== confirm) return { error: 'Passwörter stimmen nicht überein.' }
+  if (!current) return { error: 'Bitte das aktuelle Passwort angeben.' }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user?.email) return { error: 'Nicht angemeldet.' }
+
+  // Gegenprobe über einen eigenständigen Client OHNE Cookie-Anbindung — sonst
+  // überschriebe die Anmeldung hier die laufende Sitzung.
+  const pruefung = createPlainClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  )
+  const { error: falsch } = await pruefung.auth.signInWithPassword({
+    email: user.email,
+    password: current,
+  })
+  if (falsch) return { error: 'Das aktuelle Passwort stimmt nicht.' }
 
   // Über den Session-Client (nicht Admin) — ändert den eigenen Account.
-  const supabase = await createClient()
   const { error } = await supabase.auth.updateUser({ password })
   if (error) {
     if (error.code === 'same_password') return { error: 'Das ist bereits dein aktuelles Passwort.' }
