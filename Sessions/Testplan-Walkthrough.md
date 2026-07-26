@@ -3,6 +3,12 @@
 > **Durchlauf vom 25.07.2026 abgeschlossen** (lokal gegen die gemeinsame
 > Supabase-DB, alle Portale). Ergebnis: 2 Befunde, siehe „Befunde" unten.
 > Haken im Plan = an diesem Tag verifiziert.
+>
+> **Nachlauf 26.07.2026:** Abschnitte **B und C komplett wiederholt** mit den
+> Mandanten-Adressen aus [Phase 6c](2026-07-26_Phase-6c_Mandantenfaehigkeit.md)
+> — alle Haken bestätigt, **keine neuen Befunde**. Details unten unter
+> „Nachlauf B + C". Abschnitte A, D, E, F, G sind vom Umbau nicht berührt
+> (`/admin` bleibt ohne Slug-Präfix) und wurden nicht erneut durchlaufen.
 
 Für die nächste Session vereinbart: alles einmal von Hand durchtesten, in
 dieser Reihenfolge. Haken setzen, Auffälligkeiten direkt notieren.
@@ -101,9 +107,58 @@ Rate-Limit-Test 15 Minuten gesperrt. Die Seed-Testlage (5 belegte Zimmer,
       siehe Symbolik-Update); Aufheben
 - [x] „Reinigung als erledigt markieren" räumt orange/violett weg
 
+## Nachlauf B + C (26.07.2026, nach dem Mandanten-Umbau)
+
+Adressen jetzt `/h/mein-hotel/guest` und `/h/mein-hotel/service/login`.
+Gearbeitet wurde in „Mein Hotel", Kraft `@maria` / `046055`.
+
+**B — Gastportal:** Zimmer 202 + falsche PIN → generisch abgewiesen; 5×
+falsch → Sperre („Zu viele Fehlversuche"), und in der DB war **ausschließlich**
+202 gesperrt (101/103/104 unberührt, Alpenblick ebenfalls). Zimmer 103 + PIN
+6048 → `/h/mein-hotel/guest/status`. „Zimmer reinigen" → Rezeptions-Kachel
+bekam den amber Balken (`bg-attention`) neben der roten Glocke der offenen
+Service-Anfrage. DND → Kachel ohne Reload auf `bg-blocked` + Ban-Icon, KPI
+sprang von „5 zu reinigen / 1 DND" auf „4 / 2" (Realtime bestätigt); erneut
+tippen nahm es zurück. QR-Deep-Link auf ein **fremdes** Zimmer (104) zeigte
+korrekt „Zimmer 104" mit nur einem PIN-Feld, obwohl die Sitzung auf 103 lief.
+Check-out von 103 an der Rezeption → Gast-Seite warf auf die Anmeldung, alte
+PIN 6048 wurde generisch abgewiesen.
+
+**C — Reinigungsboard:** QR-Karte (`/service/auto/<token>`) → direkt auf
+`/h/mein-hotel/service`. Abmelden → `/h/mein-hotel/service/login`; falsche PIN
+generisch, richtige PIN aufs Board. Ohne Schicht: „Erst die Schicht beginnen."
+Schicht per Slider begonnen, Zimmer 104 gereinigt und abgeschlossen, 102
+gestartet und abgebrochen (blieb offen), zweites Zimmer während laufender
+Reinigung verweigert, „Schicht beenden" währenddessen gesperrt mit Begründung.
+Admin-Übersicht parallel und ohne Reload: KPI „1 in Arbeit", Spinner auf der
+Kachel, Etagen-Header nannte „Maria K.". Kollegin-Anzeige: zweite Kraft auf
+Zimmer 105 gesetzt → erschien als „Petra T."; Start 3 h zurückdatiert →
+„Die Reinigung von Petra T. wirkt verwaist … das Zimmer gilt wieder als
+offen", Übernahme funktionierte. Pause an/aus und sonstige Reinigung als
+Zeitraum geprüft.
+
+Das `staff_log` des Tages ist lückenlos stimmig — inklusive der beiden
+**impliziten Abschlüsse**: `other_end` steht sekundengenau auf demselben
+Zeitpunkt wie der `clean_start` von Zimmer 105 bzw. wie das `shift_end`.
+
+**Zwei Beobachtungen, kein Fehler:**
+
+1. Check-out hat eine **Bestätigungsstufe** („Check-out" → „Ja, auschecken").
+   Beim ersten Versuch nur den ersten Knopf gedrückt und kurz einen Bug
+   vermutet — es ist die eingebaute Sicherung.
+2. Der Zimmer-Verlauf im Rezeptions-Dialog protokollierte die Gast-Aktionen
+   dieses Durchlaufs korrekt mit („Reinigung angefordert", „Nicht stören"
+   gesetzt, jeweils mit Uhrzeit und Urheber „Gast").
+
+**Zustand danach:** Zimmer 103 ausgecheckt (war belegt), Zimmer 104 gereinigt
+(Wunsch erfüllt), Zimmer 202 durch den Rate-Limit-Test 15 Minuten gesperrt,
+eine abgeschlossene Schicht von Maria im Tagesprotokoll. Petra T. blieb
+unverändert deaktiviert.
+
 ## B) Gastportal
 
 - [x] /guest: Zimmernummer + falsche PIN → generisch abgewiesen
+      *(26.07. wiederholt unter `/h/mein-hotel/guest`)*
 - [x] 5× falsche PIN → 15-Minuten-Sperre greift („Zu viele Fehlversuche —
       bitte in 15 Min. erneut versuchen.", getestet auf Zimmer 203)
 - [x] Richtige PIN → Status-Seite

@@ -130,9 +130,11 @@ Wizard für Hotelname/Zimmer, braucht Supabase-E-Mail-Bestätigung.
 Offen aus dieser Session:
 
 - **IP-Rate-Limit** für die Gast-Anmeldung (bewusst vertagt, siehe oben).
-- **Testplan-Walkthrough** ([Testplan-Walkthrough.md](Testplan-Walkthrough.md))
-  für die Abschnitte B (Gastportal) und C (Reinigungsboard) mit den neuen
-  Adressen wiederholen — die Einzelprüfungen oben decken die Login-Wege ab, den
-  vollständigen Durchlauf ersetzen sie nicht.
 - **Alt-Sperre**: Mein Hotel Zi.203 trägt noch eine `pin_locked_until` vom
   25.07. (abgelaufen, harmlos).
+
+**Erledigt am 26.07.:** Der [Testplan-Walkthrough](Testplan-Walkthrough.md) ist
+für die Abschnitte B (Gastportal) und C (Reinigungsboard) mit den neuen
+Adressen komplett wiederholt — alle Haken bestätigt, keine neuen Befunde.
+Details im Abschnitt „Nachlauf B + C" dort. A, D, E, F und G sind vom Umbau
+nicht berührt (`/admin` bleibt ohne Slug-Präfix).
