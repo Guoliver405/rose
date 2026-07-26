@@ -1,13 +1,16 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { listAccessibleHotels } from '@/utils/auth'
-import LoginForm from './LoginForm'
+import SignupForm from './SignupForm'
 
-export default async function LoginPage() {
-  // Wohin nach dem Anmelden? Wer die Häuser-Seite überhaupt bedienen kann —
-  // Inhaber und Manager — landet dort: sie trägt Konto, Häuser und den Weg,
-  // ein weiteres anzulegen. Die Rezeption kennt nur ihr eigenes Haus und hat
-  // dort nichts zu holen, sie geht direkt ins Tagesgeschäft.
+/**
+ * Self-Service-Registrierung (Phase 6b).
+ *
+ * Erzeugt Konto, erstes Haus und Inhaber in einem Zug und führt danach direkt
+ * ins Zimmer-Setup. Wer schon angemeldet ist, hat hier nichts zu suchen und
+ * wird wie auf der Anmeldeseite weitergeleitet.
+ */
+export default async function RegistrierenPage() {
   const hotels = await listAccessibleHotels()
   if (hotels.length > 0) {
     const nurRezeption = hotels.every(h => h.role === 'reception')
@@ -20,14 +23,15 @@ export default async function LoginPage() {
         <h1 className="text-3xl font-black text-ink">
           Ro<span className="text-blocked">Se</span>
         </h1>
-        <p className="mt-1 text-sm text-ink-muted">Rezeption — Anmeldung</p>
+        <p className="mt-1 text-sm text-ink-muted">Konto anlegen</p>
       </div>
-      <LoginForm />
+
+      <SignupForm />
 
       <p className="text-sm text-ink-muted">
-        Noch kein Konto?{' '}
-        <Link href="/registrieren" className="font-semibold text-action-strong hover:underline">
-          Haus registrieren
+        Schon ein Konto?{' '}
+        <Link href="/login" className="font-semibold text-action-strong hover:underline">
+          Anmelden
         </Link>
       </p>
     </main>

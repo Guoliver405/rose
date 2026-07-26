@@ -159,6 +159,7 @@ Next.js 16 App Router · TypeScript · Tailwind CSS 4 · Supabase (PostgreSQL + 
 | `/h/<slug>/guest` | Gäste | Anonym: Zimmernummer + Stay-PIN → Session-Cookie |
 | `/guest/r/<token>` · `/service/auto/<token>` | QR-Einstiege | Token global eindeutig → mandantenfrei, leitet auf die Slug-Route weiter |
 | `/guest` · `/service/login` | — | Hinweisseiten ohne Mandant („QR scannen bzw. Hotel-Adresse nutzen"), bewusst ohne Hotel-Auswahl |
+| `/registrieren` | neue Kunden | Self-Service-Registrierung mit Einladungscode (Phase 6b); Angemeldete werden wie auf `/login` weitergeleitet |
 
 **Cookie-Trennung:** Admin- und Reinigungs-Portal teilen denselben Browser-Origin. Das Reinigungs-Portal nutzt [service-portal.ts](src/utils/supabase/service-portal.ts) mit Präfix `svc_` — nie `createClient()` aus `server.ts` in `/service`-Routen verwenden.
 
@@ -173,7 +174,7 @@ createClient() [client.ts]  // Browser — nur Realtime-Subscriptions
 
 **Faustregel (aus HotCord):** Alle Server-Actions, die schreiben oder löschen, verwenden `createAdminClient()` nach manueller Auth-Prüfung — Supabase gibt bei RLS-blockierten `DELETE`/`UPDATE` keinen Fehler zurück (`{ data: [], error: null }`).
 
-Env-Vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `NEXT_PUBLIC_SITE_URL`.
+Env-Vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `NEXT_PUBLIC_SITE_URL`, `SIGNUP_INVITE_CODE` (Registrierung; **leer oder fehlend = Registrierung geschlossen**).
 
 ## Datenmodell (Schema v1)
 
@@ -240,7 +241,7 @@ Auf saturierten Buttons per-Family-Foreground verwenden (`bg-attention text-atte
 - **Phase 6c (vorgezogen)** — **Mandantenfähigkeit**: Mandant in die URL (`hotels.slug`), Gast- und Reinigungs-Login pro Hotel auflösen ✅ (26.07.2026, siehe [Mandantenfaehigkeit-Plan.md](Sessions/Mandantenfaehigkeit-Plan.md))
 - **Phase 6d (vorgezogen)** — **Mehrere Hotels je Konto**, Zielgruppe Hotelketten: `accounts` + `account_members` + `hotel_members`, vier Rollen (Admin = zahlender Kunde über alle Häuser · Manager = Teilmenge der Häuser · Rezeption/Reinigung hausintern), Rezeptions-Portal unter `/h/<slug>/admin`, `/admin` trägt Häuser **und** Konto ✅ (26.07.2026)
 - **Zimmer weich deaktivieren** ✅ (26.07.2026) — `rooms.deactivated_at` statt hartem Löschen. Abrechnung je Zimmer nach der Regel „in der Periode auch nur vorübergehend aktiv = zählt"; Messgröße in [rooms.ts](src/lib/rooms.ts) (`isBillable`, `countBillableRooms`) — reine Ableitung aus `created_at`/`deactivated_at`, kein Snapshot, kein Cron.
-- **Phase 6b** — Self-Service-Registrierung/Onboarding (Konto + Hotel + Inhaber entstehen beim Signup, Wizard für Hotelname/Zimmer; braucht Supabase-E-Mail-Bestätigung) — geplant
+- **Phase 6b** — **Self-Service-Registrierung** auf `/registrieren`: ein Formular (Einladungscode, Hotelname, Name, E-Mail, Passwort) erzeugt Auth-Zugang, Konto, erstes Haus, Profil, Inhaberschaft und die Beispiel-Services, meldet an und führt ins Zimmer-Setup ✅ (26.07.2026). **Zwei bewusste Entscheidungen:** (1) Einladungscode aus `SIGNUP_INVITE_CODE` statt offener Registrierung — die Stage-URL ist öffentlich; **fehlt die Variable, ist die Registrierung zu** (ein vergessenes Env-Var darf das Tor nicht öffnen). (2) Kein Bestätigungslauf: der Zugang entsteht über die Admin-API mit `email_confirm: true`, der Ablauf hängt also **nicht** an der Projekt-Einstellung „Confirm email" und braucht keine Mail. Solange kein Absender existiert, gibt es folglich **kein Passwort-Zurücksetzen** — das ist der Preis und der Grund, Resend als Nächstes zu nehmen. Das Zimmer-Setup wird bewusst nicht als Wizard nachgebaut; `…/admin/zimmer` kann Etagenbereiche, Nummernlisten und Präfixe bereits.
 
 Kernphasen 0–5 sind umgesetzt. Nach jeder Phase: Review mit dem User (enger Dialog vereinbart).
 

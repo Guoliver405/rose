@@ -286,6 +286,59 @@ zusammen mit dem Passwort auf einer Seite „Mein Zugang" (heute nur
 `…/admin/einstellungen/passwort`). Bei Self-Service-Registrierung ist das
 ohnehin Pflicht.
 
+## Phase 6b — Self-Service-Registrierung
+
+Vorfrage des Users: *Brauchen wir dafür schon Resend?* **Nein.** Supabase Auth
+bringt Registrierung mit; der eingebaute Mail-Sender ist aber ausdrücklich für
+Entwicklung gedacht (streng rate-limitiert, geteilte Absenderdomain). Statt sich
+darauf zu stützen, umgeht der Ablauf die Bestätigung ganz.
+
+**`/registrieren`** — ein Formular, fünf Felder (Einladungscode, Hotelname, Ihr
+Name, E-Mail, Passwort). Daraus entstehen in einem Zug: Auth-Zugang, Konto,
+erstes Haus mit Slug, Profil, Inhaber-Mitgliedschaft und die Beispiel-Services.
+Danach Anmeldung und Sprung ins vorhandene Zimmer-Setup.
+
+**Drei Entscheidungen und ihr Grund:**
+
+1. **Einladungscode statt offener Registrierung.** Die Stage-URL ist öffentlich;
+   ohne Riegel könnte jeder Mandanten anlegen. Der Code steht in
+   `SIGNUP_INVITE_CODE`. **Fehlt die Variable, ist die Registrierung ZU** —
+   ein vergessenes Env-Var darf das Tor nicht öffnen, deshalb ist „geschlossen"
+   der Standard und nicht „offen".
+2. **Kein Bestätigungslauf.** Der Zugang entsteht über die Admin-API mit
+   `email_confirm: true` und wird sofort angemeldet. Damit hängt der Ablauf
+   **nicht** an der Projekt-Einstellung „Confirm email" und braucht keine Mail.
+3. **Kein Wizard fürs Zimmer-Setup.** `…/admin/zimmer` beherrscht Etagenbereiche,
+   Nummernlisten und Präfixe bereits — nachbauen hieße, zwei Oberflächen zu
+   pflegen, die auseinanderlaufen.
+
+**Reihenfolge und Rücknahme.** Der Auth-Zugang entsteht **zuerst**: „E-Mail schon
+vergeben" ist der häufigste Abbruch, und davor gibt es nichts zurückzurollen.
+Scheitert später ein Schritt, löscht `rollback()` das Konto (die Kaskade nimmt
+Haus, Zimmer und Services mit) und den Auth-Zugang. Einzige Ausnahme: schlägt am
+Ende nur die Anmeldung fehl, bleibt das Konto stehen — es wäre absurd, eine
+gelungene Registrierung wegen einer Nebensache zu verwerfen.
+
+**Verifiziert im Browser:**
+
+| Fall | Ergebnis |
+|---|---|
+| Falscher Einladungscode | abgewiesen, **nichts** angelegt ✅ |
+| Gültige Registrierung | Slug `testhaus-registrierung`, Landung im Zimmer-Setup ✅ |
+| Angelegt (DB geprüft) | Konto (Plan trial), Haus (`pinLength: 6`), Inhaber-Mitgliedschaft, Profil mit `username = null`, korrektes Stammhaus, beide Beispiel-Services samt 2 Positionen ✅ |
+| Kopfzeile | zeigt den eingegebenen Namen, nicht „Rezeption" ✅ |
+| Zweite Registrierung, gleiche E-Mail | klare Fehlermeldung, **kein** Waisen-Mandant ✅ |
+| Bereits angemeldet ruft `/registrieren` | Weiterleitung wie auf `/login` ✅ |
+
+Testmandant danach restlos entfernt. Keine Konsolenfehler, `npm run verify` grün.
+
+**Startseite** angepasst: der Platzhalter „Registrierung öffnet in Kürze" führt
+jetzt auf `/registrieren`, FAQ-Antwort entsprechend. Anmelde- und
+Registrierungsseite verlinken sich gegenseitig.
+
+**Vor dem Deployen:** `SIGNUP_INVITE_CODE` in Vercel setzen — sonst ist die
+Registrierung dort geschlossen (gewollter Standard, aber man muss es wissen).
+
 ## 🔖 Wiederaufnahme
 
 **Stand:** Integrationstests laufen ohne jede lokale Infrastruktur, 32 grün.
@@ -293,11 +346,17 @@ Arbeitsbaum committet.
 
 **Offen, in Reihenfolge:**
 
-1. **Phase 6b — Self-Service-Registrierung.** Zieht zwei offene Punkte mit:
-   Seite „Mein Zugang" (Anzeigename + Passwort bearbeitbar, siehe
-   Datenkorrektur oben) und die Frage, wie ein frisch registriertes Konto sein
-   erstes Haus bekommt — die Häuser-Seite trägt das jetzt.
-2. **Login-Actions abdecken** — `guestLoginAction`, `maidLoginAction` (leiten
+1. **Resend anbinden.** Der nächste Schritt, weil er vier Dinge auf einmal
+   freischaltet: E-Mail-Bestätigung bei der Registrierung (dann echtes
+   `signUp()` statt Admin-API), **Passwort-Zurücksetzen** (fehlt heute
+   komplett — wer sein Passwort vergisst, braucht einen Eingriff),
+   Einladungs-Mails für Manager- und Rezeptions-Zugänge statt vorgelesener
+   Passwörter, und später Gast-Handout und Maid-Karte wahlweise per Mail.
+   In Supabase als Custom SMTP hinterlegen; der eingebaute Sender taugt nicht
+   für den Betrieb.
+2. **Seite „Mein Zugang"** — Anzeigename und Passwort selbst bearbeitbar (siehe
+   Datenkorrektur oben); heute gibt es nur `…/admin/einstellungen/passwort`.
+3. **Login-Actions abdecken** — `guestLoginAction`, `maidLoginAction` (leiten
    per `redirect()` um). Wertvollster Einzeltest: *fünf Fehlversuche sperren nur
    den eigenen Aufenthalt im eigenen Haus* (Befund A aus Phase 6c).
 3. **Phase 6b — Self-Service-Registrierung.**

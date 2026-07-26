@@ -424,7 +424,7 @@ function Faq() {
     },
     {
       q: 'Kann ich RoSe jetzt schon ausprobieren?',
-      a: 'Die Self-Service-Registrierung öffnet in Kürze. Bis dahin richten wir Testzugänge persönlich ein — einfach Zugang anfragen.',
+      a: 'Ja — die Registrierung läuft, ist in der frühen Testphase aber noch auf eingeladene Häuser beschränkt. Mit Einladungscode ist dein Konto in einer Minute angelegt.',
     },
   ]
   return (
@@ -451,17 +451,20 @@ function SignupTeaser() {
     <section id="registrierung" className="mx-auto w-full max-w-5xl scroll-mt-20 px-4 py-16">
       <div className="rounded-2xl border border-action-tint-edge bg-action-tint p-8 text-center sm:p-12">
         <h2 className="text-2xl font-black text-ink sm:text-3xl">
-          Registrierung öffnet in Kürze
+          Haus in einer Minute anlegen
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-ink-soft">
-          Wir schalten die Self-Service-Registrierung gerade frei. Bis dahin
-          richten wir Zugänge persönlich ein — melde dich, und dein Haus ist
-          meist noch am selben Tag startklar.
+          Konto, Haus und Beispiel-Services entstehen in einem Zug — danach nur
+          noch die Zimmer eintragen. In der frühen Testphase brauchst du dafür
+          einen Einladungscode.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-          <span className="rounded-xl bg-action px-6 py-3 font-bold text-action-foreground opacity-90">
-            Zugang anfragen — Kontakt folgt
-          </span>
+          <Link
+            href="/registrieren"
+            className="rounded-xl bg-action px-6 py-3 font-bold text-action-foreground hover:bg-action-strong"
+          >
+            Konto anlegen
+          </Link>
           <Link
             href="/login"
             className="rounded-xl border border-edge bg-surface-elevated px-6 py-3 font-bold text-ink hover:border-edge-strong"
