@@ -256,6 +256,36 @@ Singular richtig bildet.
 `.next/` löschen und den Dev-Server neu starten — steht so in der
 Fallstrick-Tabelle und galt hier wörtlich.
 
+### Datenkorrektur: Inhaber hießen „Rezeption"
+
+Aufgefallen, weil die Kopfzeile bei allen drei Kontoinhabern „Rezeption"
+anzeigte. Kein Code-Fehler — der Anzeigename kommt aus
+`account_members.display_name`, und die Phase-6d-Migration hat ihn aus den
+Alt-Profilen übernommen:
+
+```sql
+insert into account_members (account_id, user_id, role, display_name)
+select h.account_id, p.id, 'owner', p.display_name from profiles p ...
+```
+
+Diese Profile stammen aus der Zeit vor dem Rollen-Modell, als es genau einen
+Management-Login gab — und der hieß „Rezeption". Auf die Rechte hatte das nie
+Einfluss (die hängen an `role = 'owner'`), es las sich nur falsch.
+
+Die drei Zeilen sind einmalig auf „Inhaber" gesetzt; `hotel_members` blieb
+unberührt (geprüft: „Front Desk Test", „Nina Manager" unverändert).
+`scripts/create-tenant.mjs` schreibt ohnehin schon `'Inhaber'`, neue Mandanten
+waren nie betroffen.
+
+**Bewusst nicht angefasst:** `profiles.display_name` derselben Nutzer. Das ist
+die Attribution im Zimmer-Verlauf — dort ist „Rezeption" für einen Check-in am
+Empfang die zutreffendere Beschriftung, nicht „Inhaber".
+
+Richtig gelöst wird das mit **Phase 6b**: Der Anzeigename gehört bearbeitbar,
+zusammen mit dem Passwort auf einer Seite „Mein Zugang" (heute nur
+`…/admin/einstellungen/passwort`). Bei Self-Service-Registrierung ist das
+ohnehin Pflicht.
+
 ## 🔖 Wiederaufnahme
 
 **Stand:** Integrationstests laufen ohne jede lokale Infrastruktur, 32 grün.
@@ -263,7 +293,11 @@ Arbeitsbaum committet.
 
 **Offen, in Reihenfolge:**
 
-1. **Login-Actions abdecken** — `guestLoginAction`, `maidLoginAction` (leiten
+1. **Phase 6b — Self-Service-Registrierung.** Zieht zwei offene Punkte mit:
+   Seite „Mein Zugang" (Anzeigename + Passwort bearbeitbar, siehe
+   Datenkorrektur oben) und die Frage, wie ein frisch registriertes Konto sein
+   erstes Haus bekommt — die Häuser-Seite trägt das jetzt.
+2. **Login-Actions abdecken** — `guestLoginAction`, `maidLoginAction` (leiten
    per `redirect()` um). Wertvollster Einzeltest: *fünf Fehlversuche sperren nur
    den eigenen Aufenthalt im eigenen Haus* (Befund A aus Phase 6c).
 3. **Phase 6b — Self-Service-Registrierung.**
