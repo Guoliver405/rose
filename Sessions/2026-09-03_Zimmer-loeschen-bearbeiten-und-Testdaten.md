@@ -295,14 +295,52 @@ im Dialog: Der **Abtipp-Riegel gilt nur der Reinigung**, weil allein dort
 Vorgänge daran hängen — das war vorher eine stille Entscheidung und wird jetzt
 vorher angesagt.
 
+### Abrechnungs-Snapshot
+
+Der letzte offene Punkt, direkt im Anschluss beauftragt. Das Planungsdokument zu
+Phase 6d hatte die billige Live-Ableitung ausdrücklich an eine Bedingung
+geknüpft:
+
+> Voraussetzung ist aber, dass Zimmer nicht mehr hart gelöscht werden.
+
+Genau die ist heute entfallen. Ein gelöschtes Zimmer verschwand damit
+rückwirkend auch aus längst abgeschlossenen Perioden.
+
+**Der Kern der Lösung ist, wann geschrieben wird.** Nicht periodisch, nicht per
+Cron, sondern **genau dann, wenn eine Grundlage verschwinden würde**:
+`ensureBillingSnapshots(accountId)` läuft als Erstes in `deleteScopeAction`,
+noch vor dem Löschen. Schlägt es fehl, wird nicht gelöscht — ein Beleg, der erst
+nach dem Löschen entsteht, ist keiner.
+
+Der Vorteil: Solange niemand löscht, ist die Ableitung weiterhin richtig und es
+entsteht **keine einzige Zeile**. Es gibt nichts, das vergessen werden oder
+ausfallen kann. Wer die Grundlage anfasst, schreibt sie vorher fest.
+
+Für die Anzeige gilt dieselbe Zweiteilung (`getBillingOverview`): Der laufende
+Monat wird immer abgeleitet, weil er sich noch ändert. Abgeschlossene Monate
+kommen aus dem Snapshot, **sofern es einen gibt** — sonst aus der Ableitung.
+Beides ist korrekt, denn ein fehlender Snapshot heißt gerade, dass nichts
+gelöscht wurde. Auf `/admin` stehen die letzten sechs Monate, festgeschriebene
+sind als solche markiert.
+
+`billing_snapshots` trägt **keine Fremdschlüssel** — dieselbe Überlegung wie bei
+`room_state_transitions`: Ein Beleg, den die Löschung des belegten Gegenstands
+mitnimmt, ist keiner. Die Zeilen überleben Zimmer, Haus und Konto.
+
+Rechenlogik I/O-frei in [rooms.ts](../src/lib/rooms.ts) (`closedMonthPeriods`,
+`periodKey`), acht neue Unit-Tests. **Fallstrick dabei:** `periodKey` bildet den
+Monatsersten aus den **lokalen** Datumsteilen. `toISOString()` hätte in
+westlichen Zeitzonen aus dem 1. Juli lokal den 30. Juni UTC gemacht und jede
+Periode um einen Monat verschoben.
+
 ## 8. Offen
 
-- **Abrechnungs-Snapshot.** Solange `countBillableRooms` live ableitet, ändert
-  ein gelöschtes Zimmer rückwirkend abgerechnete Perioden. Vor der ersten echten
-  Rechnung zu klären.
 - **Test-Szenario bleibt vorübergehend.** `purgeTestDataAction` gehört mit
   ausgebaut, wenn der Bereich verschwindet (Rückbau-Hinweis steht in
   `test-actions.ts`).
+- **Alt-Perioden der Testkonten sind bereits verfälscht** — in dieser Sitzung
+  wurden Zimmer gelöscht, bevor es den Snapshot gab. Folgenlos, weil nichts
+  abgerechnet wird; erwähnt, damit die Zahlen niemanden verwirren.
 
 ---
 
@@ -327,16 +365,18 @@ und ein behobener Bug beim Entziehen von Rezeptions-Zugängen. Alles verifiziert
   keine Kaskade.
 - Beim Abräumen von Zimmerstatus gilt: erst `room_states` schreiben, dann den
   Verlauf löschen — sonst füllt der Audit-Trigger ihn sofort wieder.
-- **Offen bis zum Einspielen:** Die Migration
-  `2026-09-03_hotel_members_deactivated.sql` liegt noch in `Supabase_sql/`. Sie
-  ist additiv (alter Code läuft weiter), aber der **neue** Code braucht die
-  Spalte — erst einspielen, dann pushen. Danach `npm run test:integration` und
-  die Sichtprüfung der Personal-Seite nachholen.
+- **Offen bis zum Einspielen:** `2026-09-03_billing_snapshots.sql` liegt noch in
+  `Supabase_sql/`. Additiv, aber der neue Code liest und schreibt die Tabelle —
+  erst einspielen, dann pushen. (`2026-09-03_hotel_members_deactivated.sql` ist
+  eingespielt und archiviert.)
 - Beim Personal gilt die **umgekehrte** Regel: `staff_log.profile_id`
   kaskadiert. Wer dort etwas löschbar macht, muss vorher zählen, was verschwindet
   — und wer einen Auth-User löscht, muss `staff_log` mitprüfen, nicht nur
   `stays`/`service_orders`.
 - Ein Benutzernamen-Wechsel bei der Reinigung ohne Mitziehen der Auth-Adresse
   sperrt die Kraft aus. `buildMaidEmail` ist die einzige Wahrheit dafür.
-- Nächster inhaltlicher Schritt wäre der **Abrechnungs-Snapshot** (Abschnitt 8),
-  weil er die einzige verbliebene echte Nebenwirkung des Löschens beseitigt.
+- Der **Abrechnungs-Snapshot** hängt an genau einer Stelle: dem Aufruf von
+  `ensureBillingSnapshots` **vor** dem Löschen in `deleteScopeAction`. Wer
+  künftig eine weitere Stelle baut, die Zimmer entfernt (oder ein ganzes Haus),
+  muss ihn dort ebenso setzen — sonst reißt genau dort die Abrechnungsgrundlage
+  wieder.

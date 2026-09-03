@@ -5,7 +5,7 @@ import { listAccessibleHotels, getAccountContext } from '@/utils/auth'
 import { createAdminClient } from '@/utils/supabase/service'
 import { logoutAction } from '@/app/login/actions'
 import { isRoomActive } from '@/lib/board'
-import { isBillable, monthPeriod } from '@/lib/rooms'
+import { getBillingOverview } from '@/utils/billing'
 import HausAnlegen from './HausAnlegen'
 
 /**
@@ -68,21 +68,23 @@ export default async function HotelPickerPage() {
     ordersByHotel.set(o.hotel_id, entry)
   }
 
-  // Zimmerzahlen. „In Betrieb" ist die Betriebssicht; „abrechenbar" folgt der
-  // Abrechnungsregel: wer im laufenden Monat auch nur vorübergehend aktiv war,
-  // zählt — ein mitten im Monat außer Betrieb genommenes Zimmer also noch.
-  // Reine Ableitung aus created_at/deactivated_at, kein Snapshot.
-  const period = monthPeriod(new Date())
+  // „In Betrieb" ist die Betriebssicht — die Abrechnungssicht kommt aus
+  // `getBillingOverview`: laufender Monat abgeleitet, abgeschlossene Monate
+  // aus dem Snapshot, sofern einer geschrieben wurde.
   const roomsByHotel = new Map<string, number>()
   let totalRooms = 0
-  let totalBillable = 0
   for (const r of roomRows ?? []) {
     if (!r.deactivated_at) {
       roomsByHotel.set(r.hotel_id, (roomsByHotel.get(r.hotel_id) ?? 0) + 1)
       totalRooms++
     }
-    if (isBillable(r, period)) totalBillable++
   }
+
+  const billing = account ? await getBillingOverview(account.accountId) : null
+  const monatsName = (periodStart: string) =>
+    new Date(`${periodStart}T00:00:00`).toLocaleDateString('de-DE', {
+      month: 'long', year: 'numeric',
+    })
 
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-surface-sunken">
@@ -127,7 +129,7 @@ export default async function HotelPickerPage() {
                 {totalRooms} Zimmer in Betrieb
               </span>
               <span className="rounded-full bg-action-tint px-3 py-1 font-semibold text-action-strong">
-                {totalBillable} abrechenbar (laufender Monat)
+                {billing?.current.rooms ?? 0} abrechenbar (laufender Monat)
               </span>
             </div>
             <p className="mt-2 text-xs text-ink-muted">
@@ -137,6 +139,33 @@ export default async function HotelPickerPage() {
               Rechnungsstellung und Zahlungsdaten folgen; aktuell läuft das Konto
               ohne Berechnung.
             </p>
+
+            {billing && billing.closed.length > 0 && (
+              <div className="mt-3 border-t border-edge pt-3">
+                <p className="text-xs font-bold text-ink-soft">Abgeschlossene Monate</p>
+                <ul className="mt-1.5 flex flex-col gap-1">
+                  {billing.closed.map(row => (
+                    <li key={row.periodStart} className="flex items-center gap-2 text-sm">
+                      <span className="min-w-32 text-ink-soft">{monatsName(row.periodStart)}</span>
+                      <span className="font-semibold text-ink">{row.rooms} Zimmer</span>
+                      {row.fixed && (
+                        <span
+                          className="rounded-full bg-surface-muted px-2 py-0.5 text-xs font-semibold text-ink-muted"
+                          title="Festgeschrieben, bevor Zimmer gelöscht wurden — diese Zahl ändert sich nicht mehr."
+                        >
+                          festgeschrieben
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-xs text-ink-muted">
+                  Abgeschlossene Monate werden festgeschrieben, sobald Zimmer gelöscht werden —
+                  sonst würde ein gelöschtes Zimmer rückwirkend aus bereits abgerechneten
+                  Zeiträumen verschwinden.
+                </p>
+              </div>
+            )}
           </section>
         )}
 

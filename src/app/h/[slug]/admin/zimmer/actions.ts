@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/utils/supabase/service'
 import { getAdminContext } from '@/utils/auth'
+import { ensureBillingSnapshots } from '@/utils/billing'
 
 export type CreateRoomsResult = { created?: number; skipped?: number; error?: string }
 
@@ -523,6 +524,15 @@ export async function deleteScopeAction(
   }
   if (impact.requiresPhrase && confirmPhrase.trim() !== impact.confirmPhrase) {
     return { error: `Bitte „${impact.confirmPhrase}“ zur Bestätigung eingeben.` }
+  }
+
+  // Abrechnungsstand festschreiben, BEVOR die Grundlage verschwindet: die
+  // Zimmerzahl abgeschlossener Perioden wird aus `rooms` abgeleitet, ein
+  // gelöschtes Zimmer fehlte dort sonst rückwirkend. Schlägt das fehl, wird
+  // nicht gelöscht — ein Beleg, der erst nach dem Löschen entsteht, ist keiner.
+  const snap = await ensureBillingSnapshots(ctx.accountId)
+  if (snap.error) {
+    return { error: `Abrechnungsstand konnte nicht gesichert werden: ${snap.error}` }
   }
 
   // Ohne Fremdschlüssel gibt es hier keine Kaskade — von Hand, vor den Zimmern.

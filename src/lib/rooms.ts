@@ -44,3 +44,36 @@ export function isBillable(room: BillableRoom, period: BillingPeriod): boolean {
   if (room.deactivated_at && new Date(room.deactivated_at) <= period.start) return false
   return true
 }
+
+/**
+ * Kennung einer Periode: der erste Tag des Monats als `YYYY-MM-DD`.
+ *
+ * Bewusst aus den **lokalen** Datumsteilen gebaut und nicht über `toISOString`
+ * — letzteres rechnet nach UTC um und verschiebt in westlichen Zeitzonen den
+ * Monatsersten auf den Vormonat.
+ */
+export function periodKey(period: BillingPeriod): string {
+  const y = period.start.getFullYear()
+  const m = String(period.start.getMonth() + 1).padStart(2, '0')
+  return `${y}-${m}-01`
+}
+
+/**
+ * Alle **abgeschlossenen** Monatsperioden von `from` bis vor den laufenden
+ * Monat — die Perioden also, deren Zimmerzahl feststeht und deshalb
+ * festgeschrieben werden darf. Der laufende Monat bleibt bewusst draußen: er
+ * ist noch veränderlich und wird weiterhin live abgeleitet.
+ *
+ * `maxPeriods` ist ein Sicherheitsnetz gegen ein absurdes `from` (etwa ein
+ * kaputtes `created_at`), damit daraus keine Flut von Zeilen entsteht.
+ */
+export function closedMonthPeriods(from: Date, now: Date, maxPeriods = 120): BillingPeriod[] {
+  const current = monthPeriod(now)
+  const out: BillingPeriod[] = []
+  let cursor = monthPeriod(from)
+  while (cursor.start < current.start && out.length < maxPeriods) {
+    out.push(cursor)
+    cursor = monthPeriod(cursor.end)
+  }
+  return out
+}
