@@ -5,6 +5,14 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
 
 ## Vor den ersten echten Kunden
 
+- [ ] **`RESEND_API_KEY` und `GUEST_MAIL_FROM` in Vercel setzen** (Production),
+      danach neu deployen. Lokal sind sie eingetragen und der Versand ist
+      end-to-end geprüft (03.09.); in Produktion fehlen sie noch, dort zeigt
+      das Handout deshalb „Versand per E-Mail ist nicht eingerichtet" und nur
+      der Druckweg funktioniert. `NEXT_PUBLIC_SITE_URL` ist dort bereits
+      richtig gesetzt — die Links in der Mail zeigen also automatisch auf die
+      Produktionsadresse, nicht auf localhost.
+
 - [ ] **Login-Actions testen** — `guestLoginAction` und `maidLoginAction` sind
       die einzigen ungetesteten Auth-Pfade (sie leiten per `redirect()` um und
       brauchen etwas Gerüst). Wertvollster Einzeltest: *fünf Fehlversuche

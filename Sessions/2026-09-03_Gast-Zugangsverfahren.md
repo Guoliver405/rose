@@ -85,9 +85,17 @@ entfernen" abgeräumt (2 Aufenthalte, 2 Verlaufs-Einträge).
 
 ## 4. Offen
 
-- **Mail-Versand ist ungetestet in freier Wildbahn** — lokal fehlen
-  `RESEND_API_KEY` und `GUEST_MAIL_FROM`, die Oberfläche zeigt korrekt den
-  Hinweis. Sobald die Variablen gesetzt sind, gehört ein echter Versand geprüft.
+- **Mail-Versand: lokal geprüft, in Produktion noch nicht eingerichtet.** Nach
+  dem Setzen von `RESEND_API_KEY` und `GUEST_MAIL_FROM` wurde eine echte Mail
+  verschickt und kam an. Der Absender trägt seither den **Hotelnamen** als
+  Anzeigenamen — der Gast hat bei einem Hotel eingecheckt, nicht bei einer
+  Software; die Adresse bleibt fest, weil nur ihre Domain verifiziert ist. Der
+  Hotelname wird vor dem Einsetzen bereinigt (ein Zeilenumbruch darin wäre eine
+  Header-Injection). **In Vercel fehlen beide Variablen noch** — siehe
+  [TODO.md](../TODO.md).
+- Der Link in der Mail zeigt lokal auf `localhost:3000`, weil er aus
+  `NEXT_PUBLIC_SITE_URL` kommt. In Produktion steht dort die echte Adresse —
+  derselbe Fall wie bei der Reset-Mail, in den Fallstricken vermerkt.
 - Ein ausgecheckter Gast, der seinen alten Link scannt, landet auf der
   **mandantenfreien** Hinweisseite (`/guest?error=link`), nicht auf der seines
   Hotels. Bewusst so: Die Route kennt den Mandanten nur über einen gültigen
