@@ -125,6 +125,77 @@ export async function resetTestScenarioAction(slug: string): Promise<{ error?: s
   return {}
 }
 
+export type PurgeSummary = {
+  stays: number
+  orders: number
+  transitions: number
+  staffLog: number
+}
+
+/**
+ * Testdaten restlos entfernen — der Gegenpart zum Seeding.
+ *
+ * „Alles zurücksetzen" checkt nur aus und lässt die Belege stehen. Das ist im
+ * Betrieb richtig, im Test aber ein Einwegventil: der Seed legt für jedes
+ * belegte Zimmer einen Aufenthalt an und löst über `room_states` den
+ * Audit-Trigger aus, wodurch **jedes** Zimmer des Hauses dauerhaft
+ * historienbehaftet ist. Genau daran ist der Testdurchlauf vom 03.09.2026
+ * hängen geblieben: nach einem einzigen Szenario-Lauf ließ sich kein Zimmer
+ * mehr ohne die Warnung über verlorene Belege löschen.
+ *
+ * Räumt deshalb alles ab, was ein Testlauf hinterlässt — Aufenthalte,
+ * Service-Anfragen, Zimmer-Verlauf, Reinigungs-Stiche und die Verortung der
+ * Kräfte. Die Zimmer selbst und das Personal bleiben stehen.
+ */
+export async function purgeTestDataAction(
+  slug: string,
+): Promise<{ summary?: PurgeSummary; error?: string }> {
+  const ctx = await getAdminContext(slug)
+  if (!ctx) return { error: 'Keine Berechtigung.' }
+  const admin = createAdminClient()
+
+  // Reihenfolge egal (alles hängt am Hotel), aber room_states erst danach
+  // neutralisieren — sonst schreibt der Audit-Trigger neue Transitions.
+  const [orders, stays, staffLog, presence] = await Promise.all([
+    admin.from('service_orders').delete({ count: 'exact' }).eq('hotel_id', ctx.hotelId),
+    admin.from('stays').delete({ count: 'exact' }).eq('hotel_id', ctx.hotelId),
+    admin.from('staff_log').delete({ count: 'exact' }).eq('hotel_id', ctx.hotelId),
+    admin.from('maid_presence').delete().eq('hotel_id', ctx.hotelId),
+  ])
+  for (const res of [orders, stays, staffLog, presence]) {
+    if (res.error) return { error: `Aufräumen fehlgeschlagen: ${res.error.message}` }
+  }
+
+  const { error: stateErr } = await admin
+    .from('room_states')
+    .update({
+      guest_signal: 'none',
+      checkout_pending: false,
+      priority: false,
+      cleaning_by: null,
+      cleaning_started_at: null,
+      ...auditFields(ctx.userId),
+    })
+    .eq('hotel_id', ctx.hotelId)
+  if (stateErr) return { error: `Zimmerstatus zurücksetzen fehlgeschlagen: ${stateErr.message}` }
+
+  // Zum Schluss, damit die Touches von eben nicht als Verlauf zurückbleiben.
+  const { count: transitionCount, error: transErr } = await admin
+    .from('room_state_transitions').delete({ count: 'exact' }).eq('hotel_id', ctx.hotelId)
+  if (transErr) return { error: `Verlauf löschen fehlgeschlagen: ${transErr.message}` }
+
+  revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
+  revalidatePath(`/h/${ctx.hotelSlug}/service`)
+  return {
+    summary: {
+      stays: stays.count ?? 0,
+      orders: orders.count ?? 0,
+      transitions: transitionCount ?? 0,
+      staffLog: staffLog.count ?? 0,
+    },
+  }
+}
+
 /**
  * Setzt zuerst alles zurück und baut dann eine seed-randomisierte Lage auf:
  * die Zimmer werden deterministisch gemischt, die Prozent-Angaben in

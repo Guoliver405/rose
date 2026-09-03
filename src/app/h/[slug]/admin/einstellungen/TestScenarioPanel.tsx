@@ -3,8 +3,11 @@
 // VORÜBERGEHEND — UI zum Test-Szenario-Seeding, siehe test-actions.ts.
 
 import { useState, useTransition } from 'react'
-import { Dices, FlaskConical, Loader2, Trash2 } from 'lucide-react'
-import { resetTestScenarioAction, seedTestScenarioAction, type SeedSummary } from './test-actions'
+import { Dices, Eraser, FlaskConical, Loader2, Trash2 } from 'lucide-react'
+import {
+  purgeTestDataAction, resetTestScenarioAction, seedTestScenarioAction,
+  type PurgeSummary, type SeedSummary,
+} from './test-actions'
 
 const SIGNAL_LABEL = { none: '—', please_clean: 'Reinigung gewünscht', dnd: 'Nicht stören' } as const
 
@@ -17,6 +20,7 @@ export default function TestScenarioPanel({ hotelSlug, roomCount }: { hotelSlug:
   const [error, setError] = useState<string | null>(null)
   const [summary, setSummary] = useState<SeedSummary | null>(null)
   const [resetDone, setResetDone] = useState(false)
+  const [purged, setPurged] = useState<PurgeSummary | null>(null)
 
   const [seed, setSeed] = useState(randomSeed)
   const [occupiedPct, setOccupiedPct] = useState(60)
@@ -35,7 +39,7 @@ export default function TestScenarioPanel({ hotelSlug, roomCount }: { hotelSlug:
 
   function submitSeed() {
     if (!window.confirm('Achtung: Alle aktuellen Aufenthalte werden ausgecheckt und alle Zimmerstatus zurückgesetzt, bevor das Szenario aufgebaut wird. Fortfahren?')) return
-    setError(null); setSummary(null); setResetDone(false)
+    setError(null); setSummary(null); setResetDone(false); setPurged(null)
     startTransition(async () => {
       const res = await seedTestScenarioAction(hotelSlug, {
         seed, occupiedPct, pleaseCleanPct, dndPct, checkedOutPct, priority, orders,
@@ -47,11 +51,23 @@ export default function TestScenarioPanel({ hotelSlug, roomCount }: { hotelSlug:
 
   function submitReset() {
     if (!window.confirm('Alle aktiven Aufenthalte auschecken, Zimmerstatus neutralisieren und offene Bestellungen löschen?')) return
-    setError(null); setSummary(null); setResetDone(false)
+    setError(null); setSummary(null); setResetDone(false); setPurged(null)
     startTransition(async () => {
       const res = await resetTestScenarioAction(hotelSlug)
       if (res.error) { setError(res.error); return }
       setResetDone(true)
+    })
+  }
+
+  function submitPurge() {
+    if (!window.confirm(
+      'Testdaten vollständig entfernen?\n\nGelöscht werden ALLE Aufenthalte, Service-Anfragen, Zimmer-Verläufe und Reinigungs-Stiche dieses Hauses — auch die, die nicht aus einem Szenario stammen. Zimmer und Personal bleiben.\n\nDanach sind alle Zimmer wieder ohne Historie und lassen sich ohne Datenverlust löschen.',
+    )) return
+    setError(null); setSummary(null); setResetDone(false); setPurged(null)
+    startTransition(async () => {
+      const res = await purgeTestDataAction(hotelSlug)
+      if (res.error) { setError(res.error); return }
+      setPurged(res.summary ?? null)
     })
   }
 
@@ -145,6 +161,16 @@ export default function TestScenarioPanel({ hotelSlug, roomCount }: { hotelSlug:
         </p>
       )}
 
+      {purged && !error && (
+        <p className="rounded-lg border border-positive-pill-edge bg-positive-tint px-3 py-2 text-sm font-semibold text-positive-deep">
+          Testdaten entfernt: {purged.stays} {purged.stays === 1 ? 'Aufenthalt' : 'Aufenthalte'},{' '}
+          {purged.orders} {purged.orders === 1 ? 'Service-Anfrage' : 'Service-Anfragen'},{' '}
+          {purged.transitions} {purged.transitions === 1 ? 'Verlaufs-Eintrag' : 'Verlaufs-Einträge'},{' '}
+          {purged.staffLog} {purged.staffLog === 1 ? 'Reinigungs-Stich' : 'Reinigungs-Stiche'}.
+          Alle Zimmer sind wieder ohne Historie.
+        </p>
+      )}
+
       {summary && !error && (
         <div className="flex flex-col gap-2 rounded-lg border border-edge bg-surface p-3 text-sm text-ink">
           <p className="font-bold">Szenario steht (Seed {seed}):</p>
@@ -198,7 +224,21 @@ export default function TestScenarioPanel({ hotelSlug, roomCount }: { hotelSlug:
         >
           <Trash2 className="h-4 w-4" /> Alles zurücksetzen
         </button>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={submitPurge}
+          className="flex items-center gap-1.5 rounded-lg border border-critical-tint-edge px-4 py-2 text-sm font-bold text-critical-strong hover:bg-critical-tint disabled:opacity-50"
+          title="Aufenthalte, Anfragen, Verlauf und Reinigungs-Stiche des Hauses löschen"
+        >
+          <Eraser className="h-4 w-4" /> Testdaten vollständig entfernen
+        </button>
       </div>
+      <p className="text-xs text-ink-muted">
+        „Alles zurücksetzen“ checkt nur aus — die Belege bleiben stehen, und damit bleibt jedes
+        Zimmer historienbehaftet. „Testdaten vollständig entfernen“ räumt sie ab, sodass Zimmer
+        danach wieder spurlos gelöscht werden können.
+      </p>
     </form>
   )
 }
