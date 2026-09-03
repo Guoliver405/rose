@@ -272,6 +272,11 @@ Env-Vars liegen in Vercel (Production): die drei Supabase-Keys + `NEXT_PUBLIC_SI
 
 Solange es keine Self-Service-Registrierung gibt (Phase 6b), werden Mandanten manuell angelegt: `node scripts/create-tenant.mjs "Hotelname" mail@rose.local [passwort]` erzeugt Hotel + Slug + Auth-User + Management-Profil und gibt die beiden Portal-Adressen aus (Zugangsdaten im Session-Protokoll). Der Slug ist danach unter Einstellungen → Hotel & Regeln änderbar.
 
+## Offene Punkte
+
+[TODO.md](TODO.md) — offene Aufgaben nach Dringlichkeit, mit Herkunft. Erledigtes
+wird dort durchgestrichen statt gelöscht.
+
 ## Session-Protokolle
 
 Wie in HotCord: Protokolle unter `Sessions/` ablegen, aktuellsten Stand hier verlinken.
