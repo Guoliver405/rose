@@ -91,8 +91,9 @@ entfernen" abgeräumt (2 Aufenthalte, 2 Verlaufs-Einträge).
   Anzeigenamen — der Gast hat bei einem Hotel eingecheckt, nicht bei einer
   Software; die Adresse bleibt fest, weil nur ihre Domain verifiziert ist. Der
   Hotelname wird vor dem Einsetzen bereinigt (ein Zeilenumbruch darin wäre eine
-  Header-Injection). **In Vercel fehlen beide Variablen noch** — siehe
-  [TODO.md](../TODO.md).
+  Header-Injection). Beide Variablen sind inzwischen auch in Vercel gesetzt und
+  deployt; ein Blick aufs Handout in Produktion steht noch aus (siehe
+  [TODO.md](../TODO.md)).
 - Der Link in der Mail zeigt lokal auf `localhost:3000`, weil er aus
   `NEXT_PUBLIC_SITE_URL` kommt. In Produktion steht dort die echte Adresse —
   derselbe Fall wie bei der Reset-Mail, in den Fallstricken vermerkt.
