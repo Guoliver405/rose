@@ -13,8 +13,9 @@ Gebäudeteile noch eine Möglichkeit, eine falsche Nummer zu ändern. Nur
 4. [Umgesetzt](#4-umgesetzt)
 5. [Verifikation](#5-verifikation)
 6. [Nebenbefund: Passwörter im Dev-Log](#6-nebenbefund-passwörter-im-dev-log)
-7. [Offen](#7-offen)
-8. [🔖 Wiederaufnahme](#-wiederaufnahme)
+7. [Dasselbe beim Personal — umgekehrte Lage](#7-dasselbe-beim-personal--umgekehrte-lage)
+8. [Offen](#8-offen)
+9. [🔖 Wiederaufnahme](#-wiederaufnahme)
 
 ---
 
@@ -190,7 +191,69 @@ Abschaltbar wäre es mit `logging: { serverFunctions: false }` in
 `next.config.ts`; das kostet aber ein nützliches Dev-Werkzeug. **Nicht geändert,
 bewusst offen gelassen.**
 
-## 7. Offen
+## 7. Dasselbe beim Personal — umgekehrte Lage
+
+Auf Nachfrage dieselbe Prüfung für die Personal-Seite. Das Ergebnis fällt
+anders aus, und zwar in beide Richtungen.
+
+**Die Begründung trägt hier wirklich.** `staff_log.profile_id` steht auf
+`on delete cascade` — nicht auf `set null` wie `staff_log.room_id`. Wer eine
+Reinigungskraft löscht, vernichtet tatsächlich ihren Arbeitsnachweis. Beim
+Zimmer war die Warnung sachlich falsch, hier ist sie berechtigt. Praktisch
+bestätigt: nach dem Löschen der Testkraft waren ihre acht Stiche und die
+Login-Karte weg.
+
+**Dieselbe Irreführung steckt trotzdem drin.** Der Papierkorb existierte nur im
+Abschnitt „Deaktiviert" — wer sich beim Anlegen vertippt hatte, musste die Kraft
+erst deaktivieren, um sie löschen zu können. Und **Bearbeiten gab es gar
+nicht**: Anzeigename und Benutzername waren nach dem Anlegen unveränderlich. Bei
+einem Tippfehler blieb nur löschen, neu anlegen — und **die Karte neu drucken**.
+
+Deshalb hier nicht gelockert, sondern geschärft und ergänzt:
+
+- **Bearbeiten** (`renameStaffAction`): Anzeigename für alle drei Personal-Arten,
+  Benutzername zusätzlich bei der Reinigung. Zwei Fallstricke: Der
+  Benutzernamen-Wechsel **muss die Auth-Adresse mitziehen** (`buildMaidEmail`) —
+  der PIN-Login baut sie daraus; der QR-Login liest den Namen ohnehin frisch, die
+  gedruckte Karte bleibt also gültig, zeigt aber den alten Namen (Hinweis im
+  Formular). Und der Anzeigename wird in `profiles`, `hotel_members` und
+  `account_members` zugleich gesetzt — aber **nur in Zeilen des eigenen Kontos**,
+  weil dieselbe Person in einem fremden Konto sitzen kann.
+- **Löschen mit Zahlen** (`getMaidDeletionImpactAction`): Stiche samt Zeitraum,
+  abgeschlossene Reinigungen, Login-Karte — und was **bleibt** (Check-ins und
+  erledigte Anfragen stehen auf `set null`, sie verlieren nur den Namen). Bei
+  vorhandener Historie ist der Benutzername abzutippen, daneben steht „Lieber
+  deaktivieren — Arbeitsnachweis bleibt".
+- **Papierkorb auch an der aktiven Kraft.**
+
+### Behobener Bug
+
+`deleteReceptionAction` prüfte `staff_log` nicht — `detachManagerAction` tat es.
+Die Rezeption sticht über `markCleanedAction` aber sehr wohl ein `clean_done`.
+Eine Kraft, die nur Zimmer als gereinigt markiert hatte, galt damit als „ohne
+Historie": ihr Auth-User wurde gelöscht, und die Kaskade nahm die
+Reinigungsnachweise mit — nebenbei verstellt das die Stayover-Ableitung („heute
+schon gereinigt?").
+
+Verifiziert mit einem eigens angelegten Probe-Zugang (synthetische Adresse, also
+ohne Einladungsmail) mit genau einem `clean_done`-Stich: nach dem Entfernen über
+die Oberfläche ist die Mitgliedschaft weg (`nochMitglied: null`, Login tot),
+Konto, Profil **und der Stich** bestehen weiter. Probe-Zugang danach entfernt.
+
+### Verifikation Personal
+
+| Geprüft | Ergebnis |
+|---|---|
+| Kraft anlegen, bearbeiten | Name und Benutzername geändert, Liste aktualisiert ✅ |
+| Auth-Adresse nach Namenswechsel | `zzkorrigiert@<hotel-id>.rose.svc` — passt, PIN-Login bleibt möglich ✅ |
+| QR-Hinweis | erscheint nur bei Änderung des Benutzernamens ✅ |
+| Löschen ohne Historie | „hat noch keinen einzigen Eintrag … es geht nichts verloren", kein Abtippfeld ✅ |
+| Löschen mit Historie | „8 Einträge (31.8.2026 bis 2.9.2026)", „2 abgeschlossene Zimmerreinigungen", Knopf gesperrt bis Benutzername getippt ✅ |
+| Kaskade nach dem Löschen | `staff_log` und `maid_login_tokens` auf 0 ✅ |
+| Bearbeiten Rezeption | nur Anzeigename, kein Benutzername-Feld ✅ |
+| Bug-Fix | Zugang entzogen, Nachweis erhalten ✅ |
+
+## 8. Offen
 
 - **Abrechnungs-Snapshot.** Solange `countBillableRooms` live ableitet, ändert
   ein gelöschtes Zimmer rückwirkend abgerechnete Perioden. Vor der ersten echten
@@ -198,10 +261,10 @@ bewusst offen gelassen.**
 - **Test-Szenario bleibt vorübergehend.** `purgeTestDataAction` gehört mit
   ausgebaut, wenn der Bereich verschwindet (Rückbau-Hinweis steht in
   `test-actions.ts`).
-- **Personal-Ebene ungeprüft.** Bei Reinigungskräften gilt dieselbe Logik
-  („Deaktivieren statt Löschen", Papierkorb hinter „Deaktiviert" versteckt). Der
-  Tester hat davon nichts gesagt — die Frage, ob dort dieselbe Irreführung
-  steckt, ist damit aber nicht beantwortet.
+- **Drei Modelle beim Personal.** Reinigung kennt „Deaktivieren" und „Löschen",
+  Rezeption und Manager nur „Entfernen" (mit stillem Behalten des Datensatzes,
+  wenn Historie existiert). Sachlich begründet, aber der Bediener sieht drei
+  verschiedene Muster. Nicht angefasst — wäre eine eigene Runde.
 
 ---
 
@@ -211,7 +274,11 @@ bewusst offen gelassen.**
 nehmen und löschen — alle drei Ebenen über denselben Dialog. Löschen ist ein
 regulärer Vorgang mit bezifferter Folgenanzeige, Belegt-Sperre und
 Abtipp-Bestätigung bei Historie. Das Test-Szenario kann seine Spuren restlos
-entfernen. Alles verifiziert, `verify` und Build grün.
+entfernen. Beim **Personal** dasselbe Muster, aber mit umgekehrtem Vorzeichen:
+dort ist die Warnung berechtigt (`staff_log` kaskadiert), deshalb Zahlen und
+Abtipp-Riegel statt Lockerung — plus Bearbeiten von Anzeige- und Benutzername
+und ein behobener Bug beim Entziehen von Rezeptions-Zugängen. Alles verifiziert,
+`verify` und Build grün.
 
 **Wenn hier weitergearbeitet wird:**
 
@@ -222,5 +289,11 @@ entfernen. Alles verifiziert, `verify` und Build grün.
   keine Kaskade.
 - Beim Abräumen von Zimmerstatus gilt: erst `room_states` schreiben, dann den
   Verlauf löschen — sonst füllt der Audit-Trigger ihn sofort wieder.
-- Nächster inhaltlicher Schritt wäre der **Abrechnungs-Snapshot** (Abschnitt 7),
+- Beim Personal gilt die **umgekehrte** Regel: `staff_log.profile_id`
+  kaskadiert. Wer dort etwas löschbar macht, muss vorher zählen, was verschwindet
+  — und wer einen Auth-User löscht, muss `staff_log` mitprüfen, nicht nur
+  `stays`/`service_orders`.
+- Ein Benutzernamen-Wechsel bei der Reinigung ohne Mitziehen der Auth-Adresse
+  sperrt die Kraft aus. `buildMaidEmail` ist die einzige Wahrheit dafür.
+- Nächster inhaltlicher Schritt wäre der **Abrechnungs-Snapshot** (Abschnitt 8),
   weil er die einzige verbliebene echte Nebenwirkung des Löschens beseitigt.

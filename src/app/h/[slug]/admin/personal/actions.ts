@@ -168,30 +168,212 @@ export async function setMaidActiveAction(
 }
 
 /**
- * Reinigungskraft endgültig löschen (Auth-User → CASCADE räumt Profil, Karte
- * UND staff_log ab). Notausgang für Fehlanlagen — beim Ausscheiden gehört
- * `setMaidActiveAction(id, false)` benutzt, sonst ist die Historie weg.
+ * Anzeigename (alle Personal-Arten) und Benutzername (nur Reinigung) ändern.
+ *
+ * Der häufigste Grund, eine Person löschen zu wollen, ist ein Vertipper beim
+ * Anlegen — und dafür war Löschen und Neuanlegen bisher der einzige Weg. Bei
+ * Reinigungskräften kostete das zusätzlich eine **neu gedruckte Karte**.
+ *
+ * Der Anzeigename wird in allen Tabellen zugleich gesetzt (`profiles`,
+ * `hotel_members`, `account_members`), sonst laufen sie auseinander — dieselbe
+ * Regel wie unter „Mein Zugang". Berührt werden dabei nur Zeilen des **eigenen
+ * Kontos**: dieselbe Person kann in einem fremden Konto sitzen, und deren
+ * Anzeigename geht dieses Haus nichts an.
  */
-export async function deleteMaidAction(slug: string, profileId: string): Promise<{ error?: string }> {
+export type StaffPatch = { displayName?: string; username?: string }
+
+export async function renameStaffAction(
+  slug: string,
+  userId: string,
+  patch: StaffPatch,
+): Promise<{ error?: string; changed?: boolean }> {
+  const ctx = await getAdminContext(slug)
+  if (!ctx) return { error: 'Keine Berechtigung.' }
+  const admin = createAdminClient()
+
+  const displayName = patch.displayName === undefined ? undefined : patch.displayName.trim()
+  if (displayName !== undefined && displayName.length < 2) {
+    return { error: 'Name muss mindestens 2 Zeichen haben.' }
+  }
+  if (displayName !== undefined && displayName.length > 80) {
+    return { error: 'Name ist zu lang (maximal 80 Zeichen).' }
+  }
+
+  const [{ data: profile }, { data: member }] = await Promise.all([
+    admin.from('profiles').select('id, hotel_id, username, display_name').eq('id', userId).maybeSingle(),
+    admin.from('hotel_members').select('role').eq('hotel_id', ctx.hotelId).eq('user_id', userId).maybeSingle(),
+  ])
+
+  const istReinigung = Boolean(profile?.username) && profile?.hotel_id === ctx.hotelId
+  if (!istReinigung && !member) return { error: 'Zugang nicht gefunden.' }
+  // Gleiche Grenze wie beim Entfernen: ein Manager, der Mit-Manager umbenennt,
+  // wäre zwar harmlos — aber die Manager-Verwaltung liegt geschlossen beim
+  // Kontoinhaber, und geteilte Zuständigkeit verwirrt mehr, als sie nützt.
+  if (member?.role === 'manager' && !ctx.isOwner) {
+    return { error: 'Nur der Kontoinhaber kann Manager verwalten.' }
+  }
+
+  const username = patch.username === undefined ? undefined : normalizeUsername(patch.username)
+  if (username !== undefined) {
+    if (!istReinigung) return { error: 'Nur Reinigungs-Zugänge haben einen Benutzernamen.' }
+    if (username.length < 2) {
+      return { error: 'Benutzername muss mindestens 2 Zeichen haben (a–z, 0–9, . _ -).' }
+    }
+  }
+
+  if (displayName === undefined && username === undefined) return { error: 'Nichts zu ändern.' }
+
+  // Bewusst ohne Kurzschluss bei unverändertem Wert: der Anzeigename steht in
+  // drei Tabellen, und ein Schreibvorgang mit gleichem Wert gleicht eine
+  // auseinandergelaufene Zeile nebenbei wieder an.
+  const usernameGleich = username === undefined || username === profile?.username
+
+  if (username !== undefined && !usernameGleich) {
+    const { data: clash } = await admin
+      .from('profiles').select('id').eq('hotel_id', ctx.hotelId).eq('username', username).maybeSingle()
+    if (clash && clash.id !== userId) {
+      return { error: `Benutzername „${username}" ist in diesem Haus bereits vergeben.` }
+    }
+    // Der PIN-Login baut seine Auth-Adresse aus dem Benutzernamen
+    // (`buildMaidEmail`) — ohne diesen Schritt käme die Kraft nicht mehr rein.
+    // Der QR-Login liest den Benutzernamen ohnehin frisch aus `profiles`.
+    const { error: mailErr } = await admin.auth.admin.updateUserById(userId, {
+      email: buildMaidEmail(username, ctx.hotelId),
+    })
+    if (mailErr) return { error: `Login konnte nicht umgestellt werden: ${mailErr.message}` }
+  }
+
+  const profilePatch: { display_name?: string; username?: string } = {}
+  if (displayName !== undefined) profilePatch.display_name = displayName
+  if (username !== undefined) profilePatch.username = username
+  if (Object.keys(profilePatch).length > 0) {
+    const { error } = await admin.from('profiles').update(profilePatch).eq('id', userId)
+    if (error) return { error: `Ändern fehlgeschlagen: ${error.message}` }
+  }
+
+  if (displayName !== undefined) {
+    const { data: ownHotels } = await admin
+      .from('hotels').select('id').eq('account_id', ctx.accountId)
+    const ownIds = (ownHotels ?? []).map(h => h.id)
+    if (ownIds.length > 0) {
+      await admin.from('hotel_members')
+        .update({ display_name: displayName }).eq('user_id', userId).in('hotel_id', ownIds)
+    }
+    await admin.from('account_members')
+      .update({ display_name: displayName }).eq('user_id', userId).eq('account_id', ctx.accountId)
+  }
+
+  revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
+  revalidatePath('/admin')
+  return { changed: true }
+}
+
+/**
+ * Was das Löschen einer Reinigungskraft kostet.
+ *
+ * Anders als beim Zimmer ist die Warnung hier **berechtigt**:
+ * `staff_log.profile_id` steht auf `on delete cascade` — der komplette
+ * Arbeitsnachweis (Schichten, Pausen, Reinigungen) verschwindet mit dem
+ * Zugang. `stays.created_by` und `service_orders.done_by` stehen dagegen auf
+ * `on delete set null`: diese Einträge bleiben, verlieren aber den Namen.
+ */
+export type MaidDeletionImpact = {
+  displayName: string
+  username: string
+  /** Bei vorhandener Historie abzutippen; sonst leer. */
+  confirmPhrase: string
+  requiresPhrase: boolean
+  logEntries: number
+  cleanings: number
+  firstAt: string | null
+  lastAt: string | null
+  checkIns: number
+  ordersDone: number
+  hasCard: boolean
+  /** Gesetzt = reinigt gerade, Löschen ist gesperrt. */
+  cleaningRoom: string | null
+}
+
+export async function getMaidDeletionImpactAction(
+  slug: string,
+  profileId: string,
+): Promise<{ impact?: MaidDeletionImpact; error?: string }> {
   const ctx = await getAdminContext(slug)
   if (!ctx) return { error: 'Keine Berechtigung.' }
   const admin = createAdminClient()
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('id, hotel_id, username')
+    .select('id, hotel_id, username, display_name')
     .eq('id', profileId)
     .maybeSingle()
   if (!profile || profile.hotel_id !== ctx.hotelId) return { error: 'Profil nicht gefunden.' }
-  if (!profile.username) return { error: 'Management-Zugänge können hier nicht gelöscht werden.' }
+  if (!profile.username) return { error: 'Kein Reinigungs-Zugang.' }
 
-  const { data: cleaning } = await admin
-    .from('room_states')
-    .select('room_id')
-    .eq('cleaning_by', profileId)
-    .limit(1)
-  if (cleaning && cleaning.length > 0) {
-    return { error: 'Diese Kraft ist gerade als reinigend eingetragen. Erst die Reinigung abschließen (oder im Board als erledigt markieren).' }
+  const [log, cleanings, checkIns, ordersDone, card, cleaning, firstRow, lastRow] = await Promise.all([
+    admin.from('staff_log').select('*', { count: 'exact', head: true }).eq('profile_id', profileId),
+    admin.from('staff_log').select('*', { count: 'exact', head: true }).eq('profile_id', profileId).eq('kind', 'clean_done'),
+    admin.from('stays').select('*', { count: 'exact', head: true }).eq('created_by', profileId),
+    admin.from('service_orders').select('*', { count: 'exact', head: true }).eq('done_by', profileId),
+    admin.from('maid_login_tokens').select('profile_id').eq('profile_id', profileId).maybeSingle(),
+    admin.from('room_states').select('room_id').eq('cleaning_by', profileId).maybeSingle(),
+    admin.from('staff_log').select('at').eq('profile_id', profileId).order('at').limit(1).maybeSingle(),
+    admin.from('staff_log').select('at').eq('profile_id', profileId).order('at', { ascending: false }).limit(1).maybeSingle(),
+  ])
+
+  let cleaningRoom: string | null = null
+  if (cleaning.data?.room_id) {
+    const { data: room } = await admin
+      .from('rooms').select('number').eq('id', cleaning.data.room_id).maybeSingle()
+    cleaningRoom = room?.number ?? '?'
+  }
+
+  const logEntries = log.count ?? 0
+
+  return {
+    impact: {
+      displayName: profile.display_name,
+      username: profile.username,
+      confirmPhrase: logEntries > 0 ? profile.username : '',
+      requiresPhrase: logEntries > 0,
+      logEntries,
+      cleanings: cleanings.count ?? 0,
+      firstAt: firstRow.data?.at ?? null,
+      lastAt: lastRow.data?.at ?? null,
+      checkIns: checkIns.count ?? 0,
+      ordersDone: ordersDone.count ?? 0,
+      hasCard: Boolean(card.data),
+      cleaningRoom,
+    },
+  }
+}
+
+/**
+ * Reinigungskraft endgültig löschen (Auth-User → CASCADE räumt Profil, Karte
+ * UND staff_log ab).
+ *
+ * Deaktivieren bleibt der Regelweg beim Ausscheiden — hier geht der
+ * Arbeitsnachweis wirklich verloren, anders als beim Löschen eines Zimmers.
+ * Deshalb verlangt eine Kraft mit Tätigkeits-Historie den abgetippten
+ * Benutzernamen; eine Fehlanlage ohne jeden Stich lässt sich direkt entfernen.
+ */
+export async function deleteMaidAction(
+  slug: string,
+  profileId: string,
+  confirmPhrase = '',
+): Promise<{ error?: string }> {
+  const ctx = await getAdminContext(slug)
+  if (!ctx) return { error: 'Keine Berechtigung.' }
+  const admin = createAdminClient()
+
+  const { impact, error: impactErr } = await getMaidDeletionImpactAction(slug, profileId)
+  if (!impact) return { error: impactErr ?? 'Profil nicht gefunden.' }
+
+  if (impact.cleaningRoom) {
+    return { error: `Diese Kraft reinigt gerade Zimmer ${impact.cleaningRoom}. Erst die Reinigung abschließen (oder im Board als erledigt markieren).` }
+  }
+  if (impact.requiresPhrase && confirmPhrase.trim() !== impact.confirmPhrase) {
+    return { error: `Bitte „${impact.confirmPhrase}" zur Bestätigung eingeben.` }
   }
 
   const { error } = await admin.auth.admin.deleteUser(profileId)
@@ -387,15 +569,23 @@ export async function deleteReceptionAction(
   await admin.from('hotel_members')
     .delete().eq('hotel_id', ctx.hotelId).eq('user_id', profileId)
 
-  const [{ data: rest }, { data: owner }, { data: stays }, { data: orders }] = await Promise.all([
-    admin.from('hotel_members').select('hotel_id').eq('user_id', profileId).limit(1),
-    admin.from('account_members').select('account_id').eq('user_id', profileId).limit(1),
-    admin.from('stays').select('id').eq('created_by', profileId).limit(1),
-    admin.from('service_orders').select('id').eq('done_by', profileId).limit(1),
-  ])
+  const [{ data: rest }, { data: owner }, { data: stays }, { data: orders }, { data: log }] =
+    await Promise.all([
+      admin.from('hotel_members').select('hotel_id').eq('user_id', profileId).limit(1),
+      admin.from('account_members').select('account_id').eq('user_id', profileId).limit(1),
+      admin.from('stays').select('id').eq('created_by', profileId).limit(1),
+      admin.from('service_orders').select('id').eq('done_by', profileId).limit(1),
+      // `staff_log` gehört zwingend dazu: die Rezeption sticht über
+      // `markCleanedAction` ein `clean_done`, und `staff_log.profile_id` steht
+      // auf `on delete cascade` — ohne diese Prüfung nimmt das Löschen eines
+      // Rezeptions-Zugangs Reinigungsnachweise mit und verstellt zugleich die
+      // Stayover-Ableitung („heute schon gereinigt?").
+      admin.from('staff_log').select('id').eq('profile_id', profileId).limit(1),
+    ])
 
   const stillUsed = (rest ?? []).length > 0 || (owner ?? []).length > 0
-  const hasHistory = (stays ?? []).length > 0 || (orders ?? []).length > 0
+  const hasHistory =
+    (stays ?? []).length > 0 || (orders ?? []).length > 0 || (log ?? []).length > 0
 
   if (!stillUsed && !hasHistory) {
     const { error } = await admin.auth.admin.deleteUser(profileId)

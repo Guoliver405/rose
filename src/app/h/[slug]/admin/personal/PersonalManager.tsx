@@ -4,13 +4,14 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  Building2, IdCard, Loader2, MailCheck, Plus, Printer, Send, Sparkles, Trash2, UserCheck,
+  Building2, IdCard, Loader2, MailCheck, Pencil, Plus, Printer, Send, Sparkles, Trash2, UserCheck,
   UserMinus, UserRound,
 } from 'lucide-react'
 import {
   attachManagerAction, createMaidAction, createManagerAction, createReceptionAction,
-  deleteMaidAction, deleteReceptionAction, detachManagerAction, issueMaidLoginCardAction,
-  resendInvitationAction, setMaidActiveAction, type Einladung,
+  deleteMaidAction, deleteReceptionAction, detachManagerAction, getMaidDeletionImpactAction,
+  issueMaidLoginCardAction, renameStaffAction, resendInvitationAction, setMaidActiveAction,
+  type Einladung, type MaidDeletionImpact,
 } from './actions'
 
 export type MaidRow = {
@@ -71,8 +72,17 @@ export default function PersonalManager({
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  /**
+   * Löschen einer Reinigungskraft: erst die Auswirkungen laden, dann fragen.
+   * Ohne Zahlen ist „die Historie geht verloren" nicht zu bewerten — eine
+   * Fehlanlage von heute und eine Kraft mit zwei Jahren Arbeitsnachweis sahen
+   * bisher gleich aus.
+   */
+  const [deleteTarget, setDeleteTarget] = useState<MaidDeletionImpact & { id: string } | null>(null)
+  const [confirmInput, setConfirmInput] = useState('')
   const [confirmDeactivateId, setConfirmDeactivateId] = useState<string | null>(null)
+  /** Offenes Bearbeiten-Formular (Reinigung, Rezeption oder Manager). */
+  const [editId, setEditId] = useState<string | null>(null)
   const [recEinladung, setRecEinladung] = useState<Einladung | null>(null)
   const [confirmRecDeleteId, setConfirmRecDeleteId] = useState<string | null>(null)
   const [mgrEinladung, setMgrEinladung] = useState<Einladung | null>(null)
@@ -197,13 +207,45 @@ export default function PersonalManager({
     })
   }
 
-  function runDelete(profileId: string) {
+  /** Auswirkungen laden, dann erst fragen. */
+  function openDelete(profileId: string) {
+    setError(null)
+    setNotice(null)
+    setConfirmInput('')
+    startTransition(async () => {
+      const res = await getMaidDeletionImpactAction(hotelSlug, profileId)
+      if (!res.impact) { setError(res.error ?? 'Konnte nicht geladen werden.'); return }
+      setDeleteTarget({ ...res.impact, id: profileId })
+    })
+  }
+
+  function runDelete() {
+    if (!deleteTarget) return
+    setError(null)
+    setNotice(null)
+    const name = deleteTarget.displayName
+    startTransition(async () => {
+      const res = await deleteMaidAction(hotelSlug, deleteTarget.id, confirmInput)
+      if (res.error) { setError(res.error); return }
+      setDeleteTarget(null)
+      setNotice(`${name} endgültig gelöscht.`)
+    })
+  }
+
+  /** Anzeigename (alle Personal-Arten) und Benutzername (nur Reinigung). */
+  function runRename(userId: string, patch: { displayName: string; username?: string }) {
     setError(null)
     setNotice(null)
     startTransition(async () => {
-      const res = await deleteMaidAction(hotelSlug, profileId)
+      const res = await renameStaffAction(hotelSlug, userId, patch)
       if (res.error) { setError(res.error); return }
-      setConfirmDeleteId(null)
+      setEditId(null)
+      setNotice(
+        patch.username
+          ? `Geändert: ${patch.displayName} (@${patch.username}). Gedruckte Karten tragen noch den alten Namen.`
+          : `Geändert: ${patch.displayName}.`,
+      )
+      router.refresh()
     })
   }
 
@@ -329,15 +371,39 @@ export default function PersonalManager({
                   )}
 
                   {canManage && (
-                    <button
-                      type="button"
-                      disabled={pending}
-                      onClick={() => setConfirmDeactivateId(m.id)}
-                      title="Ausgeschieden — Zugang sperren, Historie behalten"
-                      className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
-                    >
-                      <UserMinus className="h-4 w-4" /> Deaktivieren
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => { setEditId(editId === m.id ? null : m.id); setDeleteTarget(null) }}
+                        title="Anzeigename oder Benutzername korrigieren"
+                        className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
+                      >
+                        <Pencil className="h-4 w-4" /> Bearbeiten
+                      </button>
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => setConfirmDeactivateId(m.id)}
+                        title="Ausgeschieden — Zugang sperren, Historie behalten"
+                        className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
+                      >
+                        <UserMinus className="h-4 w-4" /> Deaktivieren
+                      </button>
+                      {/* Auch an der aktiven Kraft erreichbar: eine Fehlanlage
+                          erst deaktivieren zu müssen, um sie löschen zu können,
+                          liest sich wie ein Verbot. */}
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => { setDeleteTarget(null); setEditId(null); openDelete(m.id) }}
+                        className="rounded-lg border border-critical-pill-edge p-1.5 text-critical-strong hover:bg-critical-tint disabled:opacity-50"
+                        aria-label={`${m.displayName} endgültig löschen`}
+                        title="Endgültig löschen"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -367,6 +433,27 @@ export default function PersonalManager({
                     </button>
                   </div>
                 </div>
+              )}
+              {editId === m.id && (
+                <StaffEditPanel
+                  displayName={m.displayName}
+                  username={m.username}
+                  pending={pending}
+                  onCancel={() => setEditId(null)}
+                  onSave={patch => runRename(m.id, patch)}
+                />
+              )}
+
+              {deleteTarget?.id === m.id && (
+                <MaidDeletePanel
+                  impact={deleteTarget}
+                  confirmInput={confirmInput}
+                  setConfirmInput={setConfirmInput}
+                  pending={pending}
+                  onCancel={() => setDeleteTarget(null)}
+                  onDelete={runDelete}
+                  onDeactivate={() => runSetActive(m.id, false, m.displayName)}
+                />
               )}
             </div>
           ))}
@@ -407,7 +494,16 @@ export default function PersonalManager({
                       <button
                         type="button"
                         disabled={pending}
-                        onClick={() => setConfirmDeleteId(m.id)}
+                        onClick={() => { setEditId(editId === m.id ? null : m.id); setDeleteTarget(null) }}
+                        title="Anzeigename oder Benutzername korrigieren"
+                        className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
+                      >
+                        <Pencil className="h-4 w-4" /> Bearbeiten
+                      </button>
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => { setDeleteTarget(null); setEditId(null); openDelete(m.id) }}
                         className="rounded-lg border border-critical-pill-edge p-1.5 text-critical-strong hover:bg-critical-tint disabled:opacity-50"
                         aria-label={`${m.displayName} endgültig löschen`}
                         title="Endgültig löschen — entfernt auch die Historie"
@@ -418,31 +514,25 @@ export default function PersonalManager({
                   )}
                 </div>
 
-                {confirmDeleteId === m.id && (
-                  <div className="mt-3 rounded-lg border border-critical-tint-edge bg-critical-tint p-3">
-                    <p className="text-sm font-semibold text-critical-strong">
-                      {m.displayName} endgültig löschen? Damit verschwindet auch die komplette
-                      Tätigkeits-Historie aus der Auswertung — für ausgeschiedene Kräfte ist
-                      „Deaktiviert“ die richtige Ablage.
-                    </p>
-                    <div className="mt-2 flex gap-2">
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => runDelete(m.id)}
-                        className="rounded-lg bg-critical px-3 py-1.5 text-sm font-bold text-critical-foreground disabled:opacity-50"
-                      >
-                        {pending ? 'Löschen …' : 'Ja, endgültig löschen'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirmDeleteId(null)}
-                        className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft"
-                      >
-                        Abbrechen
-                      </button>
-                    </div>
-                  </div>
+                {editId === m.id && (
+                  <StaffEditPanel
+                    displayName={m.displayName}
+                    username={m.username}
+                    pending={pending}
+                    onCancel={() => setEditId(null)}
+                    onSave={patch => runRename(m.id, patch)}
+                  />
+                )}
+
+                {deleteTarget?.id === m.id && (
+                  <MaidDeletePanel
+                    impact={deleteTarget}
+                    confirmInput={confirmInput}
+                    setConfirmInput={setConfirmInput}
+                    pending={pending}
+                    onCancel={() => setDeleteTarget(null)}
+                    onDelete={runDelete}
+                  />
                 )}
               </div>
             ))}
@@ -542,13 +632,31 @@ export default function PersonalManager({
                     <button
                       type="button"
                       disabled={pending}
+                      onClick={() => setEditId(editId === r.id ? null : r.id)}
+                      title="Anzeigename korrigieren"
+                      className="ml-auto flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
+                    >
+                      <Pencil className="h-4 w-4" /> Bearbeiten
+                    </button>
+                    <button
+                      type="button"
+                      disabled={pending}
                       onClick={() => setConfirmRecDeleteId(r.id)}
-                      className="ml-auto rounded-lg border border-critical-pill-edge p-1.5 text-critical-strong hover:bg-critical-tint disabled:opacity-50"
+                      className="rounded-lg border border-critical-pill-edge p-1.5 text-critical-strong hover:bg-critical-tint disabled:opacity-50"
                       aria-label={`${r.displayName} löschen`}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
+
+                  {editId === r.id && (
+                    <StaffEditPanel
+                      displayName={r.displayName}
+                      pending={pending}
+                      onCancel={() => setEditId(null)}
+                      onSave={patch => runRename(r.id, patch)}
+                    />
+                  )}
 
                   {confirmRecDeleteId === r.id && (
                     <div className="mt-3 rounded-lg border border-edge bg-surface-sunken p-3">
@@ -722,13 +830,34 @@ export default function PersonalManager({
                     <button
                       type="button"
                       disabled={pending}
+                      onClick={() => setEditId(editId === m.id ? null : m.id)}
+                      title="Anzeigename korrigieren"
+                      className="ml-auto flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
+                    >
+                      <Pencil className="h-4 w-4" /> Bearbeiten
+                    </button>
+                    <button
+                      type="button"
+                      disabled={pending}
                       onClick={() => setConfirmMgrRemoveId(m.id)}
-                      className="ml-auto rounded-lg border border-critical-pill-edge p-1.5 text-critical-strong hover:bg-critical-tint disabled:opacity-50"
+                      className="rounded-lg border border-critical-pill-edge p-1.5 text-critical-strong hover:bg-critical-tint disabled:opacity-50"
                       aria-label={`${m.displayName} aus diesem Haus entfernen`}
                     >
                       <UserMinus className="h-4 w-4" />
                     </button>
                   </div>
+
+                  {editId === m.id && (
+                    <StaffEditPanel
+                      displayName={m.displayName}
+                      pending={pending}
+                      hint={m.hotelCount > 1
+                        ? `Gilt für alle ${m.hotelCount} Häuser dieser Person — der Name gehört zur Person, nicht zum Haus.`
+                        : undefined}
+                      onCancel={() => setEditId(null)}
+                      onSave={patch => runRename(m.id, patch)}
+                    />
+                  )}
 
                   {confirmMgrRemoveId === m.id && (
                     <div className="mt-3 rounded-lg border border-edge bg-surface-sunken p-3">
@@ -762,6 +891,201 @@ export default function PersonalManager({
             </div>
           )}
         </>
+      )}
+    </div>
+  )
+}
+
+const panelInput =
+  'rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink focus:border-action focus:outline-none'
+
+/**
+ * Bearbeiten für alle drei Personal-Arten. Der Benutzername erscheint nur, wo
+ * es einen gibt (Reinigung) — Rezeption und Manager melden sich per E-Mail an.
+ */
+function StaffEditPanel({
+  displayName, username, pending, hint, onSave, onCancel,
+}: {
+  displayName: string
+  username?: string
+  pending: boolean
+  hint?: string
+  onSave: (patch: { displayName: string; username?: string }) => void
+  onCancel: () => void
+}) {
+  const [name, setName] = useState(displayName)
+  const [user, setUser] = useState(username ?? '')
+
+  return (
+    <form
+      onSubmit={e => {
+        e.preventDefault()
+        onSave(username === undefined ? { displayName: name } : { displayName: name, username: user })
+      }}
+      className="mt-3 rounded-lg border border-edge bg-surface-sunken p-3"
+    >
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+          Anzeigename
+          <input
+            value={name}
+            onChange={e => setName(e.target.value)}
+            required
+            minLength={2}
+            className={`${panelInput} w-48`}
+          />
+        </label>
+        {username !== undefined && (
+          <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+            Benutzername (Login)
+            <input
+              value={user}
+              onChange={e => setUser(e.target.value)}
+              required
+              minLength={2}
+              autoCapitalize="none"
+              pattern="[a-zA-Z0-9._\-]+"
+              title="Nur Buchstaben, Ziffern, Punkt, Unterstrich, Bindestrich"
+              className={`${panelInput} w-40 font-mono`}
+            />
+          </label>
+        )}
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
+        >
+          {pending ? 'Speichern …' : 'Speichern'}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-lg border border-edge px-3 py-2 text-sm font-semibold text-ink-soft"
+        >
+          Abbrechen
+        </button>
+      </div>
+      {hint && <p className="mt-2 text-xs text-ink-muted">{hint}</p>}
+      {username !== undefined && user !== username && (
+        <p className="mt-2 rounded-lg border border-attention-tint-edge bg-attention-tint px-3 py-2 text-xs font-semibold text-attention-deepest">
+          Der QR-Code der Karte bleibt gültig, die PIN ebenfalls. Auf der
+          <strong> gedruckten</strong> Karte steht aber noch der alte Benutzername —
+          für die Anmeldung von Hand also neu drucken.
+        </p>
+      )}
+    </form>
+  )
+}
+
+/**
+ * Löschen mit Zahlen statt mit einem Warnsatz. Hier ist die Warnung berechtigt:
+ * `staff_log` hängt per `on delete cascade` am Zugang, der Arbeitsnachweis
+ * verschwindet also wirklich — anders als beim Löschen eines Zimmers.
+ */
+function MaidDeletePanel({
+  impact, confirmInput, setConfirmInput, pending, onDelete, onCancel, onDeactivate,
+}: {
+  impact: MaidDeletionImpact
+  confirmInput: string
+  setConfirmInput: (v: string) => void
+  pending: boolean
+  onDelete: () => void
+  onCancel: () => void
+  /** Nur bei aktiven Kräften — der schonende Ausweg. */
+  onDeactivate?: () => void
+}) {
+  const datum = (iso: string) => new Date(iso).toLocaleDateString('de-DE')
+  const zeitraum =
+    impact.firstAt && impact.lastAt
+      ? impact.firstAt === impact.lastAt
+        ? ` (${datum(impact.firstAt)})`
+        : ` (${datum(impact.firstAt)} bis ${datum(impact.lastAt)})`
+      : ''
+
+  return (
+    <div className="mt-3 rounded-lg border border-critical-tint-edge bg-critical-tint p-3">
+      {impact.cleaningRoom ? (
+        <p className="text-sm font-semibold text-critical-strong">
+          {impact.displayName} reinigt gerade Zimmer {impact.cleaningRoom} und lässt sich nicht
+          löschen — erst die Reinigung abschließen.
+        </p>
+      ) : impact.logEntries === 0 ? (
+        <p className="text-sm font-semibold text-ink">
+          {impact.displayName} hat noch keinen einzigen Eintrag im Tätigkeits-Protokoll —
+          beim Löschen geht nichts verloren.
+        </p>
+      ) : (
+        <>
+          <p className="text-sm font-bold text-critical-strong">Das wird endgültig mitgelöscht:</p>
+          <ul className="mt-1 list-disc pl-5 text-sm text-ink-soft">
+            <li>
+              {impact.logEntries} Einträge im Tätigkeits-Protokoll{zeitraum} — Schichten, Pausen
+              und Reinigungen verschwinden damit aus der Auswertung
+            </li>
+            {impact.cleanings > 0 && <li>{impact.cleanings} abgeschlossene Zimmerreinigungen</li>}
+            {impact.hasCard && <li>die Login-Karte (gedruckte Karte wird ungültig)</li>}
+          </ul>
+          {(impact.checkIns > 0 || impact.ordersDone > 0) && (
+            <p className="mt-2 text-xs text-ink-muted">
+              {impact.checkIns > 0 && `${impact.checkIns} Check-ins`}
+              {impact.checkIns > 0 && impact.ordersDone > 0 && ' und '}
+              {impact.ordersDone > 0 && `${impact.ordersDone} erledigte Service-Anfragen`}{' '}
+              <strong>bleiben erhalten</strong> — sie verlieren nur den Namen.
+            </p>
+          )}
+        </>
+      )}
+
+      {!impact.cleaningRoom && (
+        <>
+          {impact.requiresPhrase && (
+            <label className="mt-3 flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+              Zum Bestätigen &bdquo;{impact.confirmPhrase}&ldquo; eingeben
+              <input
+                value={confirmInput}
+                onChange={e => setConfirmInput(e.target.value)}
+                autoComplete="off"
+                className={`${panelInput} w-48 font-mono`}
+              />
+            </label>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={pending || (impact.requiresPhrase && confirmInput.trim() !== impact.confirmPhrase)}
+              onClick={onDelete}
+              className="rounded-lg bg-critical px-3 py-1.5 text-sm font-bold text-critical-foreground disabled:opacity-50"
+            >
+              {pending ? 'Löschen …' : 'Ja, endgültig löschen'}
+            </button>
+            {onDeactivate && impact.requiresPhrase && (
+              <button
+                type="button"
+                disabled={pending}
+                onClick={onDeactivate}
+                className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:text-ink disabled:opacity-50"
+              >
+                Lieber deaktivieren — Arbeitsnachweis bleibt
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onCancel}
+              className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft"
+            >
+              Abbrechen
+            </button>
+          </div>
+        </>
+      )}
+      {impact.cleaningRoom && (
+        <button
+          type="button"
+          onClick={onCancel}
+          className="mt-3 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft"
+        >
+          Schließen
+        </button>
       )}
     </div>
   )
