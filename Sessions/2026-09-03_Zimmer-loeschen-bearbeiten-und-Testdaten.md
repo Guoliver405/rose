@@ -370,6 +370,30 @@ die Inhaberschaft als „Zugang bleibt bestehen" — auch beim Konto-Löschen, w
 mit verschwindet. Angezeigt worden wäre ein Anmeldekonto zu wenig. Genau die Art
 Fehler, die in einer Lösch-Bestätigung nichts zu suchen hat.
 
+#### Der Stammhaus-Grenzfall
+
+Zunächst nur als bekannte Einschränkung notiert, auf Nachfrage dann behoben —
+und dabei zeigte sich, dass er kein kosmetischer war.
+
+`profiles.hotel_id` ist für Management bloß das **Stammhaus**, nicht die
+Berechtigung. Beim Löschen dieses Hauses nimmt die Kaskade die Zeile trotzdem
+mit. Und weil `stays.created_by` und `service_orders.done_by` auf `profiles`
+zeigen, **scheitert danach jeder Check-in dieser Person** mit einer
+Fremdschlüsselverletzung. Der wahrscheinlichste Betroffene ist nicht ein
+Randfall-Manager, sondern der **Inhaber selbst**, der eines von zwei Häusern
+schließt — sein Stammhaus zeigt ja irgendwohin.
+
+`stammhausUmhaengen` setzt das Stammhaus deshalb **vor** dem Löschen um: auf ein
+Haus, in dem die Person noch aktiv eingetragen ist (`hotel_members`), sonst auf
+ein weiteres Haus des eigenen Kontos. Häuser, die im selben Vorgang ebenfalls
+verschwinden, sind ausgenommen (`auchWeg`) — beim Konto-Löschen also alle.
+Reinigungskräfte bleiben außen vor: Sie gehören zu genau einem Haus und sollen
+mit ihm gehen.
+
+Der Test prüft nicht nur die umgehängte Spalte, sondern **legt anschließend
+einen Aufenthalt mit `created_by` an**. Das ist der eigentliche Beweis: Ohne das
+Umhängen bräche genau dort der Fremdschlüssel.
+
 ## 8. Offen
 
 - **Test-Szenario bleibt vorübergehend.** `purgeTestDataAction` gehört mit

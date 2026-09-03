@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { buildWorld, destroyWorld, serviceClient, type World } from './helpers/world'
-import { deleteAccountData, previewAccountDeletion } from '@/utils/deletion'
+import { deleteAccountData, deleteHotelData, previewAccountDeletion } from '@/utils/deletion'
 
 /**
  * Löschbegehren — „entfernt alle meine Daten".
@@ -92,5 +92,54 @@ describe('Löschbegehren — ganzes Konto', () => {
     expect(await authUserExistiert(alpha.owner.id)).toBe(true)
     expect(await authUserExistiert(alpha.maid.id)).toBe(true)
     expect(await authUserExistiert(alpha.manager.id)).toBe(true)
+  })
+})
+
+/**
+ * Der Grenzfall: Das **Stammhaus** (`profiles.hotel_id`) einer Person
+ * verschwindet, die anderswo weiterarbeitet.
+ *
+ * Ohne Gegenmaßnahme nimmt die Kaskade ihre `profiles`-Zeile mit — und weil
+ * `stays.created_by` darauf zeigt, scheitert danach **jeder Check-in** dieser
+ * Person mit einer Fremdschlüsselverletzung. Der wahrscheinlichste Betroffene
+ * ist der Inhaber selbst, der eines von mehreren Häusern schließt.
+ */
+describe('Löschbegehren — einzelnes Haus', () => {
+  it('hängt das Stammhaus um, statt das Profil mitzunehmen', async () => {
+    const alpha = world.alpha
+
+    // Ausgangslage: Der Inhaber hat sein Stammhaus in A1 — genau dem Haus,
+    // das gleich verschwindet. Zugriff hat er über die Inhaberschaft.
+    const { data: vorher } = await admin()
+      .from('profiles').select('hotel_id').eq('id', alpha.owner.id).maybeSingle()
+    expect(vorher?.hotel_id).toBe(alpha.a1.id)
+
+    const res = await deleteHotelData(alpha.a1.id)
+    expect(res.error).toBeUndefined()
+    expect(await zaehle('hotels', 'id', alpha.a1.id)).toBe(0)
+
+    // Das Profil lebt und zeigt jetzt auf das verbliebene Haus.
+    const { data: nachher } = await admin()
+      .from('profiles').select('hotel_id').eq('id', alpha.owner.id).maybeSingle()
+    expect(nachher?.hotel_id).toBe(alpha.a2.id)
+    expect(await authUserExistiert(alpha.owner.id)).toBe(true)
+
+    // Der eigentliche Beweis: Ein Check-in im verbliebenen Haus geht durch.
+    // Ohne das Umhängen bräche hier der Fremdschlüssel auf `profiles`.
+    const { error } = await admin().from('stays').insert({
+      hotel_id: alpha.a2.id,
+      room_id: alpha.a2.rooms['201'],
+      pin: '424242',
+      session_token: `itest-stammhaus-${Date.now()}`,
+      created_by: alpha.owner.id,
+    })
+    expect(error).toBeNull()
+  }, 60_000)
+
+  it('nimmt das Profil mit, wenn die Person nirgends sonst steht', async () => {
+    // Gegenprobe: Die Reinigungskraft gehörte nur zu A1 und ist mit dem Haus
+    // gegangen — samt Anmeldekonto.
+    expect(await zaehle('profiles', 'id', world.alpha.maid.id)).toBe(0)
+    expect(await authUserExistiert(world.alpha.maid.id)).toBe(false)
   })
 })

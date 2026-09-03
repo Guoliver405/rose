@@ -155,12 +155,75 @@ export async function previewAccountDeletion(accountId: string): Promise<Deletio
 }
 
 /**
- * Ein Haus restlos entfernen. Reihenfolge ist wesentlich:
- * erst die kaskadenfreien Zeilen, dann das Haus (Kaskade), dann die
- * Anmeldekonten — die lassen sich erst danach zuverlässig beurteilen.
+ * Rettet die `profiles`-Zeilen von Personen, die das Haus überleben.
+ *
+ * `profiles.hotel_id` ist für Management nur das **Stammhaus**, nicht die
+ * Berechtigung — die steht in `hotel_members` bzw. `account_members`. Beim
+ * Löschen des Stammhauses nimmt die Kaskade die Zeile aber trotzdem mit, und
+ * das ist kein kosmetischer Verlust: `stays.created_by` und
+ * `service_orders.done_by` zeigen auf `profiles`. Ohne die Zeile scheitert
+ * **jeder künftige Check-in** dieser Person mit einer Fremdschlüsselverletzung.
+ *
+ * Betroffen ist typischerweise der Inhaber selbst, der eines von mehreren
+ * Häusern schließt. Deshalb wird das Stammhaus vorher umgehängt — auf ein
+ * Haus, in dem die Person noch aktiv ist und das nicht ebenfalls verschwindet.
+ *
+ * Reinigungskräfte (`username`) bleiben ausgenommen: Sie gehören zu genau
+ * einem Haus und sollen mit ihm gehen.
  */
-async function purgeHotel(admin: SupabaseClient, hotelId: string): Promise<string | null> {
+async function stammhausUmhaengen(
+  admin: SupabaseClient,
+  hotelId: string,
+  auchWeg: string[],
+): Promise<void> {
+  const verschwindet = new Set([hotelId, ...auchWeg])
+
+  const { data: profile } = await admin
+    .from('profiles').select('id').eq('hotel_id', hotelId).is('username', null)
+
+  for (const p of profile ?? []) {
+    const userId = p.id as string
+
+    // 1) Ein Haus, in dem die Person noch aktiv eingetragen ist.
+    const { data: members } = await admin
+      .from('hotel_members').select('hotel_id').eq('user_id', userId).is('deactivated_at', null)
+    let ersatz = (members ?? [])
+      .map(m => m.hotel_id as string)
+      .find(id => !verschwindet.has(id)) ?? null
+
+    // 2) Sonst ein weiteres Haus des eigenen Kontos (Fall Inhaber).
+    if (!ersatz) {
+      const { data: owner } = await admin
+        .from('account_members').select('account_id').eq('user_id', userId)
+      for (const o of owner ?? []) {
+        const { data: weitere } = await admin
+          .from('hotels').select('id').eq('account_id', o.account_id as string)
+        ersatz = (weitere ?? []).map(h => h.id as string).find(id => !verschwindet.has(id)) ?? null
+        if (ersatz) break
+      }
+    }
+
+    if (ersatz) await admin.from('profiles').update({ hotel_id: ersatz }).eq('id', userId)
+  }
+}
+
+/**
+ * Ein Haus restlos entfernen. Reihenfolge ist wesentlich:
+ * erst die Stammhäuser retten, dann die kaskadenfreien Zeilen, dann das Haus
+ * (Kaskade), dann die Anmeldekonten — die lassen sich erst danach zuverlässig
+ * beurteilen.
+ *
+ * `auchWeg` nennt Häuser, die im selben Vorgang ebenfalls verschwinden; dorthin
+ * wird kein Stammhaus umgehängt.
+ */
+async function purgeHotel(
+  admin: SupabaseClient,
+  hotelId: string,
+  auchWeg: string[] = [],
+): Promise<string | null> {
   const kandidaten = await userIdsOfHotels(admin, [hotelId])
+
+  await stammhausUmhaengen(admin, hotelId, auchWeg)
 
   for (const table of ['room_state_transitions', 'billing_snapshots']) {
     const { error } = await admin.from(table).delete().eq('hotel_id', hotelId)
@@ -196,8 +259,10 @@ export async function deleteAccountData(accountId: string): Promise<{ error?: st
   const admin = createAdminClient()
 
   const { data: hotels } = await admin.from('hotels').select('id').eq('account_id', accountId)
-  for (const h of hotels ?? []) {
-    const fehler = await purgeHotel(admin, h.id as string)
+  const alle = (hotels ?? []).map(h => h.id as string)
+  for (const id of alle) {
+    // Alle Häuser des Kontos gehen mit — dorthin darf kein Stammhaus wandern.
+    const fehler = await purgeHotel(admin, id, alle)
     if (fehler) return { error: fehler }
   }
 
