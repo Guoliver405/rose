@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import {
-  BarChart3, BedDouble, ChevronRight, ConciergeBell, FlaskConical, KeyRound, QrCode,
+  BarChart3, BedDouble, ChevronRight, ConciergeBell, DoorOpen, FlaskConical, KeyRound, QrCode,
   SlidersHorizontal, Users, type LucideIcon,
 } from 'lucide-react'
 import { getManagementContext } from '@/utils/auth'
@@ -20,6 +20,10 @@ const ADMIN_TILES: Tile[] = [
   {
     path: '/einstellungen/hotel', icon: SlidersHorizontal, title: 'Hotel & Regeln',
     description: 'Hotelname, Gast-PIN-Länge, Reinigungs-Timeout, Routine-Reinigung',
+  },
+  {
+    path: '/einstellungen/gastzugang', icon: DoorOpen, title: 'Gäste-Zugang',
+    description: 'Fester Zimmer-QR mit PIN oder individueller Zugang je Aufenthalt',
   },
   {
     path: '/zimmer', icon: BedDouble, title: 'Zimmer',

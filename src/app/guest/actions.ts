@@ -59,11 +59,16 @@ export async function guestLoginAction(input: GuestLoginInput): Promise<{ error?
   }
   if (roomIds.length === 0) return FAIL
 
+  // Nur Aufenthalte des PIN-Verfahrens nehmen teil. Ein Aufenthalt mit
+  // individuellem Zugang hat gar keine PIN (`stays.pin` ist dort null) — er
+  // darf hier nicht einmal als Kandidat auftauchen, sonst liefe die
+  // Rate-Limit-Zählung auf einem Aufenthalt, den niemand per PIN öffnen kann.
   const { data: candidates } = await admin
     .from('stays')
     .select('id, hotel_id, pin, session_token, pin_attempts, pin_locked_until')
     .in('room_id', roomIds)
     .is('checked_out_at', null)
+    .eq('access_mode', 'pin')
   if (!candidates || candidates.length === 0) return FAIL
 
   // Rate-Limit je Aufenthalt: 5 Fehlversuche → 15 Minuten Sperre.

@@ -4,9 +4,17 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/utils/supabase/service'
 import { getManagementContext } from '@/utils/auth'
 import { generatePin, generateToken, clampPinLength } from '@/lib/ids'
+import {
+  parseGuestAccessMode, roomAccessUrl, stayAccessUrl, type GuestAccessMode,
+} from '@/lib/guest-access'
+import { mailReady, sendGuestAccessMail } from '@/utils/mail'
 
 export type CheckInResult = {
+  /** Nur beim Verfahren `pin`. */
   pin?: string
+  /** Nur beim Verfahren `link` — der individuelle Zugang dieses Aufenthalts. */
+  guestToken?: string
+  accessMode?: GuestAccessMode
   warning?: { reasons: string[] }
   error?: string
 }
@@ -57,37 +65,55 @@ export async function checkInAction(slug: string, roomId: string, force = false)
 
   const { data: hotel } = await admin
     .from('hotels').select('policies').eq('id', ctx.hotelId).single()
-  const policies = (hotel?.policies ?? {}) as { pinLength?: number }
-  const pinLength = clampPinLength(policies.pinLength)
+  const policies = (hotel?.policies ?? {}) as Record<string, unknown>
 
-  // PIN darf nicht mit einem aktiven Aufenthalt auf einem Zimmer GLEICHER
-  // Nummer kollidieren (Nummern sind nur je Gebäudeteil eindeutig; der
-  // Gast-Login löst Duplikate über die PIN auf).
-  // ZWINGEND auf das eigene Hotel eingrenzen: ohne den Filter liest der
-  // Admin-Client (RLS-Bypass) Klartext-PINs fremder Mandanten.
-  const { data: sameNumberRooms } = await admin
-    .from('rooms')
-    .select('id')
-    .eq('hotel_id', ctx.hotelId)
-    .ilike('number', room.number)
-    .neq('id', roomId)
-    .limit(10)
-  const takenPins = new Set<string>()
-  if (sameNumberRooms && sameNumberRooms.length > 0) {
-    const { data: siblingStays } = await admin
-      .from('stays')
-      .select('pin')
-      .in('room_id', sameNumberRooms.map(r => r.id))
-      .is('checked_out_at', null)
-    for (const s of siblingStays ?? []) takenPins.add(s.pin)
+  // Das Verfahren wird HIER festgehalten und nicht bei jedem Zugriff neu aus
+  // den Policies gelesen. Dadurch behalten laufende Aufenthalte ihren
+  // ausgegebenen Zugang, wenn das Haus die Einstellung wechselt — erst der
+  // nächste Check-in folgt dem neuen Verfahren.
+  const accessMode = parseGuestAccessMode(policies)
+
+  let pin: string | null = null
+  let guestToken: string | null = null
+
+  if (accessMode === 'pin') {
+    const pinLength = clampPinLength(policies.pinLength as number | undefined)
+
+    // PIN darf nicht mit einem aktiven Aufenthalt auf einem Zimmer GLEICHER
+    // Nummer kollidieren (Nummern sind nur je Gebäudeteil eindeutig; der
+    // Gast-Login löst Duplikate über die PIN auf).
+    // ZWINGEND auf das eigene Hotel eingrenzen: ohne den Filter liest der
+    // Admin-Client (RLS-Bypass) Klartext-PINs fremder Mandanten.
+    const { data: sameNumberRooms } = await admin
+      .from('rooms')
+      .select('id')
+      .eq('hotel_id', ctx.hotelId)
+      .ilike('number', room.number)
+      .neq('id', roomId)
+      .limit(10)
+    const takenPins = new Set<string>()
+    if (sameNumberRooms && sameNumberRooms.length > 0) {
+      const { data: siblingStays } = await admin
+        .from('stays')
+        .select('pin')
+        .in('room_id', sameNumberRooms.map(r => r.id))
+        .is('checked_out_at', null)
+      for (const s of siblingStays ?? []) if (s.pin) takenPins.add(s.pin)
+    }
+    pin = generatePin(pinLength)
+    for (let i = 0; i < 20 && takenPins.has(pin); i++) pin = generatePin(pinLength)
+  } else {
+    // Beim individuellen Verfahren entsteht bewusst KEINE PIN: sie wäre ein
+    // zweiter Zugangsweg, den niemand erfährt und den niemand braucht.
+    guestToken = generateToken(24)
   }
-  let pin = generatePin(pinLength)
-  for (let i = 0; i < 20 && takenPins.has(pin); i++) pin = generatePin(pinLength)
 
   const { error: insErr } = await admin.from('stays').insert({
     hotel_id: ctx.hotelId,
     room_id: roomId,
     pin,
+    guest_token: guestToken,
+    access_mode: accessMode,
     session_token: generateToken(24),
     created_by: ctx.userId,
   })
@@ -104,7 +130,7 @@ export async function checkInAction(slug: string, roomId: string, force = false)
     .eq('hotel_id', ctx.hotelId)
 
   revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
-  return { pin }
+  return { pin: pin ?? undefined, guestToken: guestToken ?? undefined, accessMode }
 }
 
 /** Check-out per Klick: beendet den Stay (PIN + Gast-Cookie sofort tot). */
@@ -193,4 +219,100 @@ export async function markCleanedAction(slug: string, roomId: string): Promise<{
 
   revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
   return {}
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GAST-ZUGANG — anzeigen, drucken, mailen.
+//
+// Was ein Gast bekommt, hängt am Aufenthalt (`stays.access_mode`), nicht an
+// der aktuellen Hotel-Einstellung: Wer beim Check-in einen Link erhalten hat,
+// behält ihn auch dann, wenn das Haus danach auf das PIN-Verfahren wechselt.
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type GuestAccess = {
+  accessMode: GuestAccessMode
+  roomNumber: string
+  hotelName: string
+  /** Adresse, die den Gast ins Portal bringt (Zimmer-QR bzw. Aufenthalts-Link). */
+  url: string
+  /** Nur beim PIN-Verfahren. */
+  pin?: string
+  /** Steuert, ob die Oberfläche den Mail-Versand anbietet. */
+  mailReady: boolean
+}
+
+/** Zugangsdaten des laufenden Aufenthalts — für Dialog, Druck und Mail. */
+export async function getGuestAccessAction(
+  slug: string,
+  roomId: string,
+): Promise<{ access?: GuestAccess; error?: string }> {
+  const ctx = await getManagementContext(slug)
+  if (!ctx) return { error: 'Nicht angemeldet.' }
+  const admin = createAdminClient()
+
+  const { data: room } = await admin
+    .from('rooms').select('id, hotel_id, number').eq('id', roomId).maybeSingle()
+  if (!room || room.hotel_id !== ctx.hotelId) return { error: 'Zimmer nicht gefunden.' }
+
+  const { data: stay } = await admin
+    .from('stays')
+    .select('pin, guest_token, access_mode')
+    .eq('room_id', roomId)
+    .is('checked_out_at', null)
+    .maybeSingle()
+  if (!stay) return { error: 'Für dieses Zimmer läuft kein Aufenthalt.' }
+
+  const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+  const mode = stay.access_mode === 'link' ? 'link' : 'pin'
+
+  if (mode === 'link') {
+    if (!stay.guest_token) return { error: 'Diesem Aufenthalt fehlt der Zugang.' }
+    return {
+      access: {
+        accessMode: 'link',
+        roomNumber: room.number,
+        hotelName: ctx.hotelName,
+        url: stayAccessUrl(site, stay.guest_token),
+        mailReady: mailReady(),
+      },
+    }
+  }
+
+  // PIN-Verfahren: Der Zimmer-QR ist der Einstieg, die PIN der zweite Faktor.
+  const { data: token } = await admin
+    .from('room_guest_tokens').select('token').eq('room_id', roomId).maybeSingle()
+
+  return {
+    access: {
+      accessMode: 'pin',
+      roomNumber: room.number,
+      hotelName: ctx.hotelName,
+      url: token ? roomAccessUrl(site, token.token) : `${site}/h/${ctx.hotelSlug}/guest`,
+      pin: stay.pin ?? undefined,
+      mailReady: mailReady(),
+    },
+  }
+}
+
+/**
+ * Zugang per Mail schicken.
+ *
+ * Die Adresse wird **nicht gespeichert** — sie lebt nur für die Dauer dieses
+ * Aufrufs. `stays` bleibt anonym.
+ */
+export async function mailGuestAccessAction(
+  slug: string,
+  roomId: string,
+  email: string,
+): Promise<{ error?: string }> {
+  const { access, error } = await getGuestAccessAction(slug, roomId)
+  if (!access) return { error: error ?? 'Zugang nicht gefunden.' }
+
+  return sendGuestAccessMail({
+    to: email.trim(),
+    hotelName: access.hotelName,
+    roomNumber: access.roomNumber,
+    url: access.url,
+    pin: access.pin,
+  })
 }

@@ -19,7 +19,10 @@ export type RoomTileData = {
   /** Außer Betrieb — kein Check-in, keine Reinigung, nicht auf dem Maid-Board. */
   deactivated: boolean
   occupied: boolean
+  /** Nur beim Verfahren `pin` gesetzt. */
   pin: string | null
+  /** Zugangsverfahren DIESES Aufenthalts — nicht das aktuell eingestellte. */
+  accessMode: 'pin' | 'link'
   checkedInAt: string | null
   guestSignal: 'none' | 'please_clean' | 'dnd'
   checkoutPending: boolean
@@ -208,6 +211,7 @@ function RoomDialog({ hotelSlug, room, onClose }: { hotelSlug: string; room: Roo
   const [error, setError] = useState<string | null>(null)
   const [warning, setWarning] = useState<string[] | null>(null)
   const [freshPin, setFreshPin] = useState<string | null>(null)
+  const [freshMode, setFreshMode] = useState<'pin' | 'link' | null>(null)
   const [confirmCheckout, setConfirmCheckout] = useState(false)
 
   // Verlauf beim Öffnen nachladen; `alive` verhindert setState nach dem
@@ -236,6 +240,9 @@ function RoomDialog({ hotelSlug, room, onClose }: { hotelSlug: string; room: Roo
       if (res.warning) { setWarning(res.warning.reasons); return }
       setWarning(null)
       setFreshPin(res.pin ?? null)
+      // Das Verfahren kommt vom Check-in zurück: Die Zimmer-Daten der Seite
+      // sind bis zum nächsten Rendern noch die von vor dem Check-in.
+      setFreshMode(res.accessMode ?? null)
     })
   }
 
@@ -298,24 +305,48 @@ function RoomDialog({ hotelSlug, room, onClose }: { hotelSlug: string; room: Roo
 
         <p className="mb-4 text-sm font-semibold text-ink-soft">{statusLabel(room)}</p>
 
-        {/* PIN-Anzeige nach frischem Check-in ODER für belegtes Zimmer */}
-        {(freshPin || (room.occupied && room.pin)) && (
+        {/* Gast-Zugang nach frischem Check-in ODER für belegtes Zimmer.
+            Was hier steht, hängt am Verfahren DIESES Aufenthalts: beim
+            PIN-Verfahren die PIN zum Vorlesen, beim individuellen Verfahren
+            der Hinweis auf das auszuhändigende Handout — dort steckt der
+            QR-Code, der hier nichts nützt. */}
+        {(freshMode || (room.occupied && (room.pin || room.accessMode === 'link'))) && (
           <div className="mb-4 rounded-xl border border-action-tint-edge bg-action-tint p-4 text-center">
-            <p className="text-xs font-semibold tracking-wide text-action-deep">
-              {freshPin ? 'CHECK-IN ERFOLGREICH — GAST-PIN' : 'GAST-PIN'}
-            </p>
-            <p className="mt-1 font-mono text-4xl font-black tracking-[0.3em] text-action-deep">
-              {freshPin ?? room.pin}
-            </p>
-            <p className="mt-2 text-xs text-action-deep">
-              Dem Gast mitteilen — Anmeldung mit Zimmernummer + PIN im Gäste-Portal.
-              {checkedInLabel && !freshPin ? ` Eingecheckt am ${checkedInLabel}.` : ''}
-            </p>
+            {(freshMode ?? room.accessMode) === 'link' ? (
+              <>
+                <p className="text-xs font-semibold tracking-wide text-action-deep">
+                  {freshMode ? 'CHECK-IN ERFOLGREICH — ZUGANG AUSHÄNDIGEN' : 'INDIVIDUELLER ZUGANG'}
+                </p>
+                <p className="mt-2 text-sm font-bold text-action-deep">
+                  Dieser Aufenthalt hat einen eigenen QR-Code — ohne PIN.
+                </p>
+                <p className="mt-1 text-xs text-action-deep">
+                  Bitte ausdrucken oder per E-Mail schicken. Der Zugang endet mit dem Check-out.
+                  {checkedInLabel && !freshMode ? ` Eingecheckt am ${checkedInLabel}.` : ''}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-xs font-semibold tracking-wide text-action-deep">
+                  {freshMode ? 'CHECK-IN ERFOLGREICH — GAST-PIN' : 'GAST-PIN'}
+                </p>
+                <p className="mt-1 font-mono text-4xl font-black tracking-[0.3em] text-action-deep">
+                  {freshPin ?? room.pin}
+                </p>
+                <p className="mt-2 text-xs text-action-deep">
+                  Dem Gast mitteilen — Anmeldung mit Zimmernummer + PIN im Gäste-Portal.
+                  {checkedInLabel && !freshMode ? ` Eingecheckt am ${checkedInLabel}.` : ''}
+                </p>
+              </>
+            )}
             <Link
               href={`/h/${hotelSlug}/admin/handout/${room.id}`}
               className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-action-tint-edge px-3 py-1.5 text-sm font-bold text-action-deep hover:bg-surface"
             >
-              <Printer className="h-4 w-4" /> Gast-Handout drucken
+              <Printer className="h-4 w-4" />
+              {(freshMode ?? room.accessMode) === 'link'
+                ? 'Zugang drucken oder mailen'
+                : 'Gast-Handout drucken'}
             </Link>
           </div>
         )}

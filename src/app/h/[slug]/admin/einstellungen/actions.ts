@@ -177,3 +177,37 @@ export async function changePasswordAction(slug: string, formData: FormData): Pr
   }
   return {}
 }
+
+/**
+ * Gast-Zugangsverfahren umstellen — bewusst eine eigene Action und eine eigene
+ * Seite, nicht ein Feld im ohnehin vollen Hotel-Formular: Die Wahl ist eine
+ * grundsätzliche Betriebsentscheidung und braucht Platz für die Erläuterung.
+ *
+ * Die Umstellung wirkt **erst ab dem nächsten Check-in**. Laufende Aufenthalte
+ * behalten ihren ausgegebenen Zugang, weil das Verfahren am Aufenthalt
+ * festgehalten ist (`stays.access_mode`).
+ */
+export async function updateGuestAccessModeAction(
+  slug: string,
+  mode: string,
+): Promise<ActionResult> {
+  const ctx = await getAdminContext(slug)
+  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (mode !== 'pin' && mode !== 'link') return { error: 'Unbekanntes Verfahren.' }
+
+  const admin = createAdminClient()
+  const { data: hotel } = await admin
+    .from('hotels').select('policies').eq('id', ctx.hotelId).single()
+
+  const merged = {
+    ...((hotel?.policies ?? {}) as Record<string, unknown>),
+    guestAccessMode: mode,
+  }
+
+  const { error } = await admin
+    .from('hotels').update({ policies: merged }).eq('id', ctx.hotelId)
+  if (error) return { error: error.message }
+
+  revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
+  return {}
+}

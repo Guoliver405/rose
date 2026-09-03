@@ -28,7 +28,10 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
 ## Komfort für Mehrhaus-Kunden (Ketten)
 
 - [ ] **Konto-weite Service-Vorschlagsliste**
-- [ ] **Kontoweite Policy-Vorgaben** mit Abweichung je Haus
+- [ ] **Kontoweite Policy-Vorgaben** mit Abweichung je Haus — **Achtung:** Das
+      Gast-Zugangsverfahren (`guestAccessMode`) gehört ausdrücklich zu denen,
+      die je Haus abweichen dürfen. Es hängt an der baulichen Situation
+      (Aushänge im Zimmer möglich oder nicht), nicht am Konto.
 - [ ] **Konsolidierte Auswertung** über alle Häuser
 
 (alle drei: 6d-Plan, Abschnitt 13)
