@@ -7,6 +7,7 @@ import { createClient } from '@/utils/supabase/server'
 import { getAdminContext, getManagementContext } from '@/utils/auth'
 import { generatePin, generateToken } from '@/lib/ids'
 import { buildMaidEmail, normalizeUsername } from '@/lib/maid'
+import { testzugaengeErlaubt } from '@/lib/test-accounts'
 
 export type MaidLoginCard = {
   profileId: string
@@ -523,6 +524,44 @@ export async function deleteStaffAction(
 export type Einladung = { displayName: string; email: string }
 
 /**
+ * Profil + Hausmitgliedschaft für einen frisch erzeugten Auth-Nutzer.
+ *
+ * Die `profiles`-Zeile ist PFLICHT, auch für Management: `stays.created_by`
+ * und `service_orders.done_by` zeigen darauf. `hotel_id` ist dort nur das
+ * Stammhaus, NICHT die Berechtigung — die steht in `hotel_members`.
+ *
+ * Scheitert einer der beiden Schritte, wird der Auth-Nutzer wieder entfernt:
+ * ein Konto ohne Profil wäre eine Leiche, die sich anmelden kann.
+ *
+ * Gibt eine Fehlermeldung zurück oder `null`.
+ */
+async function legeMitgliedschaftAn(
+  admin: SupabaseClient,
+  userId: string,
+  opts: { displayName: string; hotelId: string; role: 'reception' | 'manager' },
+): Promise<string | null> {
+  const { displayName, hotelId, role } = opts
+
+  const { error: profileErr } = await admin
+    .from('profiles')
+    .insert({ id: userId, hotel_id: hotelId, display_name: displayName })
+  if (profileErr) {
+    await admin.auth.admin.deleteUser(userId)
+    return `Profil konnte nicht angelegt werden: ${profileErr.message}`
+  }
+
+  const { error: memberErr } = await admin
+    .from('hotel_members')
+    .insert({ hotel_id: hotelId, user_id: userId, role, display_name: displayName })
+  if (memberErr) {
+    await admin.auth.admin.deleteUser(userId)
+    return `Zuordnung konnte nicht angelegt werden: ${memberErr.message}`
+  }
+
+  return null
+}
+
+/**
  * Gemeinsamer Einladungs-Pfad für Rezeption und Manager.
  *
  * Statt ein Passwort zu erzeugen und vorlesen zu lassen, verschickt Supabase
@@ -538,6 +577,13 @@ export type Einladung = { displayName: string; email: string }
  * PKCE scheidet bei Einladungen aus, weil der einladende Browser ein anderer
  * ist als der annehmende.
  */
+/**
+ * Zugangsdaten eines **Testzugangs** — nur im Testbetrieb, siehe
+ * [test-accounts.ts](src/lib/test-accounts.ts). Das Passwort wird genau einmal
+ * angezeigt.
+ */
+export type Zugangsdaten = { displayName: string; email: string; password: string }
+
 async function ladeEin(opts: {
   email: string
   displayName: string
@@ -545,9 +591,41 @@ async function ladeEin(opts: {
   hotelSlug: string
   hotelName: string
   role: 'reception' | 'manager'
-}): Promise<{ einladung?: Einladung; error?: string }> {
-  const { email, displayName, hotelId, hotelSlug, hotelName, role } = opts
+  /** Testbetrieb: Zugang direkt anlegen, Passwort anzeigen, keine Mail. */
+  ohneMail?: boolean
+}): Promise<{ einladung?: Einladung; zugang?: Zugangsdaten; error?: string }> {
+  const { email, displayName, hotelId, hotelSlug, hotelName, role, ohneMail } = opts
   const admin = createAdminClient()
+
+  // ── Testbetrieb: ohne Mail, Passwort einmal anzeigen ───────────────────
+  // Der Weg existiert nur, wenn ALLOW_TEST_ACCOUNTS gesetzt ist; die Prüfung
+  // steht hier und nicht nur in der Oberfläche, weil das Formular manipulierbar
+  // ist. `email_confirm: true` umgeht jeden Bestätigungslauf — dadurch sind
+  // auch nicht zustellbare Adressen (`…@rose.local`) brauchbar, an denen der
+  // Mailversand ohnehin scheitern würde.
+  if (ohneMail) {
+    if (!testzugaengeErlaubt()) return { error: 'Testzugänge sind nicht freigeschaltet.' }
+
+    const password = generateToken(9)
+    const { data: created, error: createErr } = await admin.auth.admin.createUser({
+      email, password, email_confirm: true,
+    })
+    if (createErr || !created?.user) {
+      if (createErr?.message?.toLowerCase().includes('already')) {
+        return { error: 'Für diese E-Mail-Adresse gibt es bereits einen Zugang.' }
+      }
+      return { error: createErr?.message ?? 'Zugang konnte nicht erstellt werden.' }
+    }
+
+    const fehler = await legeMitgliedschaftAn(admin, created.user.id, {
+      displayName, hotelId, role,
+    })
+    if (fehler) return { error: fehler }
+
+    revalidatePath(`/h/${hotelSlug}/admin`, 'layout')
+    revalidatePath('/admin')
+    return { zugang: { displayName, email, password } }
+  }
 
   const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
   const { data: invited, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(email, {
@@ -577,26 +655,10 @@ async function ladeEin(opts: {
     })
     return { error: 'Die Einladung konnte nicht verschickt werden. Bitte die Adresse prüfen.' }
   }
-  const userId = invited.user.id
-
-  // profiles-Zeile ist PFLICHT, auch für Management: stays.created_by und
-  // service_orders.done_by zeigen darauf. hotel_id = Stammhaus, NICHT die
-  // Berechtigung — die steht in hotel_members.
-  const { error: profileErr } = await admin
-    .from('profiles')
-    .insert({ id: userId, hotel_id: hotelId, display_name: displayName })
-  if (profileErr) {
-    await admin.auth.admin.deleteUser(userId)
-    return { error: `Profil konnte nicht angelegt werden: ${profileErr.message}` }
-  }
-
-  const { error: memberErr } = await admin
-    .from('hotel_members')
-    .insert({ hotel_id: hotelId, user_id: userId, role, display_name: displayName })
-  if (memberErr) {
-    await admin.auth.admin.deleteUser(userId)
-    return { error: `Zuordnung konnte nicht angelegt werden: ${memberErr.message}` }
-  }
+  const fehler = await legeMitgliedschaftAn(admin, invited.user.id, {
+    displayName, hotelId, role,
+  })
+  if (fehler) return { error: fehler }
 
   revalidatePath(`/h/${hotelSlug}/admin`, 'layout')
   revalidatePath('/admin')
@@ -660,7 +722,7 @@ export async function resendInvitationAction(
 export async function createReceptionAction(
   slug: string,
   formData: FormData,
-): Promise<{ einladung?: Einladung; error?: string }> {
+): Promise<{ einladung?: Einladung; zugang?: Zugangsdaten; error?: string }> {
   const ctx = await getAdminContext(slug)
   if (!ctx) return { error: 'Keine Berechtigung.' }
 
@@ -674,6 +736,7 @@ export async function createReceptionAction(
     email, displayName,
     hotelId: ctx.hotelId, hotelSlug: ctx.hotelSlug, hotelName: ctx.hotelName,
     role: 'reception',
+    ohneMail: formData.get('ohneMail') === 'on',
   })
 }
 
@@ -702,7 +765,7 @@ async function requireOwner(slug: string) {
 export async function createManagerAction(
   slug: string,
   formData: FormData,
-): Promise<{ einladung?: Einladung; error?: string }> {
+): Promise<{ einladung?: Einladung; zugang?: Zugangsdaten; error?: string }> {
   const ctx = await requireOwner(slug)
   if (!ctx) return { error: 'Nur der Kontoinhaber kann Manager verwalten.' }
 
@@ -716,6 +779,7 @@ export async function createManagerAction(
     email, displayName,
     hotelId: ctx.hotelId, hotelSlug: ctx.hotelSlug, hotelName: ctx.hotelName,
     role: 'manager',
+    ohneMail: formData.get('ohneMail') === 'on',
   })
   // Beim Manager gibt es für „schon vergeben" einen zweiten Weg — darauf
   // hinweisen, statt den Nutzer im Regen stehen zu lassen.

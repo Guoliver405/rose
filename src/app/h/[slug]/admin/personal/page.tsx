@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getManagementContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/service'
+import { testzugaengeErlaubt } from '@/lib/test-accounts'
 import PersonalManager, { type MaidRow, type ManagerRow, type ReceptionRow } from './PersonalManager'
 
 export default async function PersonalPage({
@@ -140,6 +141,7 @@ export default async function PersonalPage({
       managers={managers}
       verfuegbareManager={verfuegbareManager}
       canManage={ctx.role !== 'reception'}
+      testAccounts={testzugaengeErlaubt()}
       isOwner={ctx.isOwner}
     />
   )

@@ -4,14 +4,15 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  Building2, IdCard, Loader2, MailCheck, Pencil, Plus, Printer, Send, Sparkles, Trash2, UserCheck,
+  Building2, IdCard, KeyRound, Loader2, MailCheck, Pencil, Plus, Printer, Send, Sparkles, Trash2,
+  UserCheck,
   UserMinus, UserRound,
 } from 'lucide-react'
 import {
   attachManagerAction, createMaidAction, createManagerAction, createReceptionAction,
   deleteStaffAction, getStaffDeletionImpactAction, issueMaidLoginCardAction, renameStaffAction,
   resendInvitationAction, setStaffActiveAction,
-  type Einladung, type StaffDeletionImpact, type StaffKind,
+  type Einladung, type StaffDeletionImpact, type StaffKind, type Zugangsdaten,
 } from './actions'
 
 export type MaidRow = {
@@ -80,6 +81,7 @@ export default function PersonalManager({
   managers,
   verfuegbareManager,
   canManage,
+  testAccounts,
   isOwner,
 }: {
   hotelSlug: string
@@ -91,6 +93,11 @@ export default function PersonalManager({
   verfuegbareManager: ManagerRow[]
   /** false = Rezeptions-Rolle: nur Liste ansehen + Karten drucken. */
   canManage: boolean
+  /**
+   * Testbetrieb: Zugänge ohne Mailversand anlegen. Kommt aus
+   * `ALLOW_TEST_ACCOUNTS` — ohne die Variable erscheint das Häkchen nicht.
+   */
+  testAccounts: boolean
   /** Nur der Kontoinhaber verwaltet Manager — sonst wäre es Rechteausweitung. */
   isOwner: boolean
 }) {
@@ -100,6 +107,11 @@ export default function PersonalManager({
   const [notice, setNotice] = useState<string | null>(null)
   const [recEinladung, setRecEinladung] = useState<Einladung | null>(null)
   const [mgrEinladung, setMgrEinladung] = useState<Einladung | null>(null)
+  /**
+   * Testbetrieb: frisch angelegter Zugang samt Passwort. Steht genau einmal
+   * hier — danach nur noch über „Passwort zurücksetzen" erreichbar.
+   */
+  const [zugang, setZugang] = useState<Zugangsdaten | null>(null)
 
   /** Offenes Bearbeiten-Formular. */
   const [editId, setEditId] = useState<string | null>(null)
@@ -239,12 +251,14 @@ export default function PersonalManager({
     setError(null)
     setNotice(null)
     setRecEinladung(null)
+    setZugang(null)
     const formData = new FormData(form)
     startTransition(async () => {
       const res = await createReceptionAction(hotelSlug, formData)
       if (res.error) { setError(res.error); return }
       form.reset()
-      setRecEinladung(res.einladung!)
+      setRecEinladung(res.einladung ?? null)
+      setZugang(res.zugang ?? null)
       router.refresh()
     })
   }
@@ -253,12 +267,14 @@ export default function PersonalManager({
     setError(null)
     setNotice(null)
     setMgrEinladung(null)
+    setZugang(null)
     const formData = new FormData(form)
     startTransition(async () => {
       const res = await createManagerAction(hotelSlug, formData)
       if (res.error) { setError(res.error); return }
       form.reset()
-      setMgrEinladung(res.einladung!)
+      setMgrEinladung(res.einladung ?? null)
+      setZugang(res.zugang ?? null)
       router.refresh()
     })
   }
@@ -290,6 +306,29 @@ export default function PersonalManager({
   }
 
   // ─── Darstellung ──────────────────────────────────────────────────────────
+
+  /**
+   * Häkchen für den Testbetrieb — erscheint nur, wenn `ALLOW_TEST_ACCOUNTS`
+   * gesetzt ist. Amber statt neutral, damit im Screenshot erkennbar bleibt,
+   * dass hier ein Zugang ohne Einladung entstanden ist.
+   */
+  const testHaken = testAccounts ? (
+    <label className="mt-3 flex w-fit cursor-pointer items-start gap-2 rounded-lg border border-attention-tint-edge bg-attention-tint px-3 py-2">
+      <input
+        type="checkbox"
+        name="ohneMail"
+        className="mt-0.5 h-4 w-4 accent-[var(--color-attention-bar)]"
+      />
+      <span className="text-xs font-semibold text-attention-deepest">
+        Ohne E-Mail anlegen (Testbetrieb)
+        <span className="mt-0.5 block font-normal">
+          Keine Einladung — der Zugang entsteht sofort, das Passwort wird genau einmal
+          angezeigt. Damit sind auch nicht zustellbare Adressen wie
+          <code className="mx-1 font-mono">tester@rose.local</code> brauchbar.
+        </span>
+      </span>
+    </label>
+  ) : null
 
   /**
    * Eine Personal-Zeile mit den immer gleichen Vorgängen. Bewusst eine
@@ -593,6 +632,34 @@ export default function PersonalManager({
         </p>
       )}
 
+      {/* Testbetrieb: Zugangsdaten genau einmal. Danach führt nur noch
+          „Passwort vergessen" zu diesem Konto — bewusst, damit das Passwort
+          nirgends dauerhaft ablesbar herumsteht. */}
+      {zugang && (
+        <div className="rounded-xl border border-attention-tint-edge bg-attention-tint p-4">
+          <p className="flex items-center gap-1.5 text-sm font-bold text-attention-deepest">
+            <KeyRound className="h-4 w-4" /> Testzugang für {zugang.displayName} angelegt
+          </p>
+          <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+            <dt className="font-semibold text-attention-deepest">E-Mail</dt>
+            <dd className="font-mono text-attention-deepest">{zugang.email}</dd>
+            <dt className="font-semibold text-attention-deepest">Passwort</dt>
+            <dd className="font-mono text-lg font-black text-attention-deepest">{zugang.password}</dd>
+          </dl>
+          <p className="mt-3 text-xs text-attention-deepest">
+            Jetzt notieren — das Passwort steht <strong>nur hier</strong> und lässt sich später
+            nicht mehr anzeigen. Es wurde keine E-Mail verschickt.
+          </p>
+          <button
+            type="button"
+            onClick={() => setZugang(null)}
+            className="mt-3 rounded-lg border border-attention-tint-edge px-3 py-1.5 text-sm font-bold text-attention-deepest hover:bg-surface"
+          >
+            Notiert — ausblenden
+          </button>
+        </div>
+      )}
+
       {liste(
         maidEntries,
         <div className="rounded-xl border border-edge bg-surface p-8 text-center">
@@ -650,6 +717,7 @@ export default function PersonalManager({
                 Anlegen
               </button>
             </div>
+            {testHaken}
             <p className="mt-2 text-xs text-ink-muted">
               Rezeptions-Zugänge bedienen das Tagesgeschäft (Check-in/-out, Bestellungen,
               Drucken) — Einstellungen, Zimmer-Setup und Services bleiben der Verwaltung
@@ -727,6 +795,7 @@ export default function PersonalManager({
                 Anlegen
               </button>
             </div>
+            {testHaken}
             <p className="mt-2 text-xs text-ink-muted">
               Manager haben im Haus dieselben Rechte wie der Inhaber — ohne Zugriff auf das Konto.
               Die Person bekommt eine Einladung per E-Mail und vergibt ihr Passwort selbst.

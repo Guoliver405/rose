@@ -46,6 +46,12 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
 
 - [ ] **Test-Szenario ausbauen**, wenn es nicht mehr gebraucht wird — samt
       `purgeTestDataAction`. Rückbau-Hinweis steht in `test-actions.ts`.
+- [ ] **Testzugänge ohne Mailversand ausbauen** (gehört zum selben Rückbau):
+      `ALLOW_TEST_ACCOUNTS`, [test-accounts.ts](src/lib/test-accounts.ts), der
+      `ohneMail`-Zweig in `ladeEin` und das Häkchen in `PersonalManager`.
+      **In Produktion darf `ALLOW_TEST_ACCOUNTS` nie gesetzt werden** — sonst
+      wären vorgelesene Passwörter zurück, die im Juli bewusst abgeschafft
+      wurden.
 - [ ] **Gmail-Zustellbarkeit**: Einladungen landen im Werbung-Ordner. Kein
       Fehler, sondern fehlende Sendereputation — hilft nur regelmäßiger
       Versand über Tage. Praktische Relevanz vermutlich begrenzt, weil Hotels

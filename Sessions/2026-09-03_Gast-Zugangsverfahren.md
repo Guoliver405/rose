@@ -102,6 +102,40 @@ entfernen" abgeräumt (2 Aufenthalte, 2 Verlaufs-Einträge).
   Hotels. Bewusst so: Die Route kennt den Mandanten nur über einen gültigen
   Aufenthalt. Der Text dort trägt den Fall, ist aber allgemein gehalten.
 
+## 5. Nachtrag: Testzugänge ohne Mailversand
+
+Direkt im Anschluss beauftragt: Im Testbetrieb sollen sich Rezeptions- und
+Manager-Zugänge anlegen lassen, ohne dass jeder Tester ein echtes Postfach
+beisteuert — die sind quantitativ begrenzt.
+
+Umgesetzt als Häkchen „Ohne E-Mail anlegen (Testbetrieb)" in beiden
+Anlege-Formularen. Statt einer Einladung entsteht der Zugang direkt
+(`createUser` mit `email_confirm: true`), das Passwort wird **genau einmal**
+angezeigt. Weil kein Bestätigungslauf stattfindet, sind auch nicht zustellbare
+Adressen wie `zz-test1@rose.local` brauchbar — an denen scheitert sonst jeder
+Mailversand.
+
+**Der Riegel ist bewusst nicht das Häkchen, sondern die Umgebungsvariable**
+`ALLOW_TEST_ACCOUNTS=1` ([test-accounts.ts](../src/lib/test-accounts.ts)).
+Einladungen haben im Juli die vorgelesenen Passwörter abgelöst, damit kein
+Passwort je außerhalb des Kopfes seiner Person existiert; ein Häkchen, das jeder
+Kunde anklicken kann, holte genau das zurück. Geprüft wird zusätzlich
+serverseitig in `ladeEin`, weil ein Formularfeld manipulierbar ist. Fehlt die
+Variable, erscheint das Häkchen nicht und der Weg existiert nicht — dasselbe
+Muster wie bei `SIGNUP_INVITE_CODE`.
+
+Nebenbei kam heraus, dass `'use server'`-Dateien **nur async Funktionen
+exportieren dürfen** — die synchrone Prüffunktion musste deshalb in eine eigene
+Datei unter `src/lib/`.
+
+Verifiziert: Häkchen erscheint in beiden Formularen, Zugang mit
+`…@rose.local` angelegt, Passwort einmal angezeigt, keine Mail verschickt. Der
+Datenbestand stimmt (Auth-Konto mit bestätigter Adresse, Profil,
+Rezeptions-Rolle) — der Zugang ist also wirklich anmeldefähig, nicht nur
+angelegt. Testzugang danach über die Oberfläche wieder entfernt.
+
+Der Rückbau gehört zum Test-Szenario und steht in [TODO.md](../TODO.md).
+
 ---
 
 ## 🔖 Wiederaufnahme
