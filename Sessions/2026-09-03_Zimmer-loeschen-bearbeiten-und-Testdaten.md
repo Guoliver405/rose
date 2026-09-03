@@ -253,6 +253,48 @@ Konto, Profil **und der Stich** bestehen weiter. Probe-Zugang danach entfernt.
 | Bearbeiten Rezeption | nur Anzeigename, kein Benutzername-Feld ✅ |
 | Bug-Fix | Zugang entzogen, Nachweis erhalten ✅ |
 
+### Ein Modell für alle drei Arten
+
+Direkt im Anschluss beauftragt: die drei Muster zusammenführen. Vorher kannte
+die Reinigung „Deaktivieren" (umkehrbar) und „Löschen", Rezeption und Manager
+dagegen nur „Entfernen" — wobei die Anwendung **still im Hintergrund** entschied,
+ob dabei auch das Anmeldekonto verschwindet.
+
+Jetzt gilt überall dieselbe Zwei-Stufen-Logik:
+
+| Stufe | Wirkung | Umkehrbar |
+|---|---|---|
+| **Zugang beenden** | Anmeldung sofort tot, alle Daten bleiben | ja, „Wieder aktivieren" |
+| **Endgültig löschen** | mit bezifferter Folgenanzeige davor | nein |
+
+Umgesetzt über drei Actions statt fünf: `setStaffActiveAction`,
+`getStaffDeletionImpactAction`/`deleteStaffAction` und `renameStaffAction`;
+`resolveStaff` bestimmt die Art. `setMaidActiveAction`, `deleteMaidAction`,
+`deleteReceptionAction` und `detachManagerAction` sind darin aufgegangen. Auch
+in der Oberfläche rendert jetzt **eine** Render-Funktion alle Zeilen — drei
+parallel gepflegte Listen waren ja gerade der Grund, warum die Arten
+auseinandergelaufen sind.
+
+**Neu in der Datenbank:** `hotel_members.deactivated_at`
+([Migration](../Supabase_sql/2026-09-03_hotel_members_deactivated.sql)). Beim
+Management wirkt „beenden" **nur auf dieses Haus**; andere Häuser derselben
+Person bleiben unberührt. Entscheidend ist, dass der Filter an **drei Stellen
+zugleich** sitzt — `is_hotel_member`, `is_hotel_management` (RLS, die eigentliche
+Grenze) und `getManagementContext`/`listAccessibleHotels`. Fehlt er, ist „Zugang
+beenden" reine Kosmetik: die Zeile bliebe stehen und mit ihr der Zugriff.
+
+Dieselbe Migration schließt eine Altlast: Der `profiles`-Zweig in
+`is_hotel_member` ignorierte `deactivated_at`. Der Code weist eine ausgeschiedene
+Reinigungskraft an allen drei Login-Wegen ab, aber eine **bereits offene
+Sitzung** war datenbankseitig weiterhin berechtigt. Beide Fälle sind jetzt in
+`rls.test.ts` und `guards.test.ts` abgedeckt.
+
+Wo die Arten sich weiterhin unterscheiden, ist es sachlich begründet und steht
+im Dialog: Der **Abtipp-Riegel gilt nur der Reinigung**, weil allein dort
+`staff_log` kaskadiert. Beim Management bleibt das Anmeldekonto stehen, sobald
+Vorgänge daran hängen — das war vorher eine stille Entscheidung und wird jetzt
+vorher angesagt.
+
 ## 8. Offen
 
 - **Abrechnungs-Snapshot.** Solange `countBillableRooms` live ableitet, ändert
@@ -261,10 +303,6 @@ Konto, Profil **und der Stich** bestehen weiter. Probe-Zugang danach entfernt.
 - **Test-Szenario bleibt vorübergehend.** `purgeTestDataAction` gehört mit
   ausgebaut, wenn der Bereich verschwindet (Rückbau-Hinweis steht in
   `test-actions.ts`).
-- **Drei Modelle beim Personal.** Reinigung kennt „Deaktivieren" und „Löschen",
-  Rezeption und Manager nur „Entfernen" (mit stillem Behalten des Datensatzes,
-  wenn Historie existiert). Sachlich begründet, aber der Bediener sieht drei
-  verschiedene Muster. Nicht angefasst — wäre eine eigene Runde.
 
 ---
 
@@ -289,6 +327,11 @@ und ein behobener Bug beim Entziehen von Rezeptions-Zugängen. Alles verifiziert
   keine Kaskade.
 - Beim Abräumen von Zimmerstatus gilt: erst `room_states` schreiben, dann den
   Verlauf löschen — sonst füllt der Audit-Trigger ihn sofort wieder.
+- **Offen bis zum Einspielen:** Die Migration
+  `2026-09-03_hotel_members_deactivated.sql` liegt noch in `Supabase_sql/`. Sie
+  ist additiv (alter Code läuft weiter), aber der **neue** Code braucht die
+  Spalte — erst einspielen, dann pushen. Danach `npm run test:integration` und
+  die Sichtprüfung der Personal-Seite nachholen.
 - Beim Personal gilt die **umgekehrte** Regel: `staff_log.profile_id`
   kaskadiert. Wer dort etwas löschbar macht, muss vorher zählen, was verschwindet
   — und wer einen Auth-User löscht, muss `staff_log` mitprüfen, nicht nur

@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { buildWorld, destroyWorld, type World } from './helpers/world'
+import { buildWorld, destroyWorld, serviceClient, type World } from './helpers/world'
 import { signedInStore, type FakeCookieStore } from './helpers/cookies'
 
 /**
@@ -106,6 +106,29 @@ describe('getManagementContext — Rezeption', () => {
   it('kommt nicht ins Nachbarhaus', async () => {
     await alsUser(world.alpha.reception)
     expect(await getManagementContext(world.alpha.a2.slug)).toBeNull()
+  })
+
+  it('verliert mit dem beendeten Zugang auch den Kontext', async () => {
+    // Seit 03.09.2026 wird der Zugang beendet statt die Zeile gelöscht — der
+    // Guard muss `deactivated_at` also genauso auswerten wie die RLS.
+    await serviceClient()
+      .from('hotel_members')
+      .update({ deactivated_at: new Date().toISOString() })
+      .eq('hotel_id', world.alpha.a1.id)
+      .eq('user_id', world.alpha.reception.id)
+
+    await alsUser(world.alpha.reception)
+    expect(await getManagementContext(world.alpha.a1.slug)).toBeNull()
+    expect(await listAccessibleHotels()).toHaveLength(0)
+
+    await serviceClient()
+      .from('hotel_members')
+      .update({ deactivated_at: null })
+      .eq('hotel_id', world.alpha.a1.id)
+      .eq('user_id', world.alpha.reception.id)
+
+    await alsUser(world.alpha.reception)
+    expect(await getManagementContext(world.alpha.a1.slug)).toMatchObject({ role: 'reception' })
   })
 })
 

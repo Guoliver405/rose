@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/utils/supabase/service'
 import { createClient } from '@/utils/supabase/server'
 import { getAdminContext, getManagementContext } from '@/utils/auth'
@@ -118,53 +119,140 @@ export async function issueMaidLoginCardAction(
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// EIN MODELL FÜR ALLE DREI PERSONAL-ARTEN (03.09.2026)
+//
+// Vorher gab es drei Muster: Reinigung kannte „deaktivieren" (umkehrbar) und
+// „löschen", Rezeption und Manager nur „entfernen" — wobei die Anwendung still
+// im Hintergrund entschied, ob dabei auch das Konto verschwindet. Für den
+// Bediener sahen das drei verschiedene Systeme.
+//
+// Jetzt gilt überall dieselbe Zwei-Stufen-Logik:
+//
+//   1. Zugang beenden  — Login sofort tot, nichts geht verloren, umkehrbar
+//   2. Endgültig löschen — mit bezifferter Folgenanzeige davor
+//
+// Der Unterschied liegt nur noch dort, wo er sachlich begründet ist: Bei der
+// Reinigung hängt die Identität an EINEM Haus (`profiles`), beim Management an
+// einer Mitgliedschaft je Haus (`hotel_members`) — „beenden" wirkt deshalb beim
+// Manager nur auf DIESES Haus. Und Stufe 2 ist nur bei der Reinigung wirklich
+// destruktiv, weil allein dort `staff_log` mitkaskadiert.
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type StaffKind = 'maid' | 'reception' | 'manager'
+
+type ResolvedStaff = {
+  kind: StaffKind
+  displayName: string
+  /** Nur die Reinigung hat einen Benutzernamen. */
+  username: string | null
+  deactivatedAt: string | null
+}
+
+/** Welche Art von Personal ist das — und gehört es zu diesem Haus? */
+async function resolveStaff(
+  admin: SupabaseClient,
+  hotelId: string,
+  userId: string,
+): Promise<ResolvedStaff | null> {
+  const [{ data: profile }, { data: member }] = await Promise.all([
+    admin.from('profiles')
+      .select('hotel_id, username, display_name, deactivated_at').eq('id', userId).maybeSingle(),
+    admin.from('hotel_members')
+      .select('role, display_name, deactivated_at').eq('hotel_id', hotelId).eq('user_id', userId).maybeSingle(),
+  ])
+
+  if (profile?.username && profile.hotel_id === hotelId) {
+    return {
+      kind: 'maid',
+      displayName: profile.display_name,
+      username: profile.username,
+      deactivatedAt: profile.deactivated_at,
+    }
+  }
+  if (member) {
+    return {
+      kind: member.role === 'manager' ? 'manager' : 'reception',
+      displayName: member.display_name,
+      username: null,
+      deactivatedAt: member.deactivated_at,
+    }
+  }
+  return null
+}
+
+/** Manager verwaltet nur der Kontoinhaber — sonst wäre es Rechteausweitung. */
+function darfVerwalten(kind: StaffKind, isOwner: boolean): boolean {
+  return kind !== 'manager' || isOwner
+}
+
+export type SetStaffActiveResult = { error?: string; kind?: StaffKind; otherHotels?: number }
+
 /**
- * Reinigungskraft deaktivieren/reaktivieren — der Regelweg beim Ausscheiden.
- * Das Profil bleibt samt `staff_log` erhalten (Arbeitsnachweis!), Login per
- * Username+PIN und per QR-Karte wird abgewiesen. Die Login-Karte bleibt
- * absichtlich gespeichert: sie ist bei deaktiviertem Profil wirkungslos, und
- * eine Reaktivierung stellt den alten Zugang ohne Neudruck wieder her.
+ * Stufe 1 — Zugang beenden oder wieder aktivieren. Der Regelweg beim
+ * Ausscheiden: nichts geht verloren, alles ist umkehrbar.
+ *
+ * Reinigung: `profiles.deactivated_at`. Das Profil bleibt samt `staff_log`
+ * erhalten (Arbeitsnachweis!), Login per Username+PIN und per QR-Karte wird
+ * abgewiesen. Die Login-Karte bleibt absichtlich gespeichert — bei beendetem
+ * Zugang wirkungslos, und eine Wieder-Aktivierung stellt den alten Zugang ohne
+ * Neudruck her.
+ *
+ * Management: `hotel_members.deactivated_at`, also **nur für dieses Haus**.
+ * Andere Häuser derselben Person bleiben unberührt.
  */
-export async function setMaidActiveAction(
+export async function setStaffActiveAction(
   slug: string,
-  profileId: string,
+  userId: string,
   active: boolean,
-): Promise<{ error?: string }> {
+): Promise<SetStaffActiveResult> {
   const ctx = await getAdminContext(slug)
   if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (userId === ctx.userId) return { error: 'Der eigene Zugang lässt sich hier nicht beenden.' }
   const admin = createAdminClient()
 
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('id, hotel_id, username')
-    .eq('id', profileId)
-    .maybeSingle()
-  if (!profile || profile.hotel_id !== ctx.hotelId) return { error: 'Profil nicht gefunden.' }
-  if (!profile.username) return { error: 'Nur Reinigungskräfte können deaktiviert werden.' }
+  const staff = await resolveStaff(admin, ctx.hotelId, userId)
+  if (!staff) return { error: 'Zugang nicht gefunden.' }
+  if (!darfVerwalten(staff.kind, ctx.isOwner)) {
+    return { error: 'Nur der Kontoinhaber kann Manager verwalten.' }
+  }
 
-  if (!active) {
+  if (!active && staff.kind === 'maid') {
     const { data: cleaning } = await admin
-      .from('room_states')
-      .select('room_id')
-      .eq('cleaning_by', profileId)
-      .limit(1)
+      .from('room_states').select('room_id').eq('cleaning_by', userId).limit(1)
     if (cleaning && cleaning.length > 0) {
       return { error: 'Diese Kraft reinigt gerade ein Zimmer. Erst die Reinigung abschließen (oder im Board als erledigt markieren).' }
     }
   }
 
-  const { error } = await admin
-    .from('profiles')
-    .update({ deactivated_at: active ? null : new Date().toISOString() })
-    .eq('id', profileId)
-  if (error) return { error: error.message }
+  const stamp = active ? null : new Date().toISOString()
 
-  // Verortung endet mit der Deaktivierung.
-  if (!active) await admin.from('maid_presence').delete().eq('profile_id', profileId)
+  if (staff.kind === 'maid') {
+    const { error } = await admin
+      .from('profiles').update({ deactivated_at: stamp }).eq('id', userId).eq('hotel_id', ctx.hotelId)
+    if (error) return { error: error.message }
+    // Verortung endet mit dem Zugang.
+    if (!active) await admin.from('maid_presence').delete().eq('profile_id', userId)
+  } else {
+    const { error } = await admin
+      .from('hotel_members').update({ deactivated_at: stamp })
+      .eq('hotel_id', ctx.hotelId).eq('user_id', userId)
+    if (error) return { error: error.message }
+  }
+
+  // Wie viele Häuser betreut die Person sonst noch (aktiv)?
+  let otherHotels = 0
+  if (staff.kind === 'manager') {
+    const { data: rest } = await admin
+      .from('hotel_members').select('hotel_id')
+      .eq('user_id', userId).is('deactivated_at', null).neq('hotel_id', ctx.hotelId)
+    otherHotels = (rest ?? []).length
+  }
 
   revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
   revalidatePath(`/h/${ctx.hotelSlug}/service`)
-  return {}
+  revalidatePath('/admin')
+  return { kind: staff.kind, otherHotels }
 }
 
 /**
@@ -277,10 +365,12 @@ export async function renameStaffAction(
  * Zugang. `stays.created_by` und `service_orders.done_by` stehen dagegen auf
  * `on delete set null`: diese Einträge bleiben, verlieren aber den Namen.
  */
-export type MaidDeletionImpact = {
+export type StaffDeletionImpact = {
+  kind: StaffKind
   displayName: string
-  username: string
-  /** Bei vorhandener Historie abzutippen; sonst leer. */
+  /** Nur die Reinigung hat einen Benutzernamen. */
+  username: string | null
+  /** Bei drohendem Datenverlust abzutippen; sonst leer. */
   confirmPhrase: string
   requiresPhrase: boolean
   logEntries: number
@@ -292,34 +382,43 @@ export type MaidDeletionImpact = {
   hasCard: boolean
   /** Gesetzt = reinigt gerade, Löschen ist gesperrt. */
   cleaningRoom: string | null
+  /** Management: weitere Häuser derselben Person, die unberührt bleiben. */
+  otherHotels: number
+  /**
+   * Management: Das Anmeldekonto bleibt bestehen, weil Vorgänge daran hängen
+   * oder die Person noch woanders eingesetzt ist. Bisher entschied die
+   * Anwendung das still — jetzt steht es vorher da.
+   */
+  accountKept: boolean
 }
 
-export async function getMaidDeletionImpactAction(
+export async function getStaffDeletionImpactAction(
   slug: string,
-  profileId: string,
-): Promise<{ impact?: MaidDeletionImpact; error?: string }> {
+  userId: string,
+): Promise<{ impact?: StaffDeletionImpact; error?: string }> {
   const ctx = await getAdminContext(slug)
   if (!ctx) return { error: 'Keine Berechtigung.' }
   const admin = createAdminClient()
 
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('id, hotel_id, username, display_name')
-    .eq('id', profileId)
-    .maybeSingle()
-  if (!profile || profile.hotel_id !== ctx.hotelId) return { error: 'Profil nicht gefunden.' }
-  if (!profile.username) return { error: 'Kein Reinigungs-Zugang.' }
+  const staff = await resolveStaff(admin, ctx.hotelId, userId)
+  if (!staff) return { error: 'Zugang nicht gefunden.' }
+  if (!darfVerwalten(staff.kind, ctx.isOwner)) {
+    return { error: 'Nur der Kontoinhaber kann Manager verwalten.' }
+  }
 
-  const [log, cleanings, checkIns, ordersDone, card, cleaning, firstRow, lastRow] = await Promise.all([
-    admin.from('staff_log').select('*', { count: 'exact', head: true }).eq('profile_id', profileId),
-    admin.from('staff_log').select('*', { count: 'exact', head: true }).eq('profile_id', profileId).eq('kind', 'clean_done'),
-    admin.from('stays').select('*', { count: 'exact', head: true }).eq('created_by', profileId),
-    admin.from('service_orders').select('*', { count: 'exact', head: true }).eq('done_by', profileId),
-    admin.from('maid_login_tokens').select('profile_id').eq('profile_id', profileId).maybeSingle(),
-    admin.from('room_states').select('room_id').eq('cleaning_by', profileId).maybeSingle(),
-    admin.from('staff_log').select('at').eq('profile_id', profileId).order('at').limit(1).maybeSingle(),
-    admin.from('staff_log').select('at').eq('profile_id', profileId).order('at', { ascending: false }).limit(1).maybeSingle(),
-  ])
+  const [log, cleanings, checkIns, ordersDone, card, cleaning, firstRow, lastRow, otherRows, ownerRow] =
+    await Promise.all([
+      admin.from('staff_log').select('*', { count: 'exact', head: true }).eq('profile_id', userId),
+      admin.from('staff_log').select('*', { count: 'exact', head: true }).eq('profile_id', userId).eq('kind', 'clean_done'),
+      admin.from('stays').select('*', { count: 'exact', head: true }).eq('created_by', userId),
+      admin.from('service_orders').select('*', { count: 'exact', head: true }).eq('done_by', userId),
+      admin.from('maid_login_tokens').select('profile_id').eq('profile_id', userId).maybeSingle(),
+      admin.from('room_states').select('room_id').eq('cleaning_by', userId).maybeSingle(),
+      admin.from('staff_log').select('at').eq('profile_id', userId).order('at').limit(1).maybeSingle(),
+      admin.from('staff_log').select('at').eq('profile_id', userId).order('at', { ascending: false }).limit(1).maybeSingle(),
+      admin.from('hotel_members').select('hotel_id').eq('user_id', userId).neq('hotel_id', ctx.hotelId),
+      admin.from('account_members').select('account_id').eq('user_id', userId).limit(1),
+    ])
 
   let cleaningRoom: string | null = null
   if (cleaning.data?.room_id) {
@@ -329,13 +428,25 @@ export async function getMaidDeletionImpactAction(
   }
 
   const logEntries = log.count ?? 0
+  const otherHotels = (otherRows.data ?? []).length
+  const hatVorgaenge = logEntries > 0 || (checkIns.count ?? 0) > 0 || (ordersDone.count ?? 0) > 0
+
+  // Nur bei der Reinigung ist Löschen wirklich destruktiv: dort kaskadiert
+  // `staff_log`. Beim Management bleibt das Konto stehen, sobald etwas daran
+  // hängt — dann gibt es nichts zu verlieren und der Abtipp-Riegel wäre
+  // Ritual statt Schutz.
+  const accountKept =
+    staff.kind !== 'maid' && (hatVorgaenge || otherHotels > 0 || (ownerRow.data ?? []).length > 0)
+  const requiresPhrase = staff.kind === 'maid' && logEntries > 0
+  const phrase = staff.kind === 'maid' ? (staff.username ?? '') : staff.displayName
 
   return {
     impact: {
-      displayName: profile.display_name,
-      username: profile.username,
-      confirmPhrase: logEntries > 0 ? profile.username : '',
-      requiresPhrase: logEntries > 0,
+      kind: staff.kind,
+      displayName: staff.displayName,
+      username: staff.username,
+      confirmPhrase: requiresPhrase ? phrase : '',
+      requiresPhrase,
       logEntries,
       cleanings: cleanings.count ?? 0,
       firstAt: firstRow.data?.at ?? null,
@@ -344,30 +455,46 @@ export async function getMaidDeletionImpactAction(
       ordersDone: ordersDone.count ?? 0,
       hasCard: Boolean(card.data),
       cleaningRoom,
+      otherHotels,
+      accountKept,
     },
   }
 }
 
+export type DeleteStaffResult = {
+  error?: string
+  kind?: StaffKind
+  /** Konto blieb bestehen, weil Vorgänge daran hängen. */
+  accountKept?: boolean
+  otherHotels?: number
+}
+
 /**
- * Reinigungskraft endgültig löschen (Auth-User → CASCADE räumt Profil, Karte
- * UND staff_log ab).
+ * Stufe 2 — endgültig löschen. „Zugang beenden" bleibt der Regelweg.
  *
- * Deaktivieren bleibt der Regelweg beim Ausscheiden — hier geht der
- * Arbeitsnachweis wirklich verloren, anders als beim Löschen eines Zimmers.
- * Deshalb verlangt eine Kraft mit Tätigkeits-Historie den abgetippten
- * Benutzernamen; eine Fehlanlage ohne jeden Stich lässt sich direkt entfernen.
+ * Reinigung: Der Auth-User geht, und die CASCADE räumt Profil, Login-Karte UND
+ * `staff_log` ab — der Arbeitsnachweis ist damit wirklich weg. Deshalb verlangt
+ * eine Kraft mit Tätigkeits-Historie den abgetippten Benutzernamen; eine
+ * Fehlanlage ohne jeden Stich lässt sich direkt entfernen.
+ *
+ * Management: Die Mitgliedschaft dieses Hauses wird gelöscht. Das Anmeldekonto
+ * verschwindet nur, wenn nichts mehr daran hängt — `profiles` ist Ziel von
+ * `stays.created_by` und `service_orders.done_by`, und `staff_log` kaskadiert
+ * (die Rezeption sticht `clean_done`). Beim Management geht also nie etwas
+ * verloren, und ein Abtipp-Riegel wäre hier Ritual statt Schutz.
  */
-export async function deleteMaidAction(
+export async function deleteStaffAction(
   slug: string,
-  profileId: string,
+  userId: string,
   confirmPhrase = '',
-): Promise<{ error?: string }> {
+): Promise<DeleteStaffResult> {
   const ctx = await getAdminContext(slug)
   if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (userId === ctx.userId) return { error: 'Der eigene Zugang lässt sich hier nicht löschen.' }
   const admin = createAdminClient()
 
-  const { impact, error: impactErr } = await getMaidDeletionImpactAction(slug, profileId)
-  if (!impact) return { error: impactErr ?? 'Profil nicht gefunden.' }
+  const { impact, error: impactErr } = await getStaffDeletionImpactAction(slug, userId)
+  if (!impact) return { error: impactErr ?? 'Zugang nicht gefunden.' }
 
   if (impact.cleaningRoom) {
     return { error: `Diese Kraft reinigt gerade Zimmer ${impact.cleaningRoom}. Erst die Reinigung abschließen (oder im Board als erledigt markieren).` }
@@ -376,11 +503,20 @@ export async function deleteMaidAction(
     return { error: `Bitte „${impact.confirmPhrase}" zur Bestätigung eingeben.` }
   }
 
-  const { error } = await admin.auth.admin.deleteUser(profileId)
-  if (error) return { error: error.message }
+  if (impact.kind !== 'maid') {
+    const { error: memberErr } = await admin
+      .from('hotel_members').delete().eq('hotel_id', ctx.hotelId).eq('user_id', userId)
+    if (memberErr) return { error: memberErr.message }
+  }
+
+  if (!impact.accountKept) {
+    const { error } = await admin.auth.admin.deleteUser(userId)
+    if (error) return { error: error.message }
+  }
 
   revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
-  return {}
+  revalidatePath('/admin')
+  return { kind: impact.kind, accountKept: impact.accountKept, otherHotels: impact.otherHotels }
 }
 
 /** Rückmeldung nach einer verschickten Einladung. */
@@ -432,7 +568,9 @@ async function ladeEin(opts: {
   })
   if (inviteErr || !invited?.user) {
     if (inviteErr?.message?.toLowerCase().includes('already')) {
-      return { error: 'Für diese E-Mail-Adresse gibt es bereits einen Zugang.' }
+      return {
+        error: 'Für diese E-Mail-Adresse gibt es bereits einen Zugang. War die Person hier schon einmal tätig, steht sie unter „Beendete Zugänge" und lässt sich dort wieder aktivieren.',
+      }
     }
     console.error('[inviteUserByEmail]', {
       status: inviteErr?.status, code: inviteErr?.code, message: inviteErr?.message,
@@ -539,65 +677,6 @@ export async function createReceptionAction(
   })
 }
 
-/**
- * Rezeptions-Zugang entziehen.
- *
- * Der Auth-User wird nur gelöscht, wenn die Person nichts hinterlassen hat —
- * `profiles` ist Ziel von `stays.created_by` und `service_orders.done_by`
- * (`on delete set null`), ein hartes Löschen risse sonst die Attribution aus
- * Zimmer-Verlauf und Bestell-Historie. Der Entzug der Berechtigung wirkt in
- * jedem Fall sofort: die RLS kennt für Management keinen profiles-Zweig mehr.
- */
-export async function deleteReceptionAction(
-  slug: string,
-  profileId: string,
-): Promise<{ error?: string; kept?: boolean }> {
-  const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
-  const admin = createAdminClient()
-
-  const { data: member } = await admin
-    .from('hotel_members')
-    .select('user_id, role')
-    .eq('hotel_id', ctx.hotelId)
-    .eq('user_id', profileId)
-    .maybeSingle()
-  if (!member || member.role !== 'reception') {
-    return { error: 'Nur Rezeptions-Zugänge können hier entfernt werden.' }
-  }
-
-  await admin.from('hotel_members')
-    .delete().eq('hotel_id', ctx.hotelId).eq('user_id', profileId)
-
-  const [{ data: rest }, { data: owner }, { data: stays }, { data: orders }, { data: log }] =
-    await Promise.all([
-      admin.from('hotel_members').select('hotel_id').eq('user_id', profileId).limit(1),
-      admin.from('account_members').select('account_id').eq('user_id', profileId).limit(1),
-      admin.from('stays').select('id').eq('created_by', profileId).limit(1),
-      admin.from('service_orders').select('id').eq('done_by', profileId).limit(1),
-      // `staff_log` gehört zwingend dazu: die Rezeption sticht über
-      // `markCleanedAction` ein `clean_done`, und `staff_log.profile_id` steht
-      // auf `on delete cascade` — ohne diese Prüfung nimmt das Löschen eines
-      // Rezeptions-Zugangs Reinigungsnachweise mit und verstellt zugleich die
-      // Stayover-Ableitung („heute schon gereinigt?").
-      admin.from('staff_log').select('id').eq('profile_id', profileId).limit(1),
-    ])
-
-  const stillUsed = (rest ?? []).length > 0 || (owner ?? []).length > 0
-  const hasHistory =
-    (stays ?? []).length > 0 || (orders ?? []).length > 0 || (log ?? []).length > 0
-
-  if (!stillUsed && !hasHistory) {
-    const { error } = await admin.auth.admin.deleteUser(profileId)
-    if (error) return { error: error.message }
-    revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
-    return {}
-  }
-
-  revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
-  return { kept: true }
-}
-
 // ═══════════════════════════════════════════════════════════════════════════
 // MANAGER — hausbezogen, wie Rezeption und Reinigung.
 //
@@ -671,76 +750,38 @@ export async function attachManagerAction(slug: string, userId: string): Promise
     .eq('role', 'manager')
     .in('hotel_id', ownIds)
   if (!existing || existing.length === 0) return { error: 'Manager nicht gefunden.' }
-  if (existing.some(e => e.hotel_id === ctx.hotelId)) {
-    return { error: 'Diese Person ist hier bereits Manager.' }
+
+  // Für DIESES Haus kann bereits eine Zeile existieren — auch eine beendete
+  // oder eine mit anderer Rolle. Der Primärschlüssel ist (hotel_id, user_id),
+  // ein blindes INSERT liefe also in einen Konflikt.
+  const { data: hier } = await admin
+    .from('hotel_members')
+    .select('role, deactivated_at')
+    .eq('hotel_id', ctx.hotelId)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (hier && !hier.deactivated_at) {
+    return {
+      error: hier.role === 'manager'
+        ? 'Diese Person ist hier bereits Manager.'
+        : 'Diese Person hat hier bereits einen Rezeptions-Zugang. Erst dort beenden.',
+    }
   }
 
-  const { error } = await admin.from('hotel_members').insert({
-    hotel_id: ctx.hotelId,
-    user_id: userId,
-    role: 'manager',
-    display_name: existing[0].display_name,
-  })
+  const { error } = hier
+    ? await admin.from('hotel_members')
+        .update({ role: 'manager', deactivated_at: null, display_name: existing[0].display_name })
+        .eq('hotel_id', ctx.hotelId).eq('user_id', userId)
+    : await admin.from('hotel_members').insert({
+        hotel_id: ctx.hotelId,
+        user_id: userId,
+        role: 'manager',
+        display_name: existing[0].display_name,
+      })
   if (error) return { error: error.message }
 
   revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
   revalidatePath('/admin')
   return {}
-}
-
-/**
- * Manager aus DIESEM Haus entfernen. Andere Häuser bleiben unberührt.
- *
- * Der Auth-User wird nur gelöscht, wenn nach dem Entzug nichts mehr an ihm
- * hängt — `profiles` ist Ziel von `stays.created_by` und
- * `service_orders.done_by` (`on delete set null`), ein hartes Löschen risse
- * sonst die Attribution aus Zimmer-Verlauf und Bestell-Historie. Der Entzug
- * der Berechtigung wirkt in jedem Fall sofort: die RLS kennt für Management
- * keinen profiles-Zweig mehr.
- */
-export async function detachManagerAction(
-  slug: string,
-  userId: string,
-): Promise<{ error?: string; kept?: boolean; nochInHaeusern?: number }> {
-  const ctx = await requireOwner(slug)
-  if (!ctx) return { error: 'Nur der Kontoinhaber kann Manager verwalten.' }
-  if (userId === ctx.userId) return { error: 'Der eigene Zugang lässt sich hier nicht entfernen.' }
-
-  const admin = createAdminClient()
-
-  const { data: member } = await admin
-    .from('hotel_members')
-    .select('role')
-    .eq('hotel_id', ctx.hotelId)
-    .eq('user_id', userId)
-    .maybeSingle()
-  if (!member || member.role !== 'manager') return { error: 'Manager nicht gefunden.' }
-
-  await admin.from('hotel_members')
-    .delete().eq('hotel_id', ctx.hotelId).eq('user_id', userId)
-
-  const [{ data: rest }, { data: owner }, { data: stays }, { data: orders }, { data: log }] =
-    await Promise.all([
-      admin.from('hotel_members').select('hotel_id').eq('user_id', userId),
-      admin.from('account_members').select('account_id').eq('user_id', userId).limit(1),
-      admin.from('stays').select('id').eq('created_by', userId).limit(1),
-      admin.from('service_orders').select('id').eq('done_by', userId).limit(1),
-      admin.from('staff_log').select('id').eq('profile_id', userId).limit(1),
-    ])
-
-  const nochInHaeusern = (rest ?? []).length
-  const stillUsed = nochInHaeusern > 0 || (owner ?? []).length > 0
-  const hasHistory =
-    (stays ?? []).length > 0 || (orders ?? []).length > 0 || (log ?? []).length > 0
-
-  revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
-  revalidatePath('/admin')
-
-  if (!stillUsed && !hasHistory) {
-    const { error } = await admin.auth.admin.deleteUser(userId)
-    if (error) return { error: error.message }
-    return { nochInHaeusern }
-  }
-
-  return { kept: true, nochInHaeusern }
 }

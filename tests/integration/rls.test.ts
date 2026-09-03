@@ -150,4 +150,51 @@ describe('Rechte-Entzug', () => {
       display_name: 'Alpha Manager',
     })
   })
+
+  it('ein beendeter Management-Zugang gibt nichts mehr frei', async () => {
+    // Seit 03.09.2026 wird der Zugang beendet statt die Zeile gelöscht. Ohne
+    // den deactivated_at-Filter in is_hotel_member/is_hotel_management wäre
+    // das reine Kosmetik: die Zeile bliebe stehen und mit ihr der Zugriff.
+    const vorher = await clientAs(world.alpha.manager)
+    expect(await sichtbareZimmer(vorher, world.alpha.a2.id)).toBe(1)
+
+    await serviceClient()
+      .from('hotel_members')
+      .update({ deactivated_at: new Date().toISOString() })
+      .eq('hotel_id', world.alpha.a2.id)
+      .eq('user_id', world.alpha.manager.id)
+
+    const nachher = await clientAs(world.alpha.manager)
+    expect(await sichtbareZimmer(nachher, world.alpha.a2.id)).toBe(0)
+
+    await serviceClient()
+      .from('hotel_members')
+      .update({ deactivated_at: null })
+      .eq('hotel_id', world.alpha.a2.id)
+      .eq('user_id', world.alpha.manager.id)
+
+    const wieder = await clientAs(world.alpha.manager)
+    expect(await sichtbareZimmer(wieder, world.alpha.a2.id)).toBe(1)
+  })
+
+  it('eine beendete Reinigungskraft ebenfalls nicht', async () => {
+    // Der Login wird an allen drei Stellen im Code abgewiesen; hier geht es um
+    // die Ebene darunter: eine bereits offene Sitzung war datenbankseitig
+    // weiterhin berechtigt, weil der profiles-Zweig deactivated_at ignorierte.
+    const vorher = await clientAs(world.alpha.maid)
+    expect(await sichtbareZimmer(vorher, world.alpha.a1.id)).toBe(2)
+
+    await serviceClient()
+      .from('profiles')
+      .update({ deactivated_at: new Date().toISOString() })
+      .eq('id', world.alpha.maid.id)
+
+    const nachher = await clientAs(world.alpha.maid)
+    expect(await sichtbareZimmer(nachher, world.alpha.a1.id)).toBe(0)
+
+    await serviceClient()
+      .from('profiles')
+      .update({ deactivated_at: null })
+      .eq('id', world.alpha.maid.id)
+  })
 })

@@ -28,7 +28,7 @@ export default async function PersonalPage({
       // Berechtigung hängt dort, nicht mehr an profiles.role.
       supabase
         .from('hotel_members')
-        .select('user_id, display_name')
+        .select('user_id, display_name, deactivated_at')
         .eq('hotel_id', ctx.hotelId)
         .eq('role', 'reception')
         .order('display_name'),
@@ -66,6 +66,7 @@ export default async function PersonalPage({
           // Eingeladen, aber noch nie angenommen: Supabase bestätigt die
           // Adresse erst, wenn die Person den Link geöffnet hat.
           pending: !data?.user?.email_confirmed_at,
+          deactivatedAt: p.deactivated_at,
         }
       }),
     )
@@ -85,19 +86,24 @@ export default async function PersonalPage({
 
     const { data: rows } = await admin
       .from('hotel_members')
-      .select('user_id, hotel_id, display_name')
+      .select('user_id, hotel_id, display_name, deactivated_at')
       .eq('role', 'manager')
       .in('hotel_id', ownIds)
 
-    const hierIds = new Set(
-      (rows ?? []).filter(r => r.hotel_id === ctx.hotelId).map(r => r.user_id),
-    )
+    // Beendete Zugänge dieses Hauses gehören mit in die Liste — nur dort
+    // lassen sie sich wieder aktivieren.
+    const hierRows = (rows ?? []).filter(r => r.hotel_id === ctx.hotelId)
+    const hierIds = new Set(hierRows.map(r => r.user_id))
+    const beendetHier = new Map(hierRows.map(r => [r.user_id, r.deactivated_at as string | null]))
+
     // Wie viele Häuser betreut die Person insgesamt? Macht sichtbar, dass ein
-    // Entzug hier die anderen Häuser nicht berührt.
+    // Entzug hier die anderen Häuser nicht berührt — beendete zählen nicht mit.
     const haeuserProUser = new Map<string, number>()
     const nameProUser = new Map<string, string>()
     for (const r of rows ?? []) {
-      haeuserProUser.set(r.user_id, (haeuserProUser.get(r.user_id) ?? 0) + 1)
+      if (!r.deactivated_at) {
+        haeuserProUser.set(r.user_id, (haeuserProUser.get(r.user_id) ?? 0) + 1)
+      }
       nameProUser.set(r.user_id, r.display_name)
     }
 
@@ -107,8 +113,9 @@ export default async function PersonalPage({
         id: userId,
         displayName: nameProUser.get(userId) ?? '—',
         email: data?.user?.email ?? '—',
-        hotelCount: haeuserProUser.get(userId) ?? 1,
+        hotelCount: haeuserProUser.get(userId) ?? 0,
         pending: !data?.user?.email_confirmed_at,
+        deactivatedAt: beendetHier.get(userId) ?? null,
       }
     }
 

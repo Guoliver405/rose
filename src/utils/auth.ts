@@ -77,11 +77,14 @@ export async function getManagementContext(slug: string): Promise<ManagementCont
   }
 
   // 2) Hausbezogene Zuordnung — Manager oder Rezeption.
+  //    Ein beendeter Zugang (`deactivated_at`) zählt nicht mehr: die Zeile
+  //    bleibt nur als Nachweis und für die Wieder-Aktivierung stehen.
   const { data: member } = await admin
     .from('hotel_members')
     .select('role, display_name')
     .eq('hotel_id', hotel.id)
     .eq('user_id', user.id)
+    .is('deactivated_at', null)
     .maybeSingle()
 
   if (!member) return null
@@ -136,7 +139,7 @@ export async function listAccessibleHotels(): Promise<HotelAccess[]> {
 
   const [{ data: ownerships }, { data: memberships }] = await Promise.all([
     admin.from('account_members').select('account_id').eq('user_id', user.id),
-    admin.from('hotel_members').select('hotel_id, role').eq('user_id', user.id),
+    admin.from('hotel_members').select('hotel_id, role').eq('user_id', user.id).is('deactivated_at', null),
   ])
 
   const accountIds = (ownerships ?? []).map(o => o.account_id)
