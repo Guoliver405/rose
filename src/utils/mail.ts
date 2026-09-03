@@ -39,6 +39,34 @@ function escape(text: string): string {
     .replace(/"/g, '&quot;')
 }
 
+/**
+ * Absender-Kopfzeile: **der Hotelname als Anzeigename**, nicht „RoSe".
+ *
+ * Der Gast hat bei einem Hotel eingecheckt, nicht bei einer Software — im
+ * Postfach soll deshalb das Haus stehen. Die Adresse selbst bleibt fest, weil
+ * nur ihre Domain bei Resend verifiziert ist; der Anzeigename davor ist frei.
+ *
+ * Trägt `GUEST_MAIL_FROM` bereits einen Anzeigenamen (erkennbar an den spitzen
+ * Klammern), bleibt der Wert unangetastet — dann hat jemand das bewusst so
+ * gesetzt.
+ *
+ * Der Hotelname wird bereinigt, bevor er in den Header wandert: Zeilenumbrüche
+ * darin wären eine Header-Injection, Anführungszeichen und spitze Klammern
+ * würden die Adresse zerlegen.
+ */
+function fromHeader(hotelName: string): string {
+  const konfiguriert = (process.env.GUEST_MAIL_FROM ?? '').trim()
+  if (konfiguriert.includes('<')) return konfiguriert
+
+  const name = hotelName
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/["\\<>]/g, '')
+    .trim()
+    .slice(0, 64)
+
+  return name ? `"${name}" <${konfiguriert}>` : konfiguriert
+}
+
 function html(m: GuestAccessMail): string {
   const hotel = escape(m.hotelName)
   const zimmer = escape(m.roomNumber)
@@ -84,7 +112,7 @@ export async function sendGuestAccessMail(m: GuestAccessMail): Promise<{ error?:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: process.env.GUEST_MAIL_FROM,
+        from: fromHeader(m.hotelName),
         to: [m.to],
         subject: `Ihr Zugang zum Gäste-Portal — ${m.hotelName}, Zimmer ${m.roomNumber}`,
         html: html(m),
