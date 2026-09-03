@@ -140,11 +140,26 @@ Der Rückbau gehört zum Test-Szenario und steht in [TODO.md](../TODO.md).
 
 ## 🔖 Wiederaufnahme
 
-**Stand:** Beide Verfahren stehen und sind end-to-end durchgespielt. Der Kern
-ist `stays.access_mode` — wer daran arbeitet, sollte wissen, dass das Verfahren
-**am Aufenthalt** hängt und nicht an der Hotel-Einstellung. Jede Stelle, die
-fragt „wie kommt dieser Gast rein?", liest den Aufenthalt, nie die Policy; die
-Policy gilt ausschließlich beim Check-in.
+**Stand am Ende des 03.09.2026:** Beide Verfahren stehen und sind end-to-end
+durchgespielt, der Mailversand ist mit einer echten Mail geprüft, und im
+Testbetrieb lassen sich Zugänge ohne Postfach anlegen. Alles committet und
+gepusht, Arbeitsverzeichnis sauber, `verify` grün (114 Unit-, 39
+Integrationstests). Zwei Migrationen des Tages sind eingespielt und archiviert.
+
+Der Kern dieses Themas ist `stays.access_mode` — wer daran arbeitet, sollte
+wissen, dass das Verfahren **am Aufenthalt** hängt und nicht an der
+Hotel-Einstellung. Jede Stelle, die fragt „wie kommt dieser Gast rein?", liest
+den Aufenthalt, nie die Policy; die Policy gilt ausschließlich beim Check-in.
+
+**Womit es weitergeht:** Die offenen Punkte stehen gesammelt in
+[TODO.md](../TODO.md). Das Naheliegendste zuerst — ein Blick aufs Handout in
+Produktion (greifen dort `RESEND_API_KEY` und `GUEST_MAIL_FROM`?), danach die
+ungetesteten Login-Actions samt Rate-Limit über Mandantengrenzen.
+
+Der ganze Tag im Überblick: das
+[Zimmer- und Personal-Protokoll](2026-09-03_Zimmer-loeschen-bearbeiten-und-Testdaten.md)
+trägt den ersten Teil (Löschen und Bearbeiten, Abrechnungs-Snapshot,
+Löschbegehren), dieses hier den zweiten.
 
 **Wenn hier weitergearbeitet wird:**
 
