@@ -333,6 +333,43 @@ Monatsersten aus den **lokalen** Datumsteilen. `toISOString()` hätte in
 westlichen Zeitzonen aus dem 1. Juli lokal den 30. Juni UTC gemacht und jede
 Periode um einen Monat verschoben.
 
+### Löschbegehren
+
+Der Punkt stand seit dem 26.07. auf der Liste („vor echten Kunden zu klären")
+und hat heute an Gewicht gewonnen: Mit `billing_snapshots` ist eine **zweite**
+bewusst kaskadenfreie Tabelle dazugekommen.
+
+Das Projekt ist überall darauf ausgelegt, Nachweise zu **behalten**. Genau
+deshalb erfüllt die Kaskade ein „entfernt alle meine Daten" nicht von allein.
+Drei Dinge bleiben stehen:
+
+| Was | Warum die Kaskade es auslässt |
+|---|---|
+| `room_state_transitions` | kein Fremdschlüssel — enthält mit `actor_id` einen Personenbezug |
+| `billing_snapshots` | kein Fremdschlüssel — ohne Konto gegenstandslos |
+| **`auth.users`** | `profiles` hängt am Auth-Konto, nicht umgekehrt |
+
+Der dritte Punkt ist der wesentliche und der am leichtesten zu übersehende: Wer
+ein Haus löscht, verliert die Profile — die **Anmeldekonten samt
+E-Mail-Adressen** bleiben. Für ein Löschbegehren ist gerade das der Kern; alles
+andere sind Betriebsdaten.
+
+`purgeHotel` in [deletion.ts](../src/utils/deletion.ts) hält deshalb eine feste
+Reihenfolge ein: erst die kaskadenfreien Zeilen, dann das Haus, **dann** die
+Anmeldekonten. Zuletzt, weil sich erst danach zuverlässig beurteilen lässt, ob
+ein Konto noch anderswo gebraucht wird — ein Manager mit weiteren Häusern
+behält seinen Zugang.
+
+Bedient wird das über einen eingeklappten Bereich „Daten löschen" ganz unten auf
+`/admin`, nur für den Kontoinhaber: Häuser einzeln oder das gesamte Konto, jeweils
+mit bezifferter Vorschau und abgetipptem Namen. Beim Konto-Löschen verschwindet
+auch der eigene Zugang — die Seite führt danach auf die Anmeldung.
+
+**Der Integrationstest hat sofort einen Fehler gefunden:** Die Vorschau zählte
+die Inhaberschaft als „Zugang bleibt bestehen" — auch beim Konto-Löschen, wo sie
+mit verschwindet. Angezeigt worden wäre ein Anmeldekonto zu wenig. Genau die Art
+Fehler, die in einer Lösch-Bestätigung nichts zu suchen hat.
+
 ## 8. Offen
 
 - **Test-Szenario bleibt vorübergehend.** `purgeTestDataAction` gehört mit

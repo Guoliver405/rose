@@ -7,6 +7,7 @@ import { logoutAction } from '@/app/login/actions'
 import { isRoomActive } from '@/lib/board'
 import { getBillingOverview } from '@/utils/billing'
 import HausAnlegen from './HausAnlegen'
+import DatenLoeschen from './DatenLoeschen'
 
 /**
  * Häuser — der Einstieg ins Management-Portal und zugleich der Konto-Bereich.
@@ -243,6 +244,16 @@ export default async function HotelPickerPage() {
             })}
           </div>
         </section>
+
+        {/* Löschbegehren — nur der Kontoinhaber, bewusst ganz unten. */}
+        {account && (
+          <DatenLoeschen
+            accountName={account.accountName}
+            hotels={hotels
+              .filter(h => h.accountId === account.accountId)
+              .map(h => ({ id: h.id, name: h.name }))}
+          />
+        )}
       </main>
     </div>
   )
