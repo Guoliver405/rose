@@ -8,6 +8,7 @@ import {
   parseGuestAccessMode, roomAccessUrl, stayAccessUrl, type GuestAccessMode,
 } from '@/lib/guest-access'
 import { mailReady, sendGuestAccessMail } from '@/utils/mail'
+import { buildGuestGuide, type GuestGuide } from '@/lib/guest-guide'
 
 export type CheckInResult = {
   /** Nur beim Verfahren `pin`. */
@@ -237,6 +238,8 @@ export type GuestAccess = {
   pin?: string
   /** Steuert, ob die Oberfläche den Mail-Versand anbietet. */
   mailReady: boolean
+  /** Kurzanleitung nach den Policies des Hauses — geht mit in die Mail. */
+  guide: GuestGuide
 }
 
 /** Zugangsdaten des laufenden Aufenthalts — für Dialog, Druck und Mail. */
@@ -272,6 +275,7 @@ export async function getGuestAccessAction(
         hotelName: ctx.hotelName,
         url: stayAccessUrl(site, stay.guest_token),
         mailReady: mailReady(),
+        guide: buildGuestGuide(ctx.policies, { accessMode: 'link', deepLink: true }),
       },
     }
   }
@@ -288,6 +292,7 @@ export async function getGuestAccessAction(
       url: token ? roomAccessUrl(site, token.token) : `${site}/h/${ctx.hotelSlug}/guest`,
       pin: stay.pin ?? undefined,
       mailReady: mailReady(),
+      guide: buildGuestGuide(ctx.policies, { accessMode: 'pin', deepLink: Boolean(token) }),
     },
   }
 }
@@ -312,5 +317,6 @@ export async function mailGuestAccessAction(
     roomNumber: access.roomNumber,
     url: access.url,
     pin: access.pin,
+    guide: access.guide,
   })
 }

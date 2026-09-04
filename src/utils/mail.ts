@@ -16,6 +16,8 @@
  * Oberfläche bietet ihn dann gar nicht erst an, statt einen Fehler zu werfen.
  */
 
+import { guideLines, type GuestGuide } from '@/lib/guest-guide'
+
 const API = 'https://api.resend.com/emails'
 
 /** Ist der Versand eingerichtet? Steuert, ob die Oberfläche ihn anbietet. */
@@ -31,6 +33,12 @@ export type GuestAccessMail = {
   url: string
   /** Nur beim PIN-Verfahren. */
   pin?: string
+  /**
+   * Kurzanleitung — Zweck des Portals, Reinigung (Routine oder auf Wunsch,
+   * je nach Policies des Hauses), Nicht stören, Services, Zugang. Dieselben
+   * Sätze wie auf dem gedruckten Handout.
+   */
+  guide: GuestGuide
 }
 
 function escape(text: string): string {
@@ -90,9 +98,14 @@ function html(m: GuestAccessMail): string {
   <p style="margin-top:24px;font-size:13px;color:#64748b">
     Falls sich der Knopf nicht öffnen lässt:<br><a href="${url}">${url}</a>
   </p>
-  <p style="margin-top:24px;font-size:13px;color:#64748b">
-    Der Zugang gilt für die Dauer Ihres Aufenthalts und endet mit dem Check-out.
-  </p>
+  <h2 style="margin-top:28px;font-size:15px">So funktioniert das Portal</h2>
+  <p>${escape(m.guide.purpose)}</p>
+  <ul style="padding-left:20px">
+    <li style="margin-bottom:8px"><strong>Reinigung:</strong> ${escape(m.guide.cleaning)}</li>
+    <li style="margin-bottom:8px"><strong>Ruhe:</strong> ${escape(m.guide.dnd)}</li>
+    <li style="margin-bottom:8px"><strong>Services:</strong> ${escape(m.guide.services)}</li>
+    <li style="margin-bottom:8px"><strong>Zugang:</strong> ${escape(m.guide.access)}</li>
+  </ul>
 </body></html>`
 }
 
@@ -111,7 +124,8 @@ function text(m: GuestAccessMail): string {
     `Gäste-Portal öffnen: ${m.url}`,
   ]
   if (m.pin) zeilen.push('', `Ihre PIN: ${m.pin}`)
-  zeilen.push('', 'Der Zugang gilt für die Dauer Ihres Aufenthalts und endet mit dem Check-out.')
+  zeilen.push('', 'So funktioniert das Portal:', '')
+  for (const line of guideLines(m.guide)) zeilen.push(`- ${line}`)
   return zeilen.join('\n')
 }
 

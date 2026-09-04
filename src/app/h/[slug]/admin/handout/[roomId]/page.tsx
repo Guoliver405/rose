@@ -5,6 +5,7 @@ import { getManagementContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import { roomAccessUrl, stayAccessUrl, type GuestAccessMode } from '@/lib/guest-access'
 import { mailReady } from '@/utils/mail'
+import { buildGuestGuide } from '@/lib/guest-guide'
 import GuestHandoutCard from './GuestHandoutCard'
 
 /**
@@ -52,6 +53,7 @@ export default async function HandoutPage({
       : token
         ? roomAccessUrl(origin, token.token)
         : manualUrl
+  const deepLink = accessMode === 'link' || Boolean(token)
 
   return (
     <div className="flex flex-col items-center gap-5 py-6">
@@ -77,8 +79,9 @@ export default async function HandoutPage({
           pin={stay.pin ?? null}
           url={url}
           manualUrl={manualUrl}
-          deepLink={accessMode === 'link' || Boolean(token)}
+          deepLink={deepLink}
           mailReady={mailReady()}
+          guide={buildGuestGuide(ctx.policies, { accessMode, deepLink })}
         />
       )}
     </div>

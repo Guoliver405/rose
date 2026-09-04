@@ -5,6 +5,7 @@ import { Loader2, Mail, Printer } from 'lucide-react'
 import QrImage from '@/components/QrImage'
 import { mailGuestAccessAction } from '../../actions'
 import type { GuestAccessMode } from '@/lib/guest-access'
+import type { GuestGuide } from '@/lib/guest-guide'
 
 /**
  * Druckbares Gast-Handout (Pendant zur Maid-Karte, Gast-Branding) — plus
@@ -26,6 +27,7 @@ export default function GuestHandoutCard({
   manualUrl,
   deepLink,
   mailReady,
+  guide,
 }: {
   hotelSlug: string
   roomId: string
@@ -40,6 +42,8 @@ export default function GuestHandoutCard({
   manualUrl: string
   deepLink: boolean
   mailReady: boolean
+  /** Kurzanleitung — aus den Hotel-Policies gebaut (Routine oder auf Wunsch?). */
+  guide: GuestGuide
 }) {
   const [pending, startTransition] = useTransition()
   const [email, setEmail] = useState('')
@@ -90,23 +94,39 @@ export default function GuestHandoutCard({
           {pin && (
             <div className="border-t-2 border-dashed border-edge pt-5">
               <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-ink-soft">
-                Deine PIN
+                Ihre PIN
               </p>
               <p className="font-mono text-5xl font-black tracking-[0.3em] text-ink">{pin}</p>
             </div>
           )}
 
-          <p className="pt-1 text-[11px] leading-relaxed text-ink-muted">
-            {individuell
-              ? 'Scannen — mehr braucht es nicht. Danach Reinigung anfordern, „Nicht stören" setzen und Services bestellen.'
-              : deepLink
-                ? 'Scannen und PIN eingeben — dann Reinigung anfordern, „Nicht stören" setzen und Services bestellen.'
-                : 'Scannen, Zimmernummer + PIN eingeben — dann Reinigung anfordern, „Nicht stören" setzen und Services bestellen.'}
-            {' '}
-            {individuell
-              ? 'Dieser Zugang gilt nur für Ihren Aufenthalt und endet mit dem Check-out.'
-              : 'Die PIN gilt bis zum Check-out.'}
-          </p>
+          {/* Kurzanleitung: Zweck, Reinigung (Routine oder auf Wunsch — der
+              Satz hängt an den Policies des Hauses), Nicht stören, Services,
+              Zugang. Dieselben Sätze stehen in der Mail. */}
+          <div className="border-t-2 border-dashed border-edge pt-4 text-left">
+            <p className="mb-2 text-center text-[10px] font-black uppercase tracking-[0.2em] text-ink-soft">
+              So funktioniert&rsquo;s
+            </p>
+            <p className="mb-2 text-[11px] leading-relaxed text-ink-soft">{guide.purpose}</p>
+            <ul className="space-y-1.5 text-[11px] leading-relaxed text-ink-muted">
+              <li className="flex gap-2">
+                <span className="shrink-0 font-black text-ink-soft">Reinigung</span>
+                <span>{guide.cleaning}</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="shrink-0 font-black text-ink-soft">Ruhe</span>
+                <span>{guide.dnd}</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="shrink-0 font-black text-ink-soft">Services</span>
+                <span>{guide.services}</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="shrink-0 font-black text-ink-soft">Zugang</span>
+                <span>{guide.access}</span>
+              </li>
+            </ul>
+          </div>
 
           {individuell && (
             <p className="rounded-lg bg-surface-muted px-3 py-2 text-[10px] leading-relaxed text-ink-muted">
