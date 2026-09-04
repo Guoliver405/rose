@@ -224,9 +224,13 @@ Offener Punkt aus [TODO.md](../TODO.md).
       er tot.
 - [ ] QR aus dem Handout mit dem Handy scannen (beide Verfahren).
 - [x] Postfach prüfen: Spam-/Werbung-Ordner? → **Befund 6**, Yahoo: Spam.
-- [ ] In der Yahoo-Mail „Original anzeigen": `Authentication-Results` mit
-      `spf=pass dkim=pass dmarc=pass`? Ergebnis notieren — entscheidet, ob
-      noch Technik fehlt oder nur Reputation.
+- [x] In der Yahoo-Mail „Original anzeigen": `Authentication-Results` zeigt
+      `spf=pass dkim=pass dmarc=pass` → Technik sauber, **reine Reputation**.
+- [ ] Link in der Mail zeigt direkt auf `rose-roomservice.app` (kein
+      Tracking-Redirect)? Falls nicht: Resend → Domains →
+      `send.rose-roomservice.app` → Click/Open Tracking aus. Achtung: der
+      Dialog „New tracking subdomain" ist etwas anderes (legt eine eigene
+      Tracking-Domain an) — dort nichts anlegen.
 
 ## 8) Löschbegehren (`/admin` → „Daten löschen", nur Inhaber) — zuletzt
 

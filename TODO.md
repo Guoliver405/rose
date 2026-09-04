@@ -60,11 +60,12 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
       ersten Versuch. Im Code erledigt: `text/plain`-Teil (fehlte) und
       Spam-Hinweis auf dem Handout. Was nur außerhalb des Codes geht, in
       dieser Reihenfolge:
-      1. In der Spam-Mail „Original anzeigen" → `Authentication-Results`:
-         `spf=pass dkim=pass dmarc=pass`? Fehlt eines, ist es Technik, nicht
-         Reputation.
-      2. Resend → Domain `send.rose-roomservice.app` → **Click- und
-         Open-Tracking aus.** Tracking schreibt jeden Link auf eine
+      1. ~~`Authentication-Results` prüfen~~ — 04.09. geprüft: dreimal
+         `pass`. Es ist reine Reputation.
+      2. Resend → **Domains** → `send.rose-roomservice.app` → **Click- und
+         Open-Tracking aus** (bei neuen Domains standardmäßig aus; der Dialog
+         „New tracking subdomain" unter Settings ist etwas anderes und legt
+         eine eigene Tracking-Domain an — dort nichts anlegen). Tracking schreibt jeden Link auf eine
          Resend-Domain um; Link-Domain ≠ Absender-Domain ist ein starkes
          Spam-Signal, und ausgerechnet der Link ist hier der Inhalt.
       3. DMARC schärfen: bisher nur `_dmarc.rose-roomservice.app` mit
