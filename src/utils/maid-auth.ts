@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import {
   createServicePortalClient,
   getServicePortalSession,
@@ -23,9 +24,11 @@ export type MaidContext = {
  * (username NULL = Management gehört nicht ins Service-Portal).
  *
  * Profil + Hotel werden über den Admin-Client geladen (das Board braucht
- * ohnehin Daten jenseits der Maid-RLS, z. B. fremde display_names).
+ * ohnehin Daten jenseits der Maid-RLS, z. B. fremde display_names) — in
+ * EINER Abfrage über die Fremdschlüssel-Einbettung `hotels(...)`, statt
+ * Profil und Haus nacheinander zu holen. `cache` dedupliziert je Request.
  */
-export async function getMaidContext(): Promise<MaidContext | null> {
+export const getMaidContext = cache(async (): Promise<MaidContext | null> => {
   const supabase = await createServicePortalClient()
   const { session } = await getServicePortalSession(supabase)
   if (!session?.user) return null
@@ -33,7 +36,7 @@ export async function getMaidContext(): Promise<MaidContext | null> {
   const admin = createAdminClient()
   const { data: profile } = await admin
     .from('profiles')
-    .select('hotel_id, display_name, username, deactivated_at')
+    .select('hotel_id, display_name, username, deactivated_at, hotels(name, slug, policies)')
     .eq('id', session.user.id)
     .maybeSingle()
 
@@ -41,11 +44,11 @@ export async function getMaidContext(): Promise<MaidContext | null> {
   // Check hier ist die eigentliche Sperre, nicht der Login-Pfad.
   if (!profile || profile.username === null || profile.deactivated_at) return null
 
-  const { data: hotel } = await admin
-    .from('hotels')
-    .select('name, slug, policies')
-    .eq('id', profile.hotel_id)
-    .single()
+  // Der FK-Join kommt je nach Supabase-Version als Objekt oder Array zurück.
+  const hotel = (Array.isArray(profile.hotels) ? profile.hotels[0] : profile.hotels) as
+    | { name: string | null; slug: string; policies: unknown }
+    | null
+    | undefined
   if (!hotel) return null
 
   return {
@@ -58,4 +61,4 @@ export async function getMaidContext(): Promise<MaidContext | null> {
     policies: (hotel.policies ?? {}) as Record<string, unknown>,
     accessToken: session.access_token,
   }
-}
+})

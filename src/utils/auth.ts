@@ -1,6 +1,29 @@
+import { cache } from 'react'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/service'
 import { findHotelBySlug } from '@/utils/hotel'
+
+/**
+ * Wer ist angemeldet? Liefert die Auth-User-ID oder `null`.
+ *
+ * Läuft über `getClaims()` statt `getUser()`: `getUser()` fragt bei JEDEM
+ * Aufruf den Auth-Server (ein Netz-Roundtrip je Seite, je Layout, je Action).
+ * `getClaims()` prüft die Signatur des Access-Tokens lokal gegen den
+ * JWKS-Schlüssel des Projekts (einmal geholt, dann gecacht) — das Projekt
+ * signiert mit ES256, also bleibt es lokal; bei symmetrischen Schlüsseln
+ * fiele die Bibliothek von selbst auf `getUser()` zurück. Ein abgelaufenes
+ * Token wird vorher regulär erneuert. Preis: ein am Auth-Server gelöschtes
+ * Konto bleibt bis zum Token-Ablauf (~1 h) erkennbar — die Rechte hängen aber
+ * ohnehin an `account_members`/`hotel_members`, nicht am Auth-Konto.
+ *
+ * `cache` dedupliziert innerhalb eines Requests: Layout, Seite und Guards
+ * fragen alle danach, gerechnet wird einmal.
+ */
+export const getAuthUserId = cache(async (): Promise<string | null> => {
+  const supabase = await createClient()
+  const { data } = await supabase.auth.getClaims()
+  return data?.claims.sub ?? null
+})
 
 /**
  * Rechte im Management-Portal (Phase 6d).
@@ -31,6 +54,12 @@ export type ManagementContext = {
   role: ManagementRole
   /** Zugriff stammt aus der Kontoinhaberschaft (nicht aus hotel_members). */
   isOwner: boolean
+  /**
+   * `hotels.policies` des Hauses, Stand dieses Requests. Liegt mit der
+   * Slug-Auflösung ohnehin vor — Actions sparen sich damit die eigene
+   * `hotels`-Abfrage. Wer Policies ÄNDERT, liest danach nicht hieraus.
+   */
+  policies: Record<string, unknown>
 }
 
 /**
@@ -44,62 +73,64 @@ export type ManagementContext = {
  *
  * Pages: `const ctx = await getManagementContext(slug); if (!ctx) redirect('/admin')`
  * Actions: bei `null` mit `{ error }` zurückkehren, dann Admin-Client nutzen.
+ *
+ * Laufzeit (04.09.2026): Bis dahin vier Roundtrips hintereinander (Auth-Server,
+ * Haus, Inhaber, Mitglied), und Layout wie Seite rechneten beide für sich —
+ * je Seitenaufruf acht Roundtrips allein für die Frage „wer bist du". Jetzt
+ * zwei Stufen à einem Roundtrip (Identität ‖ Haus, dann Inhaber ‖ Mitglied),
+ * über `cache` einmal je Request.
  */
-export async function getManagementContext(slug: string): Promise<ManagementContext | null> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
+export const getManagementContext = cache(
+  async (slug: string): Promise<ManagementContext | null> => {
+    const [userId, hotel] = await Promise.all([getAuthUserId(), findHotelBySlug(slug)])
+    if (!userId || !hotel) return null
 
-  const hotel = await findHotelBySlug(slug)
-  if (!hotel) return null
+    const admin = createAdminClient()
 
-  const admin = createAdminClient()
+    // 1) Kontoinhaber — gilt für jedes Haus des Kontos.
+    // 2) Hausbezogene Zuordnung — Manager oder Rezeption. Ein beendeter
+    //    Zugang (`deactivated_at`) zählt nicht mehr: die Zeile bleibt nur als
+    //    Nachweis und für die Wieder-Aktivierung stehen.
+    // Beide Fragen sind unabhängig, also parallel; Inhaberschaft gewinnt.
+    const [{ data: owner }, { data: member }] = await Promise.all([
+      admin
+        .from('account_members')
+        .select('display_name')
+        .eq('account_id', hotel.accountId)
+        .eq('user_id', userId)
+        .maybeSingle(),
+      admin
+        .from('hotel_members')
+        .select('role, display_name')
+        .eq('hotel_id', hotel.id)
+        .eq('user_id', userId)
+        .is('deactivated_at', null)
+        .maybeSingle(),
+    ])
 
-  // 1) Kontoinhaber — gilt für jedes Haus des Kontos.
-  const { data: owner } = await admin
-    .from('account_members')
-    .select('display_name')
-    .eq('account_id', hotel.accountId)
-    .eq('user_id', user.id)
-    .maybeSingle()
-
-  if (owner) {
-    return {
-      userId: user.id,
+    const base = {
+      userId,
       hotelId: hotel.id,
       hotelSlug: hotel.slug,
       hotelName: hotel.name,
       accountId: hotel.accountId,
-      displayName: owner.display_name,
-      role: 'admin',
-      isOwner: true,
+      policies: hotel.policies,
     }
-  }
 
-  // 2) Hausbezogene Zuordnung — Manager oder Rezeption.
-  //    Ein beendeter Zugang (`deactivated_at`) zählt nicht mehr: die Zeile
-  //    bleibt nur als Nachweis und für die Wieder-Aktivierung stehen.
-  const { data: member } = await admin
-    .from('hotel_members')
-    .select('role, display_name')
-    .eq('hotel_id', hotel.id)
-    .eq('user_id', user.id)
-    .is('deactivated_at', null)
-    .maybeSingle()
-
-  if (!member) return null
-
-  return {
-    userId: user.id,
-    hotelId: hotel.id,
-    hotelSlug: hotel.slug,
-    hotelName: hotel.name,
-    accountId: hotel.accountId,
-    displayName: member.display_name,
-    role: member.role === 'manager' ? 'manager' : 'reception',
-    isOwner: false,
-  }
-}
+    if (owner) {
+      return { ...base, displayName: owner.display_name, role: 'admin', isOwner: true }
+    }
+    if (member) {
+      return {
+        ...base,
+        displayName: member.display_name,
+        role: member.role === 'manager' ? 'manager' : 'reception',
+        isOwner: false,
+      }
+    }
+    return null
+  },
+)
 
 /**
  * Wie `getManagementContext`, aber nur für **verwaltende** Rollen: Inhaber
@@ -130,16 +161,15 @@ export type HotelAccess = {
  * Inhaberschaft schlägt eine hausbezogene Zuordnung: wer sein eigenes Haus
  * zusätzlich als Manager einträgt, bleibt dort Inhaber.
  */
-export async function listAccessibleHotels(): Promise<HotelAccess[]> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return []
+export const listAccessibleHotels = cache(async (): Promise<HotelAccess[]> => {
+  const userId = await getAuthUserId()
+  if (!userId) return []
 
   const admin = createAdminClient()
 
   const [{ data: ownerships }, { data: memberships }] = await Promise.all([
-    admin.from('account_members').select('account_id').eq('user_id', user.id),
-    admin.from('hotel_members').select('hotel_id, role').eq('user_id', user.id).is('deactivated_at', null),
+    admin.from('account_members').select('account_id').eq('user_id', userId),
+    admin.from('hotel_members').select('hotel_id, role').eq('user_id', userId).is('deactivated_at', null),
   ])
 
   const accountIds = (ownerships ?? []).map(o => o.account_id)
@@ -179,7 +209,7 @@ export async function listAccessibleHotels(): Promise<HotelAccess[]> {
   }
 
   return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name, 'de'))
-}
+})
 
 type HotelRow = { id: string; slug: string; name: string; account_id: string }
 
@@ -218,16 +248,15 @@ export type AccountContext = {
  * damit eine **zweite Auth-Fläche** — sie braucht diesen eigenen Guard, das
  * Hotel-Layout schützt dort nichts.
  */
-export async function getAccountContext(): Promise<AccountContext | null> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
+export const getAccountContext = cache(async (): Promise<AccountContext | null> => {
+  const userId = await getAuthUserId()
+  if (!userId) return null
 
   const admin = createAdminClient()
   const { data: membership } = await admin
     .from('account_members')
     .select('account_id, display_name, accounts(name, plan)')
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .eq('role', 'owner')
     .limit(1)
     .maybeSingle()
@@ -236,10 +265,10 @@ export async function getAccountContext(): Promise<AccountContext | null> {
   const account = membership.accounts as unknown as { name: string; plan: string } | null
 
   return {
-    userId: user.id,
+    userId,
     accountId: membership.account_id,
     accountName: account?.name ?? 'Konto',
     plan: account?.plan ?? 'trial',
     displayName: membership.display_name,
   }
-}
+})

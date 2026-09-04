@@ -49,7 +49,11 @@ export async function proxy(request: NextRequest) {
   )
 
   // Triggert bei Bedarf den Token-Refresh und persistiert ihn im Response.
-  await supabase.auth.getUser()
+  // `getClaims()` statt `getUser()`: prüft das Token lokal gegen den
+  // JWKS-Schlüssel (gecacht) und erneuert es vorher, falls abgelaufen —
+  // `getUser()` kostete hier bei JEDEM Request einen Roundtrip zum
+  // Auth-Server, noch bevor die Seite überhaupt zu rechnen begann.
+  await supabase.auth.getClaims()
 
   return response
 }

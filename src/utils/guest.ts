@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { cookies } from 'next/headers'
 import { createAdminClient } from '@/utils/supabase/service'
 
@@ -22,7 +23,19 @@ export type GuestContext = {
   policies: Record<string, unknown>
 }
 
-export async function getGuestContext(): Promise<GuestContext | null> {
+/** PostgREST liefert eingebettete Zeilen je nach Kardinalität als Objekt oder Array. */
+function one<T>(v: T | T[] | null | undefined): T | null {
+  if (Array.isArray(v)) return v[0] ?? null
+  return v ?? null
+}
+
+/**
+ * Ein einziger Roundtrip: Aufenthalt samt Zimmer (→ dessen `room_states`)
+ * und Haus über die Fremdschlüssel-Einbettung. Vorher waren es zwei Stufen
+ * (Aufenthalt, dann Zimmer ‖ Status ‖ Haus) — bei jedem Gast-Seitenaufruf.
+ * `cache` dedupliziert je Request (Layout und Seite fragen beide).
+ */
+export const getGuestContext = cache(async (): Promise<GuestContext | null> => {
   const cookieStore = await cookies()
   const token = cookieStore.get(GUEST_COOKIE)?.value
   if (!token) return null
@@ -30,18 +43,24 @@ export async function getGuestContext(): Promise<GuestContext | null> {
   const admin = createAdminClient()
   const { data: stay } = await admin
     .from('stays')
-    .select('id, room_id, hotel_id')
+    .select(
+      'id, room_id, hotel_id, rooms(number, room_states(guest_signal, cleaning_by)), hotels(name, slug, policies)',
+    )
     .eq('session_token', token)
     .is('checked_out_at', null)
     .maybeSingle()
   if (!stay) return null
 
-  const [{ data: room }, { data: state }, { data: hotel }] = await Promise.all([
-    admin.from('rooms').select('number').eq('id', stay.room_id).single(),
-    admin.from('room_states').select('guest_signal, cleaning_by').eq('room_id', stay.room_id).maybeSingle(),
-    admin.from('hotels').select('name, slug, policies').eq('id', stay.hotel_id).single(),
-  ])
+  // Ohne generierte DB-Typen rät supabase-js bei Einbettungen „Array" —
+  // tatsächlich kommt bei 1:1 ein Objekt. `one` fängt beides, der Cast über
+  // `unknown` ist deshalb nötig.
+  type RoomEmbed = { number: string; room_states: unknown }
+  type HotelEmbed = { name: string | null; slug: string; policies: unknown }
+  type StateEmbed = { guest_signal: string | null; cleaning_by: string | null }
+  const room = one(stay.rooms as unknown as RoomEmbed | RoomEmbed[] | null)
+  const hotel = one(stay.hotels as unknown as HotelEmbed | HotelEmbed[] | null)
   if (!room || !hotel) return null
+  const state = one(room.room_states as StateEmbed | StateEmbed[] | null)
 
   return {
     stayId: stay.id,
@@ -54,4 +73,4 @@ export async function getGuestContext(): Promise<GuestContext | null> {
     cleaningActive: Boolean(state?.cleaning_by),
     policies: (hotel.policies ?? {}) as Record<string, unknown>,
   }
-}
+})

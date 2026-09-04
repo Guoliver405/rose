@@ -80,14 +80,19 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       sehen, wie weit das Sprach-System trägt: nicht-lateinische Schrift,
       andere Zeilenumbruch-Regeln (keine Leerzeichen zwischen Wörtern),
       Schriftart-Einbindung, Längen in Buttons und Slidern, Druckseiten.
-- [ ] **Performance ergründen** — die App reagiert im Browser teils erst nach
-      1–2 s auf einen Klick. Verdächtige zuerst prüfen: Server Actions, die
-      per `revalidatePath` ganze Layouts neu rendern; Board-Loader, die je
-      Aufruf mehrere Supabase-Roundtrips machen (`reapStaleCleanings`,
-      Verlauf); fehlende `useTransition`/optimistische Zustände bei
-      Klick-Aktionen (Check-in, Priorität, Slider); Cold-Starts auf Vercel.
-      Erst messen (Vercel Speed Insights, Network-Tab), dann gezielt
-      optimieren.
+- [ ] **Performance** — die App reagiert im Browser teils erst nach 1–2 s auf
+      einen Klick. **04.09. erster Schnitt im Code** (siehe AGENTS.md
+      „Roundtrips sind die Latenz"): `getClaims()` statt `getUser()`, Guards
+      in `cache()`, serielle Abfragen parallelisiert bzw. per FK-Einbettung
+      zusammengelegt, Check-in mit einem statt vier Reads. Noch offen:
+      1. ~~**Vercel-Region gegen Supabase-Region prüfen**~~ — 04.09.: Funktionen
+         liefen in `iad1` (Washington), die DB liegt in Irland. `vercel.json`
+         mit `regions: ["dub1"]` legt sie daneben.
+      2. In Produktion **nachmessen** (Network-Tab: Dauer des Action-POSTs und
+         des RSC-Refreshs; Vercel Speed Insights), erst dann weiter.
+      3. Falls es dann noch spürbar ist: optimistische Zustände in
+         `RoomDialog`/`ServiceBoard` (`useOptimistic`), doppeltes Rendern nach
+         Actions (`revalidatePath` + eigenes Realtime-Ereignis) entkoppeln.
 
 ## Komfort für Mehrhaus-Kunden (Ketten)
 

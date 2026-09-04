@@ -13,13 +13,12 @@ export default async function GuestStatusPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const hotel = await requireHotelBySlug(slug)
 
   // Die Sitzung muss zu DIESEM Haus gehören: alle Mandanten teilen sich den
   // Origin, das Gast-Cookie gilt also auch unter fremden Slugs. Ohne diesen
   // Abgleich sähe ein Gast unter /h/fremdes-hotel/guest/status sein eigenes
-  // Zimmer unter falschem Hotelnamen.
-  const ctx = await getGuestContext()
+  // Zimmer unter falschem Hotelnamen. Haus und Sitzung sind unabhängig → parallel.
+  const [hotel, ctx] = await Promise.all([requireHotelBySlug(slug), getGuestContext()])
   if (!ctx || ctx.hotelId !== hotel.id) redirect(`/h/${hotel.slug}/guest`)
 
   const cleaningWindow = parseCleaningWindow(ctx.policies)

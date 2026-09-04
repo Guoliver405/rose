@@ -456,7 +456,7 @@ function RoomDialog({ hotelSlug, room, onClose }: { hotelSlug: string; room: Roo
                   : 'border border-accent-pill-edge bg-accent-tint text-accent-strong hover:bg-accent-pill'
               }`}
             >
-              {room.priority ? 'Priorisierung aufheben' : 'Reinigung priorisieren'}
+              {pending ? 'Bitte warten …' : room.priority ? 'Priorisierung aufheben' : 'Reinigung priorisieren'}
             </button>
           )}
 
@@ -468,7 +468,7 @@ function RoomDialog({ hotelSlug, room, onClose }: { hotelSlug: string; room: Roo
               onClick={runMarkCleaned}
               className="rounded-xl border border-positive-pill-edge bg-positive-tint px-4 py-3 font-bold text-positive-deep hover:bg-positive-pill disabled:opacity-50"
             >
-              Reinigung als erledigt markieren
+              {pending ? 'Bitte warten …' : 'Reinigung als erledigt markieren'}
             </button>
           )}
         </div>

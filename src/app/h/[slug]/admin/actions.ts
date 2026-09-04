@@ -38,24 +38,22 @@ export async function checkInAction(slug: string, roomId: string, force = false)
   if (!ctx) return { error: 'Nicht angemeldet.' }
   const admin = createAdminClient()
 
-  const { data: room } = await admin
-    .from('rooms').select('id, hotel_id, number, deactivated_at').eq('id', roomId).single()
+  // Drei unabhängige Fragen (Zimmer, laufender Aufenthalt, Reinigungslage)
+  // in einem Roundtrip statt nacheinander; die Policies liegen bereits im
+  // Kontext. Vorher standen hier vier Abfragen in Reihe — vor dem eigentlichen
+  // Schreiben.
+  const [{ data: room }, { data: activeStay }, { data: state }] = await Promise.all([
+    admin.from('rooms').select('id, hotel_id, number, deactivated_at').eq('id', roomId).single(),
+    admin.from('stays').select('id').eq('room_id', roomId).is('checked_out_at', null).maybeSingle(),
+    admin.from('room_states').select('checkout_pending, cleaning_by, priority').eq('room_id', roomId).maybeSingle(),
+  ])
   if (!room || room.hotel_id !== ctx.hotelId) return { error: 'Zimmer nicht gefunden.' }
   if (room.deactivated_at) {
     return { error: 'Zimmer ist außer Betrieb — erst unter Einstellungen → Zimmer zurückholen.' }
   }
-
-  const { data: activeStay } = await admin
-    .from('stays').select('id').eq('room_id', roomId).is('checked_out_at', null).maybeSingle()
   if (activeStay) return { error: 'Zimmer ist bereits belegt.' }
 
   if (!force) {
-    const { data: state } = await admin
-      .from('room_states')
-      .select('checkout_pending, cleaning_by, priority')
-      .eq('room_id', roomId)
-      .maybeSingle()
-
     const reasons: string[] = []
     if (state?.checkout_pending) reasons.push('Das Zimmer ist seit dem letzten Check-out noch nicht gereinigt.')
     if (state?.priority) reasons.push('Für das Zimmer ist eine priorisierte Reinigung offen.')
@@ -63,9 +61,7 @@ export async function checkInAction(slug: string, roomId: string, force = false)
     if (reasons.length > 0) return { warning: { reasons } }
   }
 
-  const { data: hotel } = await admin
-    .from('hotels').select('policies').eq('id', ctx.hotelId).single()
-  const policies = (hotel?.policies ?? {}) as Record<string, unknown>
+  const policies = ctx.policies
 
   // Das Verfahren wird HIER festgehalten und nicht bei jedem Zugriff neu aus
   // den Policies gelesen. Dadurch behalten laufende Aufenthalte ihren

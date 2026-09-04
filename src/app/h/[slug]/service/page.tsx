@@ -19,12 +19,12 @@ export default async function ServiceBoardPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const hotel = await requireHotelBySlug(slug)
 
   // Die svc_-Sitzung gilt originweit, also auch unter fremden Slugs — der
   // Abgleich mit dem Hotel aus der URL verhindert, dass eine Kraft unter der
   // Adresse eines anderen Hauses ihr eigenes Board unter falschem Namen sieht.
-  const ctx = await getMaidContext()
+  // Haus und Sitzung sind voneinander unabhängig → parallel.
+  const [hotel, ctx] = await Promise.all([requireHotelBySlug(slug), getMaidContext()])
   if (!ctx || ctx.hotelId !== hotel.id) redirect(`/h/${hotel.slug}/service/login`)
 
   // Board-Daten über den Admin-Client: die Maid-RLS sieht fremde profiles
