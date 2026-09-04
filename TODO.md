@@ -31,11 +31,10 @@ Mittelfristig umzusetzen; Reihenfolge noch offen. Die Punkte zur
 Veröffentlichung (Pricing, Impressum, Datenschutz, Zahlungsprovider) hängen
 zusammen und gehören vor den ersten zahlenden Kunden.
 
-- [ ] **„Auswertung" aus den Einstellungen ins Hauptmenü** — die Route
-      `…/admin/auswertung` betrifft keine Einstellung, sondern den Betrieb.
-      Eigener Punkt in der Admin-Nav („Protokolle" oder ähnlich), sichtbar
-      für Inhaber und Manager; Kachel im Einstellungen-Hub entfällt. Ggf. den
-      Zimmer-Verlauf dort mit anbinden, der heute nur im Zimmer-Dialog lebt.
+- [x] ~~**„Auswertung" aus den Einstellungen ins Hauptmenü**~~ — 04.09.
+      erledigt: eigener Nav-Punkt „Auswertung" für Inhaber und Manager, Kachel
+      im Hub und Rücklink der Seite entfallen. Offen bleibt die Idee, den
+      Zimmer-Verlauf (heute nur im Zimmer-Dialog) dort mit anzubinden.
 - [ ] **Coach Marks für die Ersteinrichtung** — beim ersten Aufruf nach der
       Registrierung führt eine Folge von Hinweisen durch Zimmer-Setup, Personal,
       Service-Baukasten, Gast-Zugang und Aushänge. Muss über die Einstellungen

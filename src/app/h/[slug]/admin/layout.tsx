@@ -50,7 +50,11 @@ export default async function AdminLayout({
           </Link>
 
           {/* Setup-Bereiche (Zimmer/Personal/Services/Aushänge) liegen im
-              Einstellungen-Hub — die Nav trägt nur das Tagesgeschäft. */}
+              Einstellungen-Hub — die Nav trägt nur den Betrieb. Die
+              Auswertung gehört dazu (seit 04.09.2026): sie ist Betriebs-
+              und Personaldaten-Ansicht, keine Einstellung, und liegt deshalb
+              nicht mehr im Hub. Nur für Inhaber und Manager — die Seite
+              selbst prüft über getAdminContext. */}
           <nav className="flex items-center gap-4 text-sm font-semibold text-ink-soft">
             <Link href={base} className="hover:text-ink">Übersicht</Link>
             <Link href={`${base}/bestellungen`} className="flex items-center gap-1.5 hover:text-ink">
@@ -67,6 +71,9 @@ export default async function AdminLayout({
                 </span>
               )}
             </Link>
+            {ctx.role !== 'reception' && (
+              <Link href={`${base}/auswertung`} className="hover:text-ink">Auswertung</Link>
+            )}
             <Link href={`${base}/einstellungen`} className="hover:text-ink">Einstellungen</Link>
           </nav>
 

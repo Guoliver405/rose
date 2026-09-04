@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import {
-  BarChart3, BedDouble, ChevronRight, ConciergeBell, DoorOpen, FlaskConical, KeyRound, QrCode,
+  BedDouble, ChevronRight, ConciergeBell, DoorOpen, FlaskConical, KeyRound, QrCode,
   SlidersHorizontal, Users, type LucideIcon,
 } from 'lucide-react'
 import { getManagementContext } from '@/utils/auth'
@@ -38,10 +38,6 @@ const ADMIN_TILES: Tile[] = [
   {
     path: '/services', icon: ConciergeBell, title: 'Service-Baukasten',
     description: 'Services konfigurieren, die Gäste anfragen können',
-  },
-  {
-    path: '/auswertung', icon: BarChart3, title: 'Auswertung Reinigung',
-    description: 'Arbeits- und Reinigungszeiten je Kraft, Tagesprotokolle',
   },
   {
     path: '/einstellungen/zugang', icon: KeyRound, title: 'Mein Zugang',

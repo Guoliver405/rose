@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { ArrowLeft, Info } from 'lucide-react'
+import { Info } from 'lucide-react'
 import { getAdminContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import { clampStaleMinutes } from '@/lib/board'
@@ -137,13 +137,10 @@ export default async function AuswertungPage({
 
   return (
     <div className="flex flex-col gap-5">
+      {/* Eigener Nav-Punkt seit 04.09.2026 — kein Rücklink mehr in die
+          Einstellungen, die Seite ist wie Übersicht und Services eine
+          Hauptebene. */}
       <div className="flex flex-wrap items-center gap-3">
-        <Link
-          href={`/h/${ctx.hotelSlug}/admin/einstellungen`}
-          className="flex items-center gap-1 text-sm font-semibold text-ink-muted hover:text-ink print:hidden"
-        >
-          <ArrowLeft className="h-4 w-4" /> Einstellungen
-        </Link>
         <h1 className="text-xl font-black text-ink">Auswertung Reinigung</h1>
         <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-semibold text-ink-soft">
           {dayLabel(fromKey)} – {dayLabel(toKey)}
