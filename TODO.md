@@ -25,6 +25,71 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
 - [ ] **Hotel zwischen Konten verschieben** (Betreiberwechsel) — bisher außen
       vor. (6d-Plan, Abschnitt 14)
 
+## Produkt-Ausbau (Wunschliste 04.09.2026)
+
+Mittelfristig umzusetzen; Reihenfolge noch offen. Die Punkte zur
+Veröffentlichung (Pricing, Impressum, Datenschutz, Zahlungsprovider) hängen
+zusammen und gehören vor den ersten zahlenden Kunden.
+
+- [ ] **„Auswertung" aus den Einstellungen ins Hauptmenü** — die Route
+      `…/admin/auswertung` betrifft keine Einstellung, sondern den Betrieb.
+      Eigener Punkt in der Admin-Nav („Protokolle" oder ähnlich), sichtbar
+      für Inhaber und Manager; Kachel im Einstellungen-Hub entfällt. Ggf. den
+      Zimmer-Verlauf dort mit anbinden, der heute nur im Zimmer-Dialog lebt.
+- [ ] **Coach Marks für die Ersteinrichtung** — beim ersten Aufruf nach der
+      Registrierung führt eine Folge von Hinweisen durch Zimmer-Setup, Personal,
+      Service-Baukasten, Gast-Zugang und Aushänge. Muss über die Einstellungen
+      **reaktivierbar** sein („Einführung erneut anzeigen"). Zwei Teilaufgaben:
+      Texte formulieren und Ankerpunkte im UI festlegen; Gesehen-Zustand je
+      Person speichern (nicht nur im Browser, sonst kommt die Tour auf jedem
+      Gerät wieder).
+- [ ] **Konto-Seite „Plan & Abrechnung"** für den Inhaber — Zahlungsplan,
+      Zahlungsverfahren, Abrechnungsmodalitäten und -intervall, Rechnungen,
+      Upgrades. Zunächst als Platzhalter-Struktur, gefüllt, sobald
+      Zahlungsprovider und Pricing stehen. Die Zimmerzahlen je Periode liefert
+      bereits `getBillingOverview` (`billing_snapshots`).
+- [ ] **Landing-Page aufmöbeln** (`/`):
+      - a) **Bildmaterial**: klare Screenshots der drei Oberflächen statt
+        Platzhalter; dazu Medien, die den **Nutzen** zeigen — etwa ein Comic
+        mit den Kernschritten (Gast checkt ein → bekommt Zugang → löst im Zimmer
+        einen Service aus → Rezeption reagiert direkt → Reinigung sieht den
+        Wunsch auf dem Board).
+      - b) **Erklärvideo** oder Animation, eventuell mit ComfyUI und Voicebox
+        (lokal installiert) erzeugt.
+      - c) **Pricing erstellen und veröffentlichen** — setzt die Entscheidung
+        „Pricing-Form" oben voraus; der Platzhalter-Abschnitt auf `/` wird
+        dann ersetzt.
+      - d) **Impressum und Datenschutzerklärung** veröffentlichen — Pflicht
+        vor dem ersten echten Kunden. Die Datenschutzerklärung muss Supabase
+        (DB, Auth), Vercel (Hosting) und Resend (Mail) als Auftragsverarbeiter
+        nennen und die bewusste Anonymität der Gastdaten (`stays` ohne
+        Personenbezug, Mail-Adresse wird nicht gespeichert) beschreiben.
+- [ ] **Zahlungsprovider einbinden** — Anmeldung beim Provider als Teil der
+      Registrierung, auch wenn der erste Monat frei ist (Zahlungsmittel liegt
+      dann schon vor). Kandidat: **PayPal** (All-in-one mit mehreren
+      Zahlverfahren, Abwicklung und Haftung gegen Gebühr vollständig beim
+      Provider). Vorher Alternativen (Stripe, Paddle als Merchant of Record
+      inkl. Steuerabführung) gegenüberstellen. Betrifft `/registrieren`, die
+      Konto-Seite oben und die Abrechnung aus `billing_snapshots`.
+- [ ] **Mehrsprachigkeit**: en, es, fr, de. Betrifft alle drei Portale, die
+      Landing-Page, Mails und Druckseiten (Aushänge, Handouts, Karten). Die
+      Gast-Sprache muss unabhängig von der Hotel-Sprache wählbar sein — das
+      Gastportal ist die Fläche mit den meisten Sprachen. i18n-Ansatz für den
+      App Router festlegen (Next.js-16-Doku in `node_modules/next/dist/docs/`
+      lesen, bevor eine Bibliothek gewählt wird).
+- [ ] **Thailändisch als Belastungsprobe** — probehalber implementieren, um zu
+      sehen, wie weit das Sprach-System trägt: nicht-lateinische Schrift,
+      andere Zeilenumbruch-Regeln (keine Leerzeichen zwischen Wörtern),
+      Schriftart-Einbindung, Längen in Buttons und Slidern, Druckseiten.
+- [ ] **Performance ergründen** — die App reagiert im Browser teils erst nach
+      1–2 s auf einen Klick. Verdächtige zuerst prüfen: Server Actions, die
+      per `revalidatePath` ganze Layouts neu rendern; Board-Loader, die je
+      Aufruf mehrere Supabase-Roundtrips machen (`reapStaleCleanings`,
+      Verlauf); fehlende `useTransition`/optimistische Zustände bei
+      Klick-Aktionen (Check-in, Priorität, Slider); Cold-Starts auf Vercel.
+      Erst messen (Vercel Speed Insights, Network-Tab), dann gezielt
+      optimieren.
+
 ## Komfort für Mehrhaus-Kunden (Ketten)
 
 - [ ] **Konto-weite Service-Vorschlagsliste**
