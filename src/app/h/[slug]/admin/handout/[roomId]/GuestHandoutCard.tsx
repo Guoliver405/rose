@@ -53,7 +53,10 @@ export default function GuestHandoutCard({
     startTransition(async () => {
       const res = await mailGuestAccessAction(hotelSlug, roomId, email)
       if (res.error) { setMailError(res.error); return }
-      setMailNotice(`Zugang an ${email} verschickt.`)
+      // Die Absender-Domain ist jung und hat kaum Sendehistorie — bis sich
+      // Reputation aufgebaut hat, sortieren manche Anbieter die Mail in den
+      // Spam-Ordner. Der Hinweis gehört an die Rezeption, die es dem Gast sagt.
+      setMailNotice(`Zugang an ${email} verschickt. Bitte den Gast darauf hinweisen, notfalls im Spam-Ordner nachzusehen.`)
       setEmail('')
     })
   }

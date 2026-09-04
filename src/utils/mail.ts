@@ -97,6 +97,25 @@ function html(m: GuestAccessMail): string {
 }
 
 /**
+ * Reintext-Fassung, inhaltlich identisch zum HTML. Eine Mail **nur** mit
+ * HTML-Teil ist für Spamfilter ein Signal — Yahoo und Gmail bewerten fehlende
+ * `text/plain`-Alternativen negativ, zumal bei einer Absender-Domain ohne
+ * Sendehistorie. Kostet nichts und ist für Textclients ohnehin richtig.
+ */
+function text(m: GuestAccessMail): string {
+  const zeilen = [
+    'Guten Tag,',
+    '',
+    `hier ist Ihr Zugang zum Gäste-Portal von ${m.hotelName}, Zimmer ${m.roomNumber}.`,
+    '',
+    `Gäste-Portal öffnen: ${m.url}`,
+  ]
+  if (m.pin) zeilen.push('', `Ihre PIN: ${m.pin}`)
+  zeilen.push('', 'Der Zugang gilt für die Dauer Ihres Aufenthalts und endet mit dem Check-out.')
+  return zeilen.join('\n')
+}
+
+/**
  * Verschickt den Zugang. Gibt bei Fehlern eine für Gäste unverfängliche
  * Meldung zurück — die Rezeption sieht sie, nicht der Gast.
  */
@@ -116,6 +135,7 @@ export async function sendGuestAccessMail(m: GuestAccessMail): Promise<{ error?:
         to: [m.to],
         subject: `Ihr Zugang zum Gäste-Portal — ${m.hotelName}, Zimmer ${m.roomNumber}`,
         html: html(m),
+        text: text(m),
       }),
     })
 

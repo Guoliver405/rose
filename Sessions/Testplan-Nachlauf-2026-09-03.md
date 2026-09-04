@@ -223,8 +223,10 @@ Offener Punkt aus [TODO.md](../TODO.md).
 - [ ] Im Link-Verfahren: Mail trägt den Aufenthalts-Link; nach Check-out ist
       er tot.
 - [ ] QR aus dem Handout mit dem Handy scannen (beide Verfahren).
-- [ ] Postfach prüfen: Spam-/Werbung-Ordner? (Reputation, kein Fehler — nur
-      notieren.)
+- [x] Postfach prüfen: Spam-/Werbung-Ordner? → **Befund 6**, Yahoo: Spam.
+- [ ] In der Yahoo-Mail „Original anzeigen": `Authentication-Results` mit
+      `spf=pass dkim=pass dmarc=pass`? Ergebnis notieren — entscheidet, ob
+      noch Technik fehlt oder nur Reputation.
 
 ## 8) Löschbegehren (`/admin` → „Daten löschen", nur Inhaber) — zuletzt
 
@@ -257,6 +259,7 @@ Testzugang, einem Check-in und einer Reinigung.
 | 3 | 2 | Zimmer-Verlauf: „Check-in · Oli", aber „Check-out · Rezeption" — derselbe Aufenthalt, zwei Namen. Ursache: `stays` hatte nur `created_by`, für den Check-out keine Spalte; der Verlauf setzte pauschal „Rezeption". | Beide Ereignisse nennen die Person. | behoben 04.09.: Migration `stays.checked_out_by`, `checkOutAction` schreibt sie, Verlauf liest sie (Alt-Aufenthalte weiter „Rezeption") |
 | 4 | Rückfrage | Zimmer-Verlauf löste Namen nur über `profiles.hotel_id` auf (= Stammhaus). Inhaber/Manager mit mehreren Häusern erschienen in jedem weiteren Haus als „Rezeption", obwohl die ID gespeichert war. | Name in jedem Haus. | behoben 04.09.: Auflösung über die vorkommenden Akteur-IDs |
 | 5 | Rückfrage | Stale-Timeout (vergessener Abschluss) war reine Ableitung: im Verlauf blieb „Reinigung gestartet" ohne Ende, der stille Reset war unsichtbar. Label `clean_aborted` existierte, nichts schrieb es. | Reset nachvollziehbar. | umgesetzt 04.09.: erster Zugriff nach dem Limit schreibt `clean_aborted` (Quelle `system`, datiert auf Start + Limit) und setzt `room_states` zurück |
+| 6 | 7 | Gast-Mail landet bei Yahoo beim ersten Versuch im Spam. Technik (SPF, DKIM auf `send.rose-roomservice.app`) steht; Mail hatte **keinen** Plain-Text-Teil; Domain ohne Sendehistorie. | Posteingang. | teils 04.09.: `text/plain` ergänzt, Spam-Hinweis auf dem Handout. Rest ist Dashboard/DNS/Zeit — Schritte in TODO.md |
 | 2 | 5 | QR-Aushänge als eigene Hub-Kachel, obwohl sie nur im PIN-Verfahren Sinn haben. | Aushänge dort, wo das Verfahren gewählt wird, und nur wenn „Fester QR-Code je Zimmer" aktiv ist. | umgesetzt 04.09.: Abschnitt auf „Gäste-Zugang", Kachel/Knopf entfernt, Rezeptions-Kachel nur im PIN-Verfahren |
 
 ## Aufräumen nach dem Durchlauf

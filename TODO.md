@@ -56,6 +56,29 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
       Fehler, sondern fehlende Sendereputation — hilft nur regelmäßiger
       Versand über Tage. Praktische Relevanz vermutlich begrenzt, weil Hotels
       eigene Mail-Domains nutzen. (Übergabe 26.07.)
+      **04.09.: auch die Gast-Mail landet bei Yahoo im Spam**, schon beim
+      ersten Versuch. Im Code erledigt: `text/plain`-Teil (fehlte) und
+      Spam-Hinweis auf dem Handout. Was nur außerhalb des Codes geht, in
+      dieser Reihenfolge:
+      1. In der Spam-Mail „Original anzeigen" → `Authentication-Results`:
+         `spf=pass dkim=pass dmarc=pass`? Fehlt eines, ist es Technik, nicht
+         Reputation.
+      2. Resend → Domain `send.rose-roomservice.app` → **Click- und
+         Open-Tracking aus.** Tracking schreibt jeden Link auf eine
+         Resend-Domain um; Link-Domain ≠ Absender-Domain ist ein starkes
+         Spam-Signal, und ausgerechnet der Link ist hier der Inhalt.
+      3. DMARC schärfen: bisher nur `_dmarc.rose-roomservice.app` mit
+         `p=none` (vererbt). Eigener Eintrag `_dmarc.send.rose-roomservice.app`
+         mit `v=DMARC1; p=quarantine; rua=mailto:…` — Yahoo und Gmail werten
+         eine durchgesetzte Policy positiv.
+      4. Bei Yahoo (Sender Hub, Complaint Feedback Loop) und Google
+         (Postmaster Tools) die Domain registrieren — Sichtbarkeit, kein
+         Freifahrtschein.
+      5. Warm-up: über Tage kleine Mengen an Adressen, die die Mail öffnen
+         und aus dem Spam holen. Das ist das Einzige, was Reputation wirklich
+         baut.
+      Nicht sinnvoll: `List-Unsubscribe` (transaktional), Resend-eigene
+      IP (Volumen viel zu klein).
 - [ ] Optional: **E-Mail-Bestätigung bei der Registrierung** einschalten (dann
       echtes `signUp()` statt Admin-API mit `email_confirm`).
 - [ ] **Dev-Log zeigt Passwörter**: Next.js protokolliert Server-Action-
