@@ -86,10 +86,21 @@ deployt (`verify` grün, 118 Unit-Tests). Neu im Code: `stays.checked_out_by`,
 Tint-Schicht, Aushänge unter „Gäste-Zugang", Fehlercode `deactivated`,
 Hinweistext für erloschene Links, Plain-Text-Teil der Gast-Mail.
 
+**Nachtrag zum Abschluss:** Die Mail-Frage ist geklärt — der dritte Versand
+(nach Plain-Text-Teil und DMARC) kam bei Yahoo **im Posteingang** an; der
+vermeintlich verlorene Versuch hatte Resend nie erreicht (Bedienung). Das
+Testhaus ist abgeräumt (0 Aufenthalte, 0 Verlauf, 0 Stiche, nachgemessen).
+Als bleibende Infrastruktur entstand der
+[GUI-Testkatalog](GUI-Testkatalog.md): nummerierte Fälle A–K, Kennzeichnung,
+was Claude allein kann und was den Menschen braucht, Lauf-Vorlage.
+
 **Wenn hier weitergearbeitet wird:**
 
-- Zuerst die Mail-Frage klären (Resend-Logs), dann die Liste „Nicht
-  durchgeführt" abarbeiten — der Manager-Test braucht eine echte Adresse.
+- Neue GUI-Tests in den Katalog, nicht in Protokolle; ein Lauf =
+  `Sessions/GUI-Lauf-<Datum>.md` nach der Vorlage in Abschnitt 6.
+- Die offenen **C+M**/**M**-Fälle (B6, B10, B11, I4, I5, J3, J5, J6) brauchen
+  vom Menschen: zweite Management-Sitzung, Manager mit echter Adresse, Handy,
+  Postfach, Drucker — vorher bereitstellen, dann in einem Lauf abarbeiten.
 - Wer eine weitere Stelle baut, die `room_states.cleaning_by` zurücksetzt,
   muss vorher `reapStaleCleanings` rufen — sonst geht der Start der Kraft
   spurlos verloren.

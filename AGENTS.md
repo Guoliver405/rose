@@ -127,8 +127,20 @@ GitHub-Secrets aus der Job-Umgebung kommen.
 Gerüst. Der Gast-Rate-Limit-Test („fünf Fehlversuche sperren nur das eigene
 Haus") wäre der nächste sinnvolle Schritt.
 
-**Manuell bleibt** ohnehin: Druck-Layouts, Farbsprache, Bedien-Eindruck — siehe
-[Testplan-Walkthrough.md](Sessions/Testplan-Walkthrough.md).
+**GUI-Ebene (dritte Schicht, seit 04.09.2026):** Was Unit- und
+Integrationstests nicht sehen — Dialoge, Meldungen, Kontraste, zwei angemeldete
+Personen, QR-Scans, Mail im Postfach — prüft der
+[GUI-Testkatalog](Sessions/GUI-Testkatalog.md): nummerierte Fälle je Bereich
+(A Konto … K Theme) mit Schritten, Erwartung und dem Vermerk, ob Claude sie
+allein fahren kann (**C**), den Menschen für Sitzung/Gerät/Postfach braucht
+(**C+M**) oder nur der Mensch sie machen kann (**M** — u. a. zweite
+Management-Sitzung, Manager mit zwei Häusern, `window.confirm`-Dialoge,
+Handy-Scan, Druck, Konto löschen). Läufe werden als `Sessions/GUI-Lauf-<Datum>.md`
+protokolliert; der Katalog ist die Vorlage und wird dort erweitert, nicht im
+Protokoll. Erster Lauf in diesem Sinn: [Testplan-Nachlauf-2026-09-03.md](Sessions/Testplan-Nachlauf-2026-09-03.md)
+(04.09.2026, in Produktion, Claude fährt Chrome). Der ursprüngliche
+[Testplan-Walkthrough.md](Sessions/Testplan-Walkthrough.md) bleibt als
+Protokoll des Erstdurchlaufs stehen.
 
 CI läuft über [.github/workflows/ci.yml](.github/workflows/ci.yml) bei Push auf
 `main` und bei Pull Requests, in zwei Jobs:
