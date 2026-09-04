@@ -147,9 +147,11 @@ export async function checkOutAction(slug: string, roomId: string): Promise<{ er
     .maybeSingle()
   if (!stay || stay.hotel_id !== ctx.hotelId) return { error: 'Kein aktiver Aufenthalt auf diesem Zimmer.' }
 
+  // checked_out_by spiegelt created_by: der Zimmer-Verlauf nennt sonst beim
+  // Check-in die Person und beim Check-out nur „Rezeption".
   const { error: updErr } = await admin
     .from('stays')
-    .update({ checked_out_at: new Date().toISOString() })
+    .update({ checked_out_at: new Date().toISOString(), checked_out_by: ctx.userId })
     .eq('id', stay.id)
   if (updErr) return { error: `Check-out fehlgeschlagen: ${updErr.message}` }
 

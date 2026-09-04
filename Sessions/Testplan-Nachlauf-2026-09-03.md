@@ -40,62 +40,62 @@ Wegwerf-Haus und ist nicht umkehrbar.
 
 Anlegen zum Üben: Gebäudeteil „ZZ-Test", Etage 90, Zimmer ZZ01–ZZ03.
 
-- [ ] Ab dem zweiten Gebäudeteil erscheint die **Gebäude-Ebene** in der Liste
+- [x] Ab dem zweiten Gebäudeteil erscheint die **Gebäude-Ebene** in der Liste
       mit eigener Aktion; vorher nicht.
-- [ ] Klick auf ein Zimmer öffnet den Dialog mit **drei benannten Aktionen**
+- [x] Klick auf ein Zimmer öffnet den Dialog mit **drei benannten Aktionen**
       (Bearbeiten · Außer Betrieb nehmen · Endgültig löschen) samt Erklärsatz.
       Derselbe Dialog an der Etage und am Gebäudeteil.
-- [ ] Zimmer bearbeiten: ZZ02 → ZZ09, Etage 90 → 91. Liste sortiert sich um,
+- [x] Zimmer bearbeiten: ZZ02 → ZZ09, Etage 90 → 91. Liste sortiert sich um,
       Zimmer-Verlauf und QR-Token bleiben (Aushang öffnen: gleicher Link).
-- [ ] Hinweis „gedruckte Aushänge tragen die alte Beschriftung" erscheint
+- [x] Hinweis „gedruckte Aushänge tragen die alte Beschriftung" erscheint
       **nur** bei Nummern- oder Gebäudeteil-Änderung, nicht bei reinem
       Etagenwechsel.
-- [ ] Kollision: ZZ01 in ZZ03 umbenennen → Fehlermeldung nennt Gebäudeteil
+- [x] Kollision: ZZ01 in ZZ03 umbenennen → Fehlermeldung nennt Gebäudeteil
       und Etage des Bestandszimmers, **nichts** wurde geändert.
-- [ ] Etage verschieben (90 → 92): alle Zimmer der Etage zugleich. Danach eine
+- [x] Etage verschieben (90 → 92): alle Zimmer der Etage zugleich. Danach eine
       Kollision provozieren (Etage mit vorhandener Nummer zusammenlegen) →
       Abbruch, **kein** Zimmer halb verschoben.
-- [ ] Gebäudeteil umbenennen („ZZ-Test" → „ZZ-Prüfung"): alle Zimmer folgen,
+- [x] Gebäudeteil umbenennen („ZZ-Test" → „ZZ-Prüfung"): alle Zimmer folgen,
       QR-Hinweis erscheint.
 
 ## 2) Zimmer-Setup: Außer Betrieb und Löschen
 
-- [ ] Zimmer außer Betrieb nehmen → verschwindet von Reinigungsboard und
+- [x] Zimmer außer Betrieb nehmen → verschwindet von Reinigungsboard und
       Aushang, Übersicht zeigt es ausgegraut, Check-in abgewiesen. „Wieder in
       Betrieb" stellt es her.
-- [ ] **Löschen ohne Historie** (frisches ZZ-Zimmer): Dialog sagt „Noch nie
+- [x] **Löschen ohne Historie** (frisches ZZ-Zimmer): Dialog sagt „Noch nie
       benutzt", **kein** Abtippfeld, Löschen sofort möglich. Nummer ist danach
       wieder frei (gleiches Zimmer neu anlegen klappt).
-- [ ] **Löschen mit Historie:** ZZ-Zimmer einchecken, Gast setzt
+- [x] **Löschen mit Historie:** ZZ-Zimmer einchecken, Gast setzt
       „Zimmer reinigen", Reinigungskraft reinigt (Start + Abschluss), Check-out.
       Dialog beziffert: Aufenthalte, Service-Anfragen, Verlaufs-Einträge,
       ungültig werdende Aushänge — und sagt ausdrücklich, dass
       Reinigungs-Stiche **bleiben**. Zahlen mit dem Zimmer-Verlauf abgleichen.
-- [ ] Abtipp-Riegel: Knopf bleibt gesperrt bis die Bezeichnung **exakt**
+- [x] Abtipp-Riegel: Knopf bleibt gesperrt bis die Bezeichnung **exakt**
       stimmt (Kleinschreibung reicht nicht). Daneben der Ausweg „Lieber außer
       Betrieb nehmen".
-- [ ] Nach dem Löschen: Auswertung → die Reinigung der Kraft ist noch gezählt
+- [x] Nach dem Löschen: Auswertung → die Reinigung der Kraft ist noch gezählt
       (Stich überlebt, nur ohne Zimmerbezug).
-- [ ] **Belegtes Zimmer:** Check-in, dann Löschen versuchen → hart gesperrt
+- [x] **Belegtes Zimmer:** Check-in, dann Löschen versuchen → hart gesperrt
       mit „bitte zuerst auschecken", kein Abtippfeld, das etwas freischalten
       könnte.
-- [ ] Etage löschen, deren Zimmer teils belegt sind → gesperrt, nichts passiert.
-- [ ] Letztes Zimmer einer Etage löschen → Etage verschwindet; letztes Zimmer
+- [x] Etage löschen, deren Zimmer teils belegt sind → gesperrt, nichts passiert.
+- [x] Letztes Zimmer einer Etage löschen → Etage verschwindet; letztes Zimmer
       eines Gebäudeteils → Gebäude-Ebene verschwindet wieder.
-- [ ] Singular/Plural in Dialog und Meldung („1 Aufenthalt", nicht
+- [x] Singular/Plural in Dialog und Meldung („1 Aufenthalt", nicht
       „1 Aufenthalte").
 
 ## 3) Testdaten vollständig entfernen (Einstellungen → Test-Szenario)
 
-- [ ] Szenario erzeugen, dann bei einem belegten Zimmer den Löschdialog
+- [x] Szenario erzeugen, dann bei einem belegten Zimmer den Löschdialog
       öffnen → mit Historie, gesperrt (belegt).
-- [ ] „Alles zurücksetzen" → Dialog derselben Zimmer: **weiterhin** Historie
+- [x] „Alles zurücksetzen" → Dialog derselben Zimmer: **weiterhin** Historie
       (Aufenthalte, Verlauf). Das ist gewollt und der Unterschied zum nächsten
       Punkt.
-- [ ] „Testdaten vollständig entfernen" → Meldung beziffert Aufenthalte,
+- [x] „Testdaten vollständig entfernen" → Meldung beziffert Aufenthalte,
       Anfragen, Verlauf, Stiche. Danach: Löschdialog meldet „Noch nie
       benutzt", Zimmer-Verlauf leer, Auswertung leer, Übersicht neutral.
-- [ ] Zimmer und Personal sind **nicht** angetastet (Anzahl vorher/nachher).
+- [x] Zimmer und Personal sind **nicht** angetastet (Anzahl vorher/nachher).
 
 ## 4) Personal: Ein Modell für drei Arten (Einstellungen → Personal)
 
@@ -244,6 +244,7 @@ Testzugang, einem Check-in und einer Reinigung.
 | # | Block | Beobachtung | Erwartet | Status |
 |---|---|---|---|---|
 | 1 | 5 | Aktive Karte auf „Gäste-Zugang" im Dark Mode: fast weißer Hintergrund (`bg-action-tint` = Blau-50, Tints kennen kein Dark) mit heller Ink-Schrift — unlesbar. | Auswahl lesbar in beiden Themes. | behoben 04.09.: Karte behält `bg-surface`, Auswahl über Rahmen + Ring in Aktionsfarbe |
+| 3 | 2 | Zimmer-Verlauf: „Check-in · Oli", aber „Check-out · Rezeption" — derselbe Aufenthalt, zwei Namen. Ursache: `stays` hatte nur `created_by`, für den Check-out keine Spalte; der Verlauf setzte pauschal „Rezeption". | Beide Ereignisse nennen die Person. | behoben 04.09.: Migration `stays.checked_out_by`, `checkOutAction` schreibt sie, Verlauf liest sie (Alt-Aufenthalte weiter „Rezeption") |
 | 2 | 5 | QR-Aushänge als eigene Hub-Kachel, obwohl sie nur im PIN-Verfahren Sinn haben. | Aushänge dort, wo das Verfahren gewählt wird, und nur wenn „Fester QR-Code je Zimmer" aktiv ist. | umgesetzt 04.09.: Abschnitt auf „Gäste-Zugang", Kachel/Knopf entfernt, Rezeptions-Kachel nur im PIN-Verfahren |
 
 ## Aufräumen nach dem Durchlauf

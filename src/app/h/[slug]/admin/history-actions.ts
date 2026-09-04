@@ -88,7 +88,7 @@ export async function getRoomHistoryAction(slug: string, roomId: string): Promis
         .limit(MAX_EVENTS),
       admin
         .from('stays')
-        .select('checked_in_at, checked_out_at, created_by')
+        .select('checked_in_at, checked_out_at, created_by, checked_out_by')
         .eq('room_id', roomId)
         .gte('checked_in_at', since)
         .order('checked_in_at', { ascending: false })
@@ -146,7 +146,13 @@ export async function getRoomHistoryAction(slug: string, roomId: string): Promis
       tone: 'desk',
     })
     if (s.checked_out_at) {
-      events.push({ at: s.checked_out_at, label: 'Check-out', actor: 'Rezeption', tone: 'desk' })
+      // Alt-Aufenthalte (vor 04.09.2026) tragen kein checked_out_by → „Rezeption".
+      events.push({
+        at: s.checked_out_at,
+        label: 'Check-out',
+        actor: (s.checked_out_by ? nameById.get(s.checked_out_by) : null) ?? 'Rezeption',
+        tone: 'desk',
+      })
     }
   }
 

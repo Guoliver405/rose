@@ -90,7 +90,7 @@ function toCount(value: number, max: number): number {
 async function resetScenario(admin: SupabaseClient, hotelId: string, userId: string) {
   await admin
     .from('stays')
-    .update({ checked_out_at: new Date().toISOString() })
+    .update({ checked_out_at: new Date().toISOString(), checked_out_by: userId })
     .eq('hotel_id', hotelId)
     .is('checked_out_at', null)
 
