@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/utils/supabase/service'
 import { getMaidContext, type MaidContext } from '@/utils/maid-auth'
+import { reapStaleCleanings } from '@/utils/stale-cleaning'
 import { deriveShiftState, type ShiftState } from '@/lib/shift'
 import {
   clampStaleMinutes, isCleaningFresh, isRoomActive, isStayoverDue,
@@ -268,6 +269,12 @@ export async function startCleaningAction(roomId: string): Promise<ActionResult>
   const staleMinutes = clampStaleMinutes(ctx.policies.cleaningStaleMinutes)
   if (state.cleaning_by && isCleaningFresh(state, staleMinutes)) {
     return { error: 'Zimmer wird bereits von einer Kollegin gereinigt.' }
+  }
+  // Stale Besitzerin: erst den vergessenen Abschluss festschreiben
+  // (clean_aborted, Quelle system), sonst verschwände ihr Start spurlos unter
+  // dem neuen Claim. Danach ist die Zeile frei (`cleaning_by` null).
+  if (state.cleaning_by) {
+    await reapStaleCleanings(admin, ctx.hotelId, [state], staleMinutes)
   }
 
   // Race-sicheres Claiming: Update greift nur, wenn cleaning_by noch dem

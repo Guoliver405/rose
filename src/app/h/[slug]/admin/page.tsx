@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getManagementContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/service'
+import { reapStaleCleanings } from '@/utils/stale-cleaning'
 import {
   clampStaleMinutes, isCleaningFresh, isPresenceFresh, isStayoverDue, parseStayoverPolicy, todayStartIso,
 } from '@/lib/board'
@@ -36,6 +38,10 @@ export default async function AdminOverviewPage({
   const stayoverPolicy = parseStayoverPolicy(policies)
   const cleanedRoomsToday = new Set((cleanedToday ?? []).map(c => c.room_id))
   const now = new Date()
+
+  // Vergessene Abschlüsse festschreiben (clean_aborted, Quelle system) —
+  // neutralisiert die getroffenen Zeilen in place.
+  await reapStaleCleanings(createAdminClient(), ctx.hotelId, states ?? [], staleMinutes, now)
 
   const stateByRoom = new Map((states ?? []).map(s => [s.room_id, s]))
   const stayByRoom = new Map((stays ?? []).map(s => [s.room_id, s]))

@@ -148,6 +148,16 @@ Häkchen „Ohne E-Mail anlegen (Testbetrieb)" und Adresse `zz-…@rose.local`.
 - [ ] Manager in zwei Häusern: löschen in Haus A → in Haus B weiterhin Manager.
 - [ ] Papierkorb sitzt an der **aktiven** Kraft, nicht erst nach Deaktivieren.
 
+**Nach Befund 5 — vergessener Abschluss:**
+- [ ] Hotel & Regeln: Reinigungs-Timeout auf 5 Minuten. Kraft startet eine
+      Reinigung und schließt sie **nicht** ab. Nach 5 Minuten die Übersicht
+      oder das Board laden → Zimmer wieder offen, Verlauf zeigt „Reinigung
+      nicht abgeschlossen (Zeitlimit, Name) · System", datiert auf Start +
+      5 min. Auswertung zählt sie unter „Auffällig", nicht in den Summen.
+      Danach Timeout zurück auf 90.
+- [ ] Im zweiten Haus (`marcus-hotel`) einen Check-in/-out machen → Verlauf
+      nennt „Oli", nicht „Rezeption" (Befund 4).
+
 ## 5) Gast-Zugangsverfahren (Einstellungen → Gastzugang)
 
 - [x] Seite zeigt beide Karten (Ablauf, Dafür, Dagegen, „Passt, wenn …"),
@@ -245,6 +255,8 @@ Testzugang, einem Check-in und einer Reinigung.
 |---|---|---|---|---|
 | 1 | 5 | Aktive Karte auf „Gäste-Zugang" im Dark Mode: fast weißer Hintergrund (`bg-action-tint` = Blau-50, Tints kennen kein Dark) mit heller Ink-Schrift — unlesbar. | Auswahl lesbar in beiden Themes. | behoben 04.09.: Karte behält `bg-surface`, Auswahl über Rahmen + Ring in Aktionsfarbe |
 | 3 | 2 | Zimmer-Verlauf: „Check-in · Oli", aber „Check-out · Rezeption" — derselbe Aufenthalt, zwei Namen. Ursache: `stays` hatte nur `created_by`, für den Check-out keine Spalte; der Verlauf setzte pauschal „Rezeption". | Beide Ereignisse nennen die Person. | behoben 04.09.: Migration `stays.checked_out_by`, `checkOutAction` schreibt sie, Verlauf liest sie (Alt-Aufenthalte weiter „Rezeption") |
+| 4 | Rückfrage | Zimmer-Verlauf löste Namen nur über `profiles.hotel_id` auf (= Stammhaus). Inhaber/Manager mit mehreren Häusern erschienen in jedem weiteren Haus als „Rezeption", obwohl die ID gespeichert war. | Name in jedem Haus. | behoben 04.09.: Auflösung über die vorkommenden Akteur-IDs |
+| 5 | Rückfrage | Stale-Timeout (vergessener Abschluss) war reine Ableitung: im Verlauf blieb „Reinigung gestartet" ohne Ende, der stille Reset war unsichtbar. Label `clean_aborted` existierte, nichts schrieb es. | Reset nachvollziehbar. | umgesetzt 04.09.: erster Zugriff nach dem Limit schreibt `clean_aborted` (Quelle `system`, datiert auf Start + Limit) und setzt `room_states` zurück |
 | 2 | 5 | QR-Aushänge als eigene Hub-Kachel, obwohl sie nur im PIN-Verfahren Sinn haben. | Aushänge dort, wo das Verfahren gewählt wird, und nur wenn „Fester QR-Code je Zimmer" aktiv ist. | umgesetzt 04.09.: Abschnitt auf „Gäste-Zugang", Kachel/Knopf entfernt, Rezeptions-Kachel nur im PIN-Verfahren |
 
 ## Aufräumen nach dem Durchlauf

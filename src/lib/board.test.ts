@@ -2,8 +2,33 @@ import { describe, expect, it } from 'vitest'
 import {
   CLEANING_STALE_MINUTES_DEFAULT, clampStaleMinutes, isCleaningFresh, isPresenceFresh,
   isRoomActive, isStayoverDue, isWithinCleaningWindow, parseCleaningWindow,
-  parseStayoverPolicy, PRESENCE_STALE_HOURS, roomScore,
+  parseStayoverPolicy, PRESENCE_STALE_HOURS, roomScore, staleCleaningCutoff,
 } from './board'
+
+describe('staleCleaningCutoff', () => {
+  const now = new Date('2026-07-26T12:00:00Z')
+
+  it('ist null ohne Reinigung oder ohne Startzeitpunkt', () => {
+    expect(staleCleaningCutoff({ cleaning_by: null, cleaning_started_at: null }, 90, now)).toBeNull()
+    expect(staleCleaningCutoff({ cleaning_by: 'maria', cleaning_started_at: null }, 90, now)).toBeNull()
+  })
+
+  it('ist null, solange die Reinigung frisch ist', () => {
+    const state = { cleaning_by: 'maria', cleaning_started_at: '2026-07-26T11:30:00Z' }
+    expect(staleCleaningCutoff(state, 90, now)).toBeNull()
+  })
+
+  it('liefert Start + Limit, nicht den Zeitpunkt des Bemerkens', () => {
+    const state = { cleaning_by: 'maria', cleaning_started_at: '2026-07-26T09:00:00Z' }
+    expect(staleCleaningCutoff(state, 90, now)).toBe('2026-07-26T10:30:00.000Z')
+  })
+
+  it('ist genau am Limit bereits gerissen (Spiegel zu isCleaningFresh)', () => {
+    const state = { cleaning_by: 'maria', cleaning_started_at: '2026-07-26T10:30:00Z' }
+    expect(isCleaningFresh(state, 90, now)).toBe(false)
+    expect(staleCleaningCutoff(state, 90, now)).toBe('2026-07-26T12:00:00.000Z')
+  })
+})
 
 describe('clampStaleMinutes', () => {
   it('nimmt den Default bei fehlender oder unbrauchbarer Policy', () => {

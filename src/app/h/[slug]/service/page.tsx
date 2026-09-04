@@ -3,6 +3,7 @@ import { LogOut } from 'lucide-react'
 import { getMaidContext } from '@/utils/maid-auth'
 import { requireHotelBySlug } from '@/utils/hotel'
 import { createAdminClient } from '@/utils/supabase/service'
+import { reapStaleCleanings } from '@/utils/stale-cleaning'
 import { deriveShiftState } from '@/lib/shift'
 import {
   clampStaleMinutes, isCleaningFresh, isPresenceFresh, isRoomActive, isStayoverDue,
@@ -61,6 +62,10 @@ export default async function ServiceBoardPage({
   const cleanedRoomsToday = new Set((cleanedToday ?? []).map(c => c.room_id))
   const now = new Date()
   const shift = deriveShiftState(myLog ?? [])
+
+  // Vergessene Abschlüsse festschreiben (clean_aborted, Quelle system) —
+  // neutralisiert die getroffenen Zeilen in place.
+  await reapStaleCleanings(admin, ctx.hotelId, states ?? [], staleMinutes, now)
 
   const stateByRoom = new Map((states ?? []).map(s => [s.room_id, s]))
   const stayByRoom = new Map((stays ?? []).map(s => [s.room_id, s]))

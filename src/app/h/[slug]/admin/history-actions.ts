@@ -53,7 +53,7 @@ function transitionLabel(field: string, oldValue: string | null, newValue: strin
 const STITCH_LABEL: Record<string, string> = {
   clean_start: 'Reinigung gestartet',
   clean_done: 'Reinigung abgeschlossen',
-  clean_aborted: 'Reinigung abgebrochen',
+  clean_aborted: 'Reinigung nicht abgeschlossen',
 }
 
 export async function getRoomHistoryAction(slug: string, roomId: string): Promise<RoomHistoryResult> {
@@ -69,7 +69,7 @@ export async function getRoomHistoryAction(slug: string, roomId: string): Promis
 
   const since = new Date(Date.now() - HISTORY_DAYS * 86_400_000).toISOString()
 
-  const [{ data: transitions }, { data: stitches }, { data: stayRows }, { data: orders }, { data: profiles }] =
+  const [{ data: transitions }, { data: stitches }, { data: stayRows }, { data: orders }] =
     await Promise.all([
       admin
         .from('room_state_transitions')
@@ -100,9 +100,25 @@ export async function getRoomHistoryAction(slug: string, roomId: string): Promis
         .gte('created_at', since)
         .order('created_at', { ascending: false })
         .limit(40),
-      admin.from('profiles').select('id, display_name').eq('hotel_id', ctx.hotelId),
     ])
 
+  // Namen über die tatsächlich vorkommenden Akteure auflösen — NICHT über
+  // profiles.hotel_id: für Management ist das nur das Stammhaus, ein Inhaber
+  // oder Manager mit mehreren Häusern erschien in allen anderen als
+  // „Rezeption", obwohl die ID korrekt gespeichert war. Die IDs stammen
+  // ausschließlich aus Zeilen dieses Zimmers, die Mandantengrenze bleibt.
+  const actorIds = new Set<string>()
+  for (const t of transitions ?? []) if (t.actor_id) actorIds.add(t.actor_id)
+  for (const s of stitches ?? []) actorIds.add(s.profile_id)
+  for (const s of stayRows ?? []) {
+    if (s.created_by) actorIds.add(s.created_by)
+    if (s.checked_out_by) actorIds.add(s.checked_out_by)
+  }
+  for (const o of orders ?? []) if (o.done_by) actorIds.add(o.done_by)
+
+  const profiles = actorIds.size > 0
+    ? (await admin.from('profiles').select('id, display_name').in('id', [...actorIds])).data
+    : null
   const nameById = new Map((profiles ?? []).map(p => [p.id, p.display_name]))
 
   /** Gäste sind anonym — nie eine Person, immer nur „Gast". */
@@ -130,10 +146,14 @@ export async function getRoomHistoryAction(slug: string, roomId: string): Promis
   for (const s of stitches ?? []) {
     const label = STITCH_LABEL[s.kind]
     if (!label) continue
+    // clean_aborted schreibt ausschließlich der Stale-Timeout
+    // (reapStaleCleanings): Akteur ist das System, die Kraft steht im Label.
+    const isAbort = s.kind === 'clean_aborted'
+    const name = nameById.get(s.profile_id)
     events.push({
       at: s.at,
-      label,
-      actor: nameById.get(s.profile_id) ?? 'Reinigung',
+      label: isAbort ? `${label} (Zeitlimit${name ? `, ${name}` : ''})` : label,
+      actor: isAbort ? 'System' : (name ?? 'Reinigung'),
       tone: 'clean',
     })
   }

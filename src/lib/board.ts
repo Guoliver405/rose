@@ -42,6 +42,23 @@ export function isCleaningFresh(
   return now.getTime() - startedAt < staleMinutes * 60_000
 }
 
+/**
+ * Zeitpunkt, an dem eine laufende Reinigung in den Stale-Timeout gelaufen ist
+ * (Start + cleaningStaleMinutes) — null, solange sie frisch ist oder niemand
+ * reinigt. Der Wert wird als `at` des `clean_aborted`-Stichs festgeschrieben:
+ * Er benennt, WANN das Zeitlimit riss, nicht wann es jemand bemerkt hat.
+ */
+export function staleCleaningCutoff(
+  state: Pick<RoomStateLike, 'cleaning_by' | 'cleaning_started_at'>,
+  staleMinutes: number,
+  now: Date = new Date(),
+): string | null {
+  if (!state.cleaning_by || !state.cleaning_started_at) return null
+  const cutoff = new Date(state.cleaning_started_at).getTime() + staleMinutes * 60_000
+  if (now.getTime() < cutoff) return null
+  return new Date(cutoff).toISOString()
+}
+
 /** Zimmer braucht Reinigung (unabhängig davon, ob schon jemand drin ist). */
 export function isRoomActive(
   state: Pick<RoomStateLike, 'guest_signal' | 'checkout_pending' | 'priority'>,
