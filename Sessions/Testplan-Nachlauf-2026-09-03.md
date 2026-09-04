@@ -103,60 +103,60 @@ Wegwerf-Kräfte anlegen: Reinigung `zztest`, Rezeption und Manager jeweils mit
 Häkchen „Ohne E-Mail anlegen (Testbetrieb)" und Adresse `zz-…@rose.local`.
 
 **Testzugänge ohne Mail (nur lokal mit `npm run dev`, `ALLOW_TEST_ACCOUNTS=1` in `.env.local` — in Produktion nicht vorhanden):**
-- [ ] Häkchen erscheint in beiden Anlege-Formularen (Rezeption, Manager).
-- [ ] Zugang entsteht sofort, Passwort wird **genau einmal** angezeigt
-      (Seite neu laden → weg). Keine Mail.
-- [ ] Anmelden mit dem Testzugang im Privatfenster → landet im richtigen Haus
-      mit der richtigen Rolle (Rezeption sieht keine Einstellungen außer
-      Aushänge/Karten/Mein Zugang).
-- [ ] Gegenprobe Produktion: auf rose-roomservice.app fehlt das Häkchen
-      (die Variable ist dort nicht gesetzt — heute gegen Vercel geprüft).
+- [~] Häkchen erscheint in beiden Anlege-Formularen (Rezeption, Manager).
+      *(nur lokal, in Produktion nicht geprüft)*
+- [~] Zugang entsteht sofort, Passwort wird **genau einmal** angezeigt
+      (Seite neu laden → weg). Keine Mail. *(nur lokal)*
+- [~] Anmelden mit dem Testzugang im Privatfenster → landet im richtigen Haus
+      mit der richtigen Rolle. *(nur lokal)*
+- [x] Gegenprobe Produktion: auf rose-roomservice.app fehlt das Häkchen
+      (04.09. in Produktion geprüft: beide Formulare ohne Häkchen).
 
 **Bearbeiten (alle drei Arten dieselbe Zeile, derselbe Dialog):**
-- [ ] Reinigung: Anzeige- **und** Benutzername änderbar; Hinweis zur
+- [x] Reinigung: Anzeige- **und** Benutzername änderbar; Hinweis zur
       gedruckten Karte erscheint nur bei Benutzernamen-Änderung.
-- [ ] Nach Benutzernamen-Wechsel: **PIN-Login mit dem neuen Namen** klappt,
-      alter Name wird abgewiesen, gedruckte QR-Karte (Link aus
-      Personal → Karte) funktioniert weiter.
-- [ ] Rezeption/Manager: nur Anzeigename; erscheint danach in Kopfzeile,
-      Personal-Liste und Zimmer-Verlauf einheitlich.
+      (Mary → Mary Test, @mary → @marytest; Hinweis erst beim Benutzernamen)
+- [x] Nach Benutzernamen-Wechsel: **PIN-Login mit dem neuen Namen** klappt,
+      alter Name „Benutzername oder PIN ist falsch", QR-Karte weiter gültig;
+      offene Sitzung überlebt die Umbenennung, Kopfzeile zeigt neuen Namen.
+      Auth-Adresse in der DB nachgemessen: `marytest@<hotel>.rose.svc`.
+- [x] Rezeption: nur Anzeigename-Feld, kein Benutzername. *(Manager: keiner
+      vorhanden, nicht geprüft)*
 
 **Stufe 1 — Zugang beenden (umkehrbar):**
-- [ ] Reinigung mit offener Sitzung im Privatfenster: Zugang beenden →
-      das Board wirft die Kraft **sofort** raus (nächster Klick / Reload), die
-      Login-Seite erklärt den gesperrten Zugang statt im Kreis zu leiten.
-      PIN- und QR-Login abgewiesen. Auswertung zeigt sie weiter (unter
-      „deaktiviert").
-- [ ] Rezeption/Manager mit offener Sitzung: Zugang beenden → Haus nicht mehr
-      erreichbar (Umleitung auf Anmeldung / „Häuser"). Ein Manager mit
-      **zwei Häusern**: nur dieses Haus fällt weg, das andere bleibt.
-- [ ] „Wieder aktivieren" → Anmeldung klappt wieder, nichts fehlt.
+- [x] Reinigung mit offener Sitzung: Zugang beenden → Reload wirft raus mit
+      „Dieser Zugang ist nicht mehr aktiv. Bitte wende dich an die Rezeption."
+      PIN-Login: dieselbe Meldung. QR-Karte: „QR-Code ist nicht mehr gültig …
+      neue Karte anfordern" (→ Beobachtung 8). Liste zeigt „Beendete Zugänge".
+- [ ] Rezeption/Manager mit offener Sitzung: **nicht geprüft** — bräuchte eine
+      zweite angemeldete Sitzung bzw. einen Manager mit zwei Häusern (keiner
+      angelegt, echte Adresse nötig).
+- [x] „Wieder aktivieren" → Meldung „alter Zugang (PIN + Karte) gilt erneut",
+      QR-Karte meldet sofort wieder an.
 
 **Stufe 2 — Endgültig löschen:**
-- [ ] Reinigung **ohne** Historie: „es geht nichts verloren", kein Abtippfeld.
-- [ ] Reinigung **mit** Historie (Schicht + 1 Reinigung gestochen): Dialog
-      nennt Anzahl Stiche mit Zeitraum, abgeschlossene Reinigungen,
-      Login-Karte — und was bleibt (Check-ins, erledigte Anfragen ohne Namen).
-      Benutzername muss abgetippt werden. Danach: Auswertung ohne die Kraft,
-      Zimmer-Verlauf zeigt ihre Einträge namenlos.
-- [ ] Rezeption **mit** Vorgang (vorher als diese Rezeption ein Zimmer
-      „gereinigt" markiert oder einen Check-in gemacht): Dialog sagt
-      **vorher** an, dass das Anmeldekonto stehen bleibt, weil Vorgänge daran
-      hängen. Kein Abtippfeld (gilt nur der Reinigung). Nach dem Löschen:
-      Check-in im Verlauf trägt weiterhin den Namen, die Reinigung ist in der
-      Stayover-Ableitung weiter da — der gestern behobene Bug.
-- [ ] Manager in zwei Häusern: löschen in Haus A → in Haus B weiterhin Manager.
-- [ ] Papierkorb sitzt an der **aktiven** Kraft, nicht erst nach Deaktivieren.
+- [x] Reinigung **ohne** Historie (ZZ Test): „hat noch keinen einzigen
+      Eintrag … es geht nichts verloren", kein Abtippfeld, gelöscht.
+- [x] Reinigung **mit** Historie (Mary Test, 4 Stiche): Dialog nennt
+      „4 Einträge im Tätigkeits-Protokoll (4.9.2026 bis 4.9.2026)", die
+      Login-Karte, Abtippfeld „marytest", Knopf gesperrt, Ausweg „Lieber
+      Zugang beenden — Arbeitsnachweis bleibt". **Nur gelesen, abgebrochen**
+      (Mary bleibt). → **Befund 7**: Dialog im Dark Mode kaum lesbar.
+- [~] Rezeption: Dialog sagt korrekt „An diesem Zugang hängt nichts, das
+      Anmeldekonto wird deshalb vollständig gelöscht" — Variante **mit**
+      Vorgang nicht geprüft (kein Rezeptions-Vorgang vorhanden). Abgebrochen.
+- [ ] Manager in zwei Häusern: **nicht geprüft** (kein Manager angelegt).
+- [x] Papierkorb sitzt an der **aktiven** Kraft.
 
 **Nach Befund 5 — vergessener Abschluss:**
-- [ ] Hotel & Regeln: Reinigungs-Timeout auf 5 Minuten. Kraft startet eine
-      Reinigung und schließt sie **nicht** ab. Nach 5 Minuten die Übersicht
-      oder das Board laden → Zimmer wieder offen, Verlauf zeigt „Reinigung
-      nicht abgeschlossen (Zeitlimit, Name) · System", datiert auf Start +
-      5 min. Auswertung zählt sie unter „Auffällig", nicht in den Summen.
-      Danach Timeout zurück auf 90.
-- [ ] Im zweiten Haus (`marcus-hotel`) einen Check-in/-out machen → Verlauf
-      nennt „Oli", nicht „Rezeption" (Befund 4).
+- [x] Zeitlimit 5 min, Mary startet 808 um 18:00:40 UTC, Übersicht und Board
+      **gleichzeitig** geladen nach 18:05:40 → Zimmer offen, `room_states`
+      mit Quelle `system`, **genau ein** `clean_aborted` (Race-Test bestanden),
+      `at` = 18:05:40.072 = Start + 5 min exakt. Verlauf: „Reinigung nicht
+      abgeschlossen (Zeitlimit, Mary Test) · System". Auswertung: „Auffällig 1
+      · 1 abgebrochen", 0 Zimmer. Timeout zurück auf 90.
+- [x] Marcus-Hotel, Zimmer 902: Check-in 20:01 · Oli, Check-out 20:03 · Oli
+      (Befund 3 + 4 bestätigt).
 
 ## 5) Gast-Zugangsverfahren (Einstellungen → Gastzugang)
 
@@ -261,6 +261,8 @@ Testzugang, einem Check-in und einer Reinigung.
 | 4 | Rückfrage | Zimmer-Verlauf löste Namen nur über `profiles.hotel_id` auf (= Stammhaus). Inhaber/Manager mit mehreren Häusern erschienen in jedem weiteren Haus als „Rezeption", obwohl die ID gespeichert war. | Name in jedem Haus. | behoben 04.09.: Auflösung über die vorkommenden Akteur-IDs |
 | 5 | Rückfrage | Stale-Timeout (vergessener Abschluss) war reine Ableitung: im Verlauf blieb „Reinigung gestartet" ohne Ende, der stille Reset war unsichtbar. Label `clean_aborted` existierte, nichts schrieb es. | Reset nachvollziehbar. | umgesetzt 04.09.: erster Zugriff nach dem Limit schreibt `clean_aborted` (Quelle `system`, datiert auf Start + Limit) und setzt `room_states` zurück |
 | 6 | 7 | Gast-Mail landet bei Yahoo beim ersten Versuch im Spam. Technik (SPF, DKIM auf `send.rose-roomservice.app`) steht; Mail hatte **keinen** Plain-Text-Teil; Domain ohne Sendehistorie. | Posteingang. | teils 04.09.: `text/plain` ergänzt, Spam-Hinweis auf dem Handout. Rest ist Dashboard/DNS/Zeit — Schritte in TODO.md |
+| 7 | 4 | Löschdialog Personal (`bg-critical-tint`) im Dark Mode: Aufzählung und Nebenknöpfe fast unsichtbar — Tints haben keine Dark-Variante, dieselbe Ursache wie Befund 1, nur breiter (alle Tint-Kästen mit Ink-Text). | Lesbar in beiden Themes. | offen — Vorschlag: Dark-Werte für alle Tint-/Deep-Token in `globals.css` statt Einzelreparatur |
+| 8 | 4 | QR-Login einer **beendeten** Kraft: „QR-Code ist nicht mehr gültig … neue Karte anfordern" — sachlich falsch, eine neue Karte hilft nicht, der Zugang ist gesperrt. PIN-Login sagt es richtig. | Gleiche Meldung wie beim PIN-Login. | offen, klein |
 | 2 | 5 | QR-Aushänge als eigene Hub-Kachel, obwohl sie nur im PIN-Verfahren Sinn haben. | Aushänge dort, wo das Verfahren gewählt wird, und nur wenn „Fester QR-Code je Zimmer" aktiv ist. | umgesetzt 04.09.: Abschnitt auf „Gäste-Zugang", Kachel/Knopf entfernt, Rezeptions-Kachel nur im PIN-Verfahren |
 
 ## Aufräumen nach dem Durchlauf
