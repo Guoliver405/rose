@@ -160,66 +160,59 @@ Häkchen „Ohne E-Mail anlegen (Testbetrieb)" und Adresse `zz-…@rose.local`.
 
 ## 5) Gast-Zugangsverfahren (Einstellungen → Gastzugang)
 
-- [x] Seite zeigt beide Karten (Ablauf, Dafür, Dagegen, „Passt, wenn …"),
-      aktives Verfahren markiert, beim individuellen Verfahren steht der
-      fehlende zweite Faktor **offen** im Text. → **Befund 1** (Kontrast der
-      aktiven Karte im Dark Mode), behoben.
-- [ ] **Nach Befund 2:** Unter den Karten steht im PIN-Verfahren der Abschnitt
-      „QR-Aushänge für die Zimmer" mit Link auf die Aushang-Seite; im
-      Link-Verfahren nur der Hinweis, dass die Aushänge ausgeblendet sind. Im
-      Einstellungen-Hub gibt es für Inhaber/Manager **keine** eigene
-      Aushänge-Kachel mehr, auf der Zimmer-Seite keinen Knopf. Die Aushang-Seite
-      führt zurück zu „Gäste-Zugang" und zeigt im Link-Verfahren einen
-      Warnhinweis. Als Rezeption: Kachel „QR-Aushänge" nur im PIN-Verfahren.
-- [ ] Im PIN-Verfahren einchecken (Zimmer A) → PIN am Bildschirm, Handout mit
-      QR **und** PIN.
-- [ ] Umstellen auf „individueller Link" → Meldung mit Hinweis, die Aushänge
-      abzunehmen.
-- [ ] **Kernbeweis:** Zimmer A (vor der Umstellung eingecheckt) zeigt im
-      Rezeptions-Dialog **weiterhin die PIN**, Gast-Login per Zimmernummer +
-      PIN funktioniert weiter.
-- [ ] Neuer Check-in (Zimmer B) → „Zugang aushändigen", **keine** PIN,
-      Handout mit QR ohne PIN und dem Hinweis „wie einen Zimmerschlüssel
-      behandeln".
-- [ ] Link aus dem Handout öffnen (Privatfenster) → ohne Eingabe im Portal von
-      Zimmer B. Reinigen/DND und eine Service-Bestellung funktionieren wie im
-      PIN-Verfahren; Rezeption sieht Wunsch und Bestellung.
-- [ ] Zimmer-QR (Wandaushang) von Zimmer B öffnen → PIN-Formular, aber es
-      gibt keine PIN. Erwartung: kein Weg hinein, und fünf Fehlversuche
-      sperren nichts (Zimmer A muss weiter per PIN erreichbar bleiben). Hier
-      genau hinschauen — die Meldung sollte nicht irreführen.
-- [ ] `/h/<slug>/guest` im Link-Modus: erklärender Hinweis auf den
-      Check-in-Beleg, Formular bleibt (für Zimmer A nötig).
-- [ ] Check-out Zimmer B → Link erneut öffnen → abgewiesen, landet auf der
-      Hinweisseite `/guest`. Ein noch offener Portal-Tab: nächster Klick
-      fliegt raus.
-- [ ] Zurück auf PIN stellen → Zimmer B neu einchecken → wieder PIN. Nichts
-      an Zimmer A hat sich je verändert.
+Durchlauf 04.09. in Produktion (Chrome + Vorschau-Browser), Ausgangslage:
+Haus stand auf `link` (vom Vortag), zuerst auf PIN gestellt.
+
+- [x] Seite zeigt beide Karten, aktives Verfahren markiert, zweiter Faktor
+      steht offen im Text. Befund 1 behoben, Karte im Dark Mode lesbar.
+- [x] **Nach Befund 2:** Abschnitt „QR-Aushänge für die Zimmer" erscheint im
+      PIN-Verfahren, im Link-Verfahren der Hinweis „ausgeblendet". Hub ohne
+      Aushänge-Kachel für Inhaber. *(Rezeptions-Sicht und Aushang-Seite im
+      Link-Verfahren nicht separat angesehen.)*
+- [x] PIN-Verfahren: Check-in 801 → PIN 169663, Gast-Login per Zimmernummer +
+      PIN funktioniert.
+- [x] Umstellen auf Link → Meldung samt „Aushänge aus den Zimmern nehmen".
+- [x] **Kernbeweis:** 801 zeigt weiter PIN 169663 — vor und nach beiden
+      Umstellungen; Gast-Login per PIN weiter möglich.
+- [x] Check-in 802 im Link-Verfahren → „ZUGANG AUSHÄNDIGEN", keine PIN;
+      Handout mit QR, Sicherheitshinweis, Link `/guest/s/…`; **Adressfeld für
+      Mail-Versand vorhanden** (Block 7, erster Punkt).
+- [x] Link geöffnet → ohne Eingabe im Portal 802. „Zimmer reinigen" und
+      Bestellung „Technischer Dienst" funktionieren; Übersicht zeigt „Gast
+      wünscht Reinigung · DRINGENDE Service-Anfrage", Services-Board die
+      Bestellung; Verlauf: Anfrage · Gast, erledigt · Oli.
+- [x] Gast-Formular im Link-Modus: erklärender Hinweis, Formular bleibt. Fünf
+      Fehlversuche mit Zimmer 802 → `pin_attempts` bleibt 0 auf **beiden**
+      Aufenthalten (DB nachgemessen), 801 meldet sich danach normal an.
+      *(Zimmer-QR von 802 nicht geprüft — für die Räume existieren keine
+      Aushang-Token.)*
+- [x] Check-out 802 → Link erneut: Weiterleitung auf `/guest?error=link`;
+      offene Gast-Sitzung: nächster Aufruf landet auf der Anmeldung.
+      → **Beobachtung 9**: Hinweisseite spricht vom „QR-Code im Zimmer".
+- [x] Zurück auf PIN → Check-in 802 löste die Warnung „Zimmer nicht bereit"
+      aus (ungereinigt nach Check-out), „Trotzdem einchecken" → PIN 632723.
+      801 unverändert.
 
 ## 6) Abrechnungs-Snapshot (`/admin`, Konto-Kasten, nur Inhaber)
 
-- [ ] Vor der ersten Zimmerlöschung des Tages: Abrechnungsübersicht zeigt die
-      letzten Monate. Beide Häuser des Kontos tragen bereits Snapshots
-      (`test-hotelkette` 2, `marcus-hotel` 1, aus den Löschungen von gestern),
-      die abgeschlossenen Monate sind dort also schon als festgeschrieben
-      markiert. Zahlen notieren.
-- [ ] Ein Zimmer löschen (Block 2) → abgeschlossene Monate sind danach als
-      festgeschrieben markiert, die Zahlen haben sich durch das Löschen
-      **nicht** verringert. Laufender Monat bleibt abgeleitet.
-- [ ] Zweites Zimmer löschen → keine Doppelung, Zahlen der geschlossenen
-      Monate unverändert.
-- [ ] Zimmer neu anlegen → laufender Monat steigt, geschlossene Monate nicht.
+- [x] Stand 04.09. nach den Zimmerlöschungen aus Block 2: laufender Monat
+      „222 Zimmer in Betrieb · 223 abrechenbar" (ein gelöschtes/deaktiviertes
+      Zimmer zählt im laufenden Monat weiter), August 2026: 216 Zimmer,
+      Juli 2026: 81 Zimmer, beide „festgeschrieben". Zahlen der geschlossenen
+      Monate haben sich durch die Löschungen des Tages nicht bewegt (die
+      Snapshots stammen vom 03.09.).
+- [ ] Zimmer neu anlegen → laufender Monat steigt, geschlossene nicht.
+      *(nicht gesondert geprüft)*
 
 ## 7) Mail-Versand und Handout in Produktion (rose-roomservice.app)
 
 Offener Punkt aus [TODO.md](../TODO.md).
 
-- [ ] Handout eines belegten Zimmers: **Adressfeld** für den Mail-Versand ist
-      da (nicht „Versand per E-Mail ist nicht eingerichtet") → beide
-      Variablen greifen.
-- [ ] Einmal an die eigene Adresse senden: Absender-Anzeigename ist der
-      **Hotelname**, Link zeigt auf `rose-roomservice.app` (nicht localhost),
-      kein QR-Bild in der Mail, Link führt ins Portal.
+- [x] Handout eines belegten Zimmers: **Adressfeld** für den Mail-Versand ist
+      da → beide Variablen greifen (04.09., Handout 802).
+- [x] Einmal an die eigene Adresse senden (vom User an yahoo.de): Mail kam an
+      (Spam-Ordner, Befund 6). *(Absender-Anzeigename, QR-frei, Link-Ziel
+      nicht einzeln abgehakt — bitte in der Mail nachsehen.)*
 - [ ] Im Link-Verfahren: Mail trägt den Aufenthalts-Link; nach Check-out ist
       er tot.
 - [ ] QR aus dem Handout mit dem Handy scannen (beide Verfahren).
@@ -277,6 +270,7 @@ und dem, was es bräuchte. Bleibt offen, bis die Voraussetzung da ist.
 | 6 | 7 | Gast-Mail landet bei Yahoo beim ersten Versuch im Spam. Technik (SPF, DKIM auf `send.rose-roomservice.app`) steht; Mail hatte **keinen** Plain-Text-Teil; Domain ohne Sendehistorie. | Posteingang. | teils 04.09.: `text/plain` ergänzt, Spam-Hinweis auf dem Handout. Rest ist Dashboard/DNS/Zeit — Schritte in TODO.md |
 | 7 | 4 | Löschdialog Personal (`bg-critical-tint`) im Dark Mode: Aufzählung und Nebenknöpfe fast unsichtbar — Tints haben keine Dark-Variante, dieselbe Ursache wie Befund 1, nur breiter (alle Tint-Kästen mit Ink-Text). | Lesbar in beiden Themes. | offen — Vorschlag: Dark-Werte für alle Tint-/Deep-Token in `globals.css` statt Einzelreparatur |
 | 8 | 4 | QR-Login einer **beendeten** Kraft: „QR-Code ist nicht mehr gültig … neue Karte anfordern" — sachlich falsch, eine neue Karte hilft nicht, der Zugang ist gesperrt. PIN-Login sagt es richtig. | Gleiche Meldung wie beim PIN-Login. | offen, klein |
+| 9 | 5 | Hinweisseite `/guest?error=link` nach Check-out eines Link-Gastes: „Bitte den QR-Code im Zimmer scannen" — in einem Link-Haus gibt es keinen, und der eigentliche Grund (Aufenthalt beendet) steht nicht da. | Text nennt den Fall: „Dieser Zugang ist mit dem Check-out erloschen." | offen, klein |
 | 2 | 5 | QR-Aushänge als eigene Hub-Kachel, obwohl sie nur im PIN-Verfahren Sinn haben. | Aushänge dort, wo das Verfahren gewählt wird, und nur wenn „Fester QR-Code je Zimmer" aktiv ist. | umgesetzt 04.09.: Abschnitt auf „Gäste-Zugang", Kachel/Knopf entfernt, Rezeptions-Kachel nur im PIN-Verfahren |
 
 ## Aufräumen nach dem Durchlauf
