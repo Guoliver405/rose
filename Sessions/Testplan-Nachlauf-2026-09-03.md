@@ -210,9 +210,11 @@ Offener Punkt aus [TODO.md](../TODO.md).
 
 - [x] Handout eines belegten Zimmers: **Adressfeld** für den Mail-Versand ist
       da → beide Variablen greifen (04.09., Handout 802).
-- [x] Einmal an die eigene Adresse senden (vom User an yahoo.de): Mail kam an
-      (Spam-Ordner, Befund 6). *(Absender-Anzeigename, QR-frei, Link-Ziel
-      nicht einzeln abgehakt — bitte in der Mail nachsehen.)*
+- [x] Einmal an die eigene Adresse senden (vom User an yahoo.de): erster
+      Versand im Spam (Befund 6); dritter Versand um ~21:00 nach Plain-Text-
+      Teil und DMARC **im Posteingang**. Erfolgsmeldung mit Spam-Hinweis
+      erscheint. Ein vermeintlich verlorener Versuch dazwischen hat Resend
+      nie erreicht (Resend-Log zeigt genau drei Mails) — Bedienung, kein Fehler.
 - [ ] Im Link-Verfahren: Mail trägt den Aufenthalts-Link; nach Check-out ist
       er tot.
 - [ ] QR aus dem Handout mit dem Handy scannen (beide Verfahren).
@@ -264,7 +266,7 @@ und dem, was es bräuchte. Bleibt offen, bis die Voraussetzung da ist.
 | 4 | Rezeption löschen **mit** Vorgang → Dialog sagt „Anmeldekonto bleibt", Verlauf behält den Namen | `Test-Rezeptionist` hat noch keinen Vorgang (Check-in oder „gereinigt markieren") | als Rezeption anmelden, einen Check-in machen, dann Löschdialog öffnen |
 | 4 | Reinigung **mit** Historie tatsächlich löschen (Kaskade, Verlauf namenlos) | Dialog nur gelesen, Mary bewusst behalten | Wegwerf-Kraft mit ein paar Stichen anlegen und löschen |
 | 5 | Zimmer-QR (Wandaushang) von 802 im Link-Verfahren → PIN-Formular ohne PIN | für die Zimmer existieren keine Aushang-Token | auf der Aushang-Seite „fehlende QR-Codes erzeugen", dann `/guest/r/<token>` |
-| 7 | Mail-Inhalt (Absender = Hotelname, Link-Ziel, kein QR-Bild) | Mail vom User verschickt, Inhalt nicht eingesehen; zweiter Versuch kam gar nicht an (auch nicht im Spam) — in den Vercel-Logs aller heutigen Deployments kein `[mail]`-Fehler | Zeitpunkt und Adresse des Versuchs, dann Resend → Logs (Delivered/Bounced) |
+| 7 | Mail-Inhalt (Absender = Hotelname, Link-Ziel, kein QR-Bild) | Mail kam an, Inhalt von Claude nicht eingesehen | kurzer Blick in die Mail |
 | 8 | Stammhaus-Grenzfall, Rezeptions-Zugang gelöscht → Anmeldung tot, Manager-Sicht des Bereichs, Konto löschen | s. Block 8 | eigenes Wegwerf-Konto über `/registrieren` |
 
 ## Befunde
@@ -275,7 +277,7 @@ und dem, was es bräuchte. Bleibt offen, bis die Voraussetzung da ist.
 | 3 | 2 | Zimmer-Verlauf: „Check-in · Oli", aber „Check-out · Rezeption" — derselbe Aufenthalt, zwei Namen. Ursache: `stays` hatte nur `created_by`, für den Check-out keine Spalte; der Verlauf setzte pauschal „Rezeption". | Beide Ereignisse nennen die Person. | behoben 04.09.: Migration `stays.checked_out_by`, `checkOutAction` schreibt sie, Verlauf liest sie (Alt-Aufenthalte weiter „Rezeption") |
 | 4 | Rückfrage | Zimmer-Verlauf löste Namen nur über `profiles.hotel_id` auf (= Stammhaus). Inhaber/Manager mit mehreren Häusern erschienen in jedem weiteren Haus als „Rezeption", obwohl die ID gespeichert war. | Name in jedem Haus. | behoben 04.09.: Auflösung über die vorkommenden Akteur-IDs |
 | 5 | Rückfrage | Stale-Timeout (vergessener Abschluss) war reine Ableitung: im Verlauf blieb „Reinigung gestartet" ohne Ende, der stille Reset war unsichtbar. Label `clean_aborted` existierte, nichts schrieb es. | Reset nachvollziehbar. | umgesetzt 04.09.: erster Zugriff nach dem Limit schreibt `clean_aborted` (Quelle `system`, datiert auf Start + Limit) und setzt `room_states` zurück |
-| 6 | 7 | Gast-Mail landet bei Yahoo beim ersten Versuch im Spam. Technik (SPF, DKIM auf `send.rose-roomservice.app`) steht; Mail hatte **keinen** Plain-Text-Teil; Domain ohne Sendehistorie. | Posteingang. | teils 04.09.: `text/plain` ergänzt, Spam-Hinweis auf dem Handout. Rest ist Dashboard/DNS/Zeit — Schritte in TODO.md |
+| 6 | 7 | Gast-Mail landet bei Yahoo beim ersten Versuch im Spam. Technik (SPF, DKIM auf `send.rose-roomservice.app`) steht; Mail hatte **keinen** Plain-Text-Teil; Domain ohne Sendehistorie. | Posteingang. | 04.09.: `text/plain` ergänzt, Spam-Hinweis, DMARC `p=quarantine`, Auth dreimal `pass`, Tracking aus. **Dritter Versand um ~21:00 landete im Posteingang.** Beobachten, ob es so bleibt |
 | 7 | 4 | Löschdialog Personal (`bg-critical-tint`) im Dark Mode: Aufzählung und Nebenknöpfe fast unsichtbar — Tints haben keine Dark-Variante, dieselbe Ursache wie Befund 1, nur breiter (alle Tint-Kästen mit Ink-Text). | Lesbar in beiden Themes. | behoben 04.09. an der Wurzel: Dark-Werte für Tint-, Pill-, Deep- und Text-Strong-Token in `globals.css`; in Produktion am Board-Hinweis nachgemessen |
 | 8 | 4 | QR-Login einer **beendeten** Kraft: „QR-Code ist nicht mehr gültig … neue Karte anfordern" — sachlich falsch, eine neue Karte hilft nicht, der Zugang ist gesperrt. PIN-Login sagt es richtig. | Gleiche Meldung wie beim PIN-Login. | behoben 04.09.: eigener Fehlercode `deactivated`, dieselbe Meldung |
 | 9 | 5 | Hinweisseite `/guest?error=link` nach Check-out eines Link-Gastes: „Bitte den QR-Code im Zimmer scannen" — in einem Link-Haus gibt es keinen, und der eigentliche Grund (Aufenthalt beendet) steht nicht da. | Text nennt den Fall: „Dieser Zugang ist mit dem Check-out erloschen." | behoben 04.09.: `/guest?error=link` erklärt den erloschenen Zugang statt auf den Zimmer-QR zu verweisen |
@@ -283,6 +285,8 @@ und dem, was es bräuchte. Bleibt offen, bis die Voraussetzung da ist.
 
 ## Aufräumen nach dem Durchlauf
 
-- [ ] ZZ-Zimmer, ZZ-Personal entfernt
-- [ ] Gastzugang wieder auf „PIN"
-- [ ] „Testdaten vollständig entfernen" ein letztes Mal
+- [x] ZZ-Zimmer, ZZ-Personal, ZZ-Haus entfernt (Mary Test bleibt als
+      reguläre Testkraft)
+- [x] Gastzugang wieder auf „PIN", Reinigungs-Timeout wieder 90
+- [x] „Testdaten vollständig entfernen" ein letztes Mal (04.09., ~21:05):
+      Aufenthalte, Verlauf, Stiche auf 0 — in der DB nachgemessen
