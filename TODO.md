@@ -56,12 +56,11 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
       dieser Reihenfolge:
       1. ~~`Authentication-Results` prüfen~~ — 04.09. geprüft: dreimal
          `pass`. Es ist reine Reputation.
-      2. Resend → **Domains** → `send.rose-roomservice.app` → **Click- und
-         Open-Tracking aus** (bei neuen Domains standardmäßig aus; der Dialog
-         „New tracking subdomain" unter Settings ist etwas anderes und legt
-         eine eigene Tracking-Domain an — dort nichts anlegen). Tracking schreibt jeden Link auf eine
-         Resend-Domain um; Link-Domain ≠ Absender-Domain ist ein starkes
-         Spam-Signal, und ausgerechnet der Link ist hier der Inhalt.
+      2. ~~Click-/Open-Tracking in Resend aus~~ — 04.09. geprüft: Tracking
+         läuft in Resend nur über eine eigene Tracking-Subdomain, und es ist
+         keine angelegt. Also nicht aktiv, Links zeigen direkt auf
+         `rose-roomservice.app`. **Keine anlegen** — der Dialog „New tracking
+         subdomain" hinter „Configure" würde es erst einschalten.
       3. DMARC schärfen: bisher nur `_dmarc.rose-roomservice.app` mit
          `p=none` (vererbt). Eigener Eintrag `_dmarc.send.rose-roomservice.app`
          mit `v=DMARC1; p=quarantine; rua=mailto:…` — Yahoo und Gmail werten
