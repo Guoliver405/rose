@@ -34,7 +34,11 @@ export default async function ServiceLoginPage({
     error === 'invalid' ? 'Benutzername oder PIN ist falsch.' :
     error === 'missing' ? 'Bitte alle Felder ausfüllen.' :
     error === 'auto_login_failed'
-      ? 'QR-Code ist nicht mehr gültig. Bitte mit Benutzername und PIN anmelden oder eine neue Karte beim Management anfordern.'
+      ? 'QR-Code ist nicht mehr gültig. Bitte mit Benutzername und PIN anmelden oder eine neue Karte beim Management anfordern.' :
+    // Beendeter Zugang per QR: dieselbe Aussage wie beim PIN-Login — eine
+    // neue Karte hilft hier nicht.
+    error === 'deactivated'
+      ? 'Dieser Zugang ist nicht mehr aktiv. Bitte wende dich an die Rezeption.'
       : null
 
   return (

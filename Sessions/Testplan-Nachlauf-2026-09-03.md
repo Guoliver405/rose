@@ -252,6 +252,20 @@ Testzugang, einem Check-in und einer Reinigung.
 - [ ] **Nicht testen:** Konto löschen — nimmt den eigenen Zugang mit. Nur
       wenn ein eigenes Wegwerf-Konto über `/registrieren` angelegt wird.
 
+## Nicht durchgeführt
+
+Was im Produktionslauf am 04.09. **nicht** geprüft werden konnte, mit Grund
+und dem, was es bräuchte. Bleibt offen, bis die Voraussetzung da ist.
+
+| Block | Test | Warum nicht | Was es bräuchte |
+|---|---|---|---|
+| 4 | Testzugänge ohne Mail (Häkchen, Einmal-Passwort, Anmeldung) | existieren nur lokal (`ALLOW_TEST_ACCOUNTS`), in Produktion absichtlich nicht | lokaler Lauf mit `npm run dev` |
+| 4 | Rezeption/Manager **mit offener Sitzung** Zugang beenden → Umleitung | nur eine Management-Sitzung (Inhaber) verfügbar; die Rezeption war nicht angemeldet | zweiter Browser, als `Test-Rezeptionist` angemeldet |
+| 4 | Manager mit **zwei Häusern**: beenden/löschen wirkt nur auf eines | kein Manager angelegt | Manager mit echter Adresse anlegen, in `test-hotelkette` **und** `marcus-hotel` eintragen |
+| 4 | Manager bearbeiten (nur Anzeigename) | kein Manager angelegt | s. o. |
+| 4 | Rezeption löschen **mit** Vorgang → Dialog sagt „Anmeldekonto bleibt", Verlauf behält den Namen | `Test-Rezeptionist` hat noch keinen Vorgang (Check-in oder „gereinigt markieren") | als Rezeption anmelden, einen Check-in machen, dann Löschdialog öffnen |
+| 4 | Reinigung **mit** Historie tatsächlich löschen (Kaskade, Verlauf namenlos) | Dialog nur gelesen, Mary bewusst behalten | Wegwerf-Kraft mit ein paar Stichen anlegen und löschen |
+
 ## Befunde
 
 | # | Block | Beobachtung | Erwartet | Status |

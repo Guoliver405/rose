@@ -29,11 +29,14 @@ export async function GET(
   const origin = new URL(request.url).origin
 
   // Ohne bekannten Mandanten bleibt nur die mandantenfreie Hinweisseite.
-  const fail = (slug?: string) =>
+  // `deactivated` ist ein eigener Code: Der QR ist dann nicht „ungültig" —
+  // der Zugang ist gesperrt, und eine neue Karte würde nichts ändern. Die
+  // Anmeldeseite sagt deshalb dasselbe wie beim PIN-Login einer beendeten Kraft.
+  const fail = (slug?: string, code: 'auto_login_failed' | 'deactivated' = 'auto_login_failed') =>
     NextResponse.redirect(
       slug
-        ? `${origin}/h/${slug}/service/login?error=auto_login_failed`
-        : `${origin}/service/login?error=auto_login_failed`,
+        ? `${origin}/h/${slug}/service/login?error=${code}`
+        : `${origin}/service/login?error=${code}`,
     )
 
   if (!token || token.length < 16) return fail()
@@ -53,7 +56,8 @@ export async function GET(
   ])
   if (!hotel) return fail()
   // Deaktivierte Kraft: gedruckte Karte ist damit wirkungslos.
-  if (!profile?.username || profile.deactivated_at) return fail(hotel.slug)
+  if (!profile?.username) return fail(hotel.slug)
+  if (profile.deactivated_at) return fail(hotel.slug, 'deactivated')
 
   const supabase = await createServicePortalClient()
   const { error } = await supabase.auth.signInWithPassword({

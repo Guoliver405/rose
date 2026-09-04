@@ -287,7 +287,17 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   THEMES — Dark Mode. Invertiert nur Surface / Ink / Edge.
+   THEMES — Dark Mode. Invertiert Surface / Ink / Edge — und seit
+   04.09.2026 auch die Tint-Schicht: Die hellen Kaesten (bg-50 mit
+   border-200) hatten keine Dark-Variante, Ink-Text stand darauf hell
+   auf fast Weiss (Befunde 1 und 7 des Testlaufs). Jetzt werden Tints
+   und Pills als dunkle Mischung der Familienfarbe auf Slate-900
+   gebildet, die Text-Stufen deep/deepest kippen auf 300/200, und die
+   -strong-Stufen jener Familien, die NUR als Textfarbe vorkommen,
+   ebenfalls auf 300 (critical-strong: 41 Textstellen). action-,
+   accent- und attention-strong bleiben, weil sie Button-Hintergruende
+   sind (hover:bg-action-strong) und nicht kippen duerfen.
+   Der Print-Block unten setzt alles zurueck auf Light.
    ───────────────────────────────────────────────────────────────── */
 @media (prefers-color-scheme: dark) {
   [data-theme="auto"] {
@@ -303,6 +313,61 @@
 
     --color-border-subtle:   var(--rs-slate-700);
     --color-border-strong:   var(--rs-slate-600);
+
+    /* Tints, Pills und Text-Stufen im Dark Mode — siehe Kommentar oben. */
+    --color-positive-tint:      color-mix(in oklab, var(--rs-emerald-500) 18%, var(--rs-slate-900));
+    --color-positive-tint-edge: var(--rs-emerald-700);
+    --color-positive-pill:      color-mix(in oklab, var(--rs-emerald-500) 32%, var(--rs-slate-900));
+    --color-positive-pill-edge: var(--rs-emerald-700);
+    --color-positive-deep:      var(--rs-emerald-300);
+    --color-positive-deepest:   var(--rs-emerald-200);
+    --color-positive-icon:      var(--rs-emerald-300);
+    --color-fresh-tint:      color-mix(in oklab, var(--rs-sky-500) 18%, var(--rs-slate-900));
+    --color-fresh-tint-edge: var(--rs-sky-700);
+    --color-fresh-pill:      color-mix(in oklab, var(--rs-sky-500) 32%, var(--rs-slate-900));
+    --color-fresh-pill-edge: var(--rs-sky-700);
+    --color-fresh-deep:      var(--rs-sky-300);
+    --color-fresh-deepest:   var(--rs-sky-200);
+    --color-attention-tint:      color-mix(in oklab, var(--rs-amber-500) 18%, var(--rs-slate-900));
+    --color-attention-tint-edge: var(--rs-amber-700);
+    --color-attention-pill:      color-mix(in oklab, var(--rs-amber-500) 32%, var(--rs-slate-900));
+    --color-attention-pill-edge: var(--rs-amber-700);
+    --color-attention-deepest:   var(--rs-amber-200);
+    --color-caution-tint:      color-mix(in oklab, var(--rs-orange-500) 18%, var(--rs-slate-900));
+    --color-caution-tint-edge: var(--rs-orange-700);
+    --color-caution-pill:      color-mix(in oklab, var(--rs-orange-500) 32%, var(--rs-slate-900));
+    --color-caution-pill-edge: var(--rs-orange-700);
+    --color-caution-deep:      var(--rs-orange-300);
+    --color-caution-deepest:   var(--rs-orange-200);
+    --color-caution-icon:      var(--rs-orange-300);
+    --color-blocked-tint:      color-mix(in oklab, var(--rs-rose-500) 18%, var(--rs-slate-900));
+    --color-blocked-tint-edge: var(--rs-rose-700);
+    --color-blocked-pill:      color-mix(in oklab, var(--rs-rose-500) 32%, var(--rs-slate-900));
+    --color-blocked-pill-edge: var(--rs-rose-700);
+    --color-blocked-deepest:   var(--rs-rose-200);
+    --color-blocked-strong:    var(--rs-rose-300);
+    --color-critical-tint:      color-mix(in oklab, var(--rs-red-500) 18%, var(--rs-slate-900));
+    --color-critical-tint-edge: var(--rs-red-700);
+    --color-critical-pill:      color-mix(in oklab, var(--rs-red-500) 32%, var(--rs-slate-900));
+    --color-critical-pill-edge: var(--rs-red-700);
+    --color-critical-deepest:   var(--rs-red-200);
+    --color-critical-strong:    var(--rs-red-300);
+    --color-escalation-tint:      color-mix(in oklab, var(--rs-fuchsia-500) 18%, var(--rs-slate-900));
+    --color-escalation-tint-edge: var(--rs-fuchsia-700);
+    --color-escalation-pill:      color-mix(in oklab, var(--rs-fuchsia-500) 32%, var(--rs-slate-900));
+    --color-escalation-pill-edge: var(--rs-fuchsia-700);
+    --color-escalation-deepest:   var(--rs-fuchsia-200);
+    --color-escalation-strong:    var(--rs-fuchsia-300);
+    --color-action-tint:      color-mix(in oklab, var(--rs-blue-600) 18%, var(--rs-slate-900));
+    --color-action-tint-edge: var(--rs-blue-700);
+    --color-action-pill:      color-mix(in oklab, var(--rs-blue-600) 32%, var(--rs-slate-900));
+    --color-action-pill-edge: var(--rs-blue-700);
+    --color-action-deep:      var(--rs-blue-300);
+    --color-accent-tint:      color-mix(in oklab, var(--rs-violet-500) 18%, var(--rs-slate-900));
+    --color-accent-tint-edge: var(--rs-violet-700);
+    --color-accent-pill:      color-mix(in oklab, var(--rs-violet-500) 32%, var(--rs-slate-900));
+    --color-accent-pill-edge: var(--rs-violet-700);
+    --color-accent-deep:      var(--rs-violet-300);
   }
 }
 
@@ -319,6 +384,61 @@
 
   --color-border-subtle:   var(--rs-slate-700);
   --color-border-strong:   var(--rs-slate-600);
+
+  /* Tints, Pills und Text-Stufen im Dark Mode — siehe Kommentar oben. */
+  --color-positive-tint:      color-mix(in oklab, var(--rs-emerald-500) 18%, var(--rs-slate-900));
+  --color-positive-tint-edge: var(--rs-emerald-700);
+  --color-positive-pill:      color-mix(in oklab, var(--rs-emerald-500) 32%, var(--rs-slate-900));
+  --color-positive-pill-edge: var(--rs-emerald-700);
+  --color-positive-deep:      var(--rs-emerald-300);
+  --color-positive-deepest:   var(--rs-emerald-200);
+  --color-positive-icon:      var(--rs-emerald-300);
+  --color-fresh-tint:      color-mix(in oklab, var(--rs-sky-500) 18%, var(--rs-slate-900));
+  --color-fresh-tint-edge: var(--rs-sky-700);
+  --color-fresh-pill:      color-mix(in oklab, var(--rs-sky-500) 32%, var(--rs-slate-900));
+  --color-fresh-pill-edge: var(--rs-sky-700);
+  --color-fresh-deep:      var(--rs-sky-300);
+  --color-fresh-deepest:   var(--rs-sky-200);
+  --color-attention-tint:      color-mix(in oklab, var(--rs-amber-500) 18%, var(--rs-slate-900));
+  --color-attention-tint-edge: var(--rs-amber-700);
+  --color-attention-pill:      color-mix(in oklab, var(--rs-amber-500) 32%, var(--rs-slate-900));
+  --color-attention-pill-edge: var(--rs-amber-700);
+  --color-attention-deepest:   var(--rs-amber-200);
+  --color-caution-tint:      color-mix(in oklab, var(--rs-orange-500) 18%, var(--rs-slate-900));
+  --color-caution-tint-edge: var(--rs-orange-700);
+  --color-caution-pill:      color-mix(in oklab, var(--rs-orange-500) 32%, var(--rs-slate-900));
+  --color-caution-pill-edge: var(--rs-orange-700);
+  --color-caution-deep:      var(--rs-orange-300);
+  --color-caution-deepest:   var(--rs-orange-200);
+  --color-caution-icon:      var(--rs-orange-300);
+  --color-blocked-tint:      color-mix(in oklab, var(--rs-rose-500) 18%, var(--rs-slate-900));
+  --color-blocked-tint-edge: var(--rs-rose-700);
+  --color-blocked-pill:      color-mix(in oklab, var(--rs-rose-500) 32%, var(--rs-slate-900));
+  --color-blocked-pill-edge: var(--rs-rose-700);
+  --color-blocked-deepest:   var(--rs-rose-200);
+  --color-blocked-strong:    var(--rs-rose-300);
+  --color-critical-tint:      color-mix(in oklab, var(--rs-red-500) 18%, var(--rs-slate-900));
+  --color-critical-tint-edge: var(--rs-red-700);
+  --color-critical-pill:      color-mix(in oklab, var(--rs-red-500) 32%, var(--rs-slate-900));
+  --color-critical-pill-edge: var(--rs-red-700);
+  --color-critical-deepest:   var(--rs-red-200);
+  --color-critical-strong:    var(--rs-red-300);
+  --color-escalation-tint:      color-mix(in oklab, var(--rs-fuchsia-500) 18%, var(--rs-slate-900));
+  --color-escalation-tint-edge: var(--rs-fuchsia-700);
+  --color-escalation-pill:      color-mix(in oklab, var(--rs-fuchsia-500) 32%, var(--rs-slate-900));
+  --color-escalation-pill-edge: var(--rs-fuchsia-700);
+  --color-escalation-deepest:   var(--rs-fuchsia-200);
+  --color-escalation-strong:    var(--rs-fuchsia-300);
+  --color-action-tint:      color-mix(in oklab, var(--rs-blue-600) 18%, var(--rs-slate-900));
+  --color-action-tint-edge: var(--rs-blue-700);
+  --color-action-pill:      color-mix(in oklab, var(--rs-blue-600) 32%, var(--rs-slate-900));
+  --color-action-pill-edge: var(--rs-blue-700);
+  --color-action-deep:      var(--rs-blue-300);
+  --color-accent-tint:      color-mix(in oklab, var(--rs-violet-500) 18%, var(--rs-slate-900));
+  --color-accent-tint-edge: var(--rs-violet-700);
+  --color-accent-pill:      color-mix(in oklab, var(--rs-violet-500) 32%, var(--rs-slate-900));
+  --color-accent-pill-edge: var(--rs-violet-700);
+  --color-accent-deep:      var(--rs-violet-300);
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -398,6 +518,61 @@
 
     --color-border-subtle:   var(--rs-slate-200);
     --color-border-strong:   var(--rs-slate-300);
+
+    /* Tints zurueck auf Light — der Dark-Block oben wuerde sonst weitergelten. */
+    --color-positive-tint:      var(--rs-emerald-50);
+    --color-positive-tint-edge: var(--rs-emerald-200);
+    --color-positive-pill:      var(--rs-emerald-100);
+    --color-positive-pill-edge: var(--rs-emerald-300);
+    --color-positive-deep:      var(--rs-emerald-700);
+    --color-positive-deepest:   var(--rs-emerald-900);
+    --color-positive-icon:      var(--rs-emerald-600);
+    --color-fresh-tint:      var(--rs-sky-50);
+    --color-fresh-tint-edge: var(--rs-sky-200);
+    --color-fresh-pill:      var(--rs-sky-100);
+    --color-fresh-pill-edge: var(--rs-sky-300);
+    --color-fresh-deep:      var(--rs-sky-700);
+    --color-fresh-deepest:   var(--rs-sky-900);
+    --color-attention-tint:      var(--rs-amber-50);
+    --color-attention-tint-edge: var(--rs-amber-200);
+    --color-attention-pill:      var(--rs-amber-100);
+    --color-attention-pill-edge: var(--rs-amber-300);
+    --color-attention-deepest:   var(--rs-amber-900);
+    --color-caution-tint:      var(--rs-orange-50);
+    --color-caution-tint-edge: var(--rs-orange-200);
+    --color-caution-pill:      var(--rs-orange-100);
+    --color-caution-pill-edge: var(--rs-orange-300);
+    --color-caution-deep:      var(--rs-orange-700);
+    --color-caution-deepest:   var(--rs-orange-900);
+    --color-caution-icon:      var(--rs-orange-500);
+    --color-blocked-tint:      var(--rs-rose-50);
+    --color-blocked-tint-edge: var(--rs-rose-200);
+    --color-blocked-pill:      var(--rs-rose-100);
+    --color-blocked-pill-edge: var(--rs-rose-300);
+    --color-blocked-deepest:   var(--rs-rose-900);
+    --color-blocked-strong:    var(--rs-rose-700);
+    --color-critical-tint:      var(--rs-red-50);
+    --color-critical-tint-edge: var(--rs-red-200);
+    --color-critical-pill:      var(--rs-red-100);
+    --color-critical-pill-edge: var(--rs-red-300);
+    --color-critical-deepest:   var(--rs-red-900);
+    --color-critical-strong:    var(--rs-red-700);
+    --color-escalation-tint:      var(--rs-fuchsia-50);
+    --color-escalation-tint-edge: var(--rs-fuchsia-200);
+    --color-escalation-pill:      var(--rs-fuchsia-100);
+    --color-escalation-pill-edge: var(--rs-fuchsia-300);
+    --color-escalation-deepest:   var(--rs-fuchsia-900);
+    --color-escalation-strong:    var(--rs-fuchsia-700);
+    --color-action-tint:      var(--rs-blue-50);
+    --color-action-tint-edge: var(--rs-blue-200);
+    --color-action-pill:      var(--rs-blue-100);
+    --color-action-pill-edge: var(--rs-blue-300);
+    --color-action-deep:      var(--rs-blue-700);
+    --color-accent-tint:      var(--rs-violet-50);
+    --color-accent-tint-edge: var(--rs-violet-200);
+    --color-accent-pill:      var(--rs-violet-100);
+    --color-accent-pill-edge: var(--rs-violet-300);
+    --color-accent-deep:      var(--rs-violet-700);
   }
 }
 

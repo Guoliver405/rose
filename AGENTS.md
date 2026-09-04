@@ -223,6 +223,8 @@ Etagenscore = gewichtete Summe der aktiven Zimmer pro Etage
 
 Auf saturierten Buttons per-Family-Foreground verwenden (`bg-attention text-attention-foreground`), nie `text-ink-inverse` (theme-flippt).
 
+**Tints im Dark Mode** (04.09.2026, Befunde 1 und 7 des Produktions-Testlaufs): Bis dahin invertierte der Dark Mode nur Surface/Ink/Edge — die Tint-Kästen (`bg-*-tint`, `bg-*-pill`) blieben hell, und Ink-Text darauf war unlesbar. Jetzt werden Tints und Pills im Dark Mode als `color-mix` der Familienfarbe auf Slate-900 gebildet, `-tint-edge`/`-pill-edge` kippen auf die 700er-Stufe, `-deep`/`-deepest` auf 300/200, und die `-strong`-Stufen der Familien, die **nur als Textfarbe** vorkommen (positive, caution, blocked, critical, escalation), ebenfalls auf 300. `action-`, `accent-` und `attention-strong` bleiben, weil sie Button-Hintergründe sind (`hover:bg-action-strong`). **Fallstrick `@theme inline`:** Die Utilities inlinen den *Wert* der Theme-Variable — `text-positive-strong` wird zu `var(--color-positive-icon)`. Wer eine Stufe im Dark Mode überschreibt, muss die Variable treffen, auf die das Theme zeigt, nicht den Utility-Namen. Der Print-Block setzt alle Tint-Token zurück auf Light. Für Komponenten heißt das: `text-ink*` **und** `text-*-deepest` funktionieren auf Tints in beiden Themes; der Workaround aus Befund 1 (Auswahl über Rahmen statt Tint) bleibt als bewusste Gestaltung stehen.
+
 ## Bekannte Fallstricke (aus HotCord geerbt, gelten hier genauso)
 
 | Problem | Lösung |
