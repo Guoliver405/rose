@@ -5,6 +5,8 @@ import {
   SlidersHorizontal, Users, type LucideIcon,
 } from 'lucide-react'
 import { getManagementContext } from '@/utils/auth'
+import { createClient } from '@/utils/supabase/server'
+import { parseGuestAccessMode } from '@/lib/guest-access'
 
 type Tile = {
   /** Pfad relativ zum Haus-Bereich — der Slug kommt erst beim Rendern dazu. */
@@ -23,7 +25,7 @@ const ADMIN_TILES: Tile[] = [
   },
   {
     path: '/einstellungen/gastzugang', icon: DoorOpen, title: 'Gäste-Zugang',
-    description: 'Fester Zimmer-QR mit PIN oder individueller Zugang je Aufenthalt',
+    description: 'Fester Zimmer-QR mit PIN (samt Aushängen) oder individueller Zugang je Aufenthalt',
   },
   {
     path: '/zimmer', icon: BedDouble, title: 'Zimmer',
@@ -42,10 +44,6 @@ const ADMIN_TILES: Tile[] = [
     description: 'Arbeits- und Reinigungszeiten je Kraft, Tagesprotokolle',
   },
   {
-    path: '/zimmer/aushang', icon: QrCode, title: 'QR-Aushänge',
-    description: 'Zimmer-Aushänge mit QR-Code zum Drucken',
-  },
-  {
     path: '/einstellungen/zugang', icon: KeyRound, title: 'Mein Zugang',
     description: 'Eigenen Anzeigenamen und das Anmelde-Passwort ändern',
   },
@@ -56,7 +54,11 @@ const ADMIN_TILES: Tile[] = [
   },
 ]
 
-/** Rezeption: nur die Tagesgeschäft-nahen Bereiche laut Rechtekonzept. */
+/**
+ * Rezeption: nur die Tagesgeschäft-nahen Bereiche laut Rechtekonzept. Die
+ * Aushänge stehen hier als eigene Kachel, weil die Rezeption die Seite
+ * „Gäste-Zugang" nicht sieht — Inhaber und Manager erreichen sie von dort.
+ */
 const RECEPTION_TILES: Tile[] = [
   {
     path: '/zimmer/aushang', icon: QrCode, title: 'QR-Aushänge',
@@ -84,7 +86,16 @@ export default async function EinstellungenHubPage({
   // Manager hat im Haus dieselben Rechte wie der Inhaber — nur die
   // Rezeption bekommt den verkürzten Hub.
   const base = `/h/${ctx.hotelSlug}/admin`
-  const tiles = ctx.role !== 'reception' ? ADMIN_TILES : RECEPTION_TILES
+
+  // Aushänge gibt es nur im PIN-Verfahren — im Link-Verfahren führten sie
+  // auf eine PIN-Eingabe, die niemand bedienen kann.
+  const supabase = await createClient()
+  const { data: hotel } = await supabase
+    .from('hotels').select('policies').eq('id', ctx.hotelId).single()
+  const accessMode = parseGuestAccessMode((hotel?.policies ?? {}) as Record<string, unknown>)
+
+  const tiles = (ctx.role !== 'reception' ? ADMIN_TILES : RECEPTION_TILES)
+    .filter(t => t.path !== '/zimmer/aushang' || accessMode === 'pin')
 
   return (
     <div className="flex max-w-2xl flex-col gap-5">

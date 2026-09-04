@@ -103,7 +103,7 @@ export default function GastzugangForm({
       setNotice(
         gewaehlt === 'link'
           ? 'Umgestellt auf individuelle Zugänge. Ab dem nächsten Check-in bekommt jeder Gast seinen eigenen QR-Code — bitte die Aushänge aus den Zimmern nehmen.'
-          : 'Umgestellt auf feste Zimmer-QR-Codes. Ab dem nächsten Check-in gilt wieder QR im Zimmer plus PIN — die Aushänge finden Sie unter Einstellungen → QR-Aushänge.',
+          : 'Umgestellt auf feste Zimmer-QR-Codes. Ab dem nächsten Check-in gilt wieder QR im Zimmer plus PIN — die Aushänge finden Sie jetzt unten auf dieser Seite.',
       )
       router.refresh()
     })
@@ -126,10 +126,13 @@ export default function GastzugangForm({
               key={k.mode}
               type="button"
               onClick={() => setGewaehlt(k.mode)}
-              className={`flex flex-col gap-3 rounded-xl border-2 p-4 text-left ${
+              className={`flex flex-col gap-3 rounded-xl border-2 bg-surface p-4 text-left ${
                 aktiv
-                  ? 'border-action bg-action-tint'
-                  : 'border-edge bg-surface hover:border-edge-strong'
+                  // Kein Tint-Hintergrund: die Tints sind nur für Light
+                  // definiert, im Dark Mode stünde Ink-Text auf Blau-50.
+                  // Die Auswahl trägt Rahmen, Ring und Icon in Aktionsfarbe.
+                  ? 'border-action ring-2 ring-action/25'
+                  : 'border-edge hover:border-edge-strong'
               }`}
             >
               <div className="flex items-start gap-3">
@@ -203,7 +206,7 @@ export default function GastzugangForm({
           </li>
           <li>
             Beim Wechsel auf <strong>feste Zimmer-QR-Codes</strong> brauchen Sie die Aushänge im
-            Zimmer. Sie finden sie unter Einstellungen → QR-Aushänge.
+            Zimmer. Sie erscheinen dann unten auf dieser Seite.
           </li>
         </ul>
       </div>
