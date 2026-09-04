@@ -61,10 +61,10 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
          keine angelegt. Also nicht aktiv, Links zeigen direkt auf
          `rose-roomservice.app`. **Keine anlegen** — der Dialog „New tracking
          subdomain" hinter „Configure" würde es erst einschalten.
-      3. DMARC schärfen: bisher nur `_dmarc.rose-roomservice.app` mit
-         `p=none` (vererbt). Eigener Eintrag `_dmarc.send.rose-roomservice.app`
-         mit `v=DMARC1; p=quarantine; rua=mailto:…` — Yahoo und Gmail werten
-         eine durchgesetzte Policy positiv.
+      3. ~~DMARC schärfen~~ — 04.09. gesetzt und per DNS bestätigt:
+         `_dmarc.send.rose-roomservice.app TXT "v=DMARC1; p=quarantine;"`
+         (ohne `rua`, bewusst keine Berichte). Auf der Hauptdomain bleibt
+         `p=none`.
       4. Bei Yahoo (Sender Hub, Complaint Feedback Loop) und Google
          (Postmaster Tools) die Domain registrieren — Sichtbarkeit, kein
          Freifahrtschein.
