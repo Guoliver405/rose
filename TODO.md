@@ -88,9 +88,12 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       1. ~~**Vercel-Region gegen Supabase-Region prüfen**~~ — 04.09.: Funktionen
          liefen in `iad1` (Washington), die DB liegt in Irland. `vercel.json`
          mit `regions: ["dub1"]` legt sie daneben.
-      2. In Produktion **nachmessen** (Network-Tab: Dauer des Action-POSTs und
-         des RSC-Refreshs; Vercel Speed Insights), erst dann weiter.
-      3. Falls es dann noch spürbar ist: optimistische Zustände in
+      2. ~~In Produktion nachmessen~~ — 04.09. vom User bestätigt: „vieles
+         reagiert deutlich schneller", auch der Check-in. Kein akuter Bedarf
+         mehr.
+      3. Falls es später wieder spürbar wird: Seiten-Render aus der
+         Action-Antwort nehmen (PIN sofort zeigen, Übersicht per
+         `router.refresh()` nachziehen), optimistische Zustände in
          `RoomDialog`/`ServiceBoard` (`useOptimistic`), doppeltes Rendern nach
          Actions (`revalidatePath` + eigenes Realtime-Ereignis) entkoppeln.
 
