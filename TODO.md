@@ -1,15 +1,9 @@
 # Offene Punkte
 
-Stand 03.09.2026. Herkunft in Klammern; Erledigtes wird gestrichen, nicht
+Stand 04.09.2026. Herkunft in Klammern; Erledigtes wird gestrichen, nicht
 gelöscht, damit erkennbar bleibt, was einmal offen war.
 
 ## Vor den ersten echten Kunden
-
-- [ ] **Mailversand in Produktion einmal ansehen** — Variablen sind gesetzt und
-      deployt (03.09.). Der Blick aufs Handout eines belegten Zimmers unter
-      `rose-roomservice.app` genügt: Erscheint das Adressfeld statt „Versand
-      per E-Mail ist nicht eingerichtet", greifen beide Variablen. Ein echter
-      Versand ist dafür nicht nötig, lokal ist er end-to-end geprüft.
 
 - [ ] **Login-Actions testen** — `guestLoginAction` und `maidLoginAction` sind
       die einzigen ungetesteten Auth-Pfade (sie leiten per `redirect()` um und
@@ -93,6 +87,10 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
       bündeln statt je Test. (03.09.)
 
 ## Erledigt
+
+- [x] ~~Mailversand in Produktion einmal ansehen~~ — 04.09. echte Mail aus
+      Produktion verschickt und zugestellt (Yahoo: Spam-Ordner, siehe
+      Zustellbarkeit oben)
 
 - [x] ~~Abrechnungs-Snapshot~~ — `billing_snapshots`, geschrieben vor jeder
       Zimmerlöschung (03.09.)
