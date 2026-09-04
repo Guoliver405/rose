@@ -200,16 +200,16 @@ async function sweepStaleRuns(): Promise<void> {
 
 // ── Aufbau ──────────────────────────────────────────────────────────────────
 
-async function createAuthUser(email: string, tracker: string[]): Promise<UserHandle> {
+async function createAuthUser(email: string, tracker: string[], password = PW): Promise<UserHandle> {
   const admin = serviceClient()
   const { data, error } = await admin.auth.admin.createUser({
     email,
-    password: PW,
+    password,
     email_confirm: true,
   })
   if (error || !data.user) throw new Error(`createUser(${email}): ${error?.message}`)
   tracker.push(data.user.id)
-  return { id: data.user.id, email, password: PW }
+  return { id: data.user.id, email, password }
 }
 
 async function createHotel(
@@ -267,11 +267,12 @@ async function createMaid(
   username: string,
   displayName: string,
   tracker: string[],
+  pin = PW,
 ): Promise<UserHandle & { username: string }> {
   // Die E-Mail baut die Anwendung selbst — Benutzername + Hotel-ID. Die
   // Lauf-Kennung steckt deshalb im Benutzernamen, damit sie auch hier greift.
   const email = buildMaidEmail(username, hotelId)
-  const user = await createAuthUser(email, tracker)
+  const user = await createAuthUser(email, tracker, pin)
   const admin = serviceClient()
   const { error } = await admin
     .from('profiles')
@@ -339,7 +340,10 @@ export async function buildWorld(): Promise<World> {
     account_id: betaId, user_id: betaOwner.id, role: 'owner', display_name: 'Beta Inhaber',
   })
 
-  const betaMaid = await createMaid(b1.id, maidName, 'Maria Beta', createdUserIds)
+  // Eigene PIN für die Namensvetterin: Der Login-Test muss sehen können, ob
+  // die PIN aus Haus A1 im Haus B1 abgewiesen wird — mit derselben PIN in
+  // beiden Häusern wäre das nicht unterscheidbar.
+  const betaMaid = await createMaid(b1.id, maidName, 'Maria Beta', createdUserIds, `${PW}-beta`)
 
   return {
     runId,

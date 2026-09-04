@@ -6,7 +6,9 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/utils/supabase/service'
 import { findHotelBySlug } from '@/utils/hotel'
 import { getGuestContext, GUEST_COOKIE } from '@/utils/guest'
+import { checkIpThrottle, currentIpHash, recordLoginFailure } from '@/utils/login-throttle'
 import { isWithinCleaningWindow, parseCleaningWindow } from '@/lib/board'
+import { throttleMessage } from '@/lib/login-throttle'
 
 /*
  * Server-Actions des Gast-Portals. Liegen bewusst hier und nicht unter
@@ -35,6 +37,23 @@ export async function guestLoginAction(input: GuestLoginInput): Promise<{ error?
 
   const admin = createAdminClient()
 
+  // Zweite Schranke neben dem Zähler je Aufenthalt: Fehlversuche je
+  // Absender-IP über alle Häuser hinweg (Begründung und Schwelle in
+  // `@/lib/login-throttle`). Wird ZUERST geprüft — eine gesperrte IP darf
+  // nicht einmal mehr erfahren, ob eine Zimmernummer existiert. Jeder
+  // Rückweg mit generischer Meldung zählt als Fehlversuch, auch „Zimmer
+  // unbekannt" und „Aufenthalt gesperrt": genau diese Antworten sind es, die
+  // ein Durchprobieren der Nummern ausnutzt.
+  const ipHash = await currentIpHash()
+  const throttle = await checkIpThrottle(admin, ipHash)
+  if (throttle.blocked) return { error: throttleMessage(throttle.retryAfterMinutes) }
+
+  let hotelId: string | null = null
+  const fail = async (message: string = FAIL.error) => {
+    await recordLoginFailure(admin, ipHash, hotelId)
+    return { error: message }
+  }
+
   // Zimmer auflösen. Zwei Wege, beide auf GENAU EIN Hotel eingegrenzt:
   //   - Zimmer-Token: global eindeutig, trägt den Mandanten selbst.
   //   - Zimmernummer: nur je Hotel eindeutig (`unique (hotel_id, number)`) —
@@ -44,11 +63,15 @@ export async function guestLoginAction(input: GuestLoginInput): Promise<{ error?
   let roomIds: string[] = []
   if (input.roomToken) {
     const { data } = await admin
-      .from('room_guest_tokens').select('room_id').eq('token', input.roomToken).maybeSingle()
-    if (data?.room_id) roomIds = [data.room_id]
+      .from('room_guest_tokens').select('room_id, hotel_id').eq('token', input.roomToken).maybeSingle()
+    if (data?.room_id) {
+      roomIds = [data.room_id]
+      hotelId = data.hotel_id
+    }
   } else if (input.roomNumber?.trim()) {
     const hotel = input.hotelSlug ? await findHotelBySlug(input.hotelSlug) : null
-    if (!hotel) return FAIL
+    if (!hotel) return fail()
+    hotelId = hotel.id
     const { data } = await admin
       .from('rooms')
       .select('id')
@@ -57,7 +80,7 @@ export async function guestLoginAction(input: GuestLoginInput): Promise<{ error?
       .limit(10)
     roomIds = (data ?? []).map(r => r.id)
   }
-  if (roomIds.length === 0) return FAIL
+  if (roomIds.length === 0) return fail()
 
   // Nur Aufenthalte des PIN-Verfahrens nehmen teil. Ein Aufenthalt mit
   // individuellem Zugang hat gar keine PIN (`stays.pin` ist dort null) — er
@@ -69,7 +92,7 @@ export async function guestLoginAction(input: GuestLoginInput): Promise<{ error?
     .in('room_id', roomIds)
     .is('checked_out_at', null)
     .eq('access_mode', 'pin')
-  if (!candidates || candidates.length === 0) return FAIL
+  if (!candidates || candidates.length === 0) return fail()
 
   // Rate-Limit je Aufenthalt: 5 Fehlversuche → 15 Minuten Sperre.
   // Gesperrte Aufenthalte nehmen nicht an der PIN-Prüfung teil.
@@ -80,19 +103,19 @@ export async function guestLoginAction(input: GuestLoginInput): Promise<{ error?
   if (unlocked.length === 0) {
     const latest = Math.max(...candidates.map(s => new Date(s.pin_locked_until!).getTime()))
     const mins = Math.max(1, Math.ceil((latest - nowMs) / 60000))
-    return { error: `Zu viele Fehlversuche — bitte in ${mins} Min. erneut versuchen.` }
+    return fail(`Zu viele Fehlversuche — bitte in ${mins} Min. erneut versuchen.`)
   }
 
   const stay = unlocked.find(s => s.pin === pin)
   if (!stay) {
-    for (const s of unlocked) {
+    await Promise.all(unlocked.map(s => {
       const attempts = (s.pin_attempts ?? 0) + 1
       const patch = attempts >= MAX_ATTEMPTS
         ? { pin_attempts: 0, pin_locked_until: new Date(nowMs + LOCK_MINUTES * 60000).toISOString() }
         : { pin_attempts: attempts }
-      await admin.from('stays').update(patch).eq('id', s.id)
-    }
-    return FAIL
+      return admin.from('stays').update(patch).eq('id', s.id)
+    }))
+    return fail()
   }
 
   // Erfolg: Zähler zurücksetzen + Session-Cookie setzen

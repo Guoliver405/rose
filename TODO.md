@@ -1,17 +1,18 @@
 # Offene Punkte
 
-Stand 04.09.2026. Herkunft in Klammern; Erledigtes wird gestrichen, nicht
+Stand 05.09.2026. Herkunft in Klammern; Erledigtes wird gestrichen, nicht
 gelöscht, damit erkennbar bleibt, was einmal offen war.
 
 ## Vor den ersten echten Kunden
 
-- [ ] **Login-Actions testen** — `guestLoginAction` und `maidLoginAction` sind
-      die einzigen ungetesteten Auth-Pfade (sie leiten per `redirect()` um und
-      brauchen etwas Gerüst). Wertvollster Einzeltest: *fünf Fehlversuche
-      sperren nur den eigenen Aufenthalt im eigenen Haus* — Rate-Limit über
-      Mandantengrenzen. (Übergabe 26.07.)
-- [ ] **IP-Rate-Limit für die Gast-Anmeldung** — bisher limitiert nur der
-      Aufenthalt selbst (`stays.pin_attempts`). (Übergabe 26.07.)
+- [x] ~~**Login-Actions testen**~~ — 05.09. erledigt:
+      [login.test.ts](tests/integration/login.test.ts) fährt beide Actions
+      gegen die Testwelt, inklusive *fünf Fehlversuche sperren nur den eigenen
+      Aufenthalt* und der IP-Drossel. (Übergabe 26.07.)
+- [x] ~~**IP-Rate-Limit für die Gast-Anmeldung**~~ — 05.09. erledigt:
+      gleitendes Fenster je Absender-IP über alle Häuser (30 Fehlversuche /
+      15 min), Tabelle `guest_login_failures`, Migration
+      `2026-09-05_guest_login_failures.sql`. (Übergabe 26.07.)
 - [ ] **Testplan D–G** durchlaufen. (Übergabe 26.07.)
 
 ## Produktentscheidungen
