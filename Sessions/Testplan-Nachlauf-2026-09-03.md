@@ -224,26 +224,31 @@ Offener Punkt aus [TODO.md](../TODO.md).
 
 ## 8) Löschbegehren (`/admin` → „Daten löschen", nur Inhaber) — zuletzt
 
-**Nicht umkehrbar.** Dafür ein eigenes Wegwerf-Haus im selben Konto anlegen
-(„ZZ-Löschprobe") mit 2 Zimmern, einer Reinigungskraft, einem Rezeptions-
-Testzugang, einem Check-in und einer Reinigung.
+Durchlauf 04.09. in Produktion mit Wegwerf-Haus „ZZ-Löschprobe"
+(`/zz-loeschprobe`, 2 Zimmer, Reinigungskraft ZZ Kraft, ein Check-in/-out,
+eine abgeschlossene Reinigung mit Schicht). Kein Rezeptions-Testzugang
+(bräuchte echte Adresse).
 
-- [ ] Bereich ist eingeklappt, für einen Manager unsichtbar.
-- [ ] Vorschau beziffert: Zimmer, Aufenthalte, Verlauf, Stiche, Personal, und
-      welche Anmeldekonten **verschwinden** bzw. **bleiben** (der Inhaber
-      bleibt, die Reinigungskraft geht, der Rezeptions-Testzugang geht — außer
-      er sitzt noch in einem anderen Haus).
-- [ ] Hausname muss abgetippt werden.
-- [ ] Nach dem Löschen: Haus weg aus der Liste, Anmeldung mit dem gelöschten
-      Rezeptions-Testzugang schlägt fehl („ungültige Zugangsdaten", nicht
-      Fehler 500). Inhaber weiterhin angemeldet.
-- [ ] **Stammhaus-Grenzfall:** Danach in einem anderen Haus einen **Check-in**
-      machen → klappt. (Trifft nur, wenn das gelöschte Haus das Stammhaus des
-      Inhabers war — das ist das erste Haus des Kontos. Bei einem neu
-      angelegten Wegwerf-Haus ist der Fall nicht erreichbar; dann genügt der
-      Integrationstest, der ihn abdeckt.)
-- [ ] **Nicht testen:** Konto löschen — nimmt den eigenen Zugang mit. Nur
-      wenn ein eigenes Wegwerf-Konto über `/registrieren` angelegt wird.
+- [x] Bereich eingeklappt, öffnet mit Erklärtext; je Haus ein „Löschen", dazu
+      „Gesamtes Konto löschen". *(Manager-Sicht nicht geprüft — kein Manager.)*
+- [x] Vorschau beziffert **exakt** den DB-Stand vorher (nachgemessen):
+      2 Zimmer · 1 Aufenthalt · 4 Einträge im Tätigkeits-Protokoll ·
+      2 Einträge im Zimmer-Verlauf · 1 Anmeldekonto samt E-Mail-Adresse
+      (ZZ Kraft). Der Inhaber wird nicht als verschwindend gezählt.
+- [x] Hausname muss abgetippt werden („ZZ-Löschprobe").
+- [x] Nach dem Löschen: Meldung „ZZ-Löschprobe wurde vollständig entfernt",
+      Konto zeigt wieder 2 Häuser, Zahlen der geschlossenen Monate unverändert
+      (216 / 81). DB: hotels, rooms, stays, room_state_transitions, staff_log,
+      profiles, maid_login_tokens, billing_snapshots des Hauses alle 0;
+      Auth-Konten 14 → 13, `zzkraft@…` weg. Inhaber weiterhin angemeldet,
+      Nachbarhäuser unberührt. `/h/zz-loeschprobe/service` → 404.
+- [~] Anmeldung mit gelöschtem Rezeptions-Testzugang schlägt fehl —
+      **nicht geprüft** (kein Rezeptions-Zugang im Wegwerf-Haus); ersatzweise:
+      QR-Karte/Sitzung der gelöschten Reinigungskraft führt auf 404 des Hauses.
+- [ ] **Stammhaus-Grenzfall:** nicht erreichbar — das Stammhaus des Inhabers
+      ist `test-hotelkette` (DB: `profiles.hotel_id`), das Wegwerf-Haus war
+      neu. Bleibt durch den Integrationstest abgedeckt.
+- [x] **Nicht getestet, wie geplant:** Konto löschen.
 
 ## Nicht durchgeführt
 
@@ -258,6 +263,9 @@ und dem, was es bräuchte. Bleibt offen, bis die Voraussetzung da ist.
 | 4 | Manager bearbeiten (nur Anzeigename) | kein Manager angelegt | s. o. |
 | 4 | Rezeption löschen **mit** Vorgang → Dialog sagt „Anmeldekonto bleibt", Verlauf behält den Namen | `Test-Rezeptionist` hat noch keinen Vorgang (Check-in oder „gereinigt markieren") | als Rezeption anmelden, einen Check-in machen, dann Löschdialog öffnen |
 | 4 | Reinigung **mit** Historie tatsächlich löschen (Kaskade, Verlauf namenlos) | Dialog nur gelesen, Mary bewusst behalten | Wegwerf-Kraft mit ein paar Stichen anlegen und löschen |
+| 5 | Zimmer-QR (Wandaushang) von 802 im Link-Verfahren → PIN-Formular ohne PIN | für die Zimmer existieren keine Aushang-Token | auf der Aushang-Seite „fehlende QR-Codes erzeugen", dann `/guest/r/<token>` |
+| 7 | Mail-Inhalt (Absender = Hotelname, Link-Ziel, kein QR-Bild) | Mail vom User verschickt, Inhalt nicht eingesehen; zweiter Versuch kam gar nicht an (auch nicht im Spam) — in den Vercel-Logs aller heutigen Deployments kein `[mail]`-Fehler | Zeitpunkt und Adresse des Versuchs, dann Resend → Logs (Delivered/Bounced) |
+| 8 | Stammhaus-Grenzfall, Rezeptions-Zugang gelöscht → Anmeldung tot, Manager-Sicht des Bereichs, Konto löschen | s. Block 8 | eigenes Wegwerf-Konto über `/registrieren` |
 
 ## Befunde
 
