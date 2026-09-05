@@ -101,6 +101,15 @@ der Kommentar im Test schon vorher; jetzt stimmt er wörtlich.
   Anmeldekonto).
 - Integrationstests **zweimal direkt hintereinander**: 53 grün, 39 s und
   38 s. Vor der Bündelung wäre der zweite Lauf am Limit gescheitert.
+- **Produktionsnachweis** (User angemeldet, Claude fährt Chrome): Konto
+  „Test-Hotelkette" auf rose-roomservice.app. `/admin` zeigt den
+  Kurz-Kasten (2 Häuser, 222 in Betrieb, 223 abrechenbar, voraussichtlich
+  111,50 €) mit Knopf „Plan & Abrechnung"; `/admin/abrechnung` den
+  Hinweiskasten, September je Haus (Test-Hotelkette 88, Marcus-Hotel 135,
+  gesamt 223 → 111,50 €), August 216 Zimmer 108,00 € „festgeschrieben /
+  nicht berechnet", Juli 81 Zimmer 0,00 € „statt 40,50 €" mit „frei" (Konto
+  vom 26.07.) — alle Beträge rechnerisch geprüft. Die zwei Snapshots
+  stammen aus den Zimmerlöschungen der Tester-Rückmeldung vom 03.09.
 - Werkzeug-Notiz: Im Vorschau-Browser sind Screenshots unterhalb des ersten
   Bildschirms leer, sobald die Fläche verborgen ist (`innerHeight` 0), und
   Klicks kommen nicht an. Für den unteren Seitenteil hilft `get_page_text`,
@@ -108,8 +117,8 @@ der Kommentar im Test schon vorher; jetzt stimmt er wörtlich.
 
 ## 4. Offen
 
-- Produktionsnachweis der Konto-Seite mit einem echten Inhaber-Login (der
-  User meldet sich selbst an; Claude fährt dann Chrome).
+- ~~Produktionsnachweis der Konto-Seite mit einem echten Inhaber-Login~~ —
+  erbracht (siehe Verifikation).
 - Zahlungsprovider-Gegenüberstellung (Stripe, Paddle, PayPal) — füllt die
   beiden Platzhalter-Karten.
 - Weiter offen aus dem Nachmittag: Anbieter-Daten, anwaltliche Prüfung, AVV,
@@ -123,14 +132,10 @@ Konto-Seite (`1a9f3dc`) und Test-Bündelung mit Doku (`1ac5294`). CI-Lauf
 Integrationsjob lief damit erstmals mit den gebündelten Anmeldungen durch.
 Vercel hat deployt: `/admin/abrechnung` antwortet in Produktion unangemeldet
 mit 307 auf `/admin` (der Riegel `getAccountContext`), von dort zur
-Anmeldung. **Der angemeldete Produktionsnachweis steht noch aus** — Chrome
-war in dieser Sitzung nicht verbunden; er ist der erste Schritt bei der
-Wiederaufnahme.
+Anmeldung. Angemeldeter Produktionsnachweis mit dem Konto „Test-Hotelkette"
+erbracht, Beträge rechnerisch geprüft.
 
-**Wenn hier weitergearbeitet wird:** Als Inhaber auf rose-roomservice.app
-anmelden und `/admin` → „Plan & Abrechnung" öffnen; der Kasten oben muss
-„Aktuell wird nichts berechnet" zeigen, der laufende Monat die Häuser des
-Kontos. Danach ist die Zahlungsprovider-Gegenüberstellung der nächste
+**Wenn hier weitergearbeitet wird:** Die Zahlungsprovider-Gegenüberstellung ist der nächste
 Baustein zur Veröffentlichung — sie entscheidet, was in die beiden
 Platzhalter-Karten kommt und ob die Registrierung ein Zahlungsmittel
 verlangt. Die manuellen GUI-Fälle bleiben liegen, bis der User sie aufruft.
