@@ -151,6 +151,16 @@ der Kommentar im Test schon vorher; jetzt stimmt er wörtlich.
   [Mail-Bernd-Zahlungsverkehr-2026-09-05.md](Mail-Bernd-Zahlungsverkehr-2026-09-05.md)
   — nicht verschickt.
 
+- **Copyright und Marke** (Anregung von Bernd, ein © ans Logo zu setzen):
+  Nicht am Logo, sondern als Zeile „© Jahr I²D UG (haftungsbeschränkt)" in
+  der [Fußzeile](../src/components/LegalFooter.tsx) aller öffentlichen
+  Seiten — Urheberrecht entsteht ohne Vermerk, und der Schriftzug erreicht
+  die Schöpfungshöhe kaum; ein ® darf erst nach Markeneintragung ans Logo.
+  Der eigentliche Schutz des Namens ist eine **Wortmarke** (TODO, mit
+  Ähnlichkeitsrecherche vor der Anmeldung, weil „Rose" ein Allerweltswort
+  ist). Mail an Bernd als Entwurf:
+  [Mail-Bernd-Copyright-und-Marke-2026-09-05.md](Mail-Bernd-Copyright-und-Marke-2026-09-05.md).
+
 ## 5. Offen
 
 - ~~Produktionsnachweis der Konto-Seite mit einem echten Inhaber-Login~~ —

@@ -124,6 +124,21 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       Offene Entscheidungen des Users stehen in Abschnitt 6. Betrifft
       `/registrieren`, die Karten „Zahlungsverfahren"/„Rechnungen" auf
       `/admin/abrechnung` und die Abrechnung aus `billing_snapshots`.
+- [ ] **Wortmarke „RoSe" anmelden** (05.09., aus Bernds Anregung, ein © ans
+      Logo zu setzen): Das © bringt für das Logo nichts — Urheberrecht
+      entsteht ohne Vermerk, und ein zweifarbiger Schriftzug erreicht die
+      Schöpfungshöhe kaum. Was den Namen schützt, ist die **Marke**. Vor der
+      Anmeldung beim DPMA (Klassen 9 Software, 42 SaaS; ab 290 € elektronisch)
+      **Ähnlichkeitsrecherche** — „Rose" ist ein Allerweltswort, es gibt
+      etliche ROSE-Marken auch in Software-Klassen, und „RoSe" hilft dagegen
+      nicht (Ähnlichkeit wird nach Klang und Bild beurteilt). Gehört in die
+      anwaltliche Prüfung. Erst mit Eintragung darf ein ® ans Logo; ein ®
+      ohne Eintragung ist irreführend (§ 5 UWG). Bei Erfolg Ausbau zur
+      EU-Marke (EUIPO) passend zur weltweiten Ausrichtung. Die
+      Copyright-Zeile „© Jahr I²D UG" steht seit 05.09. in der
+      [Fußzeile](src/components/LegalFooter.tsx) aller öffentlichen Seiten.
+      Mail an Bernd dazu:
+      [Mail-Bernd-Copyright-und-Marke-2026-09-05.md](Sessions/Mail-Bernd-Copyright-und-Marke-2026-09-05.md).
 - [ ] **Mehrsprachigkeit**: en, es, fr, de. Betrifft alle drei Portale, die
       Landing-Page, Mails und Druckseiten (Aushänge, Handouts, Karten). Die
       Gast-Sprache muss unabhängig von der Hotel-Sprache wählbar sein — das

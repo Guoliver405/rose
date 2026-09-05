@@ -561,7 +561,7 @@ function Footer() {
         </nav>
       </div>
       <p className="mx-auto w-full max-w-5xl px-4 pb-6 text-xs text-ink-muted">
-        Ein Dienst von {PROVIDER.name}.
+        © {new Date().getFullYear()} {PROVIDER.name}
       </p>
     </footer>
   )
