@@ -52,3 +52,26 @@ export function isFreePeriod(accountCreatedAt: Date, periodStart: Date): boolean
   const period = periodStart.getFullYear() * 12 + periodStart.getMonth()
   return period >= first && period < first + FREE_MONTHS
 }
+
+/** Eine Abrechnungszeile: was ein Kalendermonat mit `rooms` Zimmern kostet. */
+export type BillingLine = {
+  rooms: number
+  /** Geschuldeter Betrag in Cent — 0 im freien Monat und ohne Zimmer. */
+  cents: number
+  /** Regulärer Betrag in Cent, unabhängig vom freien Monat — „statt …". */
+  regularCents: number
+  /** true = Kalendermonat der Registrierung, nichts geschuldet. */
+  free: boolean
+}
+
+/**
+ * Betrag eines Kalendermonats für ein Konto — die eine Stelle, an der
+ * Zimmerzahl, Mindestbetrag und freier Monat zusammenkommen. Die Konto-Seite
+ * zeigt genau diese Zeilen; die spätere Rechnungsstellung soll dieselbe
+ * Funktion nehmen, damit Anzeige und Rechnung nie auseinanderlaufen.
+ */
+export function billingLine(rooms: number, accountCreatedAt: Date, periodStart: Date): BillingLine {
+  const regularCents = monthlyPriceCents(rooms)
+  const free = isFreePeriod(accountCreatedAt, periodStart)
+  return { rooms, cents: free ? 0 : regularCents, regularCents, free }
+}

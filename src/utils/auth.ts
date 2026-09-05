@@ -241,6 +241,8 @@ export type AccountContext = {
   accountName: string
   plan: string
   displayName: string
+  /** Anlegedatum des Kontos — bestimmt den freien Kalendermonat (`isFreePeriod`). */
+  createdAt: Date
 }
 
 /**
@@ -255,14 +257,15 @@ export const getAccountContext = cache(async (): Promise<AccountContext | null> 
   const admin = createAdminClient()
   const { data: membership } = await admin
     .from('account_members')
-    .select('account_id, display_name, accounts(name, plan)')
+    .select('account_id, display_name, accounts(name, plan, created_at)')
     .eq('user_id', userId)
     .eq('role', 'owner')
     .limit(1)
     .maybeSingle()
 
   if (!membership) return null
-  const account = membership.accounts as unknown as { name: string; plan: string } | null
+  const account = membership.accounts as unknown as
+    { name: string; plan: string; created_at: string } | null
 
   return {
     userId,
@@ -270,5 +273,6 @@ export const getAccountContext = cache(async (): Promise<AccountContext | null> 
     accountName: account?.name ?? 'Konto',
     plan: account?.plan ?? 'trial',
     displayName: membership.display_name,
+    createdAt: new Date(account?.created_at ?? 0),
   }
 })

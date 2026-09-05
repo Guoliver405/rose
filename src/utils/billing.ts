@@ -98,29 +98,43 @@ export type BillingRow = {
   fixed: boolean
 }
 
+/** Zimmerzahl eines Hauses im laufenden Monat — für die Aufschlüsselung je Haus. */
+export type BillingHotelRow = { id: string; name: string; slug: string; rooms: number }
+
 /**
- * Abrechnungsübersicht eines Kontos: der laufende Monat plus die letzten
- * abgeschlossenen.
+ * Abrechnungsübersicht eines Kontos: der laufende Monat (gesamt und je Haus)
+ * plus die letzten abgeschlossenen.
  *
  * Für eine abgeschlossene Periode gilt der **Snapshot, wenn es einen gibt** —
  * sonst die Live-Ableitung. Beides ist richtig: Ohne Löschung stimmt die
  * Ableitung weiterhin, und sobald gelöscht wurde, existiert der Snapshot.
+ *
+ * Die Aufschlüsselung je Haus gibt es nur für den laufenden Monat: Snapshots
+ * werden zwar je Haus geschrieben, ohne Löschung existieren aber keine, und
+ * eine Mischung aus festgeschriebenen und abgeleiteten Hauszahlen in einer
+ * Zeile wäre schwerer zu erklären, als sie nützt. Der Mindestbetrag gilt
+ * ohnehin je Konto — abgerechnet wird die Summe.
  */
 export async function getBillingOverview(
   accountId: string,
   monate = 6,
-): Promise<{ current: BillingRow; closed: BillingRow[] }> {
+): Promise<{ current: BillingRow; hotels: BillingHotelRow[]; closed: BillingRow[] }> {
   const admin = createAdminClient()
 
   const { data: hotels } = await admin
-    .from('hotels').select('id, created_at').eq('account_id', accountId)
+    .from('hotels').select('id, name, slug, created_at').eq('account_id', accountId)
+    .order('created_at')
   const hotelIds = (hotels ?? []).map(h => h.id)
 
   const now = new Date()
   const current = monthPeriod(now)
 
   if (hotelIds.length === 0) {
-    return { current: { periodStart: periodKey(current), rooms: 0, fixed: false }, closed: [] }
+    return {
+      current: { periodStart: periodKey(current), rooms: 0, fixed: false },
+      hotels: [],
+      closed: [],
+    }
   }
 
   const [{ data: rooms }, { data: snapshots }] = await Promise.all([
@@ -131,6 +145,7 @@ export async function getBillingOverview(
   const alle = ((rooms ?? []) as RoomRow[]).map(r => ({
     created_at: r.created_at, deactivated_at: r.deactivated_at,
   }))
+  const byHotel = gruppiere((rooms ?? []) as RoomRow[])
 
   // Snapshots je Periode über alle Häuser des Kontos summieren.
   const fixByPeriod = new Map<string, number>()
@@ -146,8 +161,8 @@ export async function getBillingOverview(
   )
   const perioden = aeltestes ? closedMonthPeriods(new Date(aeltestes), now) : []
 
-  const closed: BillingRow[] = perioden
-    .slice(-monate)
+  // `slice(-0)` wäre `slice(0)` — bei 0 gewünschten Monaten ausdrücklich leer.
+  const closed: BillingRow[] = (monate > 0 ? perioden.slice(-monate) : [])
     .reverse()
     .map(p => {
       const key = periodKey(p)
@@ -165,6 +180,10 @@ export async function getBillingOverview(
       rooms: alle.filter(r => isBillable(r, current)).length,
       fixed: false,
     },
+    hotels: (hotels ?? []).map(h => ({
+      id: h.id, name: h.name, slug: h.slug,
+      rooms: countBillableRooms(byHotel.get(h.id) ?? [], current),
+    })),
     closed,
   }
 }

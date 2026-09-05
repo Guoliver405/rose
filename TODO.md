@@ -52,11 +52,13 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       Texte formulieren und Ankerpunkte im UI festlegen; Gesehen-Zustand je
       Person speichern (nicht nur im Browser, sonst kommt die Tour auf jedem
       Gerät wieder).
-- [ ] **Konto-Seite „Plan & Abrechnung"** für den Inhaber — Zahlungsplan,
-      Zahlungsverfahren, Abrechnungsmodalitäten und -intervall, Rechnungen,
-      Upgrades. Zunächst als Platzhalter-Struktur, gefüllt, sobald
-      Zahlungsprovider und Pricing stehen. Die Zimmerzahlen je Periode liefert
-      bereits `getBillingOverview` (`billing_snapshots`).
+- [x] ~~**Konto-Seite „Plan & Abrechnung"** für den Inhaber~~ — 05.09.
+      erledigt: `/admin/abrechnung` zeigt Plan, laufenden Monat je Haus mit
+      voraussichtlichem Betrag, abgeschlossene Monate mit Betrag und Status
+      (frei / festgeschrieben / nicht berechnet), Modalitäten; Beträge aus
+      `billingLine` in [pricing.ts](src/lib/pricing.ts). **Zahlungsverfahren
+      und Rechnungen sind Platzhalter-Karten** und sagen das auch — gefüllt
+      werden sie mit dem Zahlungsprovider (unten).
 - [ ] **Landing-Page aufmöbeln** (`/`):
       - a) ~~**Bildmaterial**: klare Screenshots der drei Oberflächen~~ —
         05.09. anders gelöst: keine Screenshots (veralten mit jedem
