@@ -35,7 +35,8 @@ export default function DatenschutzPage() {
 
       <Section title="1. Verantwortlicher">
         <Address lines={providerAddressLines()} />
-        <P>Telefon: {PROVIDER.phone} · E-Mail: {PROVIDER.email}</P>
+        <P>Vertreten durch den Geschäftsführer {PROVIDER.representative}.</P>
+        <P>{PROVIDER.phone ? `Telefon: ${PROVIDER.phone} · ` : ''}E-Mail: {PROVIDER.email}</P>
         <P>Ein Datenschutzbeauftragter ist nicht benannt, da die gesetzlichen Voraussetzungen für eine Benennungspflicht nicht vorliegen.</P>
       </Section>
 

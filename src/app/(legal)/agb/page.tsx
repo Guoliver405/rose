@@ -34,7 +34,8 @@ export default function AgbPage() {
         <P>
           (1) Diese Bedingungen gelten für alle Verträge über die Nutzung des Software-Dienstes
           „RoSe — RoomService“ (nachfolgend „RoSe“ oder „der Dienst“) zwischen{' '}
-          {PROVIDER.name}, {PROVIDER.owner}, {PROVIDER.street}, {PROVIDER.zipCity}{' '}
+          {PROVIDER.name}, vertreten durch den Geschäftsführer {PROVIDER.representative},{' '}
+          {PROVIDER.street}, {PROVIDER.zipCity}{' '}
           (nachfolgend „Anbieter“) und dem Kunden.
         </P>
         <P>

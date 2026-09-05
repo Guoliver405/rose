@@ -75,10 +75,13 @@ zusammen und gehören vor den ersten zahlenden Kunden.
         erledigt: `/impressum`, `/datenschutz`, `/agb` (Route-Gruppe
         `(legal)`), Pflichtlinks auf allen öffentlichen Seiten und in der
         Gast-Shell. **Noch offen, bevor es trägt:**
-        1. **Anbieter-Daten nachtragen** in [provider.ts](src/lib/provider.ts)
-           — Anschrift, Telefon, E-Mail, USt-IdNr. von I²D. Das Impressum auf
-           internetinformationsdienste.de trägt dieselben Platzhalter; solange
-           sie stehen, zeigen die Rechtsseiten einen gelben Hinweis.
+        1. ~~**Anbieter-Daten nachtragen** in [provider.ts](src/lib/provider.ts)~~
+           — 05.09. (Abend) erledigt, aus dem aktualisierten Impressum auf
+           internetinformationsdienste.de: I²D UG (haftungsbeschränkt),
+           Geschäftsführer Bernd Köhl, Saarbrücker Straße 92, 66130
+           Saarbrücken, HRB 102734 Amtsgericht Saarbrücken, USt-IdNr.
+           DE434570609, info@… — keine Telefonnummer (nach § 5 DDG nicht
+           zwingend, die Zeile entfällt). Der gelbe Hinweis ist damit weg.
         2. **Rechtstexte prüfen lassen** (AGB, Datenschutz) — Entwürfe von
            Claude, kein Rechtsrat. Besonders Haftungsklauseln (§ 10 AGB) und
            die Drittland-Passage (Abschnitt 7 Datenschutz); Anschriften von

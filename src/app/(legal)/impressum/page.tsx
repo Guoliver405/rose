@@ -28,12 +28,19 @@ export default function ImpressumPage() {
 
       <Section title="Angaben gemäß § 5 DDG">
         <Address lines={providerAddressLines()} />
+        <P>Vertreten durch den Geschäftsführer {PROVIDER.representative}.</P>
+      </Section>
+
+      <Section title="Registereintrag">
+        <P>
+          Eingetragen im Handelsregister des {PROVIDER.registerCourt}, {PROVIDER.register}.
+        </P>
       </Section>
 
       <Section title="Kontakt">
         <List
           items={[
-            <>Telefon: {PROVIDER.phone}</>,
+            ...(PROVIDER.phone ? [<>Telefon: {PROVIDER.phone}</>] : []),
             <>E-Mail: {PROVIDER.email}</>,
             <>Website: <a href={PROVIDER.website} className="text-action-strong hover:underline" rel="noopener">{PROVIDER.website.replace(/^https?:\/\//, '')}</a></>,
           ]}
@@ -50,7 +57,7 @@ export default function ImpressumPage() {
       )}
 
       <Section title="Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV">
-        <Address lines={[PROVIDER.owner, PROVIDER.street, PROVIDER.zipCity]} />
+        <Address lines={[PROVIDER.representative, PROVIDER.street, PROVIDER.zipCity]} />
       </Section>
 
       <Section title="Dienst">
