@@ -53,6 +53,10 @@ Demo in [LiveDemo.tsx](../src/components/landing/LiveDemo.tsx):
 
 `npm run verify` grün (157). Im Vorschau-Browser: Hero, Nachhaltigkeits-
 Kasten (hell und dunkel) und die Kopfleiste am Gäste-Handy geprüft.
+**Produktion** (Commit `19f42a2`, User in Chrome angemeldet, Claude fährt):
+rose-roomservice.app zeigt alle geänderten Texte, den Nachhaltigkeits-Kasten
+mit Plakette zwischen Schmerzpunkten und Demo, die Demo mit drei Kopfleisten
+und ohne Ereigniszeile; Seitentext vollständig gegen die Liste abgeglichen.
 
 ## 🔖 Wiederaufnahme
 
