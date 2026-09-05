@@ -49,7 +49,20 @@ viertem Parameter, `RoomGrid` (Chooser, Status-Zeile, Icon),
 `guest-guide.ts`. Neun neue Unit-Tests.
 
 **Reihenfolge fürs Ausrollen:** Migration ist additiv (nullable), aber die
-Loader selektieren die Spalte — also erst einspielen, dann pushen.
+Loader selektieren die Spalte — also erst einspielen, dann pushen. So
+geschehen: User hat die Migration eingespielt, danach Push.
+
+**Verifikation lokal** (Dev-Server gegen die Produktions-DB, Wegwerf-Konto
+`ZZ-Abreise-Test`, danach abgeräumt): Check-in mit „2 Nächte" ergibt
+„Abreise am Di., 08.09." und `expected_checkout = 2026-09-08` in der DB;
+Umstellen auf „1 Nacht" und Speichern ergibt 07.09.; Datum = heute ergibt
+„Abreise heute" mit Koffer-Icon auf der Kachel. Routine ab 00:10 mit
+Check-out-Frist 00:10, beide Check-ins auf gestern zurückdatiert: 101 (Abreise
+heute) **ohne** Routine, 102 (ohne Datum) „Routine-Reinigung fällig". Das
+Handout nennt „täglich ab 00:10 Uhr … am Abreisetag nach dem Check-out".
+Werkzeug-Notiz: Im verborgenen Vorschau-Fenster kamen Tastatur und Klicks
+nicht an; Login und Dialoge liefen über `javascript_tool` mit dem nativen
+Value-Setter plus `input`-Event und `requestSubmit()`.
 
 ## Landing-Feinschliff — was sich geändert hat
 
