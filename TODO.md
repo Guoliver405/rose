@@ -13,13 +13,22 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
       gleitendes Fenster je Absender-IP über alle Häuser (30 Fehlversuche /
       15 min), Tabelle `guest_login_failures`, Migration
       `2026-09-05_guest_login_failures.sql`. (Übergabe 26.07.)
-- [ ] **Testplan D–G** durchlaufen. (Übergabe 26.07.)
+- [x] ~~**Testplan D–G** durchlaufen.~~ — war seit dem 25.07. erledigt
+      ([Testplan-Walkthrough.md](Sessions/Testplan-Walkthrough.md), Abschnitte
+      D–G alle abgehakt), der Eintrag stammte aus der Übergabe vom 26.07. und
+      wurde nie gestrichen. Was tatsächlich noch aussteht, sind die Fälle des
+      [GUI-Testkatalogs](Sessions/GUI-Testkatalog.md), die den Menschen
+      brauchen (**M** und **C+M**: zweite Management-Sitzung, Manager in zwei
+      Häusern, Konto löschen, Druck) — bewusst zurückgestellt (05.09.).
 
 ## Produktentscheidungen
 
-- [ ] **Pricing-Form**: zimmergenau oder Staffeln. Die Messgröße steht seit
-      03.09. fest (`billing_snapshots`), die Rechnungsseite nicht.
-      (6d-Plan, Abschnitt 14)
+- [x] ~~**Pricing-Form**: zimmergenau oder Staffeln.~~ — 05.09. entschieden:
+      **zimmergenau, 0,50 € je Zimmer und Monat, Mindestbetrag 5 € je Konto,
+      erster Kalendermonat frei**, keine Pakete. Rechenlogik in
+      [pricing.ts](src/lib/pricing.ts), veröffentlicht auf `/` und in den AGB.
+      Die Rechnungsseite selbst (Zahlungsprovider, Rechnungen) bleibt offen,
+      siehe „Konto-Seite" und „Zahlungsprovider" unten.
 - [ ] **Zwei Zimmer-Zustände?** Aktuell gibt es einen (`deactivated_at`). Ob
       „Renovierung" von „abbestellt" getrennt gehört, ist eine reine
       Preisfrage — am Datenmodell ändert sie nichts. (6d-Plan, Abschnitt 14)
@@ -49,21 +58,46 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       Zahlungsprovider und Pricing stehen. Die Zimmerzahlen je Periode liefert
       bereits `getBillingOverview` (`billing_snapshots`).
 - [ ] **Landing-Page aufmöbeln** (`/`):
-      - a) **Bildmaterial**: klare Screenshots der drei Oberflächen statt
-        Platzhalter; dazu Medien, die den **Nutzen** zeigen — etwa ein Comic
-        mit den Kernschritten (Gast checkt ein → bekommt Zugang → löst im Zimmer
-        einen Service aus → Rezeption reagiert direkt → Reinigung sieht den
-        Wunsch auf dem Board).
+      - a) ~~**Bildmaterial**: klare Screenshots der drei Oberflächen~~ —
+        05.09. anders gelöst: keine Screenshots (veralten mit jedem
+        Feinschliff), sondern CSS-Miniaturen, seit demselben Tag als
+        interaktive `LiveDemo`. Der Comic mit den Kernschritten lebt als
+        Ablauf-Strip und als Bildergeschichte der Demo weiter; die
+        gezeichneten Panels kommen mit f).
       - b) **Erklärvideo** oder Animation, eventuell mit ComfyUI und Voicebox
         (lokal installiert) erzeugt.
-      - c) **Pricing erstellen und veröffentlichen** — setzt die Entscheidung
-        „Pricing-Form" oben voraus; der Platzhalter-Abschnitt auf `/` wird
-        dann ersetzt.
-      - d) **Impressum und Datenschutzerklärung** veröffentlichen — Pflicht
-        vor dem ersten echten Kunden. Die Datenschutzerklärung muss Supabase
-        (DB, Auth), Vercel (Hosting) und Resend (Mail) als Auftragsverarbeiter
-        nennen und die bewusste Anonymität der Gastdaten (`stays` ohne
-        Personenbezug, Mail-Adresse wird nicht gespeichert) beschreiben.
+      - c) ~~**Pricing erstellen und veröffentlichen**~~ — 05.09. erledigt,
+        Abschnitt „Ein Preis. Keine Pakete." mit Beispieltabelle aus
+        `pricing.ts`.
+      - d) ~~**Impressum und Datenschutzerklärung** veröffentlichen~~ — 05.09.
+        erledigt: `/impressum`, `/datenschutz`, `/agb` (Route-Gruppe
+        `(legal)`), Pflichtlinks auf allen öffentlichen Seiten und in der
+        Gast-Shell. **Noch offen, bevor es trägt:**
+        1. **Anbieter-Daten nachtragen** in [provider.ts](src/lib/provider.ts)
+           — Anschrift, Telefon, E-Mail, USt-IdNr. von I²D. Das Impressum auf
+           internetinformationsdienste.de trägt dieselben Platzhalter; solange
+           sie stehen, zeigen die Rechtsseiten einen gelben Hinweis.
+        2. **Rechtstexte prüfen lassen** (AGB, Datenschutz) — Entwürfe von
+           Claude, kein Rechtsrat. Besonders Haftungsklauseln (§ 10 AGB) und
+           die Drittland-Passage (Abschnitt 7 Datenschutz); Anschriften von
+           Supabase/Vercel/Resend gegen deren aktuelle DPA-Dokumente prüfen.
+        3. **Auftragsverarbeitungsvertrag (AVV)** als Dokument — § 8 AGB
+           verweist darauf, er existiert noch nicht. Muster: Art. 28 Abs. 3
+           DSGVO, Unterauftragsverarbeiter Supabase, Vercel, Resend.
+        4. ~~Neu ab 05.09.: Landing-Page-Punkt e) **OG-Bild**~~ — am selben
+           Tag erledigt: `opengraph-image.tsx` (ImageResponse) mit der
+           Rezeptions-Miniatur; wird auf eine Illustration umgestellt,
+           sobald der Stil steht.
+      - e) **Nutzenrechner und Live-Demo** — 05.09. umgesetzt
+        ([Landing-Konzept-2026-09-05.md](Sessions/Landing-Konzept-2026-09-05.md)):
+        `roi.ts` mit ausgewiesenen Annahmen und Quellen, `RoiCalculator`,
+        `LiveDemo` (eine verbundene Szene, Bildergeschichte beim ersten
+        Sichtbarwerden). **Offen:** eine deutsche Quelle zum
+        Verzichtsverhalten (DEHOGA?) für Annahme A2.
+      - f) **Illustrationen** (Oliver, Flux/ComfyUI) nach der Stilvorgabe im
+        Konzept, Abschnitt 2: Charakter-Sheet, Hero, fünf Ablauf-Panels,
+        vier Use-Case-Bilder, OG-Hintergrund. Danach Einbau und Umstellung
+        des OG-Bilds.
 - [ ] **Zahlungsprovider einbinden** — Anmeldung beim Provider als Teil der
       Registrierung, auch wenn der erste Monat frei ist (Zahlungsmittel liegt
       dann schon vor). Kandidat: **PayPal** (All-in-one mit mehreren

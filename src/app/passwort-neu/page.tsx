@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/server'
 import NewPasswordForm from './NewPasswordForm'
+import LegalFooter from '@/components/LegalFooter'
 
 /**
  * Neues Passwort setzen — Ziel des Links aus der Mail.
@@ -24,6 +25,7 @@ export default async function PasswortNeuPage({
   const istEinladung = einladung === '1'
 
   return (
+    <>
     <main className="flex flex-1 flex-col items-center justify-center gap-8 p-8">
       <div className="text-center">
         <h1 className="text-3xl font-black text-ink">
@@ -65,5 +67,7 @@ export default async function PasswortNeuPage({
         </Link>
       </p>
     </main>
+    <LegalFooter />
+    </>
   )
 }

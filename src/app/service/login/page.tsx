@@ -1,4 +1,5 @@
 import { KeyRound, QrCode } from 'lucide-react'
+import LegalFooter from '@/components/LegalFooter'
 
 /**
  * Mandantenfreie Reinigungs-Anmeldung — bewusst nur ein Hinweis.
@@ -46,6 +47,7 @@ export default async function ServiceGenericLoginPage({
             kann jederzeit eine neue Karte drucken.
           </p>
         </div>
+        <LegalFooter />
       </div>
     </div>
   )

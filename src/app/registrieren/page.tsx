@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { landingRoute } from '@/utils/auth'
 import SignupForm from './SignupForm'
+import LegalFooter from '@/components/LegalFooter'
 
 /**
  * Self-Service-Registrierung (Phase 6b).
@@ -15,6 +16,7 @@ export default async function RegistrierenPage() {
   if (ziel) redirect(ziel)
 
   return (
+    <>
     <main className="flex flex-1 flex-col items-center justify-center gap-8 p-8">
       <div className="text-center">
         <h1 className="text-3xl font-black text-ink">
@@ -32,5 +34,7 @@ export default async function RegistrierenPage() {
         </Link>
       </p>
     </main>
+    <LegalFooter />
+    </>
   )
 }

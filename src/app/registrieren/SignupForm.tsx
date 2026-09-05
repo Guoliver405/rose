@@ -102,6 +102,14 @@ export default function SignupForm() {
       </button>
 
       <p className="text-xs text-ink-muted">
+        Mit dem Anlegen des Kontos akzeptieren Sie die{' '}
+        <a href="/agb" target="_blank" rel="noopener" className="underline hover:text-ink">AGB</a>{' '}
+        und nehmen die{' '}
+        <a href="/datenschutz" target="_blank" rel="noopener" className="underline hover:text-ink">Datenschutzerklärung</a>{' '}
+        zur Kenntnis. Der Kalendermonat der Registrierung ist kostenfrei.
+      </p>
+
+      <p className="text-xs text-ink-muted">
         Im nächsten Schritt legen Sie die Zimmer an. Beispiel-Services sind
         bereits eingerichtet und jederzeit änderbar.
       </p>

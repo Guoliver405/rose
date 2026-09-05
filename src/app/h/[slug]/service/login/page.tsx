@@ -7,6 +7,7 @@ import {
 import { requireHotelBySlug } from '@/utils/hotel'
 import { getMaidContext } from '@/utils/maid-auth'
 import { maidLoginAction } from './actions'
+import LegalFooter from '@/components/LegalFooter'
 
 export default async function ServiceLoginPage({
   params,
@@ -120,6 +121,7 @@ export default async function ServiceLoginPage({
         <p className="text-center text-xs text-ink-muted">
           Zugangskarte mit QR-Code verloren? Das Management kann jederzeit eine neue drucken.
         </p>
+        <LegalFooter />
       </div>
     </div>
   )

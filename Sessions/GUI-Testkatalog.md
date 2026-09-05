@@ -141,6 +141,7 @@ formuliert, dass ein Abweichen ein Befund ist.
 | D9 | Gast-Formular im Link-Modus | `/h/<slug>/guest` | Hinweis auf Check-in-Beleg, Formular bleibt | C |
 | D10 | Check-out Link-Gast | Check-out B, Link erneut, offener Tab | `/guest?error=link` erklärt erloschenen Zugang; offener Tab landet auf Anmeldung | C |
 | D11 | Check-in auf ungereinigt | nach Check-out erneut einchecken | Warnung „Zimmer nicht bereit", „Trotzdem einchecken" | C |
+| D12 | **IP-Drossel** | von einem Gerät 30 Fehlversuche mit einer **nicht belegten** Zimmernummer (kein Aufenthalt wird berührt), dann richtige PIN eines belegten Zimmers | ab dem 30. Versuch „Zu viele Fehlversuche aus diesem Netz — bitte in N Min. erneut versuchen", auch die richtige PIN wird abgewiesen; `pin_attempts` des belegten Aufenthalts bleibt 0; anderes Netz (Handy-Mobilfunk) meldet sich an. Nebenwirkung: eigene IP 15 min gesperrt. Skript im versteckten Tab über `MessageChannel` takten, nicht `setTimeout` | C (Gegenprobe anderes Netz: M) |
 
 ### E — Rezeption Tagesgeschäft (`/h/<slug>/admin`)
 

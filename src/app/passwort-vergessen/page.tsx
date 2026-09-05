@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { landingRoute } from '@/utils/auth'
 import ForgotForm from './ForgotForm'
+import LegalFooter from '@/components/LegalFooter'
 
 export default async function PasswortVergessenPage({
   searchParams,
@@ -14,6 +15,7 @@ export default async function PasswortVergessenPage({
   const { fehler } = await searchParams
 
   return (
+    <>
     <main className="flex flex-1 flex-col items-center justify-center gap-8 p-8">
       <div className="text-center">
         <h1 className="text-3xl font-black text-ink">
@@ -40,5 +42,7 @@ export default async function PasswortVergessenPage({
         </Link>
       </p>
     </main>
+    <LegalFooter />
+    </>
   )
 }
