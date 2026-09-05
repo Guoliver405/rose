@@ -91,6 +91,14 @@ Zeitzone: Stunden entstehen mit `Intl` in `Europe/Berlin`, nicht in
 Server-Zeit (Vercel: UTC). Der übrige Teil der Auswertung rechnet weiter in
 Server-Zeit — bekannte Unschärfe, in AGENTS.md festgehalten.
 
+**Produktionsnachweis** (Commit `3925689`, CI grün, User in Chrome
+angemeldet): Marcus-Hotel, 01.08.–06.09.: Abschnitt oben auf der Auswertung
+mit Kennzahlen (1 Wunsch, 4 Abreisen, Spitzenstunde 23–24 Uhr, 0 % ohne
+Kraft), Stunden-Profil mit Check-out-Marker bei 11 Uhr, grünem
+Kräfte-Streifen und Wochentags-Tabelle. Die Zahlen sind klein, weil das
+Test-Szenario Signale als Rezeption setzt (`source = 'admin'`), nicht als
+Gast — echte Gast-Tipps zählen, Szenario-Tipps nicht; das ist gewollt.
+
 Als späterer Mittelweg bleibt „frühestens ab" im Gastportal (drei feste
 Chips, eine Einschränkung statt eines Termins) — nur, wenn Häuser danach
 fragen. Feste Wunschzeiten nicht.
