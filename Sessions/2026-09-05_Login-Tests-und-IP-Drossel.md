@@ -82,7 +82,16 @@ räumt der Lauf über seine eigenen IP-Hashes ab.
   `archive/` verschoben. (Die Chrome-Erweiterung war in dieser Sitzung nicht
   erreichbar, obwohl Chrome lief — das Claude-Seitenpanel muss offen und
   angemeldet sein.)
-- Integrationstests laufen nur in CI (kein `.env.local` auf dem Mac) — der
-  erste grüne Lauf ist der Nachweis für `login.test.ts`.
+- ~~Integrationstests in CI~~ — Commit `5c11fd8`, CI grün: `login.test.ts`
+  14/14 (46 s), alle vier Integrationsdateien bestanden, Vercel-Deployment
+  erfolgreich.
+- ~~Drossel in Produktion~~ — auf `test-hotelkette` per Skript in der
+  Browser-Ansicht Zimmer 901 mit falscher PIN durchprobiert (kein Aufenthalt
+  berührt); ab der Schwelle kam „Zu viele Fehlversuche aus diesem Netz —
+  bitte in 8 Min. erneut versuchen." Nebenwirkung: die IP des Entwickler-
+  rechners war danach für die Gast-Anmeldung acht Minuten gesperrt.
+  Werkzeug-Notiz: ein **versteckter** Browser-Tab drosselt `setTimeout` nach
+  fünf Minuten auf einmal pro Minute — Skripte dort über `MessageChannel`
+  takten, nicht über Timer.
 - Optional: Fall „IP-Drossel" in den [GUI-Testkatalog](GUI-Testkatalog.md)
   aufnehmen (30 Fehlversuche von einem Gerät, dann richtige PIN).
