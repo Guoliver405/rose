@@ -138,7 +138,10 @@ export default async function AdminOverviewPage({
   const deactivated = tiles.length - total
   const occupied = inService.filter(t => t.occupied).length
   const ready = inService.filter(t => !t.occupied && !t.checkoutPending && !t.priority && !t.cleaningActive).length
-  const toClean = inService.filter(t => t.checkoutPending || t.priority || t.guestSignal === 'please_clean' || t.stayoverDue).length
+  // Ein aufgeschobener Wunsch („frühestens ab") zählt erst ab seiner Uhrzeit.
+  const toClean = inService.filter(t =>
+    t.checkoutPending || t.priority || (t.guestSignal === 'please_clean' && !t.cleanDeferredUntil) || t.stayoverDue,
+  ).length
   const dnd = inService.filter(t => t.guestSignal === 'dnd').length
   const inProgress = inService.filter(t => t.cleaningActive).length
 

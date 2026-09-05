@@ -100,6 +100,18 @@ den 60-s-Poll, weil der Zustand zur Uhrzeit ohne DB-Ereignis kippt.
 
 Verify grün: 191 Tests (tz 11, board +7, guest-guide +1).
 
+**Verifikation lokal** (Dev-Server gegen die Produktions-DB, Wegwerf-Konto
+`ZZ-Defer-Test`, danach abgeräumt), nach Einspielen der Migration durch den
+User: Einstellungen zeigen „Gäste dürfen aufschieben" (an, 11:00) und die
+Zeitzonen-Auswahl (418 Zonen, Europe/Berlin), Speichern mit 13:00 grün.
+Gast-Login mit Zimmer + PIN, Portal zeigt Chips „jetzt | 02:00 … 13:00" (es
+war 01:xx) und den Satz mit der 13:00-Grenze; „10:00" gewählt und getippt →
+„Wunsch ist aktiv — frühestens ab 10:00 Uhr", DB `clean_not_before =
+08:00Z` (= 10:00 Berlin). Übersicht: Kachel „Belegt · Gast wünscht Reinigung
+ab 10:00", Balken belegt-blau statt amber, Uhr-Icon. **Befund dabei:** der
+KPI „zu reinigen" zählte den aufgeschobenen Wunsch mit — behoben, jetzt
+„0 zu reinigen".
+
 ## Nachfrage-Auswertung statt Wunschzeiten
 
 **Frage des Users:** Sollen Gäste im Portal eine Wunsch-Reinigungszeit
