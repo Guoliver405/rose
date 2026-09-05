@@ -139,6 +139,17 @@ der Kommentar im Test schon vorher; jetzt stimmt er wörtlich.
   EU-Zweitwahl; Paddle und PayPal-als-einziger-Weg begründet verworfen.
   Die PayPal-Annahme aus dem TODO vom 04.09. („Haftung vollständig beim
   Provider") trifft nicht zu, das leistet nur ein Merchant of Record.
+- **Rückfrage des Users** (Lastschrift rückbuchbar; Dienst soll weltweit
+  verfügbar sein; weitere Zahlungsarten?) → Abschnitt 7 der Vorlage. Kern:
+  Stripe bleibt, aber Karte wird Hauptweg (Lastschrift gibt es nur im
+  Euroraum), Überweisung mit virtueller IBAN kommt als rückbuchungssicherer
+  dritter Weg dazu, Stripe Tax wird zum späteren Schalter statt Verzicht,
+  Mollie fällt als Zweitwahl weg. Steuerlich trägt das Empfängerortprinzip
+  für B2B fast überall; ein Merchant of Record wäre erst bei B2C nötig.
+  **Entscheidung des Users: Stripe.** Mail an Bernd (Entscheidung, Argumente,
+  seine Aufgaben: Stripe-Konto der UG, Gläubiger-ID) als Entwurf in
+  [Mail-Bernd-Zahlungsverkehr-2026-09-05.md](Mail-Bernd-Zahlungsverkehr-2026-09-05.md)
+  — nicht verschickt.
 
 ## 5. Offen
 
@@ -160,9 +171,10 @@ mit 307 auf `/admin` (der Riegel `getAccountContext`), von dort zur
 Anmeldung. Angemeldeter Produktionsnachweis mit dem Konto „Test-Hotelkette"
 erbracht, Beträge rechnerisch geprüft.
 
-**Wenn hier weitergearbeitet wird:** Die vier Fragen aus Abschnitt 6 der
-Zahlungsprovider-Vorlage mit dem User klären (Zahlungsmittel bei
-Registrierung Pflicht? Karte zulassen? EU-Ausland? Stripe oder Mollie?),
-dann nach dem Bauplan in Abschnitt 5 anfangen — Schritt 1 (Stripe-Konto,
-Gläubiger-ID) kann nur der User. Die manuellen GUI-Fälle bleiben liegen,
+**Wenn hier weitergearbeitet wird:** Stripe ist entschieden. Offen aus
+Abschnitt 6 der Vorlage: Zahlungsmittel bei Registrierung Pflicht (Empfehlung
+ja), Länder-Freigabe, Preisdarstellung in Euro. Schritt 1 des Bauplans
+(Stripe-Konto der I²D UG, Gläubiger-ID) liegt bei Bernd — die Mail dazu ist
+formuliert. Sobald das Konto steht: Bauplan Abschnitt 5, Schritte 2–7,
+Rechnung von Anfang an als ZUGFeRD. Die manuellen GUI-Fälle bleiben liegen,
 bis der User sie aufruft.

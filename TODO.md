@@ -115,7 +115,13 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       (Vertragsübernahme, 5 % + 0,50 $, Sonderfall unter 10 $) und PayPal als
       einziger Weg (Freischaltung, Gebühren) nicht. **Rechnung erzeugt RoSe
       selbst** — E-Rechnungspflicht ab 01.01.2028, von Anfang an ZUGFeRD.
-      Vier Entscheidungen des Users stehen in Abschnitt 6. Betrifft
+      **Nachtrag nach Rückfrage (Abschnitt 7):** weltweite Verfügbarkeit →
+      Karte als Hauptweg, SEPA-Lastschrift als Komfortweg im Euroraum,
+      Überweisung mit virtueller IBAN als rückbuchungssicherer dritter Weg;
+      Stripe Tax als späterer Schalter. Mail an Bernd mit Entscheidung und
+      Aufgabenliste (Stripe-Konto der UG, Gläubiger-ID) liegt als Entwurf in
+      [Mail-Bernd-Zahlungsverkehr-2026-09-05.md](Sessions/Mail-Bernd-Zahlungsverkehr-2026-09-05.md).
+      Offene Entscheidungen des Users stehen in Abschnitt 6. Betrifft
       `/registrieren`, die Karten „Zahlungsverfahren"/„Rechnungen" auf
       `/admin/abrechnung` und die Abrechnung aus `billing_snapshots`.
 - [ ] **Mehrsprachigkeit**: en, es, fr, de. Betrifft alle drei Portale, die

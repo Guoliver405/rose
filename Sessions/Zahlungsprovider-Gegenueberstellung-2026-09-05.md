@@ -133,6 +133,13 @@ Nicht empfohlen: Paddle (Vertragsübernahme, Preis, Sonderfall unter 10 $),
 PayPal als einziger Weg (Freischaltung, Gebühren, Aufwand). PayPal als
 Zusatzmethode lässt sich über Stripe nachrüsten, wenn Kunden danach fragen.
 
+**Ergänzung nach Rückfrage (Abschnitt 7):** Die Empfehlung bleibt, die
+Gewichtung ändert sich. Weil RoSe weltweit verfügbar sein soll, ist die
+**Karte der Hauptweg** und die SEPA-Lastschrift der Komfortweg für den
+Euroraum; dazu kommt die **Überweisung auf Rechnung mit virtueller IBAN** als
+Weg ohne Rückbuchung. Stripe Tax wird nicht verworfen, sondern als späterer
+Schalter geführt.
+
 ## 5. Bauplan, falls Stripe
 
 Reihenfolge so, dass jeder Schritt für sich in Produktion gehen kann:
@@ -145,7 +152,10 @@ Reihenfolge so, dass jeder Schritt für sich in Produktion gehen kann:
 3. **Zahlungsmittel hinterlegen:** SetupIntent mit `sepa_debit` und `card`,
    Stripe Elements auf einer eigenen Seite im Registrierungsfluss und auf
    `/admin/abrechnung` (die Karte „Zahlungsverfahren" wird damit gefüllt).
-   Mandatstext für SEPA zeigt Stripe; Standard-Mandat genügt.
+   Mandatstext für SEPA zeigt Stripe; Standard-Mandat genügt. Als dritte
+   Option „Überweisung auf Rechnung": Stripe legt je Kunde eine virtuelle
+   IBAN an, die auf der Rechnung steht; der Eingang wird automatisch
+   zugeordnet. Kein gespeichertes Zahlungsmittel, dafür keine Rückbuchung.
 4. **Monatslauf:** Am 1. je Konto `billingLine` für den Vormonat, Rechnung
    erzeugen (eigene Nummer, PDF; von Anfang an als **ZUGFeRD** anlegen, damit
    2028 nichts umgebaut wird — z. B. mit einer EN-16931-Bibliothek), dann
@@ -169,10 +179,11 @@ Reihenfolge so, dass jeder Schritt für sich in Produktion gehen kann:
    Notification mindestens einen Tag vorher — Stripe verschickt sie).
 
 Aufwand grob: Schritte 1–3 ein Tag, 4–6 zwei Tage, 7 ein halber Tag mit
-anwaltlicher Rückkopplung. Stripe Tax wird **nicht** gebraucht: Deutschland
-19 %, EU-Ausland Reverse Charge nach VIES-Prüfung der USt-IdNr. — beides
-kann RoSe selbst, weil Land und Unternehmereigenschaft aus der Registrierung
-bekannt sind.
+anwaltlicher Rückkopplung. Stripe Tax wird **zunächst nicht** gebraucht:
+Deutschland 19 %, EU-Ausland Reverse Charge nach VIES-Prüfung der USt-IdNr.,
+Drittland ohne deutsche Steuer — das kann RoSe selbst, weil Land und
+Unternehmereigenschaft aus der Registrierung bekannt sind. Der Schalter kommt
+später, siehe Abschnitt 7.
 
 ## 6. Offene Entscheidungen für den User
 
@@ -180,13 +191,130 @@ bekannt sind.
    kostenpflichtigen Monat? Empfehlung: Pflicht, wie im TODO vorgesehen —
    sonst endet der freie Monat in einer Sperre statt in einer Rechnung. Wer
    ohne Zahlungsmittel testen soll, bekommt weiterhin den Einladungscode.
-2. **Karte zulassen** oder nur Lastschrift? Empfehlung: beides; Karte kostet
-   RoSe beim Mindestbetrag dasselbe wie SEPA und hilft ausländischen Häusern.
-3. **EU-Ausland jetzt schon annehmen?** Wenn ja, braucht die Registrierung ein
-   Pflichtfeld USt-IdNr. mit VIES-Prüfung. Empfehlung: erst Deutschland, das
-   Feld optional vorbereiten.
-4. **Stripe oder Mollie** — die Empfehlung steht oben; wer den EU-Sitz höher
-   gewichtet als den glatteren Registrierungsfluss, nimmt Mollie.
+   Wer „Überweisung auf Rechnung" wählt, hinterlegt nichts; die Pflicht
+   heißt dann: einen der drei Wege gewählt zu haben.
+2. ~~Karte zulassen oder nur Lastschrift?~~ — mit der weltweiten Ausrichtung
+   entschieden: Karte ist der Hauptweg, Lastschrift der Komfortweg im
+   Euroraum, Überweisung der dritte Weg.
+3. **Welche Länder zuerst?** Weltweit heißt für Steuer und Rechtstexte:
+   Deutschland (19 %), EU-B2B (Reverse Charge, USt-IdNr. Pflichtfeld mit
+   VIES-Prüfung), Drittland (ohne deutsche Steuer, Landesregeln beim Kunden).
+   Empfehlung: die Registrierung von Anfang an mit Land und USt-IdNr.
+   (Pflicht in der EU, optional sonst), aber die Freigabe je Land bewusst
+   steuern, bis AGB, Datenschutz und Sprache dafür stehen.
+4. **Stripe oder Mollie** — mit „weltweit" ist Mollie keine gleichwertige
+   Zweitwahl mehr (Abschnitt 7). Bleibt Stripe.
+5. **Preisdarstellung:** Euro für alle, oder Anzeige in Landeswährung mit
+   Abrechnung in Euro? Empfehlung: Euro überall, keine Kursrisiken, keine
+   Umrechnungsgebühr; Landeswährung höchstens als Hinweis.
+
+## 7. Nachtrag: Rückbuchung, weltweite Verfügbarkeit, weitere Zahlungsarten
+
+Rückfrage des Users am 05.09.: SEPA-Lastschriften lassen sich rückwirkend
+stornieren; der Dienst soll weltweit verfügbar sein, nicht nur in der EU;
+sind weitere Zahlungsarten sinnvoll? Antwort in drei Teilen.
+
+### 7.1 Rückbuchung der Lastschrift
+
+Der Einwand trifft. Bei der **SEPA-Basislastschrift** kann der Zahler acht
+Wochen lang ohne Angabe von Gründen zurückbuchen, bei fehlendem oder
+ungültigem Mandat 13 Monate. Die **SEPA-Firmenlastschrift** (B2B-Verfahren)
+kennt kein Widerspruchsrecht, verlangt aber, dass der Kunde das Mandat bei
+seiner eigenen Bank hinterlegt — und keiner der vier Provider bietet dieses
+Verfahren nach unserem Stand an. Es bleibt also bei der Basislastschrift.
+
+Drei Dinge halten das Risiko klein:
+
+- **Der Hebel liegt bei RoSe.** Nach einer Rücklastschrift wird der Zugang
+  gesperrt (§ 6 Abs. 6 AGB). Ein Hotel, das den Dienst weiter nutzen will,
+  zahlt. Der Schaden ist auf einen Monatsbetrag plus Rücklastschriftgebühr
+  begrenzt, und der Kunde ist kein Anonymus, sondern ein registrierter
+  Betrieb.
+- **Karten sind nicht besser.** Ein Chargeback ist bis zu 120 Tage möglich.
+  Endgültig ist nur Geld, das der Kunde selbst überweist.
+- **Dafür gibt es die Überweisung auf Rechnung.** Stripe legt je Kunde eine
+  virtuelle IBAN an; sie steht auf der Rechnung, der Eingang wird
+  automatisch dem Konto zugeordnet, es gibt keine Rückbuchung, und
+  Hotelbuchhaltungen bevorzugen diesen Weg ohnehin. Nachteil: kein
+  automatischer Einzug, der Kunde muss handeln — deshalb Mahnstufen
+  (Erinnerung, Sperre) und ein Zahlungsziel von 14 Tagen wie in § 6 Abs. 4
+  AGB.
+
+Folge für den Bauplan: Lastschrift bleibt der bequeme Standardweg im
+Euroraum, Überweisung wird der sichere dritte Weg, und beides steht dem
+Kunden auf `/admin/abrechnung` zur Wahl.
+
+### 7.2 Weltweite Verfügbarkeit
+
+Beim Zahlungsweg ist Stripe von den vieren am stärksten: Ein deutsches
+Stripe-Konto nimmt Karten aus aller Welt an und blendet lokale Verfahren je
+nach Land des Kunden ein (ACH-Lastschrift in den USA, Bacs in Großbritannien,
+iDEAL in den Niederlanden, PayPal im EWR). Mollie ist auf europäische
+Händler und Verfahren ausgerichtet, PayPal ist weltweit ein Wallet, aber
+kein Einzugsverfahren, Paddle ist weltweit, aber aus den Gründen in
+Abschnitt 2 keine Option. Mit „weltweit" fällt Mollie damit als
+gleichwertige Zweitwahl weg.
+
+Kosten: Karten außerhalb des EWR kosten bei Stripe rund 3,25 % + 0,25 €,
+Abrechnung in Fremdwährung 1 % Umrechnung obendrauf. Ein 200-Zimmer-Haus in
+den USA kostet RoSe damit etwa 4 € Gebühr auf 100 € — verkraftbar, und der
+Grund, Karte statt Lastschrift zum Hauptweg zu machen: Die Lastschrift
+existiert nur im Euroraum, die Karte überall.
+
+**Der eigentliche Punkt ist die Steuer, nicht der Zahlungsweg.** Für
+Geschäftskunden gilt fast überall das Empfängerortprinzip (§ 3a Abs. 2
+UStG): Ein Hotel in Norwegen oder Japan bekommt eine Nettorechnung ohne
+deutsche Umsatzsteuer und versteuert selbst. Solange RoSe nur an Unternehmen
+verkauft, ist das weltweite Steuerrisiko klein. Es wächst, sobald einzelne
+Länder auch bei B2B eine Registrierung des ausländischen Anbieters
+verlangen — und genau das ist der Fall, in dem ein Merchant of Record seinen
+Preis wert wäre. Gestaffelt:
+
+1. **Jetzt:** Stripe, eigene Rechnung, Steuerlogik selbst — Deutschland
+   19 %, EU-B2B Reverse Charge nach VIES-Prüfung, Drittland ohne deutsche
+   Steuer. Land und USt-IdNr. werden bei der Registrierung erhoben.
+2. **Später:** Stripe Tax (0,5 % je Transaktion) dazuschalten, sobald
+   nennenswert Umsatz außerhalb der EU entsteht — es überwacht, in welchen
+   Ländern Schwellen und Registrierungspflichten erreicht werden, und rechnet
+   die Steuer dort. Das ist ein Schalter im Stripe-Konto, kein Umbau.
+3. **Nur falls je an Verbraucher verkauft wird** oder die Länderliste
+   unübersichtlich wird: Merchant of Record prüfen. Das Argument gegen Paddle
+   bleibt auch dann bestehen — der Kunde bekäme eine Rechnung von Paddle,
+   nicht von I²D.
+
+Was „weltweit" außerdem nach sich zieht, unabhängig vom Provider: Preis in
+Euro belassen (keine Kursrisiken, keine Umrechnungsgebühr, Landeswährung
+höchstens als Hinweis), AGB mit Gerichtsstand und Vertragssprache,
+Datenschutz mit Drittlandpassage, Rechnungen zweisprachig, und die
+Mehrsprachigkeit aus dem TODO rückt nach vorn. Das sind Folgen der
+Entscheidung, keine Gründe dagegen.
+
+### 7.3 Weitere Zahlungsarten
+
+Ja — mit einer Einschränkung: Jede Methode kostet Zuordnung, Fehlerfälle und
+Support. Für monatlich variable Abbuchungen **ohne Zutun des Kunden** taugen
+nur Verfahren, die Stripe als wiederverwendbar speichert. Das ist die
+sinnvolle Startmenge, von Stripe je nach Land des Kunden automatisch
+angeboten:
+
+| Verfahren | Region | Speicherbar für monatlichen Einzug | Rückbuchung |
+|---|---|---|---|
+| Karte (Visa, Mastercard, Amex, Apple/Google Pay) | weltweit | ja | Chargeback bis 120 Tage |
+| SEPA-Lastschrift | Euroraum | ja | 8 Wochen |
+| ACH-Lastschrift | USA | ja | 60 Tage |
+| Bacs-Lastschrift | Großbritannien | ja | unbegrenzt (Direct Debit Guarantee) |
+| PayPal (über Stripe) | EWR | ja | Käuferschutz |
+| Überweisung auf Rechnung (virtuelle IBAN) | weltweit, SEPA-Raum am einfachsten | nein — Kunde überweist | keine |
+
+Weglassen: Verfahren ohne Speicherung (Sofortüberweisung, Klarna, iDEAL als
+Einmalzahlung), weil dann jeden Monat ein Klick des Kunden nötig wäre; Krypto.
+Verfahren werden im Stripe-Konto je Land freigeschaltet, die Oberfläche
+(Payment Element) zeigt automatisch die passenden — es entsteht also kein
+Code je Verfahren, nur eine Entscheidung je Verfahren.
+
+**Fazit:** Empfehlung Stripe bleibt. Drei Ergänzungen: Karte weltweit als
+Hauptweg statt Lastschrift, Überweisung mit virtueller IBAN als
+rückbuchungssicherer Weg, Stripe Tax als späterer Schalter statt Verzicht.
 
 ## Quellen (abgerufen 05.09.2026)
 
@@ -199,4 +327,7 @@ bekannt sind.
 - Paddle Preise: https://www.paddle.com/pricing — 5 % + 0,50 $, Produkte unter 10 $ auf Anfrage
 - Paddle Zahlungsarten: https://www.paddle.com/help/start/intro-to-paddle/which-payment-methods-do-you-support
 - Paddle-Gebühren im Detail: https://dodopayments.com/blogs/paddle-fees-explained — Wirkung der Festgebühr bei kleinen Beträgen, Umrechnungsaufschlag
+- Stripe Überweisungen mit virtueller IBAN (Bank Transfers, Customer Balance): https://docs.stripe.com/payments/bank-transfers — automatische Zuordnung, keine Rückbuchung
+- Stripe Zahlungsarten nach Land und Wiederverwendbarkeit: https://docs.stripe.com/payments/payment-methods/overview
+- SEPA-Rückgabefristen (8 Wochen autorisiert, 13 Monate ohne Mandat): https://www.bundesbank.de/de/aufgaben/unbarer-zahlungsverkehr/serviceangebot/sepa
 - E-Rechnungspflicht: https://www.frankfurt-main.ihk.de/recht/uebersicht-alle-rechtsthemen/steuerrecht/umsatzsteuer-national/e-rechnungspflicht-ab-2025-6055774 und https://www.claribill.com/blog/e-rechnung-2027-800000-euro-grenze-pdf-papier — Ausstellungspflicht ab 01.01.2027 über 800.000 € Vorjahresumsatz, ab 01.01.2028 für alle
