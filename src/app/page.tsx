@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import {
-  BedDouble, BellRing, Check, CheckCircle2, ClipboardCheck, Clock, KeyRound,
+  BedDouble, BellRing, Check, ClipboardCheck, Clock, Droplets, KeyRound, Leaf,
   Moon, MousePointerClick, Printer, QrCode, ShieldCheck, Smartphone, Sparkles,
   User,
 } from 'lucide-react'
@@ -44,6 +44,7 @@ export default function LandingPage() {
       <main className="flex-1">
         <Hero />
         <PainPoints />
+        <Sustainability />
         <ProductPreview />
         <Flow />
         <FeatureGrid />
@@ -106,13 +107,14 @@ function Hero() {
         Vom Gasthof bis zur Hotelkette
       </p>
       <h1 className="mx-auto max-w-3xl text-4xl font-black leading-tight text-ink sm:text-5xl">
-        Reinigung, Wünsche und Services —{' '}
-        <span className="text-blocked">in einem Takt</span>
+        Reinigung steuern und Services anbieten —{' '}
+        <span className="text-blocked">digital und effizient</span>
       </h1>
       <p className="mx-auto mt-4 max-w-2xl text-lg text-ink-soft">
         Der Gast tippt „Zimmer reinigen“, die Rezeption sieht es sofort, das
-        Housekeeping arbeitet es vom Board ab. RoSe verbindet die drei in
-        Echtzeit — ohne Gast-App, ohne Schulung, ohne PMS-Projekt.
+        Housekeeping arbeitet es vom Board ab. RoSe verbindet alle Bereiche in
+        Echtzeit — in einem intuitiven System, ohne Schulung, Datenprobleme oder
+        PMS-Projekt.
       </p>
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
         <Link
@@ -125,12 +127,12 @@ function Hero() {
           href="#produkt"
           className="rounded-xl border border-edge bg-surface-elevated px-6 py-3 font-bold text-ink shadow-sm hover:border-edge-strong"
         >
-          Produkt ausprobieren
+          Produkt Demo
         </a>
       </div>
       <p className="mt-5 text-sm text-ink-muted">
         {formatCents(PRICE_PER_ROOM_CENTS)} je Zimmer und Monat · erster Monat
-        frei · läuft im Browser auf jedem Gerät · in unter einer Stunde
+        frei · läuft im Browser auf jedem Gerät · in wenigen Minuten
         eingerichtet
       </p>
     </section>
@@ -166,6 +168,66 @@ function PainPoints() {
   )
 }
 
+/* ── Nachhaltigkeit: Reinigung nur auf Wunsch ───────────────────── */
+
+/**
+ * Der Haupt-Einspar-Fall, aber bewusst NICHT als Kostenargument erzählt — das
+ * übernimmt der Nutzenrechner weiter unten. Hier geht es um Wasser,
+ * Waschmittel, Energie und das Nachhaltigkeits-Profil des Hauses: Häuser, die
+ * als nachhaltig gelten, genießen ein gutes Image (User, 05.09.2026). Die
+ * einzige Zahl (70 %) ist dieselbe wie Quelle Q1 des Rechners (AHLA 2022).
+ */
+function Sustainability() {
+  const wins = [
+    { icon: Droplets, title: 'Wasser und Waschmittel', text: 'Jede ausgelassene Zwischenreinigung spart eine Ladung Bettwäsche und Handtücher — und die Chemie dazu.' },
+    { icon: Leaf, title: 'Energie und Wege', text: 'Kein Staubsauger, kein Wagen über den Flur, keine Fahrt zur Wäscherei für ein Zimmer, das niemand gereinigt haben wollte.' },
+    { icon: Sparkles, title: 'Gäste entscheiden selbst', text: 'Ein Tipp im Gäste-Portal statt Türhänger. Wer Reinigung möchte, bekommt sie — wer nicht, wird nicht gestört.' },
+  ]
+  return (
+    <section id="nachhaltig" className="mx-auto w-full max-w-5xl scroll-mt-20 px-4 py-16">
+      <div className="relative overflow-hidden rounded-3xl border border-positive-tint-edge bg-positive-tint p-6 sm:p-10">
+        <div className="grid items-center gap-8 md:grid-cols-[auto_1fr]">
+          {/* Plakette */}
+          <div className="mx-auto flex h-40 w-40 shrink-0 flex-col items-center justify-center rounded-full border-4 border-positive bg-surface-elevated text-center shadow-sm">
+            <Leaf className="h-9 w-9 text-positive-strong" aria-hidden />
+            <span className="mt-1 text-[11px] font-black uppercase tracking-widest text-positive-deepest">Reinigung</span>
+            <span className="text-[11px] font-black uppercase tracking-widest text-positive-deepest">auf Wunsch</span>
+          </div>
+          <div>
+            <p className="w-fit rounded-full bg-positive px-3 py-1 text-xs font-bold text-positive-foreground">
+              Nachhaltig gastgeben
+            </p>
+            <h2 className="mt-3 text-3xl font-black text-ink">
+              Reinigung nur, wenn der Gast sie möchte
+            </h2>
+            <p className="mt-3 max-w-2xl text-ink-soft">
+              Die tägliche Zimmerreinigung ist Gewohnheit, kein Wunsch: 70 % der Gäste
+              brauchen sie nicht jeden Tag. Mit RoSe wird „Reinigung auf Wunsch“ zum
+              Standard eures Hauses — die Gäste tippen, wenn sie etwas möchten, und
+              alles andere bleibt unangetastet. Das spart Wasser, Waschmittel und
+              Energie, und es ist ein Nachhaltigkeits-Argument, das ihr Gästen und
+              Buchungsportalen sichtbar machen könnt.
+            </p>
+            <ul className="mt-6 grid gap-4 sm:grid-cols-3">
+              {wins.map((w) => (
+                <li key={w.title} className="rounded-xl border border-positive-tint-edge bg-surface-elevated p-4">
+                  <w.icon className="h-5 w-5 text-positive-strong" aria-hidden />
+                  <p className="mt-2 font-bold text-ink">{w.title}</p>
+                  <p className="mt-1 text-sm text-ink-soft">{w.text}</p>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 text-xs text-ink-muted">
+              Die Routine-Reinigung ab der zweiten Nacht bleibt als Option einschaltbar —
+              das Haus entscheidet, nicht die Software.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 /* ── Produktvorschau: interaktive Szene ─────────────────────────── */
 
 function ProductPreview() {
@@ -178,7 +240,7 @@ function ProductPreview() {
       points: [
         'Check-in erzeugt sofort den Gast-Zugang — PIN am Bildschirm, Handout zum Drucken oder Mailen',
         'Zimmer-Übersicht mit Live-Status; Prioritäten für Beschwerden und Sonderfälle',
-        'Service-Anfragen als Aufgabenliste, dringende blinken rot',
+        'Service-Anfragen als Aufgabenliste, Dringende blinken rot',
       ],
     },
     {
@@ -189,7 +251,7 @@ function ProductPreview() {
       points: [
         'Zimmer-QR plus PIN, oder ein persönlicher Link je Aufenthalt — das Haus wählt',
         '„Zimmer reinigen" oder „Bitte nicht stören" mit einem Tipp',
-        'Services bestellen — vom Extra-Handtuch bis zum Frühstück aufs Zimmer',
+        'Services bestellen — vom Wäscheservice bis zum Frühstück aufs Zimmer',
       ],
     },
     {
@@ -207,7 +269,7 @@ function ProductPreview() {
   return (
     <section id="produkt" className="mx-auto w-full max-w-5xl scroll-mt-20 px-4 py-16">
       <h2 className="text-center text-3xl font-black text-ink">
-        Drei Portale, ein Takt
+        Drei Portale, drei Benutzertypen, ein Zusammenwirken
       </h2>
       <p className="mx-auto mt-3 max-w-2xl text-center text-ink-soft">
         Jede Rolle bekommt genau die Oberfläche, die sie braucht — verbunden in
@@ -272,14 +334,14 @@ function Flow() {
       tone: 'text-critical-strong bg-critical-tint border-critical-tint-edge',
       who: 'Rezeption',
       title: 'Sofort sichtbar',
-      text: 'Die Glocke an der Zimmer-Kachel, die Anfrage in der Liste — dringendes blinkt rot.',
+      text: 'Die Glocke an der Zimmer-Kachel, die Anfrage in der Liste — Dringendes blinkt rot.',
     },
     {
       icon: ClipboardCheck,
       tone: 'text-accent bg-accent-tint border-accent-tint-edge',
       who: 'Housekeeping',
-      title: 'Vom Board abgearbeitet',
-      text: 'Wunsch auf der Etage, Start und Abschluss per Wisch — die Rezeption sieht den Fortschritt live.',
+      title: 'Gezielt und gesteuert',
+      text: 'Priorisiert und zuvorkommend — automatisch am Bedarf ausgerichtet und in Abstimmung der Mitarbeitenden.',
     },
   ]
   return (
@@ -319,13 +381,13 @@ function Flow() {
 
 function FeatureGrid() {
   const features = [
-    { icon: QrCode, title: 'QR ohne Ablaufdatum', text: 'Zimmer-Aushänge einmal drucken — sie bleiben gültig, bis ihr sie bewusst erneuert.' },
+    { icon: QrCode, title: 'QR-Codes je nach Bedarf', text: 'Gäste-Zugänge je Zimmer mit PIN, oder je Aufenthalt individuell generieren. Alles mit einem Klick.' },
     { icon: KeyRound, title: 'Sicher ohne Konten', text: 'Unerratbare Zimmer-Codes, PIN je Aufenthalt, Sperre nach Fehlversuchen — auch gegen Durchprobieren aus dem Netz.' },
-    { icon: Moon, title: 'DND wird respektiert', text: '„Bitte nicht stören" graut das Zimmer auf dem Board aus — niemand klopft umsonst.' },
+    { icon: Moon, title: 'DND wird respektiert', text: '„Bitte nicht stören" lässt das Zimmer fürs Housekeeping verschwinden — niemand klopft umsonst.' },
     { icon: Clock, title: 'Stayover-Routine', text: 'Optional: ab der zweiten Nacht setzt RoSe die Routine-Reinigung zur Wunschzeit aufs Board — auch in einem Zeitfenster.' },
-    { icon: BedDouble, title: 'Service-Baukasten', text: 'Eigene Services mit Optionen, Preisen und Dringend-Markierung — Gäste bestellen, Rezeption hakt ab.' },
+    { icon: BedDouble, title: 'Service-Baukasten', text: 'Eigene Services mit Optionen, Preisen und Priorisierung anlegen — Gäste bestellen digital und ohne Verzögerung.' },
     { icon: Printer, title: 'Druckfertig', text: 'Gast-Handout beim Check-in, QR-Aushänge und Login-Karten fürs Team — alles aus dem Browser, oder per Mail.' },
-    { icon: CheckCircle2, title: 'Vergessenes verfällt nicht', text: 'Bleibt ein Abschluss aus, gibt RoSe das Zimmer nach einstellbarer Zeit automatisch frei — nachvollziehbar im Verlauf.' },
+    { icon: Leaf, title: 'Nachhaltig auf Wunsch', text: 'Reinigung nur, wenn der Gast sie möchte — weniger Wasser, Waschmittel und Wege, und ein sichtbares Argument für euer Nachhaltigkeits-Profil.' },
     { icon: ShieldCheck, title: 'Nachweis statt Bauchgefühl', text: 'Zimmer-Verlauf und Arbeitszeit-Auswertung je Kraft — für Beschwerden, Lohnabrechnung und Personalplanung.' },
   ]
   return (
@@ -484,7 +546,7 @@ function Faq() {
     },
     {
       q: 'Wie lange dauert die Einrichtung?',
-      a: 'Zimmer anlegen (auch als Bereich „301–310"), Aushänge drucken, Team-Karten drucken — realistisch unter einer Stunde. Beispiel-Services sind schon da. Es gibt nichts zu installieren.',
+      a: 'Zimmer anlegen (auch als Bereich „301–310"), Aushänge drucken, Team-Karten drucken — realistisch wenige Minuten. Beispiel-Services sind schon da. Es gibt nichts zu installieren.',
     },
     {
       q: 'Kann ich RoSe jetzt schon ausprobieren?',

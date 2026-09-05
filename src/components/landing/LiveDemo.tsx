@@ -184,7 +184,7 @@ const STORY: Step[] = [
     action: { type: 'order', nr: GUEST_ROOM, name: 'Extra Handtücher', urgent: false },
   },
   {
-    who: 'Housekeeping', title: 'Vom Board abgearbeitet', focus: 'board',
+    who: 'Housekeeping', title: 'Gezielt und gesteuert', focus: 'board',
     text: 'Maria startet per Wisch und schließt ab — die Rezeption sieht Grün.',
     action: { type: 'startCleaning', nr: GUEST_ROOM },
     then: { type: 'finishCleaning', nr: GUEST_ROOM },
@@ -292,7 +292,7 @@ export default function LiveDemo() {
                 {mode === 'ended' ? 'Fertig — jetzt selbst ausprobieren.' : 'Probier es aus.'}
               </p>
               <p className="text-sm text-ink-soft">
-                Tipp im Gast-Handy, klick an der Rezeption, wisch auf dem Board — alles wirkt sofort auf die anderen beiden.
+                Tipp im Gäste-Portal, Klick an der Rezeption, Wisch auf dem Board.
               </p>
             </>
           )}
@@ -376,6 +376,12 @@ export default function LiveDemo() {
         {/* Gast */}
         <div className={`order-first md:order-none ${frame('guest')}`}>
           <div data-theme="dark" className="overflow-hidden rounded-xl border border-edge bg-surface text-ink">
+            <div className="flex items-center gap-1.5 border-b border-edge bg-surface-sunken px-3 py-2">
+              <span className="h-2 w-2 rounded-full bg-edge-strong" />
+              <span className="h-2 w-2 rounded-full bg-edge-strong" />
+              <span className="h-2 w-2 rounded-full bg-edge-strong" />
+              <span className="ml-2 text-[11px] font-semibold text-ink-muted">Gäste-Portal — Handy</span>
+            </div>
             <div className="mx-auto max-w-[240px] px-3 py-4">
               <p className="text-center text-[11px] text-ink-muted">Hotel Alpenblick</p>
               <p className="text-center text-sm font-black">Zimmer {GUEST_ROOM}</p>
@@ -483,7 +489,10 @@ export default function LiveDemo() {
         </div>
       </div>
 
-      <p className="mt-4 text-center text-xs text-ink-muted" aria-live="polite">{state.lastEvent}</p>
+      {/* Die Ereigniszeile („Check-in Zimmer 202: …") ist auf Wunsch des Users
+          entfallen — sie erklärte nichts, was die Szene nicht selbst zeigt, und
+          verwirrte mit Details wie der PIN. `lastEvent` bleibt im Modell, damit
+          die Reducer unverändert lesbar bleiben. */}
     </div>
   )
 }
