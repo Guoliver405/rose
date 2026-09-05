@@ -45,6 +45,13 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       erledigt: eigener Nav-Punkt „Auswertung" für Inhaber und Manager, Kachel
       im Hub und Rücklink der Seite entfallen. Offen bleibt die Idee, den
       Zimmer-Verlauf (heute nur im Zimmer-Dialog) dort mit anzubinden.
+- [ ] **„Frühestens ab" im Gastportal** (Idee 06.09., zurückgestellt): Gast
+      setzt „Zimmer reinigen, aber nicht vor 13:00" — eine Einschränkung,
+      kein Termin; Zimmer bleibt bis dahin grau mit Hinweis. Drei feste
+      Chips, begrenzt durch das Reinigungs-Zeitfenster. Erst bauen, wenn
+      Häuser danach fragen; feste Wunschzeiten bewusst nicht (Terminversprechen
+      ohne Zuweisungslogik). Die Planungsfrage dahinter beantwortet seit
+      06.09. der Nachfrage-Abschnitt der Auswertung.
 - [ ] **Coach Marks für die Ersteinrichtung** — beim ersten Aufruf nach der
       Registrierung führt eine Folge von Hinweisen durch Zimmer-Setup, Personal,
       Service-Baukasten, Gast-Zugang und Aushänge. Muss über die Einstellungen

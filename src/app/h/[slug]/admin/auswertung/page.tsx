@@ -3,7 +3,10 @@ import { redirect } from 'next/navigation'
 import { Info } from 'lucide-react'
 import { getAdminContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
-import { clampStaleMinutes } from '@/lib/board'
+import { createAdminClient } from '@/utils/supabase/service'
+import { clampStaleMinutes, parseStayoverPolicy, stayoverDueTime } from '@/lib/board'
+import { computeDemand } from '@/lib/demand'
+import DemandSection from './DemandSection'
 import {
   computeWorkStats, dayKey, dayRange, extractCleanings, formatDuration, sumStats,
   MAX_BREAK_HOURS, MAX_SHIFT_HOURS, type StaffLogRow, type WorkStats,
@@ -61,7 +64,14 @@ export default async function AuswertungPage({
   const range = { start: dayRange(fromKey).start, end: dayRange(toKey).end }
 
   const supabase = await createClient()
-  const [{ data: profiles }, { data: logs }, { data: rooms }, { data: hotel }] = await Promise.all([
+  // Nachfrage-Daten über den Admin-Client mit explizitem Haus-Filter:
+  // `room_state_transitions` hat keine Policies für Management-Rollen, und
+  // die Abfrage ist ohnehin auf das eigene Haus eingegrenzt.
+  const admin = createAdminClient()
+  const [
+    { data: profiles }, { data: logs }, { data: rooms }, { data: hotel },
+    { data: signals }, { data: checkouts },
+  ] = await Promise.all([
     supabase
       .from('profiles')
       .select('id, display_name, deactivated_at')
@@ -77,7 +87,35 @@ export default async function AuswertungPage({
       .order('at'),
     supabase.from('rooms').select('id, number').eq('hotel_id', ctx.hotelId),
     supabase.from('hotels').select('policies').eq('id', ctx.hotelId).single(),
+    admin
+      .from('room_state_transitions')
+      .select('new_value, occurred_at')
+      .eq('hotel_id', ctx.hotelId)
+      .eq('field', 'guest_signal')
+      .eq('source', 'guest')
+      .in('new_value', ['please_clean', 'dnd'])
+      .gte('occurred_at', range.start.toISOString())
+      .lt('occurred_at', range.end.toISOString()),
+    admin
+      .from('stays')
+      .select('checked_out_at')
+      .eq('hotel_id', ctx.hotelId)
+      .gte('checked_out_at', range.start.toISOString())
+      .lt('checked_out_at', range.end.toISOString()),
   ])
+
+  const policies = (hotel?.policies ?? {}) as Record<string, unknown>
+  const stayover = parseStayoverPolicy(policies)
+  const hhmm = (h: number, m: number) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  const due = stayoverDueTime(stayover)
+  const demand = computeDemand({
+    wishes: (signals ?? []).filter(t => t.new_value === 'please_clean').map(t => t.occurred_at as string),
+    dnd: (signals ?? []).filter(t => t.new_value === 'dnd').map(t => t.occurred_at as string),
+    checkouts: (checkouts ?? []).map(c => c.checked_out_at as string),
+    shiftRows: (logs ?? []).map(l => ({ profileId: l.profile_id as string, kind: l.kind as string, at: l.at as string })),
+    range,
+    now,
+  })
 
   const staleMinutes = clampStaleMinutes(
     (hotel?.policies as { cleaningStaleMinutes?: number } | null)?.cleaningStaleMinutes,
@@ -171,6 +209,14 @@ export default async function AuswertungPage({
           Anzeigen
         </button>
       </form>
+
+      {/* Nachfrage — unabhängig davon, ob Kräfte gestochen haben: Gast-Signale
+          und Abreisen gibt es auch in Häusern, die noch keine Schichten stechen. */}
+      <DemandSection
+        stats={demand}
+        routineLabel={stayover.enabled ? hhmm(due.hour, due.minute) : null}
+        checkoutLabel={hhmm(stayover.checkoutHour, stayover.checkoutMinute)}
+      />
 
       {maids.length === 0 ? (
         <div className="rounded-xl border border-edge bg-surface p-8 text-center">

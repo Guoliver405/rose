@@ -64,6 +64,37 @@ Werkzeug-Notiz: Im verborgenen Vorschau-Fenster kamen Tastatur und Klicks
 nicht an; Login und Dialoge liefen über `javascript_tool` mit dem nativen
 Value-Setter plus `input`-Event und `requestSubmit()`.
 
+## Nachfrage-Auswertung statt Wunschzeiten
+
+**Frage des Users:** Sollen Gäste im Portal eine Wunsch-Reinigungszeit
+angeben, um Schichten des Housekeepings planen zu können?
+
+**Antwort:** Nicht als Termin — ein Gast, der „14:00" eintippt, erwartet
+einen Termin, den ein gemeinsames Board ohne Zuweisung nicht halten kann,
+und Schichten enden meist am frühen Nachmittag. Die Planungsdaten gibt es
+aber längst: der Zeitpunkt jedes Gast-Tipps im Verlauf, jeder Check-out,
+jede Schicht. Gebaut wurde deshalb der **Abschnitt „Nachfrage"** oben auf
+der Auswertung ([demand.ts](../src/lib/demand.ts), I/O-frei, neun Tests;
+[DemandSection.tsx](../src/app/h/[slug]/admin/auswertung/DemandSection.tsx)):
+
+- Stunden-Profil 0–23 Uhr mit drei Balken je Stunde (Wünsche amber, Abreisen
+  orange, Nicht stören rosé) und darunter ein grüner Streifen „Ø Kräfte im
+  Dienst" (Deckkraft = Anteil am Maximum). Marker „Check-out" und „Routine"
+  an der Stundenachse.
+- Kennzahlen: Wünsche, Abreisen, Spitzenstunde, **„Wünsche ohne Kraft im
+  Dienst"** — der Anteil, der in Stunden ohne eine einzige Schicht fiel; ab
+  20 % amber. Das ist der Planungshinweis, um den es ging.
+- Wochentags-Tabelle für Wünsche, Abreisen, Nicht stören.
+- Zeitraum wie der Rest der Seite über `from`/`to`.
+
+Zeitzone: Stunden entstehen mit `Intl` in `Europe/Berlin`, nicht in
+Server-Zeit (Vercel: UTC). Der übrige Teil der Auswertung rechnet weiter in
+Server-Zeit — bekannte Unschärfe, in AGENTS.md festgehalten.
+
+Als späterer Mittelweg bleibt „frühestens ab" im Gastportal (drei feste
+Chips, eine Einschränkung statt eines Termins) — nur, wenn Häuser danach
+fragen. Feste Wunschzeiten nicht.
+
 ## Landing-Feinschliff — was sich geändert hat
 
 Texte in [page.tsx](../src/app/page.tsx):
@@ -120,7 +151,7 @@ und ohne Ereigniszeile; Seitentext vollständig gegen die Liste abgeglichen.
 
 ## 🔖 Wiederaufnahme
 
-Landing-Texte nach der Durchsicht des Users; nichts Fachliches geändert.
-Offen bleibt aus dem Vortag: Antwort von Bernd (Stripe-Konto, Wortmarke),
+Drei Dinge an diesem Tag: Landing-Texte, Abreisetag-Logik der Routine,
+Nachfrage-Auswertung. Offen bleibt aus dem Vortag: Antwort von Bernd (Stripe-Konto, Wortmarke),
 anwaltliche Prüfung, AVV, Illustrationen. Nächster Baustein: Stripe nach dem
 Bauplan in der Zahlungsprovider-Vorlage, sobald das Konto steht.
