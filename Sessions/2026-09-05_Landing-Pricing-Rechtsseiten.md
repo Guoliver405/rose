@@ -191,11 +191,24 @@ Siehe [TODO.md](../TODO.md), Abschnitt Landing-Page d):
 
 ## 🔖 Wiederaufnahme
 
-**Stand am Ende des 05.09.2026:** Alles committet? — Nein, **noch nicht**:
-Landing, Rechtsseiten, Pricing und Doku liegen im Arbeitsbaum und warten auf
-das Nachtragen der Anbieter-Daten bzw. auf den Commit-Zuruf. In Produktion
-würden die Rechtsseiten mit gelbem Hinweis erscheinen — bewusst sichtbar,
-aber besser vorher füllen.
+**Stand am Ende des 05.09.2026:** Alles committet und in Produktion.
+Commit `0e4c8e1` (27 Dateien: Landing mit Nutzenrechner, Live-Demo und
+OG-Bild; Pricing; Impressum, Datenschutz, AGB; robots/sitemap; Doku).
+CI-Lauf 33983219796 grün — `verify` und `integration` beide erfolgreich.
+Vercel hat deployt; auf rose-roomservice.app nachgemessen: Nutzenrechner
+auf `/`, `/impressum` 200, `/opengraph-image` als PNG (80 KB),
+`robots.txt` gibt die Rechtsseiten frei. **Die Rechtsseiten zeigen in
+Produktion den gelben Platzhalter-Hinweis**, bis die Anbieter-Daten
+eingetragen sind — bewusst sichtbar statt still.
+
+Offen aus diesem Tag, nach Dringlichkeit:
+
+1. Anbieter-Daten von Bernd Köhl (Mail ist formuliert und verschickt):
+   Firmierung mit Rechtsformzusatz, Anschrift, Geschäftsführer,
+   Handelsregister, USt-IdNr., Telefon, E-Mail, Bundesland.
+2. Rechtstexte anwaltlich prüfen; AVV als Dokument.
+3. Illustrationen (Oliver, Flux) nach der Stilvorgabe im Konzept.
+4. Deutsche Quelle zum Verzichtsverhalten für Annahme A2 des Rechners.
 
 **Wenn hier weitergearbeitet wird:** Anbieter-Daten in `provider.ts`
 eintragen (Bernd Köhl liefert sie per Mail; die I²D ist eine **UG** —
