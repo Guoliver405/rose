@@ -7,7 +7,8 @@ import { createAdminClient } from '@/utils/supabase/service'
 import { findHotelBySlug } from '@/utils/hotel'
 import { getGuestContext, GUEST_COOKIE } from '@/utils/guest'
 import { checkIpThrottle, currentIpHash, recordLoginFailure } from '@/utils/login-throttle'
-import { isWithinCleaningWindow, parseCleaningWindow } from '@/lib/board'
+import { cleanDeferLimit, isWithinCleaningWindow, parseCleanDefer, parseCleaningWindow } from '@/lib/board'
+import { formatHHMM, parseTimeZone } from '@/lib/tz'
 import { throttleMessage } from '@/lib/login-throttle'
 
 /*
@@ -141,22 +142,43 @@ export async function guestLoginAction(input: GuestLoginInput): Promise<{ error?
 }
 
 /** Gast-Signal setzen: Zimmer reinigen / DND / zurücknehmen. */
+/**
+ * Gast-Signal setzen. `notBefore` (ISO) ist das „frühestens ab" eines
+ * Reinigungswunsches: eine Einschränkung, kein Termin — bis dahin gilt das
+ * Zimmer als nicht aktiv. Das Haus begrenzt, bis wann aufgeschoben werden
+ * darf (`cleanDeferUntil`); die Prüfung läuft hier in der Zeitzone des Hauses.
+ */
 export async function setGuestSignalAction(
   signal: 'none' | 'please_clean' | 'dnd',
+  notBefore: string | null = null,
 ): Promise<{ error?: string }> {
   if (!['none', 'please_clean', 'dnd'].includes(signal)) return { error: 'Ungültiges Signal.' }
 
   const ctx = await getGuestContext()
   if (!ctx) return { error: 'Sitzung abgelaufen — bitte neu anmelden.' }
+  const tz = parseTimeZone(ctx.policies)
+  const now = new Date()
 
   // Zeitfenster-Policy: betrifft nur das AKTIVE Anfordern der Reinigung.
   // DND und das Zurücknehmen ('none') bleiben jederzeit möglich.
+  let cleanNotBefore: string | null = null
   if (signal === 'please_clean') {
     const window = parseCleaningWindow(ctx.policies)
-    if (!isWithinCleaningWindow(window)) {
+    if (!isWithinCleaningWindow(window, now, tz)) {
       return {
         error: `Reinigungswünsche sind nur zwischen ${window.start} und ${window.end} Uhr möglich.`,
       }
+    }
+    if (notBefore) {
+      const defer = parseCleanDefer(ctx.policies)
+      const at = new Date(notBefore)
+      if (!defer.enabled || Number.isNaN(at.getTime())) return { error: 'Aufschieben ist hier nicht möglich.' }
+      const limit = cleanDeferLimit(defer, now, tz)
+      if (at.getTime() <= now.getTime()) return { error: 'Die gewählte Uhrzeit ist schon vorbei.' }
+      if (at.getTime() > limit.getTime()) {
+        return { error: `Aufschieben ist nur bis ${formatHHMM(limit, tz)} Uhr möglich.` }
+      }
+      cleanNotBefore = at.toISOString()
     }
   }
 
@@ -165,6 +187,7 @@ export async function setGuestSignalAction(
     .from('room_states')
     .update({
       guest_signal: signal,
+      clean_not_before: cleanNotBefore,
       last_updated_at: new Date().toISOString(),
       last_update_source: 'guest',
       last_updated_by: null,

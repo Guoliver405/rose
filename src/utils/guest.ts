@@ -19,6 +19,8 @@ export type GuestContext = {
   /** Mandant in der URL — für Redirects nach `/h/<slug>/guest/…`. */
   hotelSlug: string
   guestSignal: 'none' | 'please_clean' | 'dnd'
+  /** „Frühestens ab" des aktiven Wunsches (ISO), sonst null. */
+  cleanNotBefore: string | null
   cleaningActive: boolean
   policies: Record<string, unknown>
 }
@@ -44,7 +46,7 @@ export const getGuestContext = cache(async (): Promise<GuestContext | null> => {
   const { data: stay } = await admin
     .from('stays')
     .select(
-      'id, room_id, hotel_id, rooms(number, room_states(guest_signal, cleaning_by)), hotels(name, slug, policies)',
+      'id, room_id, hotel_id, rooms(number, room_states(guest_signal, clean_not_before, cleaning_by)), hotels(name, slug, policies)',
     )
     .eq('session_token', token)
     .is('checked_out_at', null)
@@ -56,7 +58,7 @@ export const getGuestContext = cache(async (): Promise<GuestContext | null> => {
   // `unknown` ist deshalb nötig.
   type RoomEmbed = { number: string; room_states: unknown }
   type HotelEmbed = { name: string | null; slug: string; policies: unknown }
-  type StateEmbed = { guest_signal: string | null; cleaning_by: string | null }
+  type StateEmbed = { guest_signal: string | null; clean_not_before: string | null; cleaning_by: string | null }
   const room = one(stay.rooms as unknown as RoomEmbed | RoomEmbed[] | null)
   const hotel = one(stay.hotels as unknown as HotelEmbed | HotelEmbed[] | null)
   if (!room || !hotel) return null
@@ -70,6 +72,7 @@ export const getGuestContext = cache(async (): Promise<GuestContext | null> => {
     hotelName: hotel.name ?? 'Hotel',
     hotelSlug: hotel.slug,
     guestSignal: (state?.guest_signal ?? 'none') as GuestContext['guestSignal'],
+    cleanNotBefore: state?.clean_not_before ?? null,
     cleaningActive: Boolean(state?.cleaning_by),
     policies: (hotel.policies ?? {}) as Record<string, unknown>,
   }

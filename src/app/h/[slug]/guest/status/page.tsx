@@ -2,7 +2,8 @@ import { redirect } from 'next/navigation'
 import { getGuestContext } from '@/utils/guest'
 import { requireHotelBySlug } from '@/utils/hotel'
 import { createAdminClient } from '@/utils/supabase/service'
-import { isWithinCleaningWindow, parseCleaningWindow } from '@/lib/board'
+import { cleanDeferOptions, isWithinCleaningWindow, parseCleanDefer, parseCleaningWindow } from '@/lib/board'
+import { formatHHMM, parseTimeZone } from '@/lib/tz'
 import { guestLogoutAction } from '@/app/guest/actions'
 import GuestSignalPanel from './GuestSignalPanel'
 import GuestServicesPanel, { type GuestOrder, type GuestService } from './GuestServicesPanel'
@@ -22,6 +23,10 @@ export default async function GuestStatusPage({
   if (!ctx || ctx.hotelId !== hotel.id) redirect(`/h/${hotel.slug}/guest`)
 
   const cleaningWindow = parseCleaningWindow(ctx.policies)
+  const tz = parseTimeZone(ctx.policies)
+  const now = new Date()
+  const defer = parseCleanDefer(ctx.policies)
+  const hhmm = (h: number, m: number) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 
   // Baukasten + eigene Bestellungen (Gast ist anonym → Admin-Client).
   const admin = createAdminClient()
@@ -86,7 +91,14 @@ export default async function GuestStatusPage({
         signal={ctx.guestSignal}
         cleaningActive={ctx.cleaningActive}
         cleaningWindow={cleaningWindow.enabled ? cleaningWindow : null}
-        windowOpen={isWithinCleaningWindow(cleaningWindow)}
+        windowOpen={isWithinCleaningWindow(cleaningWindow, now, tz)}
+        deferOptions={cleanDeferOptions(defer, now, tz)}
+        deferLimit={defer.enabled ? hhmm(defer.hour, defer.minute) : null}
+        cleanNotBefore={
+          ctx.guestSignal === 'please_clean' && ctx.cleanNotBefore && new Date(ctx.cleanNotBefore) > now
+            ? formatHHMM(new Date(ctx.cleanNotBefore), tz)
+            : null
+        }
       />
 
       <GuestServicesPanel services={guestServices} orders={guestOrders} />

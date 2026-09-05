@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  Ban, BedDouble, ChevronRight, DoorOpen, Flag, Loader2, Luggage,
+  Ban, BedDouble, ChevronRight, Clock, DoorOpen, Flag, Loader2, Luggage,
   RefreshCw, Siren, SlidersHorizontal, Sparkles, Target, Users, X,
 } from 'lucide-react'
 import SlideAction from '@/components/SlideAction'
@@ -22,6 +22,8 @@ export type BoardRoom = {
   /** Geplanter Abreisetag ist heute — keine Routine, Reinigung erst nach dem Check-out. */
   departureToday: boolean
   guestSignal: 'none' | 'please_clean' | 'dnd'
+  /** „HH:MM" — Gast wünscht Reinigung, aber erst ab dieser Uhrzeit (noch nicht erreicht). */
+  cleanDeferredUntil: string | null
   checkoutPending: boolean
   priority: boolean
   stayoverDue: boolean
@@ -63,7 +65,7 @@ function statusLabel(r: BoardRoom): string {
   const parts: string[] = []
   if (r.priority) parts.push('Priorisiert')
   if (r.checkoutPending) parts.push('Ausgecheckt')
-  if (r.guestSignal === 'please_clean') parts.push('Reinigung gewünscht')
+  if (r.guestSignal === 'please_clean') parts.push(r.cleanDeferredUntil ? `Reinigung ab ${r.cleanDeferredUntil}` : 'Reinigung gewünscht')
   if (r.stayoverDue) parts.push('Routine fällig')
   if (r.guestSignal === 'dnd') parts.push('Nicht stören')
   if (r.departureToday && !r.checkoutPending) parts.push('Abreise heute')
@@ -77,7 +79,7 @@ function tileBar(r: BoardRoom): string {
   if (r.priority) return 'bg-accent'
   if (r.cleaningFresh) return 'bg-positive-soft'
   if (r.checkoutPending) return 'bg-caution'
-  if (r.guestSignal === 'please_clean' || r.stayoverDue) return 'bg-attention'
+  if ((r.guestSignal === 'please_clean' && !r.cleanDeferredUntil) || r.stayoverDue) return 'bg-attention'
   return 'bg-edge'
 }
 
@@ -398,7 +400,8 @@ function RoomTile({ room, onClick }: { room: BoardRoom; onClick: () => void }) {
           {room.occupied && <BedDouble className="h-4 w-4 text-active-strong" />}
           {room.departureToday && <Luggage className="h-4 w-4 text-ink-soft" aria-label="Abreise heute" />}
           {room.guestSignal === 'dnd' && <Ban className="h-4 w-4 text-blocked-strong" />}
-          {room.guestSignal === 'please_clean' && <Sparkles className="h-4 w-4 text-attention-strong" />}
+          {room.guestSignal === 'please_clean' && !room.cleanDeferredUntil && <Sparkles className="h-4 w-4 text-attention-strong" />}
+          {room.guestSignal === 'please_clean' && room.cleanDeferredUntil && <Clock className="h-4 w-4 text-ink-soft" />}
           {room.stayoverDue && <RefreshCw className="h-4 w-4 text-attention-strong" />}
           {room.checkoutPending && <DoorOpen className="h-4 w-4 text-caution-strong" />}
           {room.priority && <Flag className="h-4 w-4 text-accent-strong" />}

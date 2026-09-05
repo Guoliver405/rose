@@ -21,6 +21,12 @@ describe('buildGuestGuide — Reinigung', () => {
     expect(g.cleaning).toMatch(/Sie müssen nichts anfordern/)
   })
 
+  it('nennt die Aufschieb-Grenze, solange das Haus sie anbietet', () => {
+    expect(buildGuestGuide({}, pinDeep).cleaning).toMatch(/bis spätestens 11:00 Uhr aufschieben/)
+    expect(buildGuestGuide({ cleanDeferUntil: '13:00' }, pinDeep).cleaning).toMatch(/bis spätestens 13:00 Uhr/)
+    expect(buildGuestGuide({ cleanDeferEnabled: false }, pinDeep).cleaning).not.toMatch(/aufschieben/)
+  })
+
   it('Zeitfenster wird genannt, wenn es aktiv ist — in beiden Modi', () => {
     const win = { cleaningWindowEnabled: true, cleaningWindowStart: '08:00', cleaningWindowEnd: '15:00' }
     expect(buildGuestGuide(win, pinDeep).cleaning).toMatch(/von 08:00 bis 15:00 Uhr/)

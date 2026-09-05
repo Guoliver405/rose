@@ -21,8 +21,10 @@
  */
 
 import { MAX_SHIFT_HOURS } from './worklog'
+import { DEFAULT_TIME_ZONE, zonedParts } from './tz'
 
-export const HOTEL_TIME_ZONE = 'Europe/Berlin'
+/** Rückfall, wenn das Haus keine Zeitzone eingestellt hat — siehe tz.ts. */
+export const HOTEL_TIME_ZONE = DEFAULT_TIME_ZONE
 
 export type DemandInput = {
   /** Zeitpunkte, zu denen ein Gast „Zimmer reinigen" gesetzt hat (ISO). */
@@ -68,16 +70,10 @@ export type DemandStats = {
   uncoveredShare: number | null
 }
 
-const WEEKDAY_INDEX: Record<string, number> = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 }
-
 /** Stunde (0–23) und Wochentag (0 = Montag) eines Zeitpunkts in der Zeitzone des Hauses. */
 export function localParts(date: Date, timeZone: string = HOTEL_TIME_ZONE): { hour: number; weekday: number } {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone, hour: 'numeric', hourCycle: 'h23', weekday: 'short',
-  }).formatToParts(date)
-  const hour = Number(parts.find(p => p.type === 'hour')?.value ?? 0) % 24
-  const weekday = WEEKDAY_INDEX[parts.find(p => p.type === 'weekday')?.value ?? 'Mon'] ?? 0
-  return { hour, weekday }
+  const p = zonedParts(date, timeZone)
+  return { hour: p.hour, weekday: p.weekday }
 }
 
 /** Anzahl Kalendertage im Zeitraum, mindestens 1. */

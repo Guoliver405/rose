@@ -4,7 +4,8 @@ import { requireHotelBySlug } from '@/utils/hotel'
 import { createAdminClient } from '@/utils/supabase/service'
 import { deriveShiftState } from '@/lib/shift'
 import { clampStaleMinutes, isCleaningFresh } from '@/lib/board'
-import { computeWorkStats, dayKey, dayRange, type StaffLogRow } from '@/lib/worklog'
+import { computeWorkStats, type StaffLogRow } from '@/lib/worklog'
+import { parseTimeZone, zonedDateKey, zonedDayRange } from '@/lib/tz'
 import StatusPanel from './StatusPanel'
 
 /**
@@ -24,8 +25,10 @@ export default async function ServiceStatusPage({
   if (!ctx || ctx.hotelId !== hotel.id) redirect(`/h/${hotel.slug}/service/login`)
 
   const admin = createAdminClient()
-  const today = dayKey(new Date())
-  const todayRange = dayRange(today)
+  // Tagesbilanz in der Zeit des Hauses, nicht des Servers.
+  const tz = parseTimeZone(ctx.policies)
+  const today = zonedDateKey(new Date(), tz)
+  const todayRange = zonedDayRange(today, tz)
 
   const [{ data: shiftLog }, { data: todayLog }, { data: states }] = await Promise.all([
     admin

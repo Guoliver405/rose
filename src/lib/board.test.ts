@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
   CLEANING_STALE_MINUTES_DEFAULT, clampStaleMinutes, isCleaningFresh, isPresenceFresh,
-  dateKeyAfterNights, isDepartureToday, isRoomActive, isStayoverDue, isWithinCleaningWindow,
-  localDateKey, parseCleaningWindow, stayoverDueTime,
+  cleanDeferOptions, dateKeyAfterNights, isCleanDeferred, isDepartureToday, isRoomActive, isStayoverDue,
+  isWithinCleaningWindow, localDateKey, parseCleanDefer, parseCleaningWindow, stayoverDueTime,
   parseStayoverPolicy, PRESENCE_STALE_HOURS, roomScore, staleCleaningCutoff,
 } from './board'
+import { zonedInstant } from './tz'
+
+const B = 'Europe/Berlin'
+/** Ortszeit Berlin → Zeitpunkt; so laufen die Tests auf jedem Rechner gleich (CI rechnet in UTC). */
+const berlin = (y: number, m: number, d: number, h = 0, mi = 0) => zonedInstant(B, y, m, d, h, mi)
 
 describe('staleCleaningCutoff', () => {
   const now = new Date('2026-07-26T12:00:00Z')
@@ -80,6 +85,42 @@ describe('isRoomActive', () => {
     expect(isRoomActive(base)).toBe(false)
     expect(isRoomActive({ ...base, guest_signal: 'dnd' })).toBe(false)
   })
+
+  it('ist bei „frühestens ab" erst ab der Uhrzeit aktiv', () => {
+    const wish = { ...base, guest_signal: 'please_clean' as const, clean_not_before: '2026-09-07T09:00:00Z' }
+    expect(isRoomActive(wish, new Date('2026-09-07T08:59:00Z'))).toBe(false)
+    expect(isCleanDeferred(wish, new Date('2026-09-07T08:59:00Z'))).toBe(true)
+    expect(isRoomActive(wish, new Date('2026-09-07T09:00:00Z'))).toBe(true)
+    expect(roomScore(wish, false, new Date('2026-09-07T08:00:00Z'))).toBe(0)
+    expect(roomScore(wish, false, new Date('2026-09-07T10:00:00Z'))).toBe(1)
+    // Ohne Wunsch zählt clean_not_before nicht — Altwert aus einem früheren Wunsch.
+    expect(isCleanDeferred({ ...base, clean_not_before: '2099-01-01T00:00:00Z' })).toBe(false)
+  })
+})
+
+describe('parseCleanDefer / cleanDeferOptions', () => {
+  it('ist standardmäßig an mit 11:00 und lässt sich abschalten', () => {
+    expect(parseCleanDefer({})).toEqual({ enabled: true, hour: 11, minute: 0 })
+    expect(parseCleanDefer({ cleanDeferEnabled: false, cleanDeferUntil: '13:30' })).toEqual({ enabled: false, hour: 13, minute: 30 })
+  })
+
+  it('bietet volle Stunden nach jetzt bis zur Grenze an — vor Ort', () => {
+    const now = berlin(2026, 9, 7, 8, 20)
+    const opts = cleanDeferOptions(parseCleanDefer({}), now, B)
+    expect(opts.map(o => o.label)).toEqual(['09:00', '10:00', '11:00'])
+    expect(opts[0].iso).toBe(berlin(2026, 9, 7, 9, 0).toISOString())
+  })
+
+  it('nimmt die Grenze selbst auf, wenn sie keine volle Stunde ist', () => {
+    const now = berlin(2026, 9, 7, 9, 30)
+    expect(cleanDeferOptions(parseCleanDefer({ cleanDeferUntil: '11:30' }), now, B).map(o => o.label))
+      .toEqual(['10:00', '11:00', '11:30'])
+  })
+
+  it('ist leer nach der Grenze oder bei ausgeschalteter Policy', () => {
+    expect(cleanDeferOptions(parseCleanDefer({}), berlin(2026, 9, 7, 11, 0), B)).toEqual([])
+    expect(cleanDeferOptions(parseCleanDefer({ cleanDeferEnabled: false }), berlin(2026, 9, 7, 8, 0), B)).toEqual([])
+  })
 })
 
 describe('roomScore', () => {
@@ -135,36 +176,38 @@ describe('stayoverDueTime', () => {
 })
 
 describe('localDateKey / dateKeyAfterNights / isDepartureToday', () => {
-  const heute = new Date(2026, 8, 6, 23, 30) // 06.09.2026, spät abends
+  const heute = berlin(2026, 9, 6, 23, 30) // 06.09.2026, spät abends — in UTC schon der 07.
 
-  it('bildet das lokale Datum, nicht das UTC-Datum', () => {
-    expect(localDateKey(heute)).toBe('2026-09-06')
+  it('bildet das Datum vor Ort, nicht das UTC-Datum', () => {
+    expect(localDateKey(heute, B)).toBe('2026-09-06')
+    expect(heute.toISOString().slice(0, 10)).toBe('2026-09-06') // Kontrolle: UTC ist 21:30 — erst um 22:00 kippt der UTC-Tag
+    expect(localDateKey(berlin(2026, 9, 7, 0, 30), B)).toBe('2026-09-07')
   })
 
   it('rechnet Nächte auf das Abreisedatum um, über Monatsgrenzen hinweg', () => {
-    expect(dateKeyAfterNights(heute, 1)).toBe('2026-09-07')
-    expect(dateKeyAfterNights(new Date(2026, 8, 30), 2)).toBe('2026-10-02')
-    expect(dateKeyAfterNights(heute, -3)).toBe('2026-09-06')
+    expect(dateKeyAfterNights(heute, 1, B)).toBe('2026-09-07')
+    expect(dateKeyAfterNights(berlin(2026, 9, 30, 12), 2, B)).toBe('2026-10-02')
+    expect(dateKeyAfterNights(heute, -3, B)).toBe('2026-09-06')
   })
 
   it('erkennt den Abreisetag und ignoriert fehlende Angaben', () => {
-    expect(isDepartureToday('2026-09-06', heute)).toBe(true)
-    expect(isDepartureToday('2026-09-07', heute)).toBe(false)
-    expect(isDepartureToday(null, heute)).toBe(false)
-    expect(isDepartureToday(undefined, heute)).toBe(false)
+    expect(isDepartureToday('2026-09-06', heute, B)).toBe(true)
+    expect(isDepartureToday('2026-09-07', heute, B)).toBe(false)
+    expect(isDepartureToday(null, heute, B)).toBe(false)
+    expect(isDepartureToday(undefined, heute, B)).toBe(false)
   })
 })
 
 describe('isStayoverDue', () => {
   const policy = { enabled: true, hour: 10, minute: 0, checkoutHour: 11, checkoutMinute: 0 }
-  const gestern = new Date(2026, 6, 25, 14, 0).toISOString()
-  const heuteFrueh = new Date(2026, 6, 26, 8, 0).toISOString()
-  const nachDerZeit = new Date(2026, 6, 26, 11, 0)
-  const vorDerZeit = new Date(2026, 6, 26, 9, 0)
+  const gestern = berlin(2026, 7, 25, 14, 0).toISOString()
+  const heuteFrueh = berlin(2026, 7, 26, 8, 0).toISOString()
+  const nachDerZeit = berlin(2026, 7, 26, 11, 0)
+  const vorDerZeit = berlin(2026, 7, 26, 9, 0)
 
   const args = {
     policy, occupied: true, checkedInAt: gestern,
-    guestSignal: 'none' as const, cleanedToday: false, now: nachDerZeit,
+    guestSignal: 'none' as const, cleanedToday: false, now: nachDerZeit, timeZone: B,
   }
 
   it('ist fällig ab der zweiten Nacht nach der eingestellten Uhrzeit', () => {
@@ -179,8 +222,9 @@ describe('isStayoverDue', () => {
     expect(isStayoverDue({ ...args, checkedInAt: heuteFrueh })).toBe(false)
   })
 
-  it('greift nicht bei DND, freiem Zimmer oder ausgeschalteter Policy', () => {
+  it('greift nicht bei DND, eigenem Wunsch, freiem Zimmer oder ausgeschalteter Policy', () => {
     expect(isStayoverDue({ ...args, guestSignal: 'dnd' })).toBe(false)
+    expect(isStayoverDue({ ...args, guestSignal: 'please_clean' })).toBe(false)
     expect(isStayoverDue({ ...args, occupied: false })).toBe(false)
     expect(isStayoverDue({ ...args, policy: { ...policy, enabled: false } })).toBe(false)
   })
@@ -192,17 +236,17 @@ describe('isStayoverDue', () => {
   it('wird nie vor der Check-out-Frist fällig, auch wenn die Routine-Zeit früher liegt', () => {
     // Routine 10:00, Check-out bis 11:00, jetzt 10:30: wer noch da ist, könnte
     // gleich abreisen — nicht reinigen, sonst zweimal.
-    expect(isStayoverDue({ ...args, now: new Date(2026, 6, 26, 10, 30) })).toBe(false)
-    expect(isStayoverDue({ ...args, now: new Date(2026, 6, 26, 11, 0) })).toBe(true)
+    expect(isStayoverDue({ ...args, now: berlin(2026, 7, 26, 10, 30) })).toBe(false)
+    expect(isStayoverDue({ ...args, now: berlin(2026, 7, 26, 11, 0) })).toBe(true)
     // Liegt die Routine-Zeit später als die Frist, gilt die Routine-Zeit.
     const spaet = { ...policy, hour: 14, minute: 0 }
-    expect(isStayoverDue({ ...args, policy: spaet, now: new Date(2026, 6, 26, 13, 0) })).toBe(false)
-    expect(isStayoverDue({ ...args, policy: spaet, now: new Date(2026, 6, 26, 14, 0) })).toBe(true)
+    expect(isStayoverDue({ ...args, policy: spaet, now: berlin(2026, 7, 26, 13, 0) })).toBe(false)
+    expect(isStayoverDue({ ...args, policy: spaet, now: berlin(2026, 7, 26, 14, 0) })).toBe(true)
   })
 
   it('setzt am geplanten Abreisetag aus — gereinigt wird nach dem Check-out', () => {
     expect(isStayoverDue({ ...args, expectedCheckout: '2026-07-26' })).toBe(false)
-    expect(isStayoverDue({ ...args, expectedCheckout: '2026-07-26', now: new Date(2026, 6, 26, 15, 0) })).toBe(false)
+    expect(isStayoverDue({ ...args, expectedCheckout: '2026-07-26', now: berlin(2026, 7, 26, 15, 0) })).toBe(false)
   })
 
   it('läuft an anderen Tagen normal — auch bei überfälligem Abreisedatum', () => {
@@ -224,7 +268,8 @@ describe('parseCleaningWindow', () => {
 })
 
 describe('isWithinCleaningWindow', () => {
-  const at = (h: number, m = 0) => new Date(2026, 6, 26, h, m)
+  // Ortszeit Berlin; die Funktion rechnet mit der Zeitzone des Hauses (Default Berlin).
+  const at = (h: number, m = 0) => berlin(2026, 7, 26, h, m)
 
   it('lässt bei ausgeschalteter Policy alles durch', () => {
     expect(isWithinCleaningWindow({ enabled: false, start: '08:00', end: '16:00' }, at(23))).toBe(true)

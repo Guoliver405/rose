@@ -64,6 +64,42 @@ Werkzeug-Notiz: Im verborgenen Vorschau-Fenster kamen Tastatur und Klicks
 nicht an; Login und Dialoge liefen über `javascript_tool` mit dem nativen
 Value-Setter plus `input`-Event und `requestSubmit()`.
 
+## „Frühestens ab" und die Zeitzone des Hauses
+
+**Auftrag:** „Frühestens ab" im Gastportal bauen, mit einer Policy, bis wann
+Gäste aufschieben dürfen (Vorschlag: Standard 11:00; wer bis 15:00 reinigt,
+setzt etwa 13:00), Hinweis auf die Grenze im Portal — und die Frage, ob wir
+bei dieser Gelegenheit Zeitzonen-Einstellungen brauchen.
+
+**Zeitzone: ja, und nicht nur als Komfort.** Beim Lesen der Zeitregeln fiel
+auf, dass *alle* in Server-Zeit rechneten (`getHours()`, `new Date(y, m, d)`)
+— und die Server laufen in UTC. In Produktion war eine Routine „ab 10:00"
+um 12:00 Ortszeit fällig, das Reinigungs-Zeitfenster, „heute gereinigt", der
+Abreisetag und die Tagesgrenzen der Auswertung lagen um ein bis zwei Stunden
+daneben. Neu: [tz.ts](../src/lib/tz.ts) (elf Tests, inkl. Sommerzeit-Wechsel)
+und `policies.timeZone` (IANA, Default Europe/Berlin, Auswahl unter Hotel &
+Regeln). Alle Regeln nehmen die Zeitzone entgegen; die Board-Tests bauen
+Zeitpunkte über `zonedInstant('Europe/Berlin', …)`, damit sie auf dem
+Berliner Rechner und in der UTC-CI dasselbe prüfen. `worklog.ts` bleibt
+server-lokal (nur noch von seinen Tests benutzt).
+
+**„Frühestens ab":** `room_states.clean_not_before` (Migration
+`2026-09-06_room_states_clean_not_before.sql`), gesetzt über
+`setGuestSignalAction(signal, notBefore)` mit Prüfung gegen die Haus-Grenze
+in Ortszeit. Policy `cleanDeferEnabled` (Default an) / `cleanDeferUntil`
+(Default 11:00) unter Hotel & Regeln, mit dem Hinweis „Housekeeping bis
+15:00 ⇒ 13:00". Im Gastportal: Chips „jetzt | 09:00 | 10:00 | 11:00" (volle
+Stunden zwischen jetzt und Grenze, `cleanDeferOptions`), darunter der Satz
+„Du kannst die Reinigung bis spätestens 11:00 Uhr aufschieben — vorher kommt
+niemand. Diese Grenze legt das Haus fest …"; nach der Grenze „Heute nur noch
+sofort möglich". Boards: bis zur Uhrzeit nicht aktiv, „Reinigung ab HH:MM"
+mit Uhr-Icon in Grau, kein Score; `startCleaningAction` weist einen Claim
+vorher ab („Der Gast möchte die Reinigung erst ab …"). Die Routine setzt bei
+jedem Gast-Signal aus. Handout nennt die Grenze. Reinigungsboard hat jetzt
+den 60-s-Poll, weil der Zustand zur Uhrzeit ohne DB-Ereignis kippt.
+
+Verify grün: 191 Tests (tz 11, board +7, guest-guide +1).
+
 ## Nachfrage-Auswertung statt Wunschzeiten
 
 **Frage des Users:** Sollen Gäste im Portal eine Wunsch-Reinigungszeit
@@ -159,7 +195,7 @@ und ohne Ereigniszeile; Seitentext vollständig gegen die Liste abgeglichen.
 
 ## 🔖 Wiederaufnahme
 
-Drei Dinge an diesem Tag: Landing-Texte, Abreisetag-Logik der Routine,
-Nachfrage-Auswertung. Offen bleibt aus dem Vortag: Antwort von Bernd (Stripe-Konto, Wortmarke),
+Fünf Dinge an diesem Tag: Landing-Texte, Abreisetag-Logik der Routine,
+Nachfrage-Auswertung, Zeitzone des Hauses, „Frühestens ab". Offen bleibt aus dem Vortag: Antwort von Bernd (Stripe-Konto, Wortmarke),
 anwaltliche Prüfung, AVV, Illustrationen. Nächster Baustein: Stripe nach dem
 Bauplan in der Zahlungsprovider-Vorlage, sobald das Konto steht.

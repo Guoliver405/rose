@@ -6,10 +6,11 @@ import { createAdminClient } from '@/utils/supabase/service'
 import { reapStaleCleanings } from '@/utils/stale-cleaning'
 import { deriveShiftState } from '@/lib/shift'
 import {
-  clampStaleMinutes, isCleaningFresh, isDepartureToday, isPresenceFresh, isRoomActive, isStayoverDue,
+  clampStaleMinutes, isCleanDeferred, isCleaningFresh, isDepartureToday, isPresenceFresh, isRoomActive, isStayoverDue,
   parseStayoverPolicy, roomScore, todayStartIso,
 } from '@/lib/board'
 import RealtimeListener from '@/components/RealtimeListener'
+import { formatHHMM, parseTimeZone } from '@/lib/tz'
 import { maidLogoutAction } from './login/actions'
 import ServiceBoard, { type BoardFloor, type BoardRoom } from './ServiceBoard'
 
@@ -37,7 +38,7 @@ export default async function ServiceBoardPage({
       admin.from('rooms').select('id, number, floor, building').eq('hotel_id', ctx.hotelId).is('deactivated_at', null),
       admin
         .from('room_states')
-        .select('room_id, guest_signal, checkout_pending, priority, cleaning_by, cleaning_started_at')
+        .select('room_id, guest_signal, clean_not_before, checkout_pending, priority, cleaning_by, cleaning_started_at')
         .eq('hotel_id', ctx.hotelId),
       admin.from('stays').select('room_id, checked_in_at, expected_checkout').eq('hotel_id', ctx.hotelId).is('checked_out_at', null),
       admin.from('profiles').select('id, display_name').eq('hotel_id', ctx.hotelId),
@@ -53,12 +54,13 @@ export default async function ServiceBoardPage({
         .select('room_id')
         .eq('hotel_id', ctx.hotelId)
         .eq('kind', 'clean_done')
-        .gte('at', todayStartIso()),
+        .gte('at', todayStartIso(new Date(), parseTimeZone(ctx.policies))),
       admin.from('maid_presence').select('profile_id, building, floor, entered_at').eq('hotel_id', ctx.hotelId),
     ])
 
   const staleMinutes = clampStaleMinutes(ctx.policies.cleaningStaleMinutes)
   const stayoverPolicy = parseStayoverPolicy(ctx.policies)
+  const tz = parseTimeZone(ctx.policies)
   const cleanedRoomsToday = new Set((cleanedToday ?? []).map(c => c.room_id))
   const now = new Date()
   const shift = deriveShiftState(myLog ?? [])
@@ -84,7 +86,11 @@ export default async function ServiceBoardPage({
     const signal = (state?.guest_signal ?? 'none') as BoardRoom['guestSignal']
     const checkoutPending = state?.checkout_pending ?? false
     const priority = state?.priority ?? false
-    const stateLike = { guest_signal: signal, checkout_pending: checkoutPending, priority }
+    const stateLike = {
+      guest_signal: signal, checkout_pending: checkoutPending, priority,
+      clean_not_before: state?.clean_not_before ?? null,
+    }
+    const deferred = isCleanDeferred(stateLike, now)
 
     // Stale-Timeout: vergessene Abschlüsse gelten als offen (Ableitung im
     // Loader — kein Cron). Die stale Besitzerin wird trotzdem angezeigt.
@@ -101,6 +107,7 @@ export default async function ServiceBoardPage({
       cleanedToday: cleanedRoomsToday.has(r.id),
       expectedCheckout: stay?.expected_checkout ?? null,
       now,
+      timeZone: tz,
     })
 
     return {
@@ -109,13 +116,14 @@ export default async function ServiceBoardPage({
       floor: r.floor,
       building: r.building,
       occupied: Boolean(stay),
-      departureToday: isDepartureToday(stay?.expected_checkout, now),
+      departureToday: isDepartureToday(stay?.expected_checkout, now, tz),
       guestSignal: signal,
+      cleanDeferredUntil: deferred ? formatHHMM(new Date(state!.clean_not_before as string), tz) : null,
       checkoutPending,
       priority,
       stayoverDue,
-      active: isRoomActive(stateLike) || stayoverDue,
-      score: roomScore(stateLike, stayoverDue),
+      active: isRoomActive(stateLike, now) || stayoverDue,
+      score: roomScore(stateLike, stayoverDue, now),
       cleaningByName: state?.cleaning_by
         ? (nameByProfile.get(state.cleaning_by) ?? 'Kollegin')
         : null,
@@ -192,7 +200,8 @@ export default async function ServiceBoardPage({
         </div>
       </header>
 
-      <RealtimeListener token={ctx.accessToken} />
+      {/* Poll-Fallback: „frühestens ab" und die Routine kippen ohne DB-Ereignis. */}
+      <RealtimeListener token={ctx.accessToken} pollMs={60_000} />
 
       <main className="mx-auto w-full max-w-[1100px] flex-1 p-4">
         <ServiceBoard

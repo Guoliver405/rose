@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import {
-  AlertTriangle, Ban, BedDouble, ConciergeBell, DoorOpen, Flag, History, Loader2, Luggage,
+  AlertTriangle, Ban, BedDouble, Clock, ConciergeBell, DoorOpen, Flag, History, Loader2, Luggage,
   PowerOff, Printer, RefreshCw, Sparkles, Users, X,
 } from 'lucide-react'
 import { dateKeyAfterNights } from '@/lib/board'
@@ -30,6 +30,8 @@ export type RoomTileData = {
   /** Abreisetag ist heute: keine Routine, Reinigung erst nach dem Check-out. */
   departureToday: boolean
   guestSignal: 'none' | 'please_clean' | 'dnd'
+  /** „HH:MM", wenn der Gast die Reinigung aufgeschoben hat und die Zeit noch nicht erreicht ist. */
+  cleanDeferredUntil: string | null
   checkoutPending: boolean
   priority: boolean
   cleaningActive: boolean
@@ -54,7 +56,7 @@ function tileBar(t: RoomTileData): string {
   if (t.deactivated) return 'bg-edge-strong'
   if (t.priority) return 'bg-accent'
   if (t.checkoutPending) return 'bg-caution'
-  if (t.guestSignal === 'please_clean' || t.stayoverDue) return 'bg-attention'
+  if ((t.guestSignal === 'please_clean' && !t.cleanDeferredUntil) || t.stayoverDue) return 'bg-attention'
   if (t.guestSignal === 'dnd') return 'bg-blocked'
   if (t.occupied) return 'bg-fresh'
   // Alle Nicht-bereit-Fälle sind oben abgefangen: ein freies Zimmer ohne
@@ -87,9 +89,9 @@ type DepartureChoice =
   | { kind: 'nights'; nights: number }
   | { kind: 'date'; value: string }
 
-function departureKey(choice: DepartureChoice): string | null {
+function departureKey(choice: DepartureChoice, tz: string): string | null {
   if (choice.kind === 'open') return null
-  if (choice.kind === 'nights') return dateKeyAfterNights(new Date(), choice.nights)
+  if (choice.kind === 'nights') return dateKeyAfterNights(new Date(), choice.nights, tz)
   return /^\d{4}-\d{2}-\d{2}$/.test(choice.value) ? choice.value : null
 }
 
@@ -105,11 +107,12 @@ const chip = (active: boolean) =>
   }`
 
 function DepartureChooser({
-  value, onChange, disabled,
+  value, onChange, disabled, tz,
 }: {
   value: DepartureChoice
   onChange: (c: DepartureChoice) => void
   disabled?: boolean
+  tz: string
 }) {
   const nights = [1, 2, 3]
   return (
@@ -129,7 +132,7 @@ function DepartureChooser({
         ))}
         <button
           type="button" disabled={disabled} className={chip(value.kind === 'date')}
-          onClick={() => onChange({ kind: 'date', value: value.kind === 'date' ? value.value : dateKeyAfterNights(new Date(), 1) })}
+          onClick={() => onChange({ kind: 'date', value: value.kind === 'date' ? value.value : dateKeyAfterNights(new Date(), 1, tz) })}
         >
           Datum
         </button>
@@ -137,13 +140,13 @@ function DepartureChooser({
       {value.kind === 'date' && (
         <input
           type="date" value={value.value} disabled={disabled}
-          min={dateKeyAfterNights(new Date(), 0)}
+          min={dateKeyAfterNights(new Date(), 0, tz)}
           onChange={e => onChange({ kind: 'date', value: e.target.value })}
           className="mt-2 rounded-lg border border-edge bg-surface-elevated px-3 py-1.5 text-sm font-semibold text-ink focus:border-action focus:outline-none"
         />
       )}
       {value.kind === 'nights' && (
-        <p className="mt-1.5 text-xs text-ink-muted">Abreise am {formatDateKey(departureKey(value)!)}</p>
+        <p className="mt-1.5 text-xs text-ink-muted">Abreise am {formatDateKey(departureKey(value, tz)!)}</p>
       )}
     </div>
   )
@@ -165,7 +168,9 @@ function statusLabel(t: RoomTileData): string {
   if (t.priority) parts.push('priorisierte Reinigung')
   if (t.cleaningActive) parts.push('Reinigung läuft')
   if (t.checkoutPending) parts.push('Reinigung nach Check-out offen')
-  if (t.guestSignal === 'please_clean') parts.push('Gast wünscht Reinigung')
+  if (t.guestSignal === 'please_clean') {
+    parts.push(t.cleanDeferredUntil ? `Gast wünscht Reinigung ab ${t.cleanDeferredUntil}` : 'Gast wünscht Reinigung')
+  }
   if (t.stayoverDue) parts.push('Routine-Reinigung fällig')
   if (t.guestSignal === 'dnd') parts.push('Bitte nicht stören')
   if (t.openOrders > 0) {
@@ -178,7 +183,14 @@ function statusLabel(t: RoomTileData): string {
   return parts.join(' · ')
 }
 
-export default function RoomGrid({ hotelSlug, floorGroups }: { hotelSlug: string; floorGroups: FloorGroup[] }) {
+export default function RoomGrid({
+  hotelSlug, floorGroups, timeZone,
+}: {
+  hotelSlug: string
+  floorGroups: FloorGroup[]
+  /** Zeitzone des Hauses — „heute" für die Abreise-Chips. */
+  timeZone: string
+}) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   // Gebäude-Ebene: sobald irgendein Zimmer einen Gebäudeteil hat, werden die
@@ -237,7 +249,7 @@ export default function RoomGrid({ hotelSlug, floorGroups }: { hotelSlug: string
         : floorGroups.map(floorSection)}
 
       {selected && (
-        <RoomDialog key={selected.id} hotelSlug={hotelSlug} room={selected} onClose={() => setSelectedId(null)} />
+        <RoomDialog tz={timeZone} key={selected.id} hotelSlug={hotelSlug} room={selected} onClose={() => setSelectedId(null)} />
       )}
     </div>
   )
@@ -282,7 +294,8 @@ function RoomTile({ room, onClick }: { room: RoomTileData; onClick: () => void }
           {room.occupied && <BedDouble className="h-3.5 w-3.5 text-active-strong" />}
           {room.occupied && room.departureToday && <Luggage className="h-3.5 w-3.5 text-ink-soft" />}
           {room.guestSignal === 'dnd' && <Ban className="h-3.5 w-3.5 text-blocked-strong" />}
-          {room.guestSignal === 'please_clean' && <Sparkles className="h-3.5 w-3.5 text-attention-strong" />}
+          {room.guestSignal === 'please_clean' && !room.cleanDeferredUntil && <Sparkles className="h-3.5 w-3.5 text-attention-strong" />}
+          {room.guestSignal === 'please_clean' && room.cleanDeferredUntil && <Clock className="h-3.5 w-3.5 text-ink-soft" />}
           {room.stayoverDue && <RefreshCw className="h-3.5 w-3.5 text-attention-strong" />}
           {room.checkoutPending && <DoorOpen className="h-3.5 w-3.5 text-caution-strong" />}
           {room.priority && <Flag className="h-3.5 w-3.5 text-accent-strong" />}
@@ -293,7 +306,11 @@ function RoomTile({ room, onClick }: { room: RoomTileData; onClick: () => void }
   )
 }
 
-function RoomDialog({ hotelSlug, room, onClose }: { hotelSlug: string; room: RoomTileData; onClose: () => void }) {
+function RoomDialog({
+  hotelSlug, room, onClose, tz,
+}: {
+  hotelSlug: string; room: RoomTileData; onClose: () => void; tz: string
+}) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [warning, setWarning] = useState<string[] | null>(null)
@@ -302,7 +319,7 @@ function RoomDialog({ hotelSlug, room, onClose }: { hotelSlug: string; room: Roo
   const [confirmCheckout, setConfirmCheckout] = useState(false)
   // Abreise: beim Check-in Vorgabe „offen"; bei belegtem Zimmer der gespeicherte Stand.
   const [departure, setDeparture] = useState<DepartureChoice>(() => choiceFromKey(room.expectedCheckout))
-  const departureDirty = room.occupied && departureKey(departure) !== room.expectedCheckout
+  const departureDirty = room.occupied && departureKey(departure, tz) !== room.expectedCheckout
 
   // Verlauf beim Öffnen nachladen; `alive` verhindert setState nach dem
   // Schließen. `pending` triggert den Reload, damit eine gerade ausgelöste
@@ -325,7 +342,7 @@ function RoomDialog({ hotelSlug, room, onClose }: { hotelSlug: string; room: Roo
   function runCheckIn(force: boolean) {
     setError(null)
     startTransition(async () => {
-      const res = await checkInAction(hotelSlug, room.id, force, departureKey(departure))
+      const res = await checkInAction(hotelSlug, room.id, force, departureKey(departure, tz))
       if (res.error) { setError(res.error); setWarning(null); return }
       if (res.warning) { setWarning(res.warning.reasons); return }
       setWarning(null)
@@ -348,7 +365,7 @@ function RoomDialog({ hotelSlug, room, onClose }: { hotelSlug: string; room: Roo
   function runSaveDeparture() {
     setError(null)
     startTransition(async () => {
-      const res = await setExpectedCheckoutAction(hotelSlug, room.id, departureKey(departure))
+      const res = await setExpectedCheckoutAction(hotelSlug, room.id, departureKey(departure, tz))
       if (res.error) setError(res.error)
     })
   }
@@ -500,7 +517,7 @@ function RoomDialog({ hotelSlug, room, onClose }: { hotelSlug: string; room: Roo
             <>
               <div className="rounded-xl border border-edge bg-surface-sunken p-3">
                 <p className="mb-2 text-xs font-semibold text-ink-muted">Abreise (optional)</p>
-                <DepartureChooser value={departure} onChange={setDeparture} disabled={pending} />
+                <DepartureChooser value={departure} onChange={setDeparture} disabled={pending} tz={tz} />
               </div>
               <button
                 type="button"
@@ -525,7 +542,7 @@ function RoomDialog({ hotelSlug, room, onClose }: { hotelSlug: string; room: Roo
                     ? `Abreise am ${formatDateKey(room.expectedCheckout)}`
                     : 'Abreise offen'}
               </p>
-              <DepartureChooser value={departure} onChange={setDeparture} disabled={pending} />
+              <DepartureChooser value={departure} onChange={setDeparture} disabled={pending} tz={tz} />
               {departureDirty && (
                 <button
                   type="button"

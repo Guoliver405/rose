@@ -4,7 +4,8 @@ import { ArrowLeft } from 'lucide-react'
 import { getAdminContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import { clampPinLength } from '@/lib/ids'
-import { clampStaleMinutes, parseCleaningWindow, parseStayoverPolicy } from '@/lib/board'
+import { clampStaleMinutes, parseCleanDefer, parseCleaningWindow, parseStayoverPolicy } from '@/lib/board'
+import { listTimeZones, parseTimeZone } from '@/lib/tz'
 import HotelSettingsForm from '../HotelSettingsForm'
 
 export default async function HotelSettingsPage({
@@ -26,6 +27,8 @@ export default async function HotelSettingsPage({
   const policies = (hotel?.policies ?? {}) as Record<string, unknown>
   const stayover = parseStayoverPolicy(policies)
   const cleaningWindow = parseCleaningWindow(policies)
+  const defer = parseCleanDefer(policies)
+  const hhmm = (h: number, m: number) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 
   return (
     <div className="flex max-w-2xl flex-col gap-5">
@@ -50,6 +53,10 @@ export default async function HotelSettingsPage({
           stayoverAutoClean: stayover.enabled,
           stayoverAutoCleanTime: `${String(stayover.hour).padStart(2, '0')}:${String(stayover.minute).padStart(2, '0')}`,
           checkoutUntil: `${String(stayover.checkoutHour).padStart(2, '0')}:${String(stayover.checkoutMinute).padStart(2, '0')}`,
+          cleanDeferEnabled: defer.enabled,
+          cleanDeferUntil: hhmm(defer.hour, defer.minute),
+          timeZone: parseTimeZone(policies),
+          timeZones: listTimeZones(),
           cleaningWindowEnabled: cleaningWindow.enabled,
           cleaningWindowStart: cleaningWindow.start,
           cleaningWindowEnd: cleaningWindow.end,

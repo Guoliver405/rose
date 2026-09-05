@@ -10,6 +10,11 @@
  * fallen zurück auf offen. Reine Ableitung im Loader — kein Cron.
  */
 
+import {
+  DEFAULT_TIME_ZONE, addDaysKey, formatHHMM, zonedDateKey, zonedMinutesOfDay,
+  zonedTimeToday, zonedTodayStart,
+} from './tz'
+
 export const CLEANING_STALE_MINUTES_DEFAULT = 90
 
 /** Etagenscore-Gewichte: leichte Priorisierungshilfe fürs Reinigungsboard. */
@@ -21,6 +26,8 @@ export type RoomStateLike = {
   priority: boolean
   cleaning_by: string | null
   cleaning_started_at: string | null
+  /** „Frühestens ab" des Gastes — zählt nur, solange guest_signal = please_clean. */
+  clean_not_before?: string | null
 }
 
 /** cleaningStaleMinutes aus der Hotel-Policy, geclampt auf 5–24h. */
@@ -59,24 +66,80 @@ export function staleCleaningCutoff(
   return new Date(cutoff).toISOString()
 }
 
+type ActiveLike = Pick<RoomStateLike, 'guest_signal' | 'checkout_pending' | 'priority' | 'clean_not_before'>
+
+/**
+ * „Frühestens ab" (06.09.2026): Der Gast wünscht Reinigung, aber nicht vor
+ * einer Uhrzeit. Bis dahin ist der Wunsch aufgeschoben — das Zimmer gilt als
+ * nicht aktiv und zeigt „Reinigung ab HH:MM". Reine Ableitung: kein Cron
+ * kippt den Zustand, die Boards lesen ihn beim nächsten Rendern (Realtime
+ * plus Poll-Fallback).
+ */
+export function isCleanDeferred(state: ActiveLike, now: Date = new Date()): boolean {
+  if (state.guest_signal !== 'please_clean' || !state.clean_not_before) return false
+  return new Date(state.clean_not_before).getTime() > now.getTime()
+}
+
 /** Zimmer braucht Reinigung (unabhängig davon, ob schon jemand drin ist). */
-export function isRoomActive(
-  state: Pick<RoomStateLike, 'guest_signal' | 'checkout_pending' | 'priority'>,
-): boolean {
-  return state.checkout_pending || state.priority || state.guest_signal === 'please_clean'
+export function isRoomActive(state: ActiveLike, now: Date = new Date()): boolean {
+  return state.checkout_pending || state.priority
+    || (state.guest_signal === 'please_clean' && !isCleanDeferred(state, now))
 }
 
 /** Gewichteter Beitrag eines Zimmers zum Etagenscore (0 wenn nicht aktiv). */
-export function roomScore(
-  state: Pick<RoomStateLike, 'guest_signal' | 'checkout_pending' | 'priority'>,
-  stayoverDue = false,
-): number {
+export function roomScore(state: ActiveLike, stayoverDue = false, now: Date = new Date()): number {
   let score = 0
   if (state.priority) score += SCORE_WEIGHTS.priority
   if (state.checkout_pending) score += SCORE_WEIGHTS.checkoutPending
-  if (state.guest_signal === 'please_clean') score += SCORE_WEIGHTS.pleaseClean
+  if (state.guest_signal === 'please_clean' && !isCleanDeferred(state, now)) score += SCORE_WEIGHTS.pleaseClean
   else if (stayoverDue) score += SCORE_WEIGHTS.pleaseClean // Routine wiegt wie ein Wunsch
   return score
+}
+
+// ── „Frühestens ab" — Grenze des Hauses ────────────────────────────────────
+//
+// Das Haus bestimmt, bis wann ein Gast aufschieben darf (Default 11:00): Wer
+// bis 15:00 reinigt, kann einen Wunsch „ab 14:30" nicht mehr bedienen. Der
+// Gast wählt volle Stunden zwischen jetzt und dieser Grenze.
+
+export type CleanDeferPolicy = { enabled: boolean; hour: number; minute: number }
+
+export function parseCleanDefer(policies: Record<string, unknown>): CleanDeferPolicy {
+  const enabled = policies.cleanDeferEnabled !== false // Default an
+  const raw = typeof policies.cleanDeferUntil === 'string' ? policies.cleanDeferUntil : '11:00'
+  const match = /^(\d{1,2}):(\d{2})$/.exec(raw.trim())
+  return {
+    enabled,
+    hour: match ? Math.min(23, Math.max(0, Number(match[1]))) : 11,
+    minute: match ? Math.min(59, Math.max(0, Number(match[2]))) : 0,
+  }
+}
+
+/** Spätester Zeitpunkt heute, bis zu dem der Gast aufschieben darf. */
+export function cleanDeferLimit(policy: CleanDeferPolicy, now: Date, tz: string = DEFAULT_TIME_ZONE): Date {
+  return zonedTimeToday(now, tz, policy.hour, policy.minute)
+}
+
+/**
+ * Wählbare „frühestens ab"-Zeiten: volle Stunden nach jetzt bis einschließlich
+ * der Grenze (die Grenze selbst auch, wenn sie keine volle Stunde ist). Leer,
+ * wenn die Grenze schon vorbei ist oder das Haus es nicht anbietet.
+ */
+export function cleanDeferOptions(
+  policy: CleanDeferPolicy, now: Date, tz: string = DEFAULT_TIME_ZONE,
+): { label: string; iso: string }[] {
+  if (!policy.enabled) return []
+  const limit = cleanDeferLimit(policy, now, tz)
+  const out: { label: string; iso: string }[] = []
+  for (let h = 0; h <= 23; h++) {
+    const t = zonedTimeToday(now, tz, h, 0)
+    if (t.getTime() <= now.getTime() || t.getTime() > limit.getTime()) continue
+    out.push({ label: formatHHMM(t, tz), iso: t.toISOString() })
+  }
+  if (limit.getTime() > now.getTime() && policy.minute !== 0) {
+    out.push({ label: formatHHMM(limit, tz), iso: limit.toISOString() })
+  }
+  return out
 }
 
 // ── Stayover-Routine-Reinigung (Hotel-Policy, Default aus) ──────────────────
@@ -132,24 +195,22 @@ export function stayoverDueTime(policy: StayoverPolicy): { hour: number; minute:
   return { hour: Math.floor(m / 60), minute: m % 60 }
 }
 
-/** Lokales Datum als `YYYY-MM-DD` — bewusst nicht `toISOString` (UTC-Verschiebung). */
-export function localDateKey(d: Date): string {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+/** Datum vor Ort als `YYYY-MM-DD` — in der Zeitzone des Hauses, nie in Server-Zeit. */
+export function localDateKey(d: Date, tz: string = DEFAULT_TIME_ZONE): string {
+  return zonedDateKey(d, tz)
 }
 
 /** Datum nach `nights` Nächten ab `now` — „1 Nacht" beim Check-in heute = morgen. */
-export function dateKeyAfterNights(now: Date, nights: number): string {
-  const n = Math.max(0, Math.floor(nights))
-  return localDateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + n))
+export function dateKeyAfterNights(now: Date, nights: number, tz: string = DEFAULT_TIME_ZONE): string {
+  return addDaysKey(zonedDateKey(now, tz), Math.max(0, Math.floor(nights)))
 }
 
-/** Ist der geplante Abreisetag heute? Fehlendes oder ungültiges Datum ⇒ false. */
-export function isDepartureToday(expectedCheckout: string | null | undefined, now: Date = new Date()): boolean {
+/** Ist der geplante Abreisetag heute (vor Ort)? Fehlendes oder ungültiges Datum ⇒ false. */
+export function isDepartureToday(
+  expectedCheckout: string | null | undefined, now: Date = new Date(), tz: string = DEFAULT_TIME_ZONE,
+): boolean {
   if (!expectedCheckout) return false
-  return expectedCheckout.slice(0, 10) === localDateKey(now)
+  return expectedCheckout.slice(0, 10) === zonedDateKey(now, tz)
 }
 
 export function isStayoverDue(args: {
@@ -161,24 +222,27 @@ export function isStayoverDue(args: {
   /** Geplanter Abreisetag (`YYYY-MM-DD`), optional — am Abreisetag keine Routine. */
   expectedCheckout?: string | null
   now?: Date
+  /** Zeitzone des Hauses — „heute" und die Uhrzeit gelten vor Ort. */
+  timeZone?: string
 }): boolean {
   const { policy, occupied, checkedInAt, guestSignal, cleanedToday } = args
   if (!policy.enabled || !occupied || !checkedInAt || cleanedToday) return false
-  if (guestSignal === 'dnd') return false
+  // DND: nicht stören. Wunsch: der Gast hat selbst entschieden (sofort oder
+  // „frühestens ab") — die Routine hat dann nichts mehr zu sagen.
+  if (guestSignal !== 'none') return false
 
   const now = args.now ?? new Date()
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  if (new Date(checkedInAt) >= todayStart) return false // erst ab der zweiten Nacht
-  if (isDepartureToday(args.expectedCheckout, now)) return false // Abreisetag: erst nach dem Check-out
+  const tz = args.timeZone ?? DEFAULT_TIME_ZONE
+  if (new Date(checkedInAt) >= zonedTodayStart(now, tz)) return false // erst ab der zweiten Nacht
+  if (isDepartureToday(args.expectedCheckout, now, tz)) return false // Abreisetag: erst nach dem Check-out
 
   const due = stayoverDueTime(policy)
-  const dueAt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), due.hour, due.minute)
-  return now >= dueAt
+  return now.getTime() >= zonedTimeToday(now, tz, due.hour, due.minute).getTime()
 }
 
-/** Beginn des heutigen Tages (Server-Lokalzeit) als ISO — für staff_log-Queries. */
-export function todayStartIso(now: Date = new Date()): string {
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+/** Beginn des heutigen Tages VOR ORT als ISO — für staff_log-Queries („heute gereinigt"). */
+export function todayStartIso(now: Date = new Date(), tz: string = DEFAULT_TIME_ZONE): string {
+  return zonedTodayStart(now, tz).toISOString()
 }
 
 // ── Reinigungs-Zeitfenster (Hotel-Policy, Default aus) ──────────────────────
@@ -221,12 +285,13 @@ function toMinutes(hhmm: string): number {
 export function isWithinCleaningWindow(
   policy: CleaningWindowPolicy,
   now: Date = new Date(),
+  tz: string = DEFAULT_TIME_ZONE,
 ): boolean {
   if (!policy.enabled) return true
   const start = toMinutes(policy.start)
   const end = toMinutes(policy.end)
   if (start === end) return true
-  const minutes = now.getHours() * 60 + now.getMinutes()
+  const minutes = zonedMinutesOfDay(now, tz)
   return start < end
     ? minutes >= start && minutes < end
     : minutes >= start || minutes < end

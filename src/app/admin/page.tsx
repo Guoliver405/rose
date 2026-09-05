@@ -44,7 +44,7 @@ export default async function HotelPickerPage() {
   const [{ data: states }, { data: orders }, { data: roomRows }] = await Promise.all([
     admin
       .from('room_states')
-      .select('hotel_id, guest_signal, checkout_pending, priority, cleaning_by')
+      .select('hotel_id, guest_signal, clean_not_before, checkout_pending, priority, cleaning_by')
       .in('hotel_id', hotelIds),
     admin
       .from('service_orders')

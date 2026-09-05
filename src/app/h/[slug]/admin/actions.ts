@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { addDaysKey, parseDateKey, parseTimeZone, zonedDateKey } from '@/lib/tz'
 import { createAdminClient } from '@/utils/supabase/service'
 import { getManagementContext } from '@/utils/auth'
 import { generatePin, generateToken, clampPinLength } from '@/lib/ids'
@@ -39,16 +40,14 @@ function auditFields(userId: string) {
  * (ein Tag Toleranz, weil Server-Zeit und Haus-Zeit auseinanderliegen
  * können), höchstens ein Jahr voraus. `null` = kein festes Datum.
  */
-function parseExpectedCheckout(raw: unknown): { value: string | null } | { error: string } {
+function parseExpectedCheckout(raw: unknown, tz: string): { value: string | null } | { error: string } {
   if (raw === null || raw === undefined || raw === '') return { value: null }
-  if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return { error: 'Abreisedatum ist ungültig.' }
-  const date = new Date(`${raw}T00:00:00`)
-  if (Number.isNaN(date.getTime())) return { error: 'Abreisedatum ist ungültig.' }
-  const now = new Date()
-  const gestern = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
-  const inEinemJahr = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate())
-  if (date < gestern) return { error: 'Abreisedatum liegt in der Vergangenheit.' }
-  if (date > inEinemJahr) return { error: 'Abreisedatum liegt mehr als ein Jahr voraus.' }
+  if (typeof raw !== 'string' || !parseDateKey(raw)) return { error: 'Abreisedatum ist ungültig.' }
+  // Reine Datumsschlüssel-Vergleiche in der Zeit des Hauses — kein Date-Objekt,
+  // das auf dem UTC-Server einen anderen Tag meinen könnte.
+  const heute = zonedDateKey(new Date(), tz)
+  if (raw < addDaysKey(heute, -1)) return { error: 'Abreisedatum liegt in der Vergangenheit.' }
+  if (raw > addDaysKey(heute, 366)) return { error: 'Abreisedatum liegt mehr als ein Jahr voraus.' }
   return { value: raw }
 }
 
@@ -62,7 +61,7 @@ export async function checkInAction(
   if (!ctx) return { error: 'Nicht angemeldet.' }
   const admin = createAdminClient()
 
-  const abreise = parseExpectedCheckout(expectedCheckout)
+  const abreise = parseExpectedCheckout(expectedCheckout, parseTimeZone(ctx.policies))
   if ('error' in abreise) return { error: abreise.error }
 
   // Drei unabhängige Fragen (Zimmer, laufender Aufenthalt, Reinigungslage)
@@ -169,7 +168,7 @@ export async function setExpectedCheckoutAction(
 ): Promise<{ error?: string }> {
   const ctx = await getManagementContext(slug)
   if (!ctx) return { error: 'Nicht angemeldet.' }
-  const abreise = parseExpectedCheckout(expectedCheckout)
+  const abreise = parseExpectedCheckout(expectedCheckout, parseTimeZone(ctx.policies))
   if ('error' in abreise) return { error: abreise.error }
 
   const admin = createAdminClient()

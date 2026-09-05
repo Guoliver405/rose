@@ -11,7 +11,7 @@
  *
  * Ohne I/O: Policies rein, Text raus — testbar in `guest-guide.test.ts`.
  */
-import { parseCleaningWindow, parseStayoverPolicy, stayoverDueTime } from './board'
+import { parseCleanDefer, parseCleaningWindow, parseStayoverPolicy, stayoverDueTime } from './board'
 import type { GuestAccessMode } from './guest-access'
 
 export type GuestGuide = {
@@ -44,6 +44,10 @@ export function buildGuestGuide(
 ): GuestGuide {
   const stayover = parseStayoverPolicy(policies)
   const window = parseCleaningWindow(policies)
+  const defer = parseCleanDefer(policies)
+  const deferSentence = defer.enabled
+    ? ` Im Portal können Sie die Reinigung auch bis spätestens ${hhmm(defer.hour, defer.minute)} Uhr aufschieben — vorher kommt dann niemand.`
+    : ''
 
   const windowSentence = window.enabled
     ? ` Reinigungswünsche nimmt das Portal täglich von ${window.start} bis ${window.end} Uhr entgegen.`
@@ -55,9 +59,9 @@ export function buildGuestGuide(
   const cleaning = stayover.enabled
     ? `Ihr Zimmer wird täglich ab ${hhmm(due.hour, due.minute)} Uhr gereinigt — Sie müssen nichts anfordern; ` +
       `am Abreisetag nach dem Check-out. ` +
-      `Möchten Sie zwischendurch eine Reinigung, fordern Sie sie im Portal an.${windowSentence}`
+      `Möchten Sie zwischendurch eine Reinigung, fordern Sie sie im Portal an.${windowSentence}${deferSentence}`
     : `Ihr Zimmer wird auf Wunsch gereinigt: Bitte fordern Sie die Reinigung im Portal an, ` +
-      `sobald es Ihnen passt — ohne Anforderung bleibt das Zimmer unberührt.${windowSentence}`
+      `sobald es Ihnen passt — ohne Anforderung bleibt das Zimmer unberührt.${windowSentence}${deferSentence}`
 
   const access =
     opts.accessMode === 'link'

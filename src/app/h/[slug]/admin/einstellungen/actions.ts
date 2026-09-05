@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { isValidTimeZone } from '@/lib/tz'
 import { redirect } from 'next/navigation'
 import { createClient as createPlainClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/utils/supabase/service'
@@ -41,6 +42,13 @@ export async function updateSettingsAction(slug: string, formData: FormData): Pr
   if (!/^\d{1,2}:\d{2}$/.test(checkoutRaw)) {
     return { error: 'Check-out-Zeit fehlt (z. B. 11:00).' }
   }
+  const cleanDeferEnabled = formData.get('cleanDeferEnabled') === 'on'
+  const deferRaw = ((formData.get('cleanDeferUntil') as string) ?? '').trim()
+  if (cleanDeferEnabled && !/^\d{1,2}:\d{2}$/.test(deferRaw)) {
+    return { error: 'Uhrzeit, bis zu der Gäste aufschieben dürfen, fehlt (z. B. 11:00).' }
+  }
+  const timeZone = ((formData.get('timeZone') as string) ?? '').trim()
+  if (!isValidTimeZone(timeZone)) return { error: 'Zeitzone ist ungültig.' }
 
   const cleaningWindowEnabled = formData.get('cleaningWindowEnabled') === 'on'
   const windowStartRaw = ((formData.get('cleaningWindowStart') as string) ?? '').trim()
@@ -72,6 +80,9 @@ export async function updateSettingsAction(slug: string, formData: FormData): Pr
     stayoverAutoClean,
     ...(timeRaw ? { stayoverAutoCleanTime: timeRaw } : {}),
     checkoutUntil: checkoutRaw,
+    cleanDeferEnabled,
+    ...(deferRaw ? { cleanDeferUntil: deferRaw } : {}),
+    timeZone,
     cleaningWindowEnabled,
     ...(windowStartRaw ? { cleaningWindowStart: windowStartRaw } : {}),
     ...(windowEndRaw ? { cleaningWindowEnd: windowEndRaw } : {}),

@@ -16,6 +16,13 @@ export type HotelSettingsInitial = {
   stayoverAutoCleanTime: string
   /** Check-out-Frist des Hauses (HH:MM) — Untergrenze der Routine-Reinigung. */
   checkoutUntil: string
+  /** „Frühestens ab" im Gastportal: erlaubt, und bis wann (HH:MM). */
+  cleanDeferEnabled: boolean
+  cleanDeferUntil: string
+  /** IANA-Zeitzone des Hauses, z. B. Europe/Berlin. */
+  timeZone: string
+  /** Auswahlliste aller Zeitzonen der Laufzeit. */
+  timeZones: string[]
   cleaningWindowEnabled: boolean
   cleaningWindowStart: string
   cleaningWindowEnd: string
@@ -26,6 +33,7 @@ export default function HotelSettingsForm({ hotelSlug, initial }: { hotelSlug: s
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [stayoverOn, setStayoverOn] = useState(initial.stayoverAutoClean)
+  const [deferOn, setDeferOn] = useState(initial.cleanDeferEnabled)
   const [windowOn, setWindowOn] = useState(initial.cleaningWindowEnabled)
   const [slug, setSlug] = useState(initial.slug)
 
@@ -141,6 +149,55 @@ export default function HotelSettingsForm({ hotelSlug, initial }: { hotelSlug: s
           ist, bleibt. So wird ein Abreisezimmer nicht vor dem Check-out gereinigt und
           danach noch einmal. Trägt die Rezeption beim Check-in ein Abreisedatum ein, setzt
           die Routine an diesem Tag ganz aus.
+        </p>
+      </div>
+
+      <div className="rounded-lg border border-edge bg-surface-sunken p-3">
+        <label className="flex items-center gap-2 text-sm font-semibold text-ink">
+          <input
+            type="checkbox"
+            name="cleanDeferEnabled"
+            checked={deferOn}
+            onChange={e => setDeferOn(e.target.checked)}
+            className="h-4 w-4 accent-current"
+          />
+          Gäste dürfen die Reinigung aufschieben (&bdquo;frühestens ab&ldquo;)
+        </label>
+        <p className="mt-1 text-xs text-ink-muted">
+          Der Gast wünscht Reinigung, aber nicht vor einer Uhrzeit — etwa, weil er ausschlafen
+          will. Bis dahin gilt das Zimmer auf dem Board als nicht offen. Eine Einschränkung,
+          kein Termin: Das Housekeeping kommt danach, wann es passt.
+        </p>
+        {deferOn && (
+          <>
+            <label className="mt-2 flex items-center gap-2 text-xs font-semibold text-ink-muted">
+              aufschieben bis spätestens
+              <input
+                name="cleanDeferUntil" type="time" required
+                defaultValue={initial.cleanDeferUntil} className={inputClass}
+              />
+              Uhr
+            </label>
+            <p className="mt-1 text-xs text-ink-muted">
+              So wählen, dass die Reinigung danach noch in der Schicht liegt: Arbeitet das
+              Housekeeping bis 15:00, ist 13:00 ein guter Wert. Der Gast sieht diese Grenze im
+              Portal.
+            </p>
+          </>
+        )}
+      </div>
+
+      <div className="rounded-lg border border-edge bg-surface-sunken p-3">
+        <label className="flex flex-col gap-1 text-sm font-semibold text-ink">
+          Zeitzone des Hauses
+          <select name="timeZone" defaultValue={initial.timeZone} className={inputClass}>
+            {initial.timeZones.map(z => <option key={z} value={z}>{z}</option>)}
+          </select>
+        </label>
+        <p className="mt-1 text-xs text-ink-muted">
+          Alle Uhrzeiten dieser Seite — Routine, Check-out-Frist, Zeitfenster, Aufschieb-Grenze —
+          und die Tagesgrenzen der Auswertung gelten in dieser Zeitzone. Die Server laufen in
+          UTC; ohne diese Angabe lägen die Regeln um ein bis zwei Stunden daneben.
         </p>
       </div>
 

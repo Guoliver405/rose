@@ -1,13 +1,14 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { formatHHMM, parseTimeZone } from '@/lib/tz'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/utils/supabase/service'
 import { getMaidContext, type MaidContext } from '@/utils/maid-auth'
 import { reapStaleCleanings } from '@/utils/stale-cleaning'
 import { deriveShiftState, type ShiftState } from '@/lib/shift'
 import {
-  clampStaleMinutes, isCleaningFresh, isRoomActive, isStayoverDue,
+  clampStaleMinutes, isCleanDeferred, isCleaningFresh, isRoomActive, isStayoverDue,
   parseStayoverPolicy, todayStartIso,
 } from '@/lib/board'
 
@@ -232,11 +233,15 @@ export async function startCleaningAction(roomId: string): Promise<ActionResult>
 
   const { data: state } = await admin
     .from('room_states')
-    .select('room_id, hotel_id, guest_signal, checkout_pending, priority, cleaning_by, cleaning_started_at')
+    .select('room_id, hotel_id, guest_signal, clean_not_before, checkout_pending, priority, cleaning_by, cleaning_started_at')
     .eq('room_id', roomId)
     .maybeSingle()
   if (!state || state.hotel_id !== ctx.hotelId) return { error: 'Zimmer nicht gefunden.' }
   if (state.guest_signal === 'dnd') return { error: 'Der Gast möchte nicht gestört werden (DND).' }
+  const tz = parseTimeZone(ctx.policies)
+  if (isCleanDeferred(state)) {
+    return { error: `Der Gast möchte die Reinigung erst ab ${formatHHMM(new Date(state.clean_not_before as string), tz)} Uhr.` }
+  }
 
   // Neben den persistenten Signalen zählt auch die abgeleitete
   // Stayover-Routine als „offen" (gleiche Logik wie im Board-Loader).
@@ -253,7 +258,7 @@ export async function startCleaningAction(roomId: string): Promise<ActionResult>
         .select('id')
         .eq('room_id', roomId)
         .eq('kind', 'clean_done')
-        .gte('at', todayStartIso())
+        .gte('at', todayStartIso(new Date(), tz))
         .limit(1),
     ])
     const stayoverDue = isStayoverDue({
@@ -263,6 +268,7 @@ export async function startCleaningAction(roomId: string): Promise<ActionResult>
       guestSignal: state.guest_signal,
       cleanedToday: (cleaned ?? []).length > 0,
       expectedCheckout: stay?.expected_checkout ?? null,
+      timeZone: tz,
     })
     if (!stayoverDue) return { error: 'Für dieses Zimmer ist keine Reinigung offen.' }
   }

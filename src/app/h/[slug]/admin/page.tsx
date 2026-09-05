@@ -5,9 +5,10 @@ import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/service'
 import { reapStaleCleanings } from '@/utils/stale-cleaning'
 import {
-  clampStaleMinutes, isCleaningFresh, isDepartureToday, isPresenceFresh, isStayoverDue,
+  clampStaleMinutes, isCleanDeferred, isCleaningFresh, isDepartureToday, isPresenceFresh, isStayoverDue,
   parseStayoverPolicy, todayStartIso,
 } from '@/lib/board'
+import { formatHHMM, parseTimeZone } from '@/lib/tz'
 import RoomGrid, { type FloorGroup, type RoomTileData } from './RoomGrid'
 
 export default async function AdminOverviewPage({
@@ -25,10 +26,10 @@ export default async function AdminOverviewPage({
   // mehr auf ein Haus ein: der Kontoinhaber sieht alle Häuser seines Kontos.
   const [{ data: rooms }, { data: states }, { data: stays }, { data: hotel }, { data: cleanedToday }, { data: openOrders }, { data: presence }, { data: profiles }] = await Promise.all([
     supabase.from('rooms').select('id, number, floor, building, deactivated_at').eq('hotel_id', ctx.hotelId).order('number'),
-    supabase.from('room_states').select('room_id, guest_signal, checkout_pending, priority, cleaning_by, cleaning_started_at').eq('hotel_id', ctx.hotelId),
+    supabase.from('room_states').select('room_id, guest_signal, clean_not_before, checkout_pending, priority, cleaning_by, cleaning_started_at').eq('hotel_id', ctx.hotelId),
     supabase.from('stays').select('id, room_id, pin, access_mode, checked_in_at, expected_checkout').eq('hotel_id', ctx.hotelId).is('checked_out_at', null),
     supabase.from('hotels').select('policies').eq('id', ctx.hotelId).maybeSingle(),
-    supabase.from('staff_log').select('room_id').eq('hotel_id', ctx.hotelId).eq('kind', 'clean_done').gte('at', todayStartIso()),
+    supabase.from('staff_log').select('room_id').eq('hotel_id', ctx.hotelId).eq('kind', 'clean_done').gte('at', todayStartIso(new Date(), parseTimeZone(ctx.policies))),
     supabase.from('service_orders').select('room_id, service_definitions(urgent)').eq('hotel_id', ctx.hotelId).eq('status', 'open'),
     supabase.from('maid_presence').select('profile_id, building, floor, entered_at').eq('hotel_id', ctx.hotelId),
     supabase.from('profiles').select('id, display_name').eq('hotel_id', ctx.hotelId),
@@ -37,6 +38,7 @@ export default async function AdminOverviewPage({
   const policies = (hotel?.policies ?? {}) as Record<string, unknown>
   const staleMinutes = clampStaleMinutes(policies.cleaningStaleMinutes)
   const stayoverPolicy = parseStayoverPolicy(policies)
+  const tz = parseTimeZone(policies)
   const cleanedRoomsToday = new Set((cleanedToday ?? []).map(c => c.room_id))
   const now = new Date()
 
@@ -74,8 +76,11 @@ export default async function AdminOverviewPage({
       accessMode: stay?.access_mode === 'link' ? 'link' : 'pin',
       checkedInAt: stay?.checked_in_at ?? null,
       expectedCheckout: stay?.expected_checkout ?? null,
-      departureToday: isDepartureToday(stay?.expected_checkout, now),
+      departureToday: isDepartureToday(stay?.expected_checkout, now, tz),
       guestSignal,
+      cleanDeferredUntil: state && isCleanDeferred({ ...state, guest_signal: guestSignal }, now)
+        ? formatHHMM(new Date(state.clean_not_before as string), tz)
+        : null,
       checkoutPending: state?.checkout_pending ?? false,
       priority: state?.priority ?? false,
       // Stale-Timeout (vergessener Abschluss) zählt nicht mehr als „in Arbeit"
@@ -90,6 +95,7 @@ export default async function AdminOverviewPage({
         cleanedToday: cleanedRoomsToday.has(r.id),
         expectedCheckout: stay?.expected_checkout ?? null,
         now,
+        timeZone: tz,
       }),
     }
   })
@@ -168,7 +174,7 @@ export default async function AdminOverviewPage({
           </p>
         </div>
       ) : (
-        <RoomGrid hotelSlug={ctx.hotelSlug} floorGroups={floorGroups} />
+        <RoomGrid hotelSlug={ctx.hotelSlug} floorGroups={floorGroups} timeZone={tz} />
       )}
     </div>
   )

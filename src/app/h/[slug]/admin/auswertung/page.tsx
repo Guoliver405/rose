@@ -8,9 +8,10 @@ import { clampStaleMinutes, parseStayoverPolicy, stayoverDueTime } from '@/lib/b
 import { computeDemand } from '@/lib/demand'
 import DemandSection from './DemandSection'
 import {
-  computeWorkStats, dayKey, dayRange, extractCleanings, formatDuration, sumStats,
+  computeWorkStats, extractCleanings, formatDuration, sumStats,
   MAX_BREAK_HOURS, MAX_SHIFT_HOURS, type StaffLogRow, type WorkStats,
 } from '@/lib/worklog'
+import { addDaysKey, parseTimeZone, zonedDateKey, zonedDayRange } from '@/lib/tz'
 
 const KIND_LABEL: Record<string, string> = {
   shift_start: 'Schichtbeginn',
@@ -30,13 +31,14 @@ function parseDayParam(raw: string | undefined): string | null {
   return raw && /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : null
 }
 
-function timeLabel(iso: string): string {
-  return new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+/** Uhrzeit vor Ort — der Server läuft in UTC, ohne `timeZone` stünde hier Serverzeit. */
+function timeLabel(iso: string, tz: string): string {
+  return new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: tz })
 }
 
-function dayLabel(key: string): string {
-  return dayRange(key).start.toLocaleDateString('de-DE', {
-    weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric',
+function dayLabel(key: string, tz: string): string {
+  return zonedDayRange(key, tz).start.toLocaleDateString('de-DE', {
+    weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric', timeZone: tz,
   })
 }
 
@@ -54,14 +56,16 @@ export default async function AuswertungPage({
 
   const params = await searchParams
   const now = new Date()
-  const today = dayKey(now)
+  // Kalendertage in der Zeitzone des Hauses — nicht in Server-Zeit (UTC).
+  const tz = parseTimeZone(ctx.policies)
+  const today = zonedDateKey(now, tz)
   // Default: laufende Woche = die letzten 7 Kalendertage inkl. heute.
-  const defaultFrom = dayKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6))
+  const defaultFrom = addDaysKey(today, -6)
   const from = parseDayParam(params.from) ?? defaultFrom
   const to = parseDayParam(params.to) ?? today
   // Vertauschte Eingabe still korrigieren statt Fehler werfen.
   const [fromKey, toKey] = from <= to ? [from, to] : [to, from]
-  const range = { start: dayRange(fromKey).start, end: dayRange(toKey).end }
+  const range = { start: zonedDayRange(fromKey, tz).start, end: zonedDayRange(toKey, tz).end }
 
   const supabase = await createClient()
   // Nachfrage-Daten über den Admin-Client mit explizitem Haus-Filter:
@@ -115,6 +119,7 @@ export default async function AuswertungPage({
     shiftRows: (logs ?? []).map(l => ({ profileId: l.profile_id as string, kind: l.kind as string, at: l.at as string })),
     range,
     now,
+    timeZone: tz,
   })
 
   const staleMinutes = clampStaleMinutes(
@@ -149,13 +154,13 @@ export default async function AuswertungPage({
   if (selected) {
     const byDay = new Map<string, StaffLogRow[]>()
     for (const r of selected.rows) {
-      const key = dayKey(new Date(r.at))
+      const key = zonedDateKey(new Date(r.at), tz)
       const list = byDay.get(key) ?? []
       list.push(r)
       byDay.set(key, list)
     }
     for (const [key, rows] of [...byDay.entries()].sort((a, b) => b[0].localeCompare(a[0]))) {
-      const dRange = dayRange(key)
+      const dRange = zonedDayRange(key, tz)
       const runs = extractCleanings(rows, dRange, staleMinutes, now)
       days.push({
         key,
@@ -181,7 +186,7 @@ export default async function AuswertungPage({
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-xl font-black text-ink">Auswertung Reinigung</h1>
         <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-semibold text-ink-soft">
-          {dayLabel(fromKey)} – {dayLabel(toKey)}
+          {dayLabel(fromKey, tz)} – {dayLabel(toKey, tz)}
         </span>
       </div>
 
@@ -337,7 +342,7 @@ export default async function AuswertungPage({
               {days.map(d => (
                 <div key={d.key} className="rounded-xl border border-edge bg-surface p-4">
                   <div className="flex flex-wrap items-center gap-2 border-b border-edge pb-2">
-                    <h3 className="text-sm font-bold text-ink">{dayLabel(d.key)}</h3>
+                    <h3 className="text-sm font-bold text-ink">{dayLabel(d.key, tz)}</h3>
                     <span className="rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-semibold text-ink-soft">
                       {formatDuration(d.stats.shiftMs)} Arbeitszeit
                     </span>
@@ -357,7 +362,7 @@ export default async function AuswertungPage({
                       return (
                         <li key={`${r.at}-${i}`} className="flex items-baseline gap-3 text-sm">
                           <span className="w-12 shrink-0 font-mono text-xs text-ink-muted">
-                            {timeLabel(r.at)}
+                            {timeLabel(r.at, tz)}
                           </span>
                           <span className="font-semibold text-ink">
                             {KIND_LABEL[r.kind] ?? r.kind}
