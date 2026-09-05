@@ -34,10 +34,36 @@ function auditFields(userId: string) {
  * Ohne `force` kommt bei ungereinigtem Zimmer eine Warnung zurück
  * (Override-Pattern aus HotCord).
  */
-export async function checkInAction(slug: string, roomId: string, force = false): Promise<CheckInResult> {
+/**
+ * Geplantes Abreisedatum prüfen: `YYYY-MM-DD`, nicht in der Vergangenheit
+ * (ein Tag Toleranz, weil Server-Zeit und Haus-Zeit auseinanderliegen
+ * können), höchstens ein Jahr voraus. `null` = kein festes Datum.
+ */
+function parseExpectedCheckout(raw: unknown): { value: string | null } | { error: string } {
+  if (raw === null || raw === undefined || raw === '') return { value: null }
+  if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(raw)) return { error: 'Abreisedatum ist ungültig.' }
+  const date = new Date(`${raw}T00:00:00`)
+  if (Number.isNaN(date.getTime())) return { error: 'Abreisedatum ist ungültig.' }
+  const now = new Date()
+  const gestern = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
+  const inEinemJahr = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate())
+  if (date < gestern) return { error: 'Abreisedatum liegt in der Vergangenheit.' }
+  if (date > inEinemJahr) return { error: 'Abreisedatum liegt mehr als ein Jahr voraus.' }
+  return { value: raw }
+}
+
+export async function checkInAction(
+  slug: string,
+  roomId: string,
+  force = false,
+  expectedCheckout: string | null = null,
+): Promise<CheckInResult> {
   const ctx = await getManagementContext(slug)
   if (!ctx) return { error: 'Nicht angemeldet.' }
   const admin = createAdminClient()
+
+  const abreise = parseExpectedCheckout(expectedCheckout)
+  if ('error' in abreise) return { error: abreise.error }
 
   // Drei unabhängige Fragen (Zimmer, laufender Aufenthalt, Reinigungslage)
   // in einem Roundtrip statt nacheinander; die Policies liegen bereits im
@@ -113,6 +139,7 @@ export async function checkInAction(slug: string, roomId: string, force = false)
     access_mode: accessMode,
     session_token: generateToken(24),
     created_by: ctx.userId,
+    expected_checkout: abreise.value,
   })
   if (insErr) {
     // 23505 = Partial-Unique verletzt → paralleler Check-in gewann das Race
@@ -128,6 +155,40 @@ export async function checkInAction(slug: string, roomId: string, force = false)
 
   revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
   return { pin: pin ?? undefined, guestToken: guestToken ?? undefined, accessMode }
+}
+
+/**
+ * Geplantes Abreisedatum eines laufenden Aufenthalts setzen oder löschen —
+ * für Verlängerungen und für Aufenthalte, deren Abreise beim Check-in noch
+ * offen war. Wirkt nur auf die Stayover-Routine und die Anzeige.
+ */
+export async function setExpectedCheckoutAction(
+  slug: string,
+  roomId: string,
+  expectedCheckout: string | null,
+): Promise<{ error?: string }> {
+  const ctx = await getManagementContext(slug)
+  if (!ctx) return { error: 'Nicht angemeldet.' }
+  const abreise = parseExpectedCheckout(expectedCheckout)
+  if ('error' in abreise) return { error: abreise.error }
+
+  const admin = createAdminClient()
+  const { data: stay } = await admin
+    .from('stays')
+    .select('id, hotel_id')
+    .eq('room_id', roomId)
+    .is('checked_out_at', null)
+    .maybeSingle()
+  if (!stay || stay.hotel_id !== ctx.hotelId) return { error: 'Kein aktiver Aufenthalt auf diesem Zimmer.' }
+
+  const { error } = await admin
+    .from('stays')
+    .update({ expected_checkout: abreise.value })
+    .eq('id', stay.id)
+  if (error) return { error: `Speichern fehlgeschlagen: ${error.message}` }
+
+  revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
+  return {}
 }
 
 /** Check-out per Klick: beendet den Stay (PIN + Gast-Cookie sofort tot). */

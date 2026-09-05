@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  Ban, BedDouble, ChevronRight, DoorOpen, Flag, Loader2,
+  Ban, BedDouble, ChevronRight, DoorOpen, Flag, Loader2, Luggage,
   RefreshCw, Siren, SlidersHorizontal, Sparkles, Target, Users, X,
 } from 'lucide-react'
 import SlideAction from '@/components/SlideAction'
@@ -19,6 +19,8 @@ export type BoardRoom = {
   floor: number
   building: string | null
   occupied: boolean
+  /** Geplanter Abreisetag ist heute — keine Routine, Reinigung erst nach dem Check-out. */
+  departureToday: boolean
   guestSignal: 'none' | 'please_clean' | 'dnd'
   checkoutPending: boolean
   priority: boolean
@@ -64,6 +66,7 @@ function statusLabel(r: BoardRoom): string {
   if (r.guestSignal === 'please_clean') parts.push('Reinigung gewünscht')
   if (r.stayoverDue) parts.push('Routine fällig')
   if (r.guestSignal === 'dnd') parts.push('Nicht stören')
+  if (r.departureToday && !r.checkoutPending) parts.push('Abreise heute')
   if (parts.length === 0) parts.push(r.occupied ? 'Belegt' : 'Frei')
   return parts.join(' · ')
 }
@@ -393,6 +396,7 @@ function RoomTile({ room, onClick }: { room: BoardRoom; onClick: () => void }) {
             {room.number}
           </span>
           {room.occupied && <BedDouble className="h-4 w-4 text-active-strong" />}
+          {room.departureToday && <Luggage className="h-4 w-4 text-ink-soft" aria-label="Abreise heute" />}
           {room.guestSignal === 'dnd' && <Ban className="h-4 w-4 text-blocked-strong" />}
           {room.guestSignal === 'please_clean' && <Sparkles className="h-4 w-4 text-attention-strong" />}
           {room.stayoverDue && <RefreshCw className="h-4 w-4 text-attention-strong" />}

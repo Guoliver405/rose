@@ -6,7 +6,7 @@ import { createAdminClient } from '@/utils/supabase/service'
 import { reapStaleCleanings } from '@/utils/stale-cleaning'
 import { deriveShiftState } from '@/lib/shift'
 import {
-  clampStaleMinutes, isCleaningFresh, isPresenceFresh, isRoomActive, isStayoverDue,
+  clampStaleMinutes, isCleaningFresh, isDepartureToday, isPresenceFresh, isRoomActive, isStayoverDue,
   parseStayoverPolicy, roomScore, todayStartIso,
 } from '@/lib/board'
 import RealtimeListener from '@/components/RealtimeListener'
@@ -39,7 +39,7 @@ export default async function ServiceBoardPage({
         .from('room_states')
         .select('room_id, guest_signal, checkout_pending, priority, cleaning_by, cleaning_started_at')
         .eq('hotel_id', ctx.hotelId),
-      admin.from('stays').select('room_id, checked_in_at').eq('hotel_id', ctx.hotelId).is('checked_out_at', null),
+      admin.from('stays').select('room_id, checked_in_at, expected_checkout').eq('hotel_id', ctx.hotelId).is('checked_out_at', null),
       admin.from('profiles').select('id, display_name').eq('hotel_id', ctx.hotelId),
       admin
         .from('staff_log')
@@ -99,6 +99,7 @@ export default async function ServiceBoardPage({
       checkedInAt: stay?.checked_in_at ?? null,
       guestSignal: signal,
       cleanedToday: cleanedRoomsToday.has(r.id),
+      expectedCheckout: stay?.expected_checkout ?? null,
       now,
     })
 
@@ -108,6 +109,7 @@ export default async function ServiceBoardPage({
       floor: r.floor,
       building: r.building,
       occupied: Boolean(stay),
+      departureToday: isDepartureToday(stay?.expected_checkout, now),
       guestSignal: signal,
       checkoutPending,
       priority,

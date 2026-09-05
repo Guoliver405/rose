@@ -244,7 +244,7 @@ export async function startCleaningAction(roomId: string): Promise<ActionResult>
     const [{ data: stay }, { data: cleaned }] = await Promise.all([
       admin
         .from('stays')
-        .select('checked_in_at')
+        .select('checked_in_at, expected_checkout')
         .eq('room_id', roomId)
         .is('checked_out_at', null)
         .maybeSingle(),
@@ -262,6 +262,7 @@ export async function startCleaningAction(roomId: string): Promise<ActionResult>
       checkedInAt: stay?.checked_in_at ?? null,
       guestSignal: state.guest_signal,
       cleanedToday: (cleaned ?? []).length > 0,
+      expectedCheckout: stay?.expected_checkout ?? null,
     })
     if (!stayoverDue) return { error: 'Für dieses Zimmer ist keine Reinigung offen.' }
   }

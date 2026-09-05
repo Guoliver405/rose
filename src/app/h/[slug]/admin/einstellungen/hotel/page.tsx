@@ -49,6 +49,7 @@ export default async function HotelSettingsPage({
           cleaningStaleMinutes: clampStaleMinutes(policies.cleaningStaleMinutes),
           stayoverAutoClean: stayover.enabled,
           stayoverAutoCleanTime: `${String(stayover.hour).padStart(2, '0')}:${String(stayover.minute).padStart(2, '0')}`,
+          checkoutUntil: `${String(stayover.checkoutHour).padStart(2, '0')}:${String(stayover.checkoutMinute).padStart(2, '0')}`,
           cleaningWindowEnabled: cleaningWindow.enabled,
           cleaningWindowStart: cleaningWindow.start,
           cleaningWindowEnd: cleaningWindow.end,

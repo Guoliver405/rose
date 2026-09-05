@@ -3,11 +3,12 @@
 import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import {
-  AlertTriangle, Ban, BedDouble, ConciergeBell, DoorOpen, Flag, History, Loader2,
+  AlertTriangle, Ban, BedDouble, ConciergeBell, DoorOpen, Flag, History, Loader2, Luggage,
   PowerOff, Printer, RefreshCw, Sparkles, Users, X,
 } from 'lucide-react'
+import { dateKeyAfterNights } from '@/lib/board'
 import {
-  checkInAction, checkOutAction, markCleanedAction, setPriorityAction,
+  checkInAction, checkOutAction, markCleanedAction, setExpectedCheckoutAction, setPriorityAction,
 } from './actions'
 import { getRoomHistoryAction, type RoomHistoryEvent } from './history-actions'
 
@@ -24,6 +25,10 @@ export type RoomTileData = {
   /** Zugangsverfahren DIESES Aufenthalts — nicht das aktuell eingestellte. */
   accessMode: 'pin' | 'link'
   checkedInAt: string | null
+  /** Geplanter Abreisetag (`YYYY-MM-DD`), optional — beim Check-in oder später gesetzt. */
+  expectedCheckout: string | null
+  /** Abreisetag ist heute: keine Routine, Reinigung erst nach dem Check-out. */
+  departureToday: boolean
   guestSignal: 'none' | 'please_clean' | 'dnd'
   checkoutPending: boolean
   priority: boolean
@@ -65,6 +70,85 @@ const HISTORY_DOT: Record<string, string> = {
   service: 'bg-action',
 }
 
+/** `YYYY-MM-DD` → „Sa., 07.09." — kurz genug für die Status-Zeile. */
+function formatDateKey(key: string): string {
+  return new Date(`${key}T00:00:00`).toLocaleDateString('de-DE', {
+    weekday: 'short', day: '2-digit', month: '2-digit',
+  })
+}
+
+/* ── Abreise wählen: Nächte, Datum oder offen ────────────────────────────
+   a) und b) sind zwei Eingabeformen für denselben Wert (gespeichert wird nur
+   das Datum); c) „offen" ist die Vorgabe, damit der Check-in ein Klick
+   bleibt — die Routine fällt dann auf die Check-out-Frist zurück. */
+
+type DepartureChoice =
+  | { kind: 'open' }
+  | { kind: 'nights'; nights: number }
+  | { kind: 'date'; value: string }
+
+function departureKey(choice: DepartureChoice): string | null {
+  if (choice.kind === 'open') return null
+  if (choice.kind === 'nights') return dateKeyAfterNights(new Date(), choice.nights)
+  return /^\d{4}-\d{2}-\d{2}$/.test(choice.value) ? choice.value : null
+}
+
+function choiceFromKey(key: string | null): DepartureChoice {
+  return key ? { kind: 'date', value: key } : { kind: 'open' }
+}
+
+const chip = (active: boolean) =>
+  `rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors ${
+    active
+      ? 'border-action bg-action text-action-foreground'
+      : 'border-edge bg-surface-elevated text-ink-soft hover:border-edge-strong'
+  }`
+
+function DepartureChooser({
+  value, onChange, disabled,
+}: {
+  value: DepartureChoice
+  onChange: (c: DepartureChoice) => void
+  disabled?: boolean
+}) {
+  const nights = [1, 2, 3]
+  return (
+    <div>
+      <div className="flex flex-wrap gap-1.5">
+        <button type="button" disabled={disabled} className={chip(value.kind === 'open')} onClick={() => onChange({ kind: 'open' })}>
+          offen
+        </button>
+        {nights.map(n => (
+          <button
+            key={n} type="button" disabled={disabled}
+            className={chip(value.kind === 'nights' && value.nights === n)}
+            onClick={() => onChange({ kind: 'nights', nights: n })}
+          >
+            {n} {n === 1 ? 'Nacht' : 'Nächte'}
+          </button>
+        ))}
+        <button
+          type="button" disabled={disabled} className={chip(value.kind === 'date')}
+          onClick={() => onChange({ kind: 'date', value: value.kind === 'date' ? value.value : dateKeyAfterNights(new Date(), 1) })}
+        >
+          Datum
+        </button>
+      </div>
+      {value.kind === 'date' && (
+        <input
+          type="date" value={value.value} disabled={disabled}
+          min={dateKeyAfterNights(new Date(), 0)}
+          onChange={e => onChange({ kind: 'date', value: e.target.value })}
+          className="mt-2 rounded-lg border border-edge bg-surface-elevated px-3 py-1.5 text-sm font-semibold text-ink focus:border-action focus:outline-none"
+        />
+      )}
+      {value.kind === 'nights' && (
+        <p className="mt-1.5 text-xs text-ink-muted">Abreise am {formatDateKey(departureKey(value)!)}</p>
+      )}
+    </div>
+  )
+}
+
 function historyTime(at: string): string {
   return new Date(at).toLocaleString('de-DE', {
     weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
@@ -76,6 +160,8 @@ function statusLabel(t: RoomTileData): string {
   const ready = !t.occupied && !t.checkoutPending && !t.priority && !t.cleaningActive
   const parts: string[] = []
   parts.push(t.occupied ? 'Belegt' : ready ? 'Frei & bereit' : 'Frei')
+  if (t.occupied && t.departureToday) parts.push('Abreise heute')
+  else if (t.occupied && t.expectedCheckout) parts.push(`Abreise am ${formatDateKey(t.expectedCheckout)}`)
   if (t.priority) parts.push('priorisierte Reinigung')
   if (t.cleaningActive) parts.push('Reinigung läuft')
   if (t.checkoutPending) parts.push('Reinigung nach Check-out offen')
@@ -194,6 +280,7 @@ function RoomTile({ room, onClick }: { room: RoomTileData; onClick: () => void }
         <span className="flex h-4 items-center gap-0.5">
           {room.deactivated && <PowerOff className="h-3.5 w-3.5 text-ink-muted" />}
           {room.occupied && <BedDouble className="h-3.5 w-3.5 text-active-strong" />}
+          {room.occupied && room.departureToday && <Luggage className="h-3.5 w-3.5 text-ink-soft" />}
           {room.guestSignal === 'dnd' && <Ban className="h-3.5 w-3.5 text-blocked-strong" />}
           {room.guestSignal === 'please_clean' && <Sparkles className="h-3.5 w-3.5 text-attention-strong" />}
           {room.stayoverDue && <RefreshCw className="h-3.5 w-3.5 text-attention-strong" />}
@@ -213,6 +300,9 @@ function RoomDialog({ hotelSlug, room, onClose }: { hotelSlug: string; room: Roo
   const [freshPin, setFreshPin] = useState<string | null>(null)
   const [freshMode, setFreshMode] = useState<'pin' | 'link' | null>(null)
   const [confirmCheckout, setConfirmCheckout] = useState(false)
+  // Abreise: beim Check-in Vorgabe „offen"; bei belegtem Zimmer der gespeicherte Stand.
+  const [departure, setDeparture] = useState<DepartureChoice>(() => choiceFromKey(room.expectedCheckout))
+  const departureDirty = room.occupied && departureKey(departure) !== room.expectedCheckout
 
   // Verlauf beim Öffnen nachladen; `alive` verhindert setState nach dem
   // Schließen. `pending` triggert den Reload, damit eine gerade ausgelöste
@@ -235,7 +325,7 @@ function RoomDialog({ hotelSlug, room, onClose }: { hotelSlug: string; room: Roo
   function runCheckIn(force: boolean) {
     setError(null)
     startTransition(async () => {
-      const res = await checkInAction(hotelSlug, room.id, force)
+      const res = await checkInAction(hotelSlug, room.id, force, departureKey(departure))
       if (res.error) { setError(res.error); setWarning(null); return }
       if (res.warning) { setWarning(res.warning.reasons); return }
       setWarning(null)
@@ -252,6 +342,14 @@ function RoomDialog({ hotelSlug, room, onClose }: { hotelSlug: string; room: Roo
       const res = await checkOutAction(hotelSlug, room.id)
       if (res.error) { setError(res.error); return }
       onClose()
+    })
+  }
+
+  function runSaveDeparture() {
+    setError(null)
+    startTransition(async () => {
+      const res = await setExpectedCheckoutAction(hotelSlug, room.id, departureKey(departure))
+      if (res.error) setError(res.error)
     })
   }
 
@@ -399,14 +497,46 @@ function RoomDialog({ hotelSlug, room, onClose }: { hotelSlug: string; room: Roo
 
           {/* Check-in / Check-out */}
           {!room.deactivated && !room.occupied && !freshPin && !warning && (
-            <button
-              type="button"
-              disabled={pending}
-              onClick={() => runCheckIn(false)}
-              className="rounded-xl bg-action px-4 py-3 font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
-            >
-              {pending ? 'Check-in …' : 'Check-in'}
-            </button>
+            <>
+              <div className="rounded-xl border border-edge bg-surface-sunken p-3">
+                <p className="mb-2 text-xs font-semibold text-ink-muted">Abreise (optional)</p>
+                <DepartureChooser value={departure} onChange={setDeparture} disabled={pending} />
+              </div>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => runCheckIn(false)}
+                className="rounded-xl bg-action px-4 py-3 font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
+              >
+                {pending ? 'Check-in …' : 'Check-in'}
+              </button>
+            </>
+          )}
+
+          {/* Abreise eines laufenden Aufenthalts — nachtragen oder verlängern.
+              Am Abreisetag setzt die Routine-Reinigung aus. */}
+          {room.occupied && !freshMode && (
+            <div className="rounded-xl border border-edge bg-surface-sunken p-3">
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-ink-muted">
+                <Luggage className="h-3.5 w-3.5" />
+                {room.departureToday
+                  ? 'Abreise heute — Reinigung nach dem Check-out'
+                  : room.expectedCheckout
+                    ? `Abreise am ${formatDateKey(room.expectedCheckout)}`
+                    : 'Abreise offen'}
+              </p>
+              <DepartureChooser value={departure} onChange={setDeparture} disabled={pending} />
+              {departureDirty && (
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={runSaveDeparture}
+                  className="mt-2 rounded-lg bg-action px-3 py-1.5 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
+                >
+                  {pending ? 'Speichern …' : 'Abreise speichern'}
+                </button>
+              )}
+            </div>
           )}
 
           {room.occupied && !confirmCheckout && (

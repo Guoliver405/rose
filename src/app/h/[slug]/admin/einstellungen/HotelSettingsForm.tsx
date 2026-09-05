@@ -14,6 +14,8 @@ export type HotelSettingsInitial = {
   cleaningStaleMinutes: number
   stayoverAutoClean: boolean
   stayoverAutoCleanTime: string
+  /** Check-out-Frist des Hauses (HH:MM) — Untergrenze der Routine-Reinigung. */
+  checkoutUntil: string
   cleaningWindowEnabled: boolean
   cleaningWindowStart: string
   cleaningWindowEnd: string
@@ -126,6 +128,20 @@ export default function HotelSettingsForm({ hotelSlug, initial }: { hotelSlug: s
             Uhr
           </label>
         )}
+        <label className="mt-3 flex items-center gap-2 border-t border-edge pt-3 text-xs font-semibold text-ink-muted">
+          Check-out bis
+          <input
+            name="checkoutUntil" type="time" required
+            defaultValue={initial.checkoutUntil} className={inputClass}
+          />
+          Uhr
+        </label>
+        <p className="mt-1 text-xs text-ink-muted">
+          Die Routine-Reinigung wird nie vor dieser Zeit fällig — wer danach noch im Zimmer
+          ist, bleibt. So wird ein Abreisezimmer nicht vor dem Check-out gereinigt und
+          danach noch einmal. Trägt die Rezeption beim Check-in ein Abreisedatum ein, setzt
+          die Routine an diesem Tag ganz aus.
+        </p>
       </div>
 
       <div className="rounded-lg border border-edge bg-surface-sunken p-3">

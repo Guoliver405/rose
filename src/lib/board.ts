@@ -87,15 +87,69 @@ export function roomScore(
 // und heute noch niemand gereinigt hat. „Heute gereinigt" kommt aus
 // staff_log.clean_done (schreiben Maid-Abschluss UND Rezeptions-Korrektur).
 
-export type StayoverPolicy = { enabled: boolean; hour: number; minute: number }
+//
+// Zwei Schranken gegen die doppelte Reinigung am Abreisetag (06.09.2026):
+//   1. Die Routine wird NIE vor der Check-out-Zeit des Hauses fällig
+//      (`policies.checkoutUntil`, Default 11:00). Wer nach der Check-out-Frist
+//      noch im Zimmer ist, bleibt per Definition — Abreisen laufen vormittags
+//      über den Check-out-Klick, Stayovers danach.
+//   2. Ist am Aufenthalt ein Abreisedatum hinterlegt (`stays.expected_checkout`,
+//      optional), gibt es an diesem Tag gar keine Routine — gereinigt wird
+//      nach dem Check-out. Ein überfälliges Datum (gestern) zählt als unbekannt.
+
+export type StayoverPolicy = {
+  enabled: boolean
+  hour: number
+  minute: number
+  /** Check-out-Frist des Hauses — Untergrenze für die Routine. */
+  checkoutHour: number
+  checkoutMinute: number
+}
+
+function parseHHMM(raw: unknown, fallbackHour: number, fallbackMinute: number): { hour: number; minute: number } {
+  const match = typeof raw === 'string' ? /^(\d{1,2}):(\d{2})$/.exec(raw.trim()) : null
+  return {
+    hour: match ? Math.min(23, Math.max(0, Number(match[1]))) : fallbackHour,
+    minute: match ? Math.min(59, Math.max(0, Number(match[2]))) : fallbackMinute,
+  }
+}
 
 export function parseStayoverPolicy(policies: Record<string, unknown>): StayoverPolicy {
   const enabled = policies.stayoverAutoClean === true
-  const raw = typeof policies.stayoverAutoCleanTime === 'string' ? policies.stayoverAutoCleanTime : '10:00'
-  const match = /^(\d{1,2}):(\d{2})$/.exec(raw.trim())
-  const hour = match ? Math.min(23, Math.max(0, Number(match[1]))) : 10
-  const minute = match ? Math.min(59, Math.max(0, Number(match[2]))) : 0
-  return { enabled, hour, minute }
+  const routine = parseHHMM(policies.stayoverAutoCleanTime, 10, 0)
+  const checkout = parseHHMM(policies.checkoutUntil, 11, 0)
+  return {
+    enabled, hour: routine.hour, minute: routine.minute,
+    checkoutHour: checkout.hour, checkoutMinute: checkout.minute,
+  }
+}
+
+/** Uhrzeit, ab der die Routine tatsächlich fällig wird: das Spätere aus Routine-Zeit und Check-out-Frist. */
+export function stayoverDueTime(policy: StayoverPolicy): { hour: number; minute: number } {
+  const routine = policy.hour * 60 + policy.minute
+  const checkout = policy.checkoutHour * 60 + policy.checkoutMinute
+  const m = Math.max(routine, checkout)
+  return { hour: Math.floor(m / 60), minute: m % 60 }
+}
+
+/** Lokales Datum als `YYYY-MM-DD` — bewusst nicht `toISOString` (UTC-Verschiebung). */
+export function localDateKey(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+/** Datum nach `nights` Nächten ab `now` — „1 Nacht" beim Check-in heute = morgen. */
+export function dateKeyAfterNights(now: Date, nights: number): string {
+  const n = Math.max(0, Math.floor(nights))
+  return localDateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() + n))
+}
+
+/** Ist der geplante Abreisetag heute? Fehlendes oder ungültiges Datum ⇒ false. */
+export function isDepartureToday(expectedCheckout: string | null | undefined, now: Date = new Date()): boolean {
+  if (!expectedCheckout) return false
+  return expectedCheckout.slice(0, 10) === localDateKey(now)
 }
 
 export function isStayoverDue(args: {
@@ -104,6 +158,8 @@ export function isStayoverDue(args: {
   checkedInAt: string | null
   guestSignal: 'none' | 'please_clean' | 'dnd'
   cleanedToday: boolean
+  /** Geplanter Abreisetag (`YYYY-MM-DD`), optional — am Abreisetag keine Routine. */
+  expectedCheckout?: string | null
   now?: Date
 }): boolean {
   const { policy, occupied, checkedInAt, guestSignal, cleanedToday } = args
@@ -113,8 +169,10 @@ export function isStayoverDue(args: {
   const now = args.now ?? new Date()
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   if (new Date(checkedInAt) >= todayStart) return false // erst ab der zweiten Nacht
+  if (isDepartureToday(args.expectedCheckout, now)) return false // Abreisetag: erst nach dem Check-out
 
-  const dueAt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), policy.hour, policy.minute)
+  const due = stayoverDueTime(policy)
+  const dueAt = new Date(now.getFullYear(), now.getMonth(), now.getDate(), due.hour, due.minute)
   return now >= dueAt
 }
 

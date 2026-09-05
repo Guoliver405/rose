@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   CLEANING_STALE_MINUTES_DEFAULT, clampStaleMinutes, isCleaningFresh, isPresenceFresh,
-  isRoomActive, isStayoverDue, isWithinCleaningWindow, parseCleaningWindow,
+  dateKeyAfterNights, isDepartureToday, isRoomActive, isStayoverDue, isWithinCleaningWindow,
+  localDateKey, parseCleaningWindow, stayoverDueTime,
   parseStayoverPolicy, PRESENCE_STALE_HOURS, roomScore, staleCleaningCutoff,
 } from './board'
 
@@ -119,10 +120,43 @@ describe('parseStayoverPolicy', () => {
   it('klemmt unmögliche Zeiten', () => {
     expect(parseStayoverPolicy({ stayoverAutoCleanTime: '99:99' })).toMatchObject({ hour: 23, minute: 59 })
   })
+
+  it('liest die Check-out-Frist und nimmt sonst 11:00', () => {
+    expect(parseStayoverPolicy({})).toMatchObject({ checkoutHour: 11, checkoutMinute: 0 })
+    expect(parseStayoverPolicy({ checkoutUntil: '12:30' })).toMatchObject({ checkoutHour: 12, checkoutMinute: 30 })
+  })
+})
+
+describe('stayoverDueTime', () => {
+  it('nimmt das Spätere aus Routine-Zeit und Check-out-Frist', () => {
+    expect(stayoverDueTime({ enabled: true, hour: 10, minute: 0, checkoutHour: 11, checkoutMinute: 0 })).toEqual({ hour: 11, minute: 0 })
+    expect(stayoverDueTime({ enabled: true, hour: 13, minute: 15, checkoutHour: 11, checkoutMinute: 0 })).toEqual({ hour: 13, minute: 15 })
+  })
+})
+
+describe('localDateKey / dateKeyAfterNights / isDepartureToday', () => {
+  const heute = new Date(2026, 8, 6, 23, 30) // 06.09.2026, spät abends
+
+  it('bildet das lokale Datum, nicht das UTC-Datum', () => {
+    expect(localDateKey(heute)).toBe('2026-09-06')
+  })
+
+  it('rechnet Nächte auf das Abreisedatum um, über Monatsgrenzen hinweg', () => {
+    expect(dateKeyAfterNights(heute, 1)).toBe('2026-09-07')
+    expect(dateKeyAfterNights(new Date(2026, 8, 30), 2)).toBe('2026-10-02')
+    expect(dateKeyAfterNights(heute, -3)).toBe('2026-09-06')
+  })
+
+  it('erkennt den Abreisetag und ignoriert fehlende Angaben', () => {
+    expect(isDepartureToday('2026-09-06', heute)).toBe(true)
+    expect(isDepartureToday('2026-09-07', heute)).toBe(false)
+    expect(isDepartureToday(null, heute)).toBe(false)
+    expect(isDepartureToday(undefined, heute)).toBe(false)
+  })
 })
 
 describe('isStayoverDue', () => {
-  const policy = { enabled: true, hour: 10, minute: 0 }
+  const policy = { enabled: true, hour: 10, minute: 0, checkoutHour: 11, checkoutMinute: 0 }
   const gestern = new Date(2026, 6, 25, 14, 0).toISOString()
   const heuteFrueh = new Date(2026, 6, 26, 8, 0).toISOString()
   const nachDerZeit = new Date(2026, 6, 26, 11, 0)
@@ -153,6 +187,29 @@ describe('isStayoverDue', () => {
 
   it('ist erledigt, sobald heute gereinigt wurde', () => {
     expect(isStayoverDue({ ...args, cleanedToday: true })).toBe(false)
+  })
+
+  it('wird nie vor der Check-out-Frist fällig, auch wenn die Routine-Zeit früher liegt', () => {
+    // Routine 10:00, Check-out bis 11:00, jetzt 10:30: wer noch da ist, könnte
+    // gleich abreisen — nicht reinigen, sonst zweimal.
+    expect(isStayoverDue({ ...args, now: new Date(2026, 6, 26, 10, 30) })).toBe(false)
+    expect(isStayoverDue({ ...args, now: new Date(2026, 6, 26, 11, 0) })).toBe(true)
+    // Liegt die Routine-Zeit später als die Frist, gilt die Routine-Zeit.
+    const spaet = { ...policy, hour: 14, minute: 0 }
+    expect(isStayoverDue({ ...args, policy: spaet, now: new Date(2026, 6, 26, 13, 0) })).toBe(false)
+    expect(isStayoverDue({ ...args, policy: spaet, now: new Date(2026, 6, 26, 14, 0) })).toBe(true)
+  })
+
+  it('setzt am geplanten Abreisetag aus — gereinigt wird nach dem Check-out', () => {
+    expect(isStayoverDue({ ...args, expectedCheckout: '2026-07-26' })).toBe(false)
+    expect(isStayoverDue({ ...args, expectedCheckout: '2026-07-26', now: new Date(2026, 6, 26, 15, 0) })).toBe(false)
+  })
+
+  it('läuft an anderen Tagen normal — auch bei überfälligem Abreisedatum', () => {
+    expect(isStayoverDue({ ...args, expectedCheckout: '2026-07-27' })).toBe(true)
+    // Datum von gestern: die Rezeption hat den Aufenthalt wohl verlängert und
+    // das Datum nicht nachgezogen — dann gilt der Aufenthalt als offen.
+    expect(isStayoverDue({ ...args, expectedCheckout: '2026-07-25' })).toBe(true)
   })
 })
 

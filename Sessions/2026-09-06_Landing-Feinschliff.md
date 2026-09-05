@@ -1,10 +1,57 @@
-# 06.09.2026 — Landing Page: Feinschliff nach Rückmeldung des Users
+# 06.09.2026 — Landing-Feinschliff und Abreisetag-Logik der Stayover-Routine
 
-Kurzer Abschnitt: eine Liste von Textänderungen auf `/` plus ein neuer
-Abschnitt, aus einer Durchsicht des Users. Vorheriger Stand:
+Zwei Abschnitte: Textänderungen auf `/` aus einer Durchsicht des Users, und
+danach ein fachliches Problem, das der User beim Nachhaltigkeits-Argument
+erkannt hat — die Routine-Reinigung am Abreisetag. Vorheriger Stand:
 [2026-09-05_Konto-Seite-und-Test-Buendelung.md](2026-09-05_Konto-Seite-und-Test-Buendelung.md).
 
-## Was sich geändert hat
+## Abreisetag: keine Routine-Reinigung vor dem Check-out
+
+**Problem (User):** Der Standard soll „Reinigung nur auf Wunsch" sein — ist
+er (`stayoverAutoClean` Default aus). Wer die Stayover-Routine einschaltet,
+bekam aber ein Loch: Am Abreisetag darf nicht gereinigt werden, bevor der
+Gast ausgecheckt hat, sonst wird das Zimmer zweimal gemacht — und die Routine
+war um 10:00 fällig, Check-out meist bis 11:00. Ursache darunter: RoSe kennt
+bewusst kein Buchungssystem und damit **kein Abreisedatum**.
+
+**Lösung, beide Wege zusammen:**
+
+1. **Check-out-Frist als Untergrenze.** Neue Policy `checkoutUntil` (Default
+   11:00, Feld „Check-out bis" unter Hotel & Regeln). `stayoverDueTime` nimmt
+   das Spätere aus Routine-Zeit und Frist; `isStayoverDue` rechnet damit. Wer
+   nach der Frist noch im Zimmer ist, bleibt per Definition. Handout und Mail
+   nennen jetzt diese effektive Uhrzeit plus „am Abreisetag nach dem
+   Check-out" (Test in `guest-guide.test.ts` angepasst: 9:30 mit Default-Frist
+   ergibt 11:00).
+2. **Optionales Abreisedatum am Aufenthalt.** `stays.expected_checkout date`
+   (Migration `2026-09-06_stays_expected_checkout.sql`). Beim Check-in wählt
+   die Rezeption „offen | 1 Nacht | 2 Nächte | 3 Nächte | Datum"; a) und b)
+   sind zwei Eingabeformen für denselben Wert, gespeichert wird nur das Datum.
+   **„offen" ist die Vorgabe**, damit der Check-in ein Klick bleibt — das ist
+   zugleich die Antwort auf den Randfall c): kein Datum heißt Rückfall auf
+   Weg 1, keine Markierung, und die Rezeption trägt das Datum nach, sobald es
+   bekannt ist (`setExpectedCheckoutAction`, derselbe Block im Zimmer-Dialog
+   dient der Verlängerung). Am Abreisetag setzt die Routine ganz aus; Kachel
+   und Reinigungsboard zeigen „Abreise heute" mit Koffer-Icon in neutralem
+   Grau — bewusst keine neue Farbe in der Farbsprache. Ein überfälliges Datum
+   (gestern) gilt als unbekannt, damit ein vergessenes Nachziehen die Routine
+   nicht dauerhaft abschaltet.
+
+Richtung bei allem: **im Zweifel nicht reinigen.** Das passt zum
+Nachhaltigkeits-Versprechen der Landing Page und kostet schlimmstenfalls
+einen Tipp des Gastes im Portal.
+
+Betroffene Stellen: `board.ts` (Policy, `stayoverDueTime`, `localDateKey`,
+`dateKeyAfterNights`, `isDepartureToday`, `isStayoverDue`), beide
+Board-Loader und der Claim in `service/actions.ts`, `checkInAction` mit
+viertem Parameter, `RoomGrid` (Chooser, Status-Zeile, Icon),
+`ServiceBoard` (Label, Icon), Einstellungen (Feld, Action, Seite),
+`guest-guide.ts`. Neun neue Unit-Tests.
+
+**Reihenfolge fürs Ausrollen:** Migration ist additiv (nullable), aber die
+Loader selektieren die Spalte — also erst einspielen, dann pushen.
+
+## Landing-Feinschliff — was sich geändert hat
 
 Texte in [page.tsx](../src/app/page.tsx):
 

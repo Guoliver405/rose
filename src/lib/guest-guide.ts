@@ -11,7 +11,7 @@
  *
  * Ohne I/O: Policies rein, Text raus — testbar in `guest-guide.test.ts`.
  */
-import { parseCleaningWindow, parseStayoverPolicy } from './board'
+import { parseCleaningWindow, parseStayoverPolicy, stayoverDueTime } from './board'
 import type { GuestAccessMode } from './guest-access'
 
 export type GuestGuide = {
@@ -49,8 +49,12 @@ export function buildGuestGuide(
     ? ` Reinigungswünsche nimmt das Portal täglich von ${window.start} bis ${window.end} Uhr entgegen.`
     : ''
 
+  // Genannt wird die Zeit, ab der die Routine WIRKLICH fällig wird — nie vor
+  // der Check-out-Frist des Hauses (siehe `stayoverDueTime`).
+  const due = stayoverDueTime(stayover)
   const cleaning = stayover.enabled
-    ? `Ihr Zimmer wird täglich ab ${hhmm(stayover.hour, stayover.minute)} Uhr gereinigt — Sie müssen nichts anfordern. ` +
+    ? `Ihr Zimmer wird täglich ab ${hhmm(due.hour, due.minute)} Uhr gereinigt — Sie müssen nichts anfordern; ` +
+      `am Abreisetag nach dem Check-out. ` +
       `Möchten Sie zwischendurch eine Reinigung, fordern Sie sie im Portal an.${windowSentence}`
     : `Ihr Zimmer wird auf Wunsch gereinigt: Bitte fordern Sie die Reinigung im Portal an, ` +
       `sobald es Ihnen passt — ohne Anforderung bleibt das Zimmer unberührt.${windowSentence}`

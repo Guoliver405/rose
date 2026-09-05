@@ -37,6 +37,10 @@ export async function updateSettingsAction(slug: string, formData: FormData): Pr
   if (stayoverAutoClean && !/^\d{1,2}:\d{2}$/.test(timeRaw)) {
     return { error: 'Uhrzeit für die Routine-Reinigung fehlt (z. B. 10:00).' }
   }
+  const checkoutRaw = ((formData.get('checkoutUntil') as string) ?? '').trim()
+  if (!/^\d{1,2}:\d{2}$/.test(checkoutRaw)) {
+    return { error: 'Check-out-Zeit fehlt (z. B. 11:00).' }
+  }
 
   const cleaningWindowEnabled = formData.get('cleaningWindowEnabled') === 'on'
   const windowStartRaw = ((formData.get('cleaningWindowStart') as string) ?? '').trim()
@@ -67,6 +71,7 @@ export async function updateSettingsAction(slug: string, formData: FormData): Pr
     cleaningStaleMinutes,
     stayoverAutoClean,
     ...(timeRaw ? { stayoverAutoCleanTime: timeRaw } : {}),
+    checkoutUntil: checkoutRaw,
     cleaningWindowEnabled,
     ...(windowStartRaw ? { cleaningWindowStart: windowStartRaw } : {}),
     ...(windowEndRaw ? { cleaningWindowEnd: windowEndRaw } : {}),

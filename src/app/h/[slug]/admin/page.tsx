@@ -5,7 +5,8 @@ import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/service'
 import { reapStaleCleanings } from '@/utils/stale-cleaning'
 import {
-  clampStaleMinutes, isCleaningFresh, isPresenceFresh, isStayoverDue, parseStayoverPolicy, todayStartIso,
+  clampStaleMinutes, isCleaningFresh, isDepartureToday, isPresenceFresh, isStayoverDue,
+  parseStayoverPolicy, todayStartIso,
 } from '@/lib/board'
 import RoomGrid, { type FloorGroup, type RoomTileData } from './RoomGrid'
 
@@ -25,7 +26,7 @@ export default async function AdminOverviewPage({
   const [{ data: rooms }, { data: states }, { data: stays }, { data: hotel }, { data: cleanedToday }, { data: openOrders }, { data: presence }, { data: profiles }] = await Promise.all([
     supabase.from('rooms').select('id, number, floor, building, deactivated_at').eq('hotel_id', ctx.hotelId).order('number'),
     supabase.from('room_states').select('room_id, guest_signal, checkout_pending, priority, cleaning_by, cleaning_started_at').eq('hotel_id', ctx.hotelId),
-    supabase.from('stays').select('id, room_id, pin, access_mode, checked_in_at').eq('hotel_id', ctx.hotelId).is('checked_out_at', null),
+    supabase.from('stays').select('id, room_id, pin, access_mode, checked_in_at, expected_checkout').eq('hotel_id', ctx.hotelId).is('checked_out_at', null),
     supabase.from('hotels').select('policies').eq('id', ctx.hotelId).maybeSingle(),
     supabase.from('staff_log').select('room_id').eq('hotel_id', ctx.hotelId).eq('kind', 'clean_done').gte('at', todayStartIso()),
     supabase.from('service_orders').select('room_id, service_definitions(urgent)').eq('hotel_id', ctx.hotelId).eq('status', 'open'),
@@ -72,6 +73,8 @@ export default async function AdminOverviewPage({
       pin: stay?.pin ?? null,
       accessMode: stay?.access_mode === 'link' ? 'link' : 'pin',
       checkedInAt: stay?.checked_in_at ?? null,
+      expectedCheckout: stay?.expected_checkout ?? null,
+      departureToday: isDepartureToday(stay?.expected_checkout, now),
       guestSignal,
       checkoutPending: state?.checkout_pending ?? false,
       priority: state?.priority ?? false,
@@ -85,6 +88,7 @@ export default async function AdminOverviewPage({
         checkedInAt: stay?.checked_in_at ?? null,
         guestSignal,
         cleanedToday: cleanedRoomsToday.has(r.id),
+        expectedCheckout: stay?.expected_checkout ?? null,
         now,
       }),
     }

@@ -12,8 +12,12 @@ describe('buildGuestGuide — Reinigung', () => {
   })
 
   it('mit Routine-Reinigung muss der Gast nichts anfordern und sieht die Uhrzeit', () => {
+    // Routine 9:30, aber Check-out-Frist (Default 11:00) ist die Untergrenze.
     const g = buildGuestGuide({ stayoverAutoClean: true, stayoverAutoCleanTime: '9:30' }, pinDeep)
-    expect(g.cleaning).toMatch(/täglich ab 09:30 Uhr/)
+    expect(g.cleaning).toMatch(/täglich ab 11:00 Uhr/)
+    expect(g.cleaning).toMatch(/am Abreisetag nach dem Check-out/)
+    const frueh = buildGuestGuide({ stayoverAutoClean: true, stayoverAutoCleanTime: '9:30', checkoutUntil: '09:00' }, pinDeep)
+    expect(frueh.cleaning).toMatch(/täglich ab 09:30 Uhr/)
     expect(g.cleaning).toMatch(/Sie müssen nichts anfordern/)
   })
 
