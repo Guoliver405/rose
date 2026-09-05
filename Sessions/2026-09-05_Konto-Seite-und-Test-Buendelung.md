@@ -115,12 +115,37 @@ der Kommentar im Test schon vorher; jetzt stimmt er wörtlich.
   Klicks kommen nicht an. Für den unteren Seitenteil hilft `get_page_text`,
   fürs Aufräumen ein Skript.
 
-## 4. Offen
+## 4. Nachtrag am späteren Abend: Anbieter-Daten und Zahlungsprovider
+
+- **Anbieter-Daten eingetragen** (Commit `8a30622`): Das Impressum auf
+  internetinformationsdienste.de war aktualisiert — I²D UG (haftungsbeschränkt),
+  Geschäftsführer Bernd Köhl, Saarbrücker Straße 92, 66130 Saarbrücken,
+  HRB 102734 Amtsgericht Saarbrücken, USt-IdNr. DE434570609,
+  info@internetinformationsdienste.de. `provider.ts` führt jetzt
+  `representative`, `registerCourt` und `register` statt `owner`; das
+  Impressum trägt „Vertreten durch" und „Registereintrag", AGB § 1 nennt die
+  UG mit Geschäftsführer. **Keine Telefonnummer** — nach § 5 DDG nicht
+  zwingend (EuGH C-298/07), `phone` ist `null` und die Zeile entfällt auf
+  allen drei Seiten. Der gelbe Platzhalter-Hinweis ist damit aus Produktion
+  verschwunden.
+- **Zahlungsprovider-Gegenüberstellung** als Entscheidungsvorlage:
+  [Zahlungsprovider-Gegenueberstellung-2026-09-05.md](Zahlungsprovider-Gegenueberstellung-2026-09-05.md).
+  Kern: Rechnung und Einzug sind zwei Dinge — die Rechnung erzeugt RoSe
+  ohnehin selbst (Betrag aus `billingLine`, E-Rechnungspflicht ab 2028),
+  der Provider braucht nur „Zahlungsmittel ohne Belastung speichern, später
+  mit beliebigem Betrag belasten, per Webhook melden". Bei 5–120 € brutto
+  je Monat ist SEPA-Lastschrift mit 0,35 € Festgebühr die einzige Form, die
+  nicht mit dem Umsatz skaliert. **Empfehlung Stripe**, Mollie als
+  EU-Zweitwahl; Paddle und PayPal-als-einziger-Weg begründet verworfen.
+  Die PayPal-Annahme aus dem TODO vom 04.09. („Haftung vollständig beim
+  Provider") trifft nicht zu, das leistet nur ein Merchant of Record.
+
+## 5. Offen
 
 - ~~Produktionsnachweis der Konto-Seite mit einem echten Inhaber-Login~~ —
   erbracht (siehe Verifikation).
-- Zahlungsprovider-Gegenüberstellung (Stripe, Paddle, PayPal) — füllt die
-  beiden Platzhalter-Karten.
+- Entscheidung Zahlungsprovider (Vorlage liegt vor, vier Fragen in deren
+  Abschnitt 6), danach Einbindung nach dem Bauplan.
 - Weiter offen aus dem Nachmittag: Anbieter-Daten, anwaltliche Prüfung, AVV,
   Illustrationen, DEHOGA-Quelle für Annahme A2.
 
@@ -135,7 +160,9 @@ mit 307 auf `/admin` (der Riegel `getAccountContext`), von dort zur
 Anmeldung. Angemeldeter Produktionsnachweis mit dem Konto „Test-Hotelkette"
 erbracht, Beträge rechnerisch geprüft.
 
-**Wenn hier weitergearbeitet wird:** Die Zahlungsprovider-Gegenüberstellung ist der nächste
-Baustein zur Veröffentlichung — sie entscheidet, was in die beiden
-Platzhalter-Karten kommt und ob die Registrierung ein Zahlungsmittel
-verlangt. Die manuellen GUI-Fälle bleiben liegen, bis der User sie aufruft.
+**Wenn hier weitergearbeitet wird:** Die vier Fragen aus Abschnitt 6 der
+Zahlungsprovider-Vorlage mit dem User klären (Zahlungsmittel bei
+Registrierung Pflicht? Karte zulassen? EU-Ausland? Stripe oder Mollie?),
+dann nach dem Bauplan in Abschnitt 5 anfangen — Schritt 1 (Stripe-Konto,
+Gläubiger-ID) kann nur der User. Die manuellen GUI-Fälle bleiben liegen,
+bis der User sie aufruft.

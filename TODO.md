@@ -105,11 +105,19 @@ zusammen und gehören vor den ersten zahlenden Kunden.
         des OG-Bilds.
 - [ ] **Zahlungsprovider einbinden** — Anmeldung beim Provider als Teil der
       Registrierung, auch wenn der erste Monat frei ist (Zahlungsmittel liegt
-      dann schon vor). Kandidat: **PayPal** (All-in-one mit mehreren
-      Zahlverfahren, Abwicklung und Haftung gegen Gebühr vollständig beim
-      Provider). Vorher Alternativen (Stripe, Paddle als Merchant of Record
-      inkl. Steuerabführung) gegenüberstellen. Betrifft `/registrieren`, die
-      Konto-Seite oben und die Abrechnung aus `billing_snapshots`.
+      dann schon vor). ~~Vorher Alternativen gegenüberstellen.~~ **05.09.
+      (Abend) Gegenüberstellung liegt vor:**
+      [Zahlungsprovider-Gegenueberstellung-2026-09-05.md](Sessions/Zahlungsprovider-Gegenueberstellung-2026-09-05.md)
+      — Stripe, Mollie, PayPal, Paddle mit Gebühren an drei Beispielrechnungen.
+      **Empfehlung: Stripe** (SEPA-Lastschrift als Hauptweg, Karte als
+      Nebenweg, Zahlungsmittel per SetupIntent ohne Belastung bei der
+      Registrierung), Mollie als EU-Zweitwahl mit gleichem Bauplan; Paddle
+      (Vertragsübernahme, 5 % + 0,50 $, Sonderfall unter 10 $) und PayPal als
+      einziger Weg (Freischaltung, Gebühren) nicht. **Rechnung erzeugt RoSe
+      selbst** — E-Rechnungspflicht ab 01.01.2028, von Anfang an ZUGFeRD.
+      Vier Entscheidungen des Users stehen in Abschnitt 6. Betrifft
+      `/registrieren`, die Karten „Zahlungsverfahren"/„Rechnungen" auf
+      `/admin/abrechnung` und die Abrechnung aus `billing_snapshots`.
 - [ ] **Mehrsprachigkeit**: en, es, fr, de. Betrifft alle drei Portale, die
       Landing-Page, Mails und Druckseiten (Aushänge, Handouts, Karten). Die
       Gast-Sprache muss unabhängig von der Hotel-Sprache wählbar sein — das
