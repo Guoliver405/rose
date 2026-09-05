@@ -5,6 +5,14 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
 
 ## Vor den ersten echten Kunden
 
+- [ ] **Lizenzvertrag mit I²D klären** (06.09., Entwurf von Bernd, Prüfung in
+      `Verträge/Pruefung-Lizenzvertrag-2026-09-06.md`, nicht im Repo). Vor
+      allem anderen: Soll Bernd Mitinhaber der Rechte werden? Dann
+      Innenverhältnis, Kündigungsfristen mit Pflicht-Auslauf für Hotels,
+      Lizenzsatz, Betriebs- und AVV-Vertrag, § 181-Befreiung im Register,
+      Steuerberater (USt, Gutschrift, vGA), Anwalt. **Nächste Sitzung: als
+      Erstes durchsprechen.**
+
 - [x] ~~**Login-Actions testen**~~ — 05.09. erledigt:
       [login.test.ts](tests/integration/login.test.ts) fährt beide Actions
       gegen die Testwelt, inklusive *fünf Fehlversuche sperren nur den eigenen

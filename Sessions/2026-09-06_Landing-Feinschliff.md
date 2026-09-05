@@ -214,9 +214,48 @@ rose-roomservice.app zeigt alle geänderten Texte, den Nachhaltigkeits-Kasten
 mit Plakette zwischen Schmerzpunkten und Demo, die Demo mit drei Kopfleisten
 und ohne Ereigniszeile; Seitentext vollständig gegen die Liste abgeglichen.
 
+## Vertragsprüfung: Entwurf „Lizenz-, Nutzungs- und Vermarktungsvertrag"
+
+Bernd hat einen Vertragsentwurf vorgelegt (`Verträge/RoSe
+entwurf-Lizenzvertrag.docx`, nicht im Repo). Die Prüfung liegt daneben als
+`Verträge/Pruefung-Lizenzvertrag-2026-09-06.md` — ebenfalls nicht im Repo,
+weil der Ordner Vertragsunterlagen enthält und das Repo auf GitHub liegt
+(`Verträge/` steht seit heute in `.gitignore`). Keine Rechtsberatung, sondern
+eine kritische Lektüre aus Olivers Sicht als Urheber. Die drei stillen
+Entscheidungen des Entwurfs, die vor allem anderen zu klären sind:
+
+1. **Bernd wird hälftiger Rechteinhaber** (Präambel, § 1, § 15 50/50, § 28),
+   ohne dass irgendwo steht, wer RoSe gebaut hat. Zwei gemeinsam verwertende
+   Rechteinhaber sind zudem eine GbR mit persönlicher Haftung — Innenverhältnis
+   ungeregelt.
+2. **Kündigung und Zustimmungen nur gemeinschaftlich** — Oliver kann den
+   Vertrag mit Bernds UG nie ohne Bernd beenden.
+3. **Bernd auf beiden Seiten** (Lizenzgeber privat, Geschäftsführer der
+   Lizenznehmerin): § 181 BGB, Befreiung im Registerauszug prüfen.
+
+Dazu: 60 % Lizenz auf den Nettoerlös trägt die UG bei 0,50 € je Zimmer nicht
+(100 Zimmer ⇒ 20 € für die UG bei ≈ 45 € Hosting); 14-Tage-Kündigung ohne
+Pflicht-Auslauf kollidiert mit den AGB gegenüber den Hotels; der Betrieb
+(Konten, Entwicklung, Auftragsverarbeitung, Oliver als
+Unterauftragsverarbeiter) ist gar nicht geregelt; USt/Gutschriftverfahren,
+vGA, § 69b UrhG (Arbeitsverhältnis) offen. Reihenfolge zur Klärung in
+Abschnitt 7 der Prüfung.
+
+**Werkzeug-Notiz:** Die Polling-Schleifen gegen die GitHub-API (60 Anfragen
+pro Stunde ohne Token) haben am Abend das Limit gerissen — der letzte
+CI-Stand, den ich sah, war grün für alle Code-Commits; der Lauf zu `03b9da9`
+(nur Protokoll) blieb ungeprüft. Künftig seltener pollen oder `gh` mit Token.
+
 ## 🔖 Wiederaufnahme
 
-Fünf Dinge an diesem Tag: Landing-Texte, Abreisetag-Logik der Routine,
-Nachfrage-Auswertung, Zeitzone des Hauses, „Frühestens ab". Offen bleibt aus dem Vortag: Antwort von Bernd (Stripe-Konto, Wortmarke),
+**Als Erstes am nächsten Tag (Wunsch des Users, 06.09. spät):** die
+Vertragsdetails gemeinsam durchsprechen — Grundlage ist
+`Verträge/Pruefung-Lizenzvertrag-2026-09-06.md`, Einstieg über die drei
+stillen Entscheidungen (Mitinhaberschaft, gemeinschaftliche Kündigung,
+§ 181) und die Frage in Abschnitt 7 Nr. 1: Soll Bernd Mitinhaber werden?
+
+Sechs Dinge an diesem Tag: Landing-Texte, Abreisetag-Logik der Routine,
+Nachfrage-Auswertung, Zeitzone des Hauses, „Frühestens ab",
+Vertragsprüfung. Offen bleibt aus dem Vortag: Antwort von Bernd (Stripe-Konto, Wortmarke),
 anwaltliche Prüfung, AVV, Illustrationen. Nächster Baustein: Stripe nach dem
 Bauplan in der Zahlungsprovider-Vorlage, sobald das Konto steht.
