@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createClient, type Session, type SupabaseClient } from '@supabase/supabase-js'
 import { buildMaidEmail } from '@/lib/maid'
 
 /**
@@ -97,11 +97,33 @@ export function anonClient(): SupabaseClient {
   )
 }
 
+// ── Anmeldungen bündeln ─────────────────────────────────────────────────────
+//
+// Supabase Auth drosselt Passwort-Anmeldungen je IP (Standard: 30 in fünf
+// Minuten). Vor der Bündelung meldete sich jeder Test einzeln an — rund 40
+// Anmeldungen je Lauf, zwei Läufe kurz nacheinander rissen das Limit
+// („Request rate limit reached"). Deshalb wird je Nutzer und Testdatei genau
+// EINMAL angemeldet und die Sitzung danach wiederverwendet.
+//
+// Das ist fachlich sogar die schärfere Probe: Die RLS-Funktionen und die Guards
+// schauen bei jedem Zugriff in die Tabellen, nicht ins Token — ein Rechte-Entzug
+// muss also auch für eine BEREITS OFFENE Sitzung gelten. Genau das prüfen die
+// „vorher/nachher"-Tests jetzt mit demselben Token.
+//
+// Der Cache lebt im Modul, und Vitest lädt jede Testdatei isoliert — er ist
+// damit je Datei, so wie die Welt selbst.
+
+const sessions = new Map<string, Session>()
+
 /**
- * Client im Namen eines angemeldeten Nutzers — die RLS sieht dessen `auth.uid()`.
- * Genau so prüfen wir die Mandanten- und Rollengrenzen an der Quelle.
+ * Sitzung eines Nutzers — angemeldet wird nur beim ersten Aufruf je Datei.
+ * Ein Token, das in unter einer Minute abliefe, wird erneuert; in der Praxis
+ * läuft keine Testdatei so lange.
  */
-export async function clientAs(user: UserHandle): Promise<SupabaseClient> {
+export async function sessionFor(user: UserHandle): Promise<Session> {
+  const cached = sessions.get(user.email)
+  if (cached && (cached.expires_at ?? 0) * 1000 > Date.now() + 60_000) return cached
+
   const auth = anonClient()
   const { data, error } = await auth.auth.signInWithPassword({
     email: user.email,
@@ -109,12 +131,22 @@ export async function clientAs(user: UserHandle): Promise<SupabaseClient> {
   })
   if (error || !data.session) throw new Error(`Anmeldung fehlgeschlagen für ${user.email}: ${error?.message}`)
 
+  sessions.set(user.email, data.session)
+  return data.session
+}
+
+/**
+ * Client im Namen eines angemeldeten Nutzers — die RLS sieht dessen `auth.uid()`.
+ * Genau so prüfen wir die Mandanten- und Rollengrenzen an der Quelle.
+ */
+export async function clientAs(user: UserHandle): Promise<SupabaseClient> {
+  const session = await sessionFor(user)
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       auth: { autoRefreshToken: false, persistSession: false },
-      global: { headers: { Authorization: `Bearer ${data.session.access_token}` } },
+      global: { headers: { Authorization: `Bearer ${session.access_token}` } },
     },
   )
 }

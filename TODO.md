@@ -189,10 +189,11 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       Dev-only, Produktion nicht betroffen. Abschaltbar mit
       `logging: { serverFunctions: false }` — kostet aber ein nützliches
       Werkzeug. Bewusst nicht geändert. (03.09.)
-- [ ] **Supabase-Rate-Limit in den Integrationstests**: Dicht aufeinander
-      folgende Läufe reißen das Anmelde-Limit („Request rate limit reached").
-      Transient, aber in CI möglich. Falls es stört: Anmeldungen je Testdatei
-      bündeln statt je Test. (03.09.)
+- [x] ~~**Supabase-Rate-Limit in den Integrationstests**~~ — 05.09. erledigt:
+      Anmeldungen je Nutzer und Testdatei gebündelt (`sessionFor` in
+      [world.ts](tests/integration/helpers/world.ts)), 16 statt 42
+      Passwort-Anmeldungen je Lauf; zwei Läufe direkt hintereinander grün.
+      (03.09.)
 
 ## Erledigt
 
