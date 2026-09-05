@@ -112,6 +112,15 @@ ab 10:00", Balken belegt-blau statt amber, Uhr-Icon. **Befund dabei:** der
 KPI „zu reinigen" zählte den aufgeschobenen Wunsch mit — behoben, jetzt
 „0 zu reinigen".
 
+**Produktion** (Commits `0d80c6a`, `148f94d`, `5445548`; User in Chrome
+angemeldet): Hotel & Regeln der Test-Hotelkette zeigt „Gäste dürfen
+aufschieben" (an, 11:00), „Check-out bis 11:00" und die Zeitzonen-Auswahl
+(418 Zonen, Europe/Berlin). Speichern mit 13:00 → „Gespeichert", danach auf
+11:00 zurückgesetzt und nach Reload bestätigt. Werkzeug-Notiz: Ein
+`requestSubmit()` vier Sekunden nach dem Navigieren traf die Seite vor der
+Hydration und lief als nativer Submit (Reload ohne Hinweis); mit acht
+Sekunden Wartezeit greift der React-Handler.
+
 ## Nachfrage-Auswertung statt Wunschzeiten
 
 **Frage des Users:** Sollen Gäste im Portal eine Wunsch-Reinigungszeit
