@@ -117,9 +117,15 @@ der Kommentar im Test schon vorher; jetzt stimmt er wörtlich.
 
 ## 🔖 Wiederaufnahme
 
-**Stand am Ende des 05.09.2026 (Abend):** Zwei Commits nach `0e4c8e1`/`c5946e0`
-— Konto-Seite (`1a9f3dc`) und Test-Bündelung mit Doku. CI-Ergebnis und
-Produktionsstand siehe unten, sobald nachgetragen.
+**Stand am Ende des 05.09.2026 (Abend):** Zwei Commits nach `c5946e0` —
+Konto-Seite (`1a9f3dc`) und Test-Bündelung mit Doku (`1ac5294`). CI-Lauf
+33987777361 grün, `verify` und `integration` beide erfolgreich — der
+Integrationsjob lief damit erstmals mit den gebündelten Anmeldungen durch.
+Vercel hat deployt: `/admin/abrechnung` antwortet in Produktion unangemeldet
+mit 307 auf `/admin` (der Riegel `getAccountContext`), von dort zur
+Anmeldung. **Der angemeldete Produktionsnachweis steht noch aus** — Chrome
+war in dieser Sitzung nicht verbunden; er ist der erste Schritt bei der
+Wiederaufnahme.
 
 **Wenn hier weitergearbeitet wird:** Als Inhaber auf rose-roomservice.app
 anmelden und `/admin` → „Plan & Abrechnung" öffnen; der Kasten oben muss
