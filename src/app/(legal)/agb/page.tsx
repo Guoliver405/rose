@@ -18,6 +18,14 @@ export const metadata: Metadata = {
  * Zählregel („auch nur vorübergehend in Betrieb = zählt") ist dieselbe wie in
  * `countBillableRooms`; die Kündigungsregel folgt daraus: monatlich, zum
  * Monatsende, und das Löschen des Kontos ist zugleich die Kündigung.
+ *
+ * § 12 Abs. 3 (Vertragsübergang, 06.09.2026): Die Rechte an RoSe liegen bei
+ * den Urhebern, die I²D UG hält nur eine Lizenz. Soll die Lizenz später an ein
+ * anderes Unternehmen gehen, müssen die Kundenverträge mitwandern — eine
+ * Vertragsübernahme braucht sonst die Zustimmung jedes einzelnen Hotels. Die
+ * Klausel holt diese Zustimmung vorab ein, mit Ankündigung, Sonderkündigungsrecht
+ * und mitlaufendem AVV, damit sie auch im B2B-Verhältnis der Inhaltskontrolle
+ * standhält. Sie muss stehen, BEVOR der erste Kunde unterschreibt.
  */
 export default function AgbPage() {
   const preisZimmer = formatCents(PRICE_PER_ROOM_CENTS)
@@ -283,11 +291,22 @@ export default function AgbPage() {
           Rechts oder öffentlich-rechtliches Sondervermögen ist.
         </P>
         <P>
-          (3) Erklärungen, für die diese Bedingungen Textform vorsehen, können per E-Mail
+          (3) Der Anbieter darf diesen Vertrag mit allen Rechten und Pflichten auf ein anderes
+          Unternehmen übertragen, das den Dienst unverändert fortführt, etwa auf einen
+          Rechtsnachfolger oder ein mit dem Anbieter verbundenes Unternehmen. Der
+          Auftragsverarbeitungsvertrag nach § 8 geht dabei mit über; die Daten des Kunden werden
+          nicht zu anderen Zwecken verwendet als bisher. Der Anbieter teilt die Übertragung
+          mindestens sechs Wochen vor Wirksamwerden in Textform mit und nennt dabei das
+          übernehmende Unternehmen. Der Kunde kann den Vertrag in diesem Fall zum Zeitpunkt des
+          Übergangs kündigen; kündigt er nicht, wird das übernehmende Unternehmen mit dem Übergang
+          sein Vertragspartner und der bisherige Anbieter frei.
+        </P>
+        <P>
+          (4) Erklärungen, für die diese Bedingungen Textform vorsehen, können per E-Mail
           abgegeben werden.
         </P>
         <P>
-          (4) Sollte eine Bestimmung dieser Bedingungen unwirksam sein oder werden, bleibt die
+          (5) Sollte eine Bestimmung dieser Bedingungen unwirksam sein oder werden, bleibt die
           Wirksamkeit der übrigen Bestimmungen unberührt.
         </P>
       </Section>
