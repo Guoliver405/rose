@@ -189,6 +189,13 @@ Betrieb — alle drei Schritte des Bauplans in Produktion (Commits `2a6d5a4`
    Produktion unter Plan & Abrechnung → Zahlungsweg eine Testkarte über das
    Stripe-Formular speichern — die Browser-Werkzeuge tippen nicht in
    Stripe-iframes. Konto `zz-stripe-test@rose.local` / `StripeTest2026!`.
+4. **Nachtrag (Commit `cca9e97`):** Bei geöffnetem Stripe-Formular waren die
+   Knöpfe „Karte oder SEPA" und „Überweisung auf Rechnung" ausgeblendet —
+   der User sah nur Karte und Lastschrift und vermisste die Überweisung.
+   Jetzt steht unter dem Formular ein Link „Überweisung auf Rechnung
+   wählen", die Einleitung nennt die drei Wege klarer. In Produktion, im
+   Browser noch nicht mit der Elements-Oberfläche zusammen gesehen — beim
+   Punkt 3 mit prüfen.
 
 **Danach offen, in dieser Reihenfolge:**
 
