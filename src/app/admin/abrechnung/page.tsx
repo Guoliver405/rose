@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { ArrowLeft, Building2, Check, CreditCard, ExternalLink, FileText, Info, Pencil } from 'lucide-react'
 import { getAccountContext } from '@/utils/auth'
 import { getBillingOverview } from '@/utils/billing'
-import { billingDetailsComplete, getAccountBilling, stripeReady } from '@/utils/stripe'
+import { billingDetailsComplete, getAccountBilling, stripeReady, stripeTestMode } from '@/utils/stripe'
 import { ensureInvoicesForAccount, listInvoices, type InvoiceRow } from '@/utils/invoicing'
 import { isOverdue } from '@/lib/invoice'
 import { formatCents } from '@/lib/money'
@@ -131,18 +131,20 @@ export default async function AbrechnungPage() {
         <h1 className="text-xl font-black text-ink">Plan &amp; Abrechnung</h1>
       </div>
 
-      {/* ── Hinweis: noch keine Berechnung ─────────────────────────────── */}
-      <div className="flex gap-3 rounded-xl border border-attention-tint-edge bg-attention-tint p-4 text-sm">
-        <Info className="mt-0.5 h-5 w-5 shrink-0 text-attention-deep" />
-        <div className="text-attention-deepest">
-          <p className="font-bold">Aktuell wird noch nichts berechnet.</p>
-          <p className="mt-1">
-            {mitStripe
-              ? 'Die monatliche Rechnungsstellung ist in Vorbereitung. Die Beträge auf dieser Seite zeigen, was das Konto nach dem Preismodell kosten würde. Sie können Rechnungsdaten und Zahlungsweg bereits hinterlegen; vor der ersten Berechnung werden Sie in Textform informiert.'
-              : 'Rechnungsstellung und Zahlungsverfahren sind noch nicht eingerichtet. Die Beträge auf dieser Seite zeigen, was das Konto nach dem Preismodell kosten würde. Vor der ersten Berechnung werden Sie in Textform informiert und können ein Zahlungsverfahren hinterlegen — bis dahin entstehen keine Kosten.'}
-          </p>
+      {/* ── Hinweis: Testbetrieb bzw. noch keine Berechnung ───────────── */}
+      {(!mitStripe || stripeTestMode()) && (
+        <div className="flex gap-3 rounded-xl border border-attention-tint-edge bg-attention-tint p-4 text-sm">
+          <Info className="mt-0.5 h-5 w-5 shrink-0 text-attention-deep" />
+          <div className="text-attention-deepest">
+            <p className="font-bold">{mitStripe ? 'Testbetrieb — es wird nichts belastet.' : 'Aktuell wird nichts berechnet.'}</p>
+            <p className="mt-1">
+              {mitStripe
+                ? 'Rechnungen werden monatlich am 1. für den Vormonat gestellt, derzeit aber über die Testumgebung unseres Zahlungsdienstleisters: Sie sind Testrechnungen, hinterlegte Zahlungsmittel werden nicht belastet. Vor dem Wechsel in den Echtbetrieb werden Sie in Textform informiert.'
+                : 'Rechnungsstellung und Zahlungsverfahren sind noch nicht eingerichtet. Die Beträge auf dieser Seite zeigen, was das Konto nach dem Preismodell kosten würde. Vor der ersten Berechnung werden Sie in Textform informiert und können ein Zahlungsverfahren hinterlegen — bis dahin entstehen keine Kosten.'}
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── Plan ───────────────────────────────────────────────────────── */}
       <Card title="Ihr Plan" icon={Check}>

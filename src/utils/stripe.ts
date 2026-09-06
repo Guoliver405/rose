@@ -27,6 +27,11 @@ export function stripeReady(): boolean {
   return Boolean(process.env.STRIPE_SECRET_KEY && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
 }
 
+/** Sandbox-Schlüssel (`sk_test_`) — Rechnungen sind dann Testrechnungen, es wird nichts belastet. */
+export function stripeTestMode(): boolean {
+  return (process.env.STRIPE_SECRET_KEY ?? '').startsWith('sk_test_')
+}
+
 export function stripePublishableKey(): string {
   return process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? ''
 }

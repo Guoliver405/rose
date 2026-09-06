@@ -5,7 +5,7 @@ import { listAccessibleHotels, getAccountContext } from '@/utils/auth'
 import { createAdminClient } from '@/utils/supabase/service'
 import { isRoomActive } from '@/lib/board'
 import { getBillingOverview } from '@/utils/billing'
-import { getAccountBilling, stripeReady } from '@/utils/stripe'
+import { getAccountBilling, stripeReady, stripeTestMode } from '@/utils/stripe'
 import { ensureInvoicesForAccount, listInvoices } from '@/utils/invoicing'
 import { isOverdue } from '@/lib/invoice'
 import { formatCents } from '@/lib/money'
@@ -169,9 +169,11 @@ export default async function HotelPickerPage() {
           <p className="mt-2 text-xs text-ink-muted">
             Abgerechnet wird je Zimmer und Kalendermonat; gezählt wird jedes Zimmer, das im
             Monat <em>auch nur vorübergehend</em> in Betrieb war.{' '}
-            {mitStripe
-              ? 'Die monatliche Rechnungsstellung ist in Vorbereitung — aktuell wird noch nichts berechnet.'
-              : 'Rechnungsstellung und Zahlungsverfahren sind noch nicht eingerichtet — aktuell wird nichts berechnet.'}
+            {!mitStripe
+              ? 'Rechnungsstellung und Zahlungsverfahren sind noch nicht eingerichtet — aktuell wird nichts berechnet.'
+              : stripeTestMode()
+                ? 'Rechnungen werden monatlich am 1. gestellt — derzeit als Testrechnungen, es wird nichts belastet.'
+                : 'Rechnungen werden monatlich am 1. für den Vormonat gestellt.'}
           </p>
         </section>
       )}
