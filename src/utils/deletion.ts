@@ -25,6 +25,7 @@
  */
 
 import { createAdminClient } from '@/utils/supabase/service'
+import { deleteStripeCustomer } from '@/utils/stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export type DeletionPreview = {
@@ -269,6 +270,11 @@ export async function deleteAccountData(accountId: string): Promise<{ error?: st
   const { data: owners } = await admin
     .from('account_members').select('user_id').eq('account_id', accountId)
   const ownerIds = (owners ?? []).map(o => o.user_id as string)
+
+  // Stripe-Kunde mit entfernen; Stripe behält dessen Rechnungen (Belege),
+  // RoSe die Spiegel-Zeilen in `invoices` (ohne Fremdschlüssel).
+  const { data: acc } = await admin.from('accounts').select('stripe_customer_id').eq('id', accountId).maybeSingle()
+  if (acc?.stripe_customer_id) await deleteStripeCustomer(acc.stripe_customer_id as string)
 
   const { error } = await admin.from('accounts').delete().eq('id', accountId)
   if (error) return { error: `accounts: ${error.message}` }

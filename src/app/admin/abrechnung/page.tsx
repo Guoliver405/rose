@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { ArrowLeft, Building2, Check, CreditCard, FileText, Info } from 'lucide-react'
+import { ArrowLeft, Building2, Check, CreditCard, FileText, Info, Pencil } from 'lucide-react'
 import { getAccountContext } from '@/utils/auth'
 import { getBillingOverview } from '@/utils/billing'
+import { billingDetailsComplete, getAccountBilling, stripeReady } from '@/utils/stripe'
 import { formatCents } from '@/lib/money'
 import {
-  FREE_MONTHS, MIN_COVERS_ROOMS, MIN_MONTHLY_CENTS, PRICE_PER_ROOM_CENTS, billingLine,
+  MIN_COVERS_ROOMS, MIN_MONTHLY_CENTS, PRICE_PER_ROOM_CENTS, billingLine, lastFreePeriodStart,
 } from '@/lib/pricing'
 import KontoShell from '../KontoShell'
 
@@ -51,7 +52,7 @@ function FreiBadge() {
   return (
     <span
       className="rounded-full bg-positive-pill px-2 py-0.5 text-xs font-semibold text-positive-deepest"
-      title="Der Kalendermonat der Registrierung ist frei."
+      title="Freier Monat: der Kalendermonat der Registrierung und der erste volle Monat danach."
     >
       frei
     </span>
@@ -71,7 +72,14 @@ export default async function AbrechnungPage() {
   const account = await getAccountContext()
   if (!account) redirect('/admin')
 
-  const billing = await getBillingOverview(account.accountId, 12)
+  const mitStripe = stripeReady()
+  const [billing, konto] = await Promise.all([
+    getBillingOverview(account.accountId, 12),
+    mitStripe ? getAccountBilling(account.accountId) : Promise.resolve(null),
+  ])
+  const zahlungsweg = konto?.paymentMethodKind
+    ? { card: 'Karte', sepa_debit: 'SEPA-Lastschrift', bank_transfer: 'Überweisung auf Rechnung' }[konto.paymentMethodKind]
+    : null
   const laufend = billingLine(
     billing.current.rooms, account.createdAt, new Date(`${billing.current.periodStart}T00:00:00`),
   )
@@ -82,6 +90,8 @@ export default async function AbrechnungPage() {
   const registriert = account.createdAt.toLocaleDateString('de-DE', {
     day: '2-digit', month: 'long', year: 'numeric',
   })
+  const freiBis = lastFreePeriodStart(account.createdAt)
+    .toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })
 
   return (
     <KontoShell who={account.displayName}>
@@ -99,12 +109,11 @@ export default async function AbrechnungPage() {
       <div className="flex gap-3 rounded-xl border border-attention-tint-edge bg-attention-tint p-4 text-sm">
         <Info className="mt-0.5 h-5 w-5 shrink-0 text-attention-deep" />
         <div className="text-attention-deepest">
-          <p className="font-bold">Aktuell wird nichts berechnet.</p>
+          <p className="font-bold">Aktuell wird noch nichts berechnet.</p>
           <p className="mt-1">
-            Rechnungsstellung und Zahlungsverfahren sind noch nicht eingerichtet. Die Beträge
-            auf dieser Seite zeigen, was das Konto nach dem Preismodell kosten würde. Vor der
-            ersten Berechnung werden Sie in Textform informiert und können ein Zahlungsverfahren
-            hinterlegen — bis dahin entstehen keine Kosten.
+            {mitStripe
+              ? 'Die monatliche Rechnungsstellung ist in Vorbereitung. Die Beträge auf dieser Seite zeigen, was das Konto nach dem Preismodell kosten würde. Sie können Rechnungsdaten und Zahlungsweg bereits hinterlegen; vor der ersten Berechnung werden Sie in Textform informiert.'
+              : 'Rechnungsstellung und Zahlungsverfahren sind noch nicht eingerichtet. Die Beträge auf dieser Seite zeigen, was das Konto nach dem Preismodell kosten würde. Vor der ersten Berechnung werden Sie in Textform informiert und können ein Zahlungsverfahren hinterlegen — bis dahin entstehen keine Kosten.'}
           </p>
         </div>
       </div>
@@ -123,9 +132,9 @@ export default async function AbrechnungPage() {
         </div>
         <p className="mt-3 text-sm text-ink-soft">
           Ein Preis für alle Hausgrößen, alle Funktionen sind enthalten. Es gibt keine Pakete
-          und nichts, worauf Sie später hochstufen müssten. Der Kalendermonat der Registrierung
-          {FREE_MONTHS > 1 ? ` und die ${FREE_MONTHS - 1} darauf folgenden` : ''} ist frei —
-          Ihr Konto besteht seit dem {registriert}.
+          und nichts, worauf Sie später hochstufen müssten. Ihr Konto besteht seit dem{' '}
+          {registriert} und ist frei bis Ende {freiBis} — der Monat der Registrierung und der
+          erste volle Kalendermonat danach kosten nichts.
         </p>
       </Card>
 
@@ -241,11 +250,44 @@ export default async function AbrechnungPage() {
       {/* ── Zahlungsverfahren + Rechnungen (Platzhalter) ───────────────── */}
       <div className="grid gap-6 md:grid-cols-2">
         <Card title="Zahlungsverfahren" icon={CreditCard}>
-          <p className="text-sm text-ink-soft">
-            Noch kein Zahlungsverfahren hinterlegt — und derzeit auch keines wählbar. Sobald
-            die Rechnungsstellung eingerichtet ist, können Sie hier ein Zahlungsverfahren
-            hinterlegen. Sie werden vorher in Textform informiert.
-          </p>
+          {!mitStripe ? (
+            <p className="text-sm text-ink-soft">
+              Noch kein Zahlungsverfahren hinterlegt — und derzeit auch keines wählbar. Sobald
+              die Rechnungsstellung eingerichtet ist, können Sie hier ein Zahlungsverfahren
+              hinterlegen. Sie werden vorher in Textform informiert.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-3 text-sm">
+              {zahlungsweg ? (
+                <p>
+                  <span className="font-semibold text-ink">{zahlungsweg}</span>
+                  {konto?.paymentMethodKind !== 'bank_transfer' && konto?.paymentMethodLabel && (
+                    <span className="text-ink-soft"> · {konto.paymentMethodLabel}</span>
+                  )}
+                </p>
+              ) : (
+                <p className="rounded-lg border border-attention-tint-edge bg-attention-tint px-3 py-2 text-xs font-semibold text-attention-deepest">
+                  Noch kein Zahlungsweg hinterlegt.
+                </p>
+              )}
+              {billingDetailsComplete(konto) ? (
+                <p className="text-xs text-ink-soft">
+                  Rechnung an <span className="font-semibold text-ink">{konto?.billingName}</span>,{' '}
+                  {konto?.billingAddress?.postal_code} {konto?.billingAddress?.city},{' '}
+                  {konto?.billingAddress?.country}
+                  {konto?.vatId ? ` · USt-IdNr. ${konto.vatId}` : ''}
+                </p>
+              ) : (
+                <p className="text-xs text-ink-soft">Rechnungsdaten fehlen noch.</p>
+              )}
+              <Link
+                href="/admin/abrechnung/zahlungsweg"
+                className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-edge bg-surface-elevated px-3 py-1.5 text-xs font-bold text-ink hover:border-edge-strong"
+              >
+                <Pencil className="h-3.5 w-3.5" /> {zahlungsweg ? 'Zahlungsweg und Rechnungsdaten ändern' : 'Zahlungsweg hinterlegen'}
+              </Link>
+            </div>
+          )}
         </Card>
         <Card title="Rechnungen" icon={FileText}>
           <p className="text-sm text-ink-soft">

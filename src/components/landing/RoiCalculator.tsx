@@ -59,7 +59,7 @@ export default function RoiCalculator() {
         <div className="rounded-xl border border-edge bg-surface p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-ink-muted">RoSe kostet</p>
           <p className="mt-1 text-3xl font-black text-ink">{formatCents(r.costCents)}</p>
-          <p className="text-sm text-ink-soft">im Monat, zzgl. USt. · erster Monat frei</p>
+          <p className="text-sm text-ink-soft">im Monat, zzgl. USt. · mindestens ein voller Monat frei</p>
         </div>
         <div className="rounded-xl border border-positive-tint-edge bg-positive-tint p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-positive-deepest">RoSe spart etwa</p>

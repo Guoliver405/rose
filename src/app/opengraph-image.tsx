@@ -58,7 +58,7 @@ export default function Image() {
             {/* Satori verlangt bei mehreren Kindknoten explizites Flex — ein
                 JSX-Ausdruck neben Text wären zwei Textknoten, daher ein String. */}
             <div style={{ fontSize: 28, fontWeight: 700 }}>
-              {`${formatCents(PRICE_PER_ROOM_CENTS)} je Zimmer und Monat · erster Monat frei`}
+              {`${formatCents(PRICE_PER_ROOM_CENTS)} je Zimmer und Monat · erster voller Monat frei`}
             </div>
             <div style={{ fontSize: 22, color: SLATE_400 }}>{PROVIDER.domain}</div>
           </div>

@@ -106,7 +106,7 @@ export default function SignupForm() {
         <a href="/agb" target="_blank" rel="noopener" className="underline hover:text-ink">AGB</a>{' '}
         und nehmen die{' '}
         <a href="/datenschutz" target="_blank" rel="noopener" className="underline hover:text-ink">Datenschutzerklärung</a>{' '}
-        zur Kenntnis. Der Kalendermonat der Registrierung ist kostenfrei.
+        zur Kenntnis. Der Kalendermonat der Registrierung und der erste volle Monat danach sind kostenfrei.
       </p>
 
       <p className="text-xs text-ink-muted">

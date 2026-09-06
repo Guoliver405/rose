@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vertragsunterlagen neben dem Repo (gitignored), inkl. Build-Skript für Word-Entwürfe.
+    "Verträge/**",
   ]),
 ]);
 

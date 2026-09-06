@@ -6,6 +6,7 @@ import { createAdminClient } from '@/utils/supabase/service'
 import { slugify, uniqueSlug } from '@/lib/slug'
 import { DEFAULT_PIN_LENGTH } from '@/lib/ids'
 import serviceTemplates from '@/lib/service-templates.json'
+import { ensureStripeCustomer, stripeReady } from '@/utils/stripe'
 
 /*
  * Phase 6b — Self-Service-Registrierung.
@@ -157,7 +158,15 @@ export async function signupAction(formData: FormData): Promise<Result> {
     }
   }
 
-  // ── 7) Anmelden. Über den Cookie-gebundenen Client, damit die Sitzung
+  // ── 7) Stripe-Kunde. Nicht fatal: fehlt er, holt ihn der erste Aufruf der
+  //       Zahlungsweg-Seite nach (`ensureStripeCustomer`).
+  const mitStripe = stripeReady()
+  if (mitStripe) {
+    const res = await ensureStripeCustomer(account.id)
+    if (res.error) console.error('[signup] Stripe-Kunde nicht angelegt:', res.error)
+  }
+
+  // ── 8) Anmelden. Über den Cookie-gebundenen Client, damit die Sitzung
   //       genauso gesetzt wird wie bei der normalen Anmeldung.
   const supabase = await createClient()
   const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password })
@@ -168,5 +177,7 @@ export async function signupAction(formData: FormData): Promise<Result> {
   }
 
   // redirect() wirft intern — bewusst außerhalb jeder Fehlerbehandlung.
-  redirect(`/h/${slug}/admin/zimmer`)
+  // Mit Stripe: Schritt 2 (Rechnungsdaten + Zahlungsweg), von dort ins
+  // Zimmer-Setup; ohne Stripe direkt dorthin.
+  redirect(mitStripe ? `/admin/abrechnung/zahlungsweg?neu=${slug}` : `/h/${slug}/admin/zimmer`)
 }

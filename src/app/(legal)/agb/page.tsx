@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { formatCents } from '@/lib/money'
-import { FREE_MONTHS, MIN_MONTHLY_CENTS, PRICE_PER_ROOM_CENTS } from '@/lib/pricing'
+import { MIN_MONTHLY_CENTS, PRICE_PER_ROOM_CENTS } from '@/lib/pricing'
 import { PROVIDER } from '@/lib/provider'
 import { List, P, ProviderNotice, Section, Title } from '../ui'
 
@@ -154,9 +154,10 @@ export default function AgbPage() {
           festgeschrieben.
         </P>
         <P>
-          (3) Der Kalendermonat, in dem das Konto angelegt wird, ist kostenfrei
-          {FREE_MONTHS > 1 ? ` (insgesamt ${FREE_MONTHS} Kalendermonate)` : ''}. Die Berechnung
-          beginnt mit dem darauf folgenden Kalendermonat.
+          (3) Der Kalendermonat, in dem das Konto angelegt wird, ist kostenfrei. Wird das Konto
+          nicht am Monatsersten angelegt, ist auch der darauf folgende Kalendermonat kostenfrei —
+          mindestens also ein voller Kalendermonat. Die Berechnung beginnt mit dem ersten
+          Kalendermonat nach dem kostenfreien Zeitraum.
         </P>
         <P>
           (4) Die Abrechnung erfolgt monatlich nachträglich. Rechnungen werden elektronisch

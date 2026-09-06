@@ -14,7 +14,7 @@ import RoiCalculator from '@/components/landing/RoiCalculator'
 export const metadata: Metadata = {
   title: 'RoSe — RoomService für Hotels jeder Größe',
   description:
-    'Reinigungswünsche, „Bitte nicht stören" und Service-Bestellungen der Gäste landen live bei Rezeption und Housekeeping — ohne Gast-App, ohne PMS-Projekt. 0,50 € je Zimmer und Monat, erster Monat frei.',
+    'Reinigungswünsche, „Bitte nicht stören" und Service-Bestellungen der Gäste landen live bei Rezeption und Housekeeping — ohne Gast-App, ohne PMS-Projekt. 0,50 € je Zimmer und Monat, mindestens ein voller Monat frei.',
   openGraph: {
     title: 'RoSe — RoomService für Hotels jeder Größe',
     description:
@@ -131,8 +131,8 @@ function Hero() {
         </a>
       </div>
       <p className="mt-5 text-sm text-ink-muted">
-        {formatCents(PRICE_PER_ROOM_CENTS)} je Zimmer und Monat · erster Monat
-        frei · läuft im Browser auf jedem Gerät · in wenigen Minuten
+        {formatCents(PRICE_PER_ROOM_CENTS)} je Zimmer und Monat · mindestens ein
+        voller Monat frei · läuft im Browser auf jedem Gerät · in wenigen Minuten
         eingerichtet
       </p>
     </section>
@@ -471,7 +471,7 @@ function Pricing() {
       <div className="mt-10 grid gap-6 md:grid-cols-5">
         <div className="flex flex-col rounded-2xl border border-action bg-surface-elevated p-6 shadow-sm ring-1 ring-action md:col-span-2">
           <p className="w-fit rounded-full bg-action-pill px-2.5 py-0.5 text-xs font-bold text-action-deep">
-            Erster Monat kostenlos
+            Mindestens ein voller Monat kostenlos
           </p>
           <p className="mt-4">
             <span className="text-5xl font-black text-ink">{formatCents(PRICE_PER_ROOM_CENTS)}</span>
@@ -542,7 +542,7 @@ function Faq() {
     },
     {
       q: 'Was kostet RoSe genau?',
-      a: `${formatCents(PRICE_PER_ROOM_CENTS)} je Zimmer und Monat, mindestens ${formatCents(MIN_MONTHLY_CENTS)} im Monat, zzgl. USt. Der Kalendermonat der Registrierung ist frei. Keine Pakete, keine Zimmergrenzen, monatlich kündbar.`,
+      a: `${formatCents(PRICE_PER_ROOM_CENTS)} je Zimmer und Monat, mindestens ${formatCents(MIN_MONTHLY_CENTS)} im Monat, zzgl. USt. Frei sind der Kalendermonat der Registrierung und der erste volle Monat danach — mindestens ein voller Monat. Keine Pakete, keine Zimmergrenzen, monatlich kündbar.`,
     },
     {
       q: 'Wie lange dauert die Einrichtung?',
@@ -550,7 +550,7 @@ function Faq() {
     },
     {
       q: 'Kann ich RoSe jetzt schon ausprobieren?',
-      a: 'Ja. In der Testphase ist die Registrierung noch auf eingeladene Häuser beschränkt — mit Einladungscode ist euer Konto in einer Minute angelegt, der erste Monat ist frei.',
+      a: 'Ja. In der Testphase ist die Registrierung noch auf eingeladene Häuser beschränkt — mit Einladungscode ist euer Konto in einer Minute angelegt, mindestens der erste volle Monat ist frei.',
     },
   ]
   return (
@@ -581,8 +581,8 @@ function SignupTeaser() {
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-ink-soft">
           Konto, Haus und Beispiel-Services entstehen in einem Zug — danach nur
-          noch die Zimmer eintragen. Der erste Monat ist frei; in der Testphase
-          braucht ihr dafür einen Einladungscode.
+          noch die Zimmer eintragen. Mindestens der erste volle Monat ist frei; in
+          der Testphase braucht ihr dafür einen Einladungscode.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <Link

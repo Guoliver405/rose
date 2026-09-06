@@ -5,6 +5,7 @@ import { listAccessibleHotels, getAccountContext } from '@/utils/auth'
 import { createAdminClient } from '@/utils/supabase/service'
 import { isRoomActive } from '@/lib/board'
 import { getBillingOverview } from '@/utils/billing'
+import { getAccountBilling, stripeReady } from '@/utils/stripe'
 import { formatCents } from '@/lib/money'
 import { billingLine } from '@/lib/pricing'
 import HausAnlegen from './HausAnlegen'
@@ -87,7 +88,12 @@ export default async function HotelPickerPage() {
 
   // Nur die Kurzfassung: Zimmerzahl und voraussichtlicher Betrag des
   // laufenden Monats. Alles Weitere liegt auf /admin/abrechnung.
-  const billing = account ? await getBillingOverview(account.accountId, 0) : null
+  const mitStripe = stripeReady()
+  const [billing, konto] = await Promise.all([
+    account ? getBillingOverview(account.accountId, 0) : Promise.resolve(null),
+    account && mitStripe ? getAccountBilling(account.accountId) : Promise.resolve(null),
+  ])
+  const zahlungswegFehlt = Boolean(account && mitStripe && !konto?.paymentMethodKind)
   const laufend = account && billing
     ? billingLine(
         billing.current.rooms, account.createdAt, new Date(`${billing.current.periodStart}T00:00:00`),
@@ -126,13 +132,25 @@ export default async function HotelPickerPage() {
             </span>
             <span className="rounded-full bg-surface-muted px-3 py-1 font-semibold text-ink-soft">
               voraussichtlich {formatCents(laufend.cents)}
-              {laufend.free ? ' (erster Monat frei)' : ''}
+              {laufend.free ? ' (Freimonat)' : ''}
             </span>
           </div>
+          {zahlungswegFehlt && (
+            <p className="mt-3 rounded-lg border border-attention-tint-edge bg-attention-tint px-3 py-2 text-sm text-attention-deepest">
+              <span className="font-bold">Noch kein Zahlungsweg hinterlegt.</span>{' '}
+              Karte, SEPA-Lastschrift oder Überweisung —{' '}
+              <Link href="/admin/abrechnung/zahlungsweg" className="font-semibold underline hover:no-underline">
+                jetzt hinterlegen
+              </Link>
+              . Belastet wird erst nach dem Freimonat.
+            </p>
+          )}
           <p className="mt-2 text-xs text-ink-muted">
             Abgerechnet wird je Zimmer und Kalendermonat; gezählt wird jedes Zimmer, das im
-            Monat <em>auch nur vorübergehend</em> in Betrieb war. Rechnungsstellung und
-            Zahlungsverfahren sind noch nicht eingerichtet — aktuell wird nichts berechnet.
+            Monat <em>auch nur vorübergehend</em> in Betrieb war.{' '}
+            {mitStripe
+              ? 'Die monatliche Rechnungsstellung ist in Vorbereitung — aktuell wird noch nichts berechnet.'
+              : 'Rechnungsstellung und Zahlungsverfahren sind noch nicht eingerichtet — aktuell wird nichts berechnet.'}
           </p>
         </section>
       )}
