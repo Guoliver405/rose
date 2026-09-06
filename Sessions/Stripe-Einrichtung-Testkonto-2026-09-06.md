@@ -7,6 +7,24 @@ Dashboard-Oberfläche; die Links führen direkt auf die jeweilige Seite.
 Stripe baut das Dashboard laufend um — wenn ein Menüpunkt anders heißt, hilft
 das Suchfeld oben im Dashboard mit dem Begriff aus der Überschrift.
 
+## Stand 06.09.2026 (Nachmittag)
+
+Es gibt bereits eine Sandbox: **„GoodMood Studio Sandbox"**, Konto-E-Mail
+`goodmood.development@gmail.com`, Land DE (`acct_1UChWKFnKa5mCIAy`); die
+Schlüssel lagen schon in `.env.local` und sind seit heute auch in Vercel
+(Production). Ein neues Stripe-Konto ist damit **nicht nötig**. Per API
+erledigt (Claude, ohne Dashboard): Zahlungsmethoden Karte, SEPA-Lastschrift
+und Banküberweisung an · Stripe Tax mit Hauptsitz Saarbrücken, Standard-
+Steuercode SaaS business use, Steuerverhalten exklusiv · Steuer-Registrierung
+Deutschland aktiv. Damit sind die Abschnitte 1, 2, 3, 5 und 6 unten erledigt.
+
+**Noch im Dashboard zu tun** (nur dort möglich, vor Schritt 2 des Bauplans):
+Abschnitt 4 (Öffentliche Unternehmensinformationen), 7 (Rechnungsnummern-
+Präfix, Fußzeile, Steuer-ID, Erinnerungen) und 8 (Kunden-Mails), später 9
+(Webhook). Testmails aus der Sandbox gehen nur an Adressen des Stripe-Kontos,
+also an `goodmood.development@gmail.com` — RoSe-Testkonten mit dieser Adresse
+registrieren, wenn Rechnungsmails ankommen sollen.
+
 Zwei Dinge vorweg:
 
 - **Sandbox statt „Testmodus".** Stripe hat den alten Testmodus-Schalter durch
