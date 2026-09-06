@@ -246,13 +246,51 @@ pro Stunde ohne Token) haben am Abend das Limit gerissen — der letzte
 CI-Stand, den ich sah, war grün für alle Code-Commits; der Lauf zu `03b9da9`
 (nur Protokoll) blieb ungeprüft. Künftig seltener pollen oder `gh` mit Token.
 
+## Vertragsgespräch (06.09., Vormittag/Mittag)
+
+Wiederaufnahme wie vorgemerkt: die drei stillen Entscheidungen des Entwurfs
+durchgesprochen. **Hintergrund des Users** dreht die Lesart der Prüfung:
+Idee gemeinsam, Freunde, 50/50 gewollt; die I²D UG ist bewusst ein
+bewegliches Vehikel (die Software soll nicht der Firma zugeschrieben
+werden, Lizenz später ggf. an eine Auslandsgesellschaft); Hobby, keine
+weitere Gesellschaft, alles in einem Vertrag; § 181-Befreiung liegt laut
+Bernd vor. Damit fallen Mitinhaberschaft, schwache UG und gemeinschaftliche
+Kündigung als Befunde weg. **Neu dafür:** 60 % Lizenz hälftig ergibt keine
+50/50 — die übrigen 40 % bleiben in Bernds UG. Vier Entscheidungen:
+
+1. Innenverhältnis als Abschnitt im Lizenzvertrag (Innengesellschaft,
+   ausdrückliche Einräumung der Hälfte, Anwachsung mit 24-Monats-Earn-out
+   bei Ausstieg und Tod). Sorge des Users, § 1 Abs. 1 könne wie
+   Besserstellung wirken, mit der Begründung im Vertragstext selbst
+   beantwortet: Ohne die Einräumung hätte Bernd rechtlich nichts, Ideen und
+   Tests begründen kein Urheberrecht.
+2. § 181: Registerauszug als Anlage, sonst nichts.
+3. § 15 → Kette „Nettoerlöse − Betriebskosten − Pauschale, Rest hälftig",
+   Verlustvortrag, getrennte Gutschriften, USt-Regel.
+4. **AGB § 12 Abs. 3 Vertragsübergang** sofort umgesetzt und in Produktion
+   (Commit `39fd86c`): Übertragung auf Rechtsnachfolger, sechs Wochen
+   Ankündigung, Sonderkündigungsrecht, AVV geht mit — nötig, bevor der
+   erste Kunde unterschreibt, sonst braucht ein Lizenzwechsel die
+   Zustimmung jedes Hotels.
+
+Ergebnis: **Entwurf 2** als Word-Datei in `Verträge/` (nicht im Repo),
+17 Seiten, Deckblatt mit Änderungsübersicht und 12 offenen Punkten, gelbe
+`[OFFEN: …]`-Marken, neuer § 15 Betrieb/Konten/Datenschutz (Oliver hält
+alle Konten treuhänderisch, ist Unterauftragsverarbeiter der UG), vier
+Anlagen (Softwarestand, Konten-Tabelle, Registerauszug, AVV). Dazu in
+`Verträge/`: Gesprächsstand, Formulierungsvorschläge, Build-Skript.
+Werkzeug-Notiz: kein LibreOffice/pdftoppm auf dem Rechner — Sichtprüfung
+über Word-COM (PDF-Export) plus WinRT `Windows.Data.Pdf` (PNG je Seite) aus
+PowerShell; der Schema-Validator stolpert über `w:highlightCs` von docx-js,
+das Build-Skript entfernt es beim Packen.
+
 ## 🔖 Wiederaufnahme
 
-**Als Erstes am nächsten Tag (Wunsch des Users, 06.09. spät):** die
-Vertragsdetails gemeinsam durchsprechen — Grundlage ist
-`Verträge/Pruefung-Lizenzvertrag-2026-09-06.md`, Einstieg über die drei
-stillen Entscheidungen (Mitinhaberschaft, gemeinschaftliche Kündigung,
-§ 181) und die Frage in Abschnitt 7 Nr. 1: Soll Bernd Mitinhaber werden?
+**Vertrag:** Entwurf 2 liegt in `Verträge/` und ist an den User gegangen;
+nächster Schritt ist Bernds Rückmeldung zu den 12 offenen Punkten auf dem
+Deckblatt (Pauschale, Abrechnungsrhythmus, Konten-Übergabe, Wortmarke,
+Registerauszug, AVV, Steuerberater, Anwalt). Änderungen am Entwurf über
+`Verträge/build-entwurf-2.js`, nicht in Word.
 
 Sechs Dinge an diesem Tag: Landing-Texte, Abreisetag-Logik der Routine,
 Nachfrage-Auswertung, Zeitzone des Hauses, „Frühestens ab",
