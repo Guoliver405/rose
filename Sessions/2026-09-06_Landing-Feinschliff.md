@@ -284,6 +284,14 @@ Werkzeug-Notiz: kein LibreOffice/pdftoppm auf dem Rechner — Sichtprüfung
 PowerShell; der Schema-Validator stolpert über `w:highlightCs` von docx-js,
 das Build-Skript entfernt es beim Packen.
 
+Nachfrage des Users: Konten müssen **nicht** auf die UG übergehen —
+zwingend nur Stripe; Vercel/Supabase/Resend/Porkbun bleiben bei Oliver,
+Kosten erstattet die UG gegen Beleg (§ 15 Abs. 2/4, Anlage 2 umgestellt).
+Folgen: dauerhaft Unterauftragsverarbeiter, Vercel Pro ab erstem zahlenden
+Kunden (Hobby-Tarif verbietet kommerzielle Nutzung), Bernd als
+Team-Mitglied, Porkbun über Passwort-Tresor. Bernd hat eine eigene
+Claude-Lizenz.
+
 ## 🔖 Wiederaufnahme
 
 **Vertrag:** Entwurf 2 liegt in `Verträge/` und ist an den User gegangen;
