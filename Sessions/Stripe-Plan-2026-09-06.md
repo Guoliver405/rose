@@ -128,7 +128,6 @@ was die Konto-Seite und `/admin` anzeigen.
 | `STRIPE_SECRET_KEY` | `sk_test_…`, später `sk_live_…` der UG |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | `pk_test_…` für das Payment Element |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_…` des Endpunkts |
-| `STRIPE_PRODUCT_ID` | Produkt „RoSe Nutzung" (Steuer-Code SaaS), einmal angelegt |
 | `CRON_SECRET` | Vercel setzt `Authorization: Bearer …` beim Cron-Aufruf |
 
 `stripeReady()` = die drei Stripe-Schlüssel gesetzt. Fehlen sie, bleibt
@@ -199,8 +198,9 @@ z. B. `DE123456789` (Stripe simuliert die Prüfung).
      invoice_id }, pending_invoice_items_behavior: 'exclude' })`,
      `invoiceItems.create({ invoice, customer, amount: cents, currency:
      'eur', description: 'RoSe — Nutzung im September 2026: 12 Zimmer
-     (mindestens 5,00 €)', tax_behavior: 'exclusive', price_data: {
-     product: STRIPE_PRODUCT_ID, … } })`, `invoices.finalizeInvoice` →
+     (mindestens 5,00 €)', tax_behavior: 'exclusive' })` — ohne Produkt; der
+     Steuer-Code kommt aus dem voreingestellten Produktsteuercode der
+     Steuereinstellungen (SaaS, business use), `invoices.finalizeInvoice` →
      Nummer, Steuer, PDF, Zahlungsseite; Stripe verschickt die Rechnung.
    - **Einzugsart je Zahlungsweg:** Karte/Lastschrift →
      `collection_method: 'charge_automatically'` (Stripe zieht bei
@@ -259,27 +259,28 @@ z. B. `DE123456789` (Stripe simuliert die Prüfung).
    Rechnungsstellung eingezogen (Lastschrift nach Vorabankündigung), sonst
    ist die Rechnung innerhalb von 14 Tagen fällig"; Abs. 6 Sperre nach
    30 Tagen bleibt Text, Umsetzung später (E3).
-3. **Wechsel auf das UG-Konto**: Schlüssel und `STRIPE_PRODUCT_ID` in Vercel
-   tauschen, Webhook-Endpunkt, Produkt, Steuer-Registrierung, Bank
+3. **Wechsel auf das UG-Konto**: Schlüssel in Vercel tauschen, Webhook-Endpunkt, Steuer-Registrierung, Bank
    transfers, Kunden-Mails und Erinnerungen im UG-Konto einrichten
    (Abschnitt 7 noch einmal), Gläubiger-ID für SEPA (Live). Test-Kunden
    verfallen; `ensureStripeCustomer` legt beim nächsten Aufruf neue an und
    leert den Zahlungsweg, `/admin` erinnert.
 
-## 7. Einstellungen im Stripe-Konto (Testmodus, macht Oliver)
+## 7. Einstellungen im Stripe-Konto (Sandbox, macht Oliver)
 
-Kontoanlage und Schlüssel kann ich nicht übernehmen (Anmeldedaten). Alles
-Weitere ist Dashboard-Konfiguration, die ich nicht per API setzen kann:
+Ausführliche Schritt-für-Schritt-Anleitung mit geprüften Menüpfaden:
+[Stripe-Einrichtung-Testkonto-2026-09-06.md](Stripe-Einrichtung-Testkonto-2026-09-06.md).
+Kurzfassung:
 
 1. **Konto anlegen**, Testmodus; Firmendaten dürfen leer bleiben. Unter
    „Developers → API keys" `sk_test_…` und `pk_test_…` holen → `.env.local`
    und Vercel (Git-Bash-`printf`-Muster aus AGENTS.md).
-2. **Produkt** „RoSe Nutzung" anlegen (Product catalog), Steuer-Code
-   „Software as a service (SaaS) – business use" (`txcd_10103001`), kein
-   fester Preis → Produkt-ID nach `STRIPE_PRODUCT_ID`.
+2. Kein eigenes Produkt nötig: der Steuer-Code „Software as a service
+   (SaaS) – business use" (`txcd_10103001`) wird als **voreingestellter
+   Produktsteuercode** in den Steuereinstellungen gesetzt und gilt für alle
+   Rechnungspositionen.
 3. **Stripe Tax** aktivieren: Settings → Tax; Herkunftsadresse (im Test die
    UG-Anschrift Saarbrücken), Steuer-Registrierung **Deutschland** anlegen
-   (im Testmodus ohne Nachweis), Standard-Steuer-Code auf das Produkt.
+   (in der Sandbox ohne Nachweis), Steuerverhalten „Exklusive".
 4. **Zahlungsmethoden**: Settings → Payment methods: Karten, SEPA-Lastschrift
    und **Bank transfers (Kundenguthaben)** einschalten. Im Testmodus lassen
    sich Überweisungen im Dashboard simulieren.
