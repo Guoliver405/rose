@@ -25,6 +25,18 @@ Präfix, Fußzeile, Steuer-ID, Erinnerungen) und 8 (Kunden-Mails), später 9
 also an `goodmood.development@gmail.com` — RoSe-Testkonten mit dieser Adresse
 registrieren, wenn Rechnungsmails ankommen sollen.
 
+**Nachtrag 06.09. (Abend):** Ohne Unternehmensverifizierung lässt Stripe
+weder die öffentlichen Unternehmensinformationen (Abschnitt 4) noch das
+Verwalten/Umbenennen der Sandbox zu; per API geht beides für das eigene
+Konto nicht. **Bewusst offen gelassen:** der Name „GoodMood Studio Sandbox"
+im Mandatstext ist Kosmetik der Testphase, die echten Daten kommen mit dem
+verifizierten Live-Konto der UG. Was Abschnitt 7 auf Kontoebene will, setzt
+RoSe ab Schritt 2 **je Rechnung per API** (`footer`, `account_tax_ids`,
+`days_until_due`, Zahlungsmethoden); nur das Nummern-Präfix bleibt
+Stripe-Vorgabe. Sollte auch Abschnitt 8 (Kunden-Mails) an der Verifizierung
+hängen, verschickt RoSe Rechnungs- und Erinnerungsmails selbst über Resend
+mit `hosted_invoice_url` — die Webhooks liefern die Anlässe.
+
 Zwei Dinge vorweg:
 
 - **Sandbox statt „Testmodus".** Stripe hat den alten Testmodus-Schalter durch
