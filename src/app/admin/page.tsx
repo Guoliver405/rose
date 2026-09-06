@@ -6,6 +6,8 @@ import { createAdminClient } from '@/utils/supabase/service'
 import { isRoomActive } from '@/lib/board'
 import { getBillingOverview } from '@/utils/billing'
 import { getAccountBilling, stripeReady } from '@/utils/stripe'
+import { ensureInvoicesForAccount, listInvoices } from '@/utils/invoicing'
+import { isOverdue } from '@/lib/invoice'
 import { formatCents } from '@/lib/money'
 import { billingLine } from '@/lib/pricing'
 import HausAnlegen from './HausAnlegen'
@@ -89,11 +91,17 @@ export default async function HotelPickerPage() {
   // Nur die Kurzfassung: Zimmerzahl und voraussichtlicher Betrag des
   // laufenden Monats. Alles Weitere liegt auf /admin/abrechnung.
   const mitStripe = stripeReady()
-  const [billing, konto] = await Promise.all([
+  if (account && mitStripe) await ensureInvoicesForAccount(account.accountId)
+  const [billing, konto, rechnungen] = await Promise.all([
     account ? getBillingOverview(account.accountId, 0) : Promise.resolve(null),
     account && mitStripe ? getAccountBilling(account.accountId) : Promise.resolve(null),
+    account && mitStripe ? listInvoices(account.accountId, 6) : Promise.resolve([]),
   ])
   const zahlungswegFehlt = Boolean(account && mitStripe && !konto?.paymentMethodKind)
+  const heute = new Date()
+  const problemRechnung = rechnungen.find(r =>
+    r.status === 'uncollectible' || isOverdue(r.status, r.dueAt, heute) || (r.status === 'draft' && r.lastError),
+  )
   const laufend = account && billing
     ? billingLine(
         billing.current.rooms, account.createdAt, new Date(`${billing.current.periodStart}T00:00:00`),
@@ -135,6 +143,19 @@ export default async function HotelPickerPage() {
               {laufend.free ? ' (Freimonat)' : ''}
             </span>
           </div>
+          {problemRechnung && (
+            <p className="mt-3 rounded-lg border border-critical-tint-edge bg-critical-tint px-3 py-2 text-sm text-critical-deepest">
+              <span className="font-bold">
+                {problemRechnung.status === 'draft'
+                  ? 'Eine Rechnung konnte nicht gestellt werden.'
+                  : `Rechnung ${problemRechnung.number ?? ''} ist überfällig.`}
+              </span>{' '}
+              {problemRechnung.status === 'draft' ? problemRechnung.lastError : 'Bitte begleichen, sonst kann der Zugang nach Mahnung gesperrt werden (§ 6 Abs. 6 AGB).'}{' '}
+              <Link href={problemRechnung.hostedInvoiceUrl ?? '/admin/abrechnung'} className="font-semibold underline hover:no-underline">
+                {problemRechnung.status === 'draft' ? 'Zur Abrechnung' : 'Rechnung ansehen'}
+              </Link>
+            </p>
+          )}
           {zahlungswegFehlt && (
             <p className="mt-3 rounded-lg border border-attention-tint-edge bg-attention-tint px-3 py-2 text-sm text-attention-deepest">
               <span className="font-bold">Noch kein Zahlungsweg hinterlegt.</span>{' '}

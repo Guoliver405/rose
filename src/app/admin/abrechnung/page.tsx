@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { ArrowLeft, Building2, Check, CreditCard, FileText, Info, Pencil } from 'lucide-react'
+import { ArrowLeft, Building2, Check, CreditCard, ExternalLink, FileText, Info, Pencil } from 'lucide-react'
 import { getAccountContext } from '@/utils/auth'
 import { getBillingOverview } from '@/utils/billing'
 import { billingDetailsComplete, getAccountBilling, stripeReady } from '@/utils/stripe'
+import { ensureInvoicesForAccount, listInvoices, type InvoiceRow } from '@/utils/invoicing'
+import { isOverdue } from '@/lib/invoice'
 import { formatCents } from '@/lib/money'
 import {
   MIN_COVERS_ROOMS, MIN_MONTHLY_CENTS, PRICE_PER_ROOM_CENTS, billingLine, lastFreePeriodStart,
@@ -59,6 +61,24 @@ function FreiBadge() {
   )
 }
 
+const STATUS_PILL: Record<InvoiceRow['status'], { text: string; cls: string }> = {
+  draft: { text: 'in Vorbereitung', cls: 'bg-surface-muted text-ink-muted' },
+  open: { text: 'offen', cls: 'bg-attention-pill text-attention-deepest' },
+  paid: { text: 'bezahlt', cls: 'bg-positive-pill text-positive-deepest' },
+  uncollectible: { text: 'nicht einbringlich', cls: 'bg-critical-pill text-critical-deepest' },
+  void: { text: 'storniert', cls: 'bg-surface-muted text-ink-muted' },
+}
+
+function InvoicePill({ inv, heute }: { inv: InvoiceRow; heute: Date }) {
+  const ueberfaellig = isOverdue(inv.status, inv.dueAt, heute)
+  const p = ueberfaellig ? { text: 'überfällig', cls: 'bg-critical-pill text-critical-deepest' } : STATUS_PILL[inv.status]
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${p.cls}`} title={inv.lastError ?? undefined}>
+      {p.text}
+    </span>
+  )
+}
+
 function Regel({ children }: { children: React.ReactNode }) {
   return (
     <li className="flex gap-2">
@@ -73,10 +93,16 @@ export default async function AbrechnungPage() {
   if (!account) redirect('/admin')
 
   const mitStripe = stripeReady()
-  const [billing, konto] = await Promise.all([
+  // Den Monatslauf für dieses Konto nachziehen, falls der Cron nicht lief —
+  // idempotent, in der Regel eine Abfrage.
+  if (mitStripe) await ensureInvoicesForAccount(account.accountId)
+  const [billing, konto, rechnungen] = await Promise.all([
     getBillingOverview(account.accountId, 12),
     mitStripe ? getAccountBilling(account.accountId) : Promise.resolve(null),
+    mitStripe ? listInvoices(account.accountId) : Promise.resolve([] as InvoiceRow[]),
   ])
+  const heute = new Date()
+  const rechnungJePeriode = new Map(rechnungen.map(r => [r.periodStart, r]))
   const zahlungsweg = konto?.paymentMethodKind
     ? { card: 'Karte', sepa_debit: 'SEPA-Lastschrift', bank_transfer: 'Überweisung auf Rechnung' }[konto.paymentMethodKind]
     : null
@@ -227,9 +253,13 @@ export default async function AbrechnungPage() {
                           </span>
                         )}
                         {!row.line.free && row.line.cents > 0 && (
-                          <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs font-semibold text-ink-muted">
-                            nicht berechnet
-                          </span>
+                          rechnungJePeriode.get(row.periodStart)
+                            ? <InvoicePill inv={rechnungJePeriode.get(row.periodStart)!} heute={heute} />
+                            : (
+                              <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs font-semibold text-ink-muted">
+                                nicht berechnet
+                              </span>
+                            )
                         )}
                       </span>
                     </td>
@@ -290,11 +320,42 @@ export default async function AbrechnungPage() {
           )}
         </Card>
         <Card title="Rechnungen" icon={FileText}>
-          <p className="text-sm text-ink-soft">
-            Noch keine Rechnungen. Rechnungen erscheinen hier, sobald die Rechnungsstellung
-            eingerichtet ist — monatlich nachträglich, elektronisch, fällig innerhalb von
-            14 Tagen ohne Abzug.
-          </p>
+          {rechnungen.length === 0 ? (
+            <p className="text-sm text-ink-soft">
+              {mitStripe
+                ? 'Noch keine Rechnung. Die erste entsteht am 1. des Monats nach dem Freimonat — monatlich nachträglich, elektronisch, fällig innerhalb von 14 Tagen ohne Abzug.'
+                : 'Noch keine Rechnungen. Rechnungen erscheinen hier, sobald die Rechnungsstellung eingerichtet ist — monatlich nachträglich, elektronisch, fällig innerhalb von 14 Tagen ohne Abzug.'}
+            </p>
+          ) : (
+            <ul className="flex flex-col divide-y divide-edge text-sm">
+              {rechnungen.map(inv => (
+                <li key={inv.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+                  <span className="font-semibold text-ink">{monatsName(inv.periodStart)}</span>
+                  {inv.number && <span className="font-mono text-xs text-ink-muted">{inv.number}</span>}
+                  <span className="tabular-nums text-ink">
+                    {inv.totalCents != null ? formatCents(inv.totalCents) : `${formatCents(inv.netCents)} netto`}
+                  </span>
+                  <InvoicePill inv={inv} heute={heute} />
+                  {inv.dueAt && inv.status === 'open' && (
+                    <span className="text-xs text-ink-muted">fällig {new Date(`${inv.dueAt}T00:00:00`).toLocaleDateString('de-DE')}</span>
+                  )}
+                  {inv.lastError && inv.status === 'draft' && (
+                    <span className="text-xs text-attention-deepest">{inv.lastError}</span>
+                  )}
+                  <span className="ml-auto flex gap-3">
+                    {inv.invoicePdf && (
+                      <a href={inv.invoicePdf} className="text-xs font-semibold text-action-strong hover:underline">PDF</a>
+                    )}
+                    {inv.hostedInvoiceUrl && (
+                      <a href={inv.hostedInvoiceUrl} target="_blank" rel="noopener" className="flex items-center gap-1 text-xs font-semibold text-action-strong hover:underline">
+                        {inv.status === 'open' ? 'Ansehen / bezahlen' : 'Ansehen'} <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
       </div>
 
