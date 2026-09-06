@@ -80,7 +80,7 @@ export default async function ZahlungswegPage({
             <p className="mt-1">
               Ihr Konto und Ihr Haus sind angelegt. Hinterlegen Sie jetzt Rechnungsdaten und
               Zahlungsweg — belastet wird nichts, der Monat der Registrierung und der erste
-              volle Monat danach sind frei. Sie können diesen Schritt auch später auf der Seite
+              volle Monat danach sind frei. Sie können diesen Schritt auch später auf der Seite{' '}
               {'„Plan & Abrechnung“'} nachholen.
             </p>
             <Link
