@@ -41,7 +41,7 @@ function darkMode(): boolean {
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false
 }
 
-function ElementsForm({ onDone, onCancel }: { onDone: (label: string) => void; onCancel: () => void }) {
+function ElementsForm({ onDone, onCancel, onBankTransfer }: { onDone: (label: string) => void; onCancel: () => void; onBankTransfer: () => void }) {
   const stripe = useStripe()
   const elements = useElements()
   const router = useRouter()
@@ -92,6 +92,13 @@ function ElementsForm({ onDone, onCancel }: { onDone: (label: string) => void; o
           Abbrechen
         </button>
       </div>
+      <p className="text-sm text-ink-soft">
+        Lieber ohne gespeichertes Zahlungsmittel?{' '}
+        <button type="button" onClick={onBankTransfer} className="font-semibold text-action-strong underline hover:no-underline">
+          Überweisung auf Rechnung wählen
+        </button>
+        {' '}— jede Rechnung nennt dann eine Bankverbindung und einen Verwendungszweck, Zahlungsziel 14 Tage.
+      </p>
       <p className="text-xs text-ink-muted">
         Es wird nichts belastet. Das Zahlungsmittel wird bei Stripe gespeichert und für die
         Monatsrechnungen verwendet; RoSe selbst sieht keine Karten- oder Kontodaten.
@@ -178,9 +185,10 @@ export default function PaymentMethodPanel({
         </div>
       ) : (
         <p className="text-sm text-ink-soft">
-          Noch kein Zahlungsweg hinterlegt. Die Monatsrechnung wird per Karte oder
-          SEPA-Lastschrift eingezogen oder per Überweisung beglichen — alle drei Wege laufen
-          über unseren Zahlungsdienstleister Stripe.
+          Noch kein Zahlungsweg hinterlegt. Drei Wege, alle über unseren Zahlungsdienstleister
+          Stripe: Karte oder SEPA-Lastschrift werden hier gespeichert und monatlich eingezogen;
+          bei Überweisung auf Rechnung wird nichts gespeichert, jede Rechnung nennt eine
+          Bankverbindung mit Verwendungszweck.
         </p>
       )}
 
@@ -196,6 +204,7 @@ export default function PaymentMethodPanel({
           <ElementsForm
             onDone={label => { setClientSecret(null); setErfolg(`${label} gespeichert.`) }}
             onCancel={() => setClientSecret(null)}
+            onBankTransfer={bankTransfer}
           />
         </Elements>
       ) : (
