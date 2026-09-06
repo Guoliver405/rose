@@ -76,13 +76,24 @@ async function handle(event: Stripe.Event): Promise<void> {
       const { data: byId } = await admin.from('invoices').select('id').eq('stripe_invoice_id', inv.id).maybeSingle()
       if (byId) {
         await admin.from('invoices').update(update).eq('id', byId.id)
-      } else if (accountId && periodStart) {
-        // Rechnung aus einem Lauf, dessen Rückschreiben scheiterte, oder aus dem Dashboard.
-        await admin.from('invoices').upsert({
+        return
+      }
+      if (!accountId || !periodStart) return
+      // Das Ereignis kann den Monatslauf überholen: die Spiegel-Zeile existiert
+      // dann schon (Konto + Periode), trägt aber noch keine Stripe-ID. Nur
+      // ergänzen — Zimmerzahl und Nettobetrag des Laufs nicht überschreiben
+      // (das tat der frühere Upsert und setzte `rooms` auf 0).
+      const { data: byPeriod } = await admin.from('invoices').select('id')
+        .eq('account_id', accountId).eq('period_start', periodStart).maybeSingle()
+      if (byPeriod) {
+        await admin.from('invoices').update({ stripe_invoice_id: inv.id, ...update }).eq('id', byPeriod.id)
+      } else {
+        // Rechnung aus dem Dashboard oder aus einem Lauf ohne Spiegel-Zeile.
+        await admin.from('invoices').insert({
           account_id: accountId, period_start: periodStart,
           rooms: 0, net_cents: inv.subtotal ?? 0,
           stripe_invoice_id: inv.id, ...update,
-        }, { onConflict: 'account_id,period_start' })
+        })
       }
       return
     }

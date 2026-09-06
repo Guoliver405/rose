@@ -97,7 +97,18 @@ lokal, im Integrationstest und in Produktion verifiziert.
   über den Return-URL-Pfad in Produktion, Default am Stripe-Kunden) — der
   Lauf am 1.10. für September (3 Zimmer, 5,95 €) sollte `charge_automatically`
   + `invoices.pay` zeigen; Ergebnis in `invoices` und im Stripe-Dashboard
-  prüfen.
+  prüfen. **Erledigt am selben Abend mit einem zweiten Testkonto**
+  „Stripe-Testhaus Karte" (`zz-stripe-karte@rose.local` / `StripeTest2026!`,
+  Registrierung 10.05.2026, 12 Zimmer ab 01.06., Visa •••• 4242): der Lauf in
+  Produktion erzeugte `WVL2WRJW-0002` mit `charge_automatically`, 12 Zimmer ×
+  0,50 € = 6,00 € netto, 7,14 € brutto, sofort bezahlt; Webhook lieferte
+  `invoice.finalized`, `invoice.paid`, `invoice.updated`. **Befund dabei:**
+  das `invoice.finalized`-Ereignis überholte den Lauf — die Spiegel-Zeile
+  hatte noch keine Stripe-ID, der Webhook fand sie nicht per ID und
+  überschrieb sie per Upsert mit `rooms: 0`. Behoben (Commit danach): der
+  Webhook sucht als Zweites nach Konto + Periode und ergänzt dann nur die
+  Stripe-Felder; erst wenn auch das fehlt, legt er eine Zeile an. Die Zeile
+  von `WVL2WRJW-0002` wurde von Hand auf 12 Zimmer korrigiert.
 - **Stripe-Mails** aus der Sandbox gehen nur an Adressen des Stripe-Kontos;
   das Testkonto hat `zz-stripe-test@rose.local`, es kam also keine Mail.
 - **Schritt 3** (Rechtstexte, Übergabe an das UG-Konto) steht aus; AGB § 6
