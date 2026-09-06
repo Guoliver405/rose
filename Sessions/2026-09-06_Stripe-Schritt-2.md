@@ -92,7 +92,12 @@ lokal, im Integrationstest und in Produktion verifiziert.
   Konto und Periode gibt es genau eine Rechnung. Der Codepfad ist
   ausschließlich Stripe-Aufrufe ohne eigene Logik; Nachweis beim nächsten
   Monatslauf (1.10.) am Testkonto mit hinterlegter Testkarte, oder vorher mit
-  einem zweiten zurückdatierten Testkonto.
+  einem zweiten zurückdatierten Testkonto. **Nachtrag:** Testkarte `Visa
+  •••• 4242` ist am Testkonto hinterlegt (SetupIntent per API, Speicherung
+  über den Return-URL-Pfad in Produktion, Default am Stripe-Kunden) — der
+  Lauf am 1.10. für September (3 Zimmer, 5,95 €) sollte `charge_automatically`
+  + `invoices.pay` zeigen; Ergebnis in `invoices` und im Stripe-Dashboard
+  prüfen.
 - **Stripe-Mails** aus der Sandbox gehen nur an Adressen des Stripe-Kontos;
   das Testkonto hat `zz-stripe-test@rose.local`, es kam also keine Mail.
 - **Schritt 3** (Rechtstexte, Übergabe an das UG-Konto) steht aus; AGB § 6
