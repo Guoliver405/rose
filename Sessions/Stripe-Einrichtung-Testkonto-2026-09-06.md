@@ -37,6 +37,14 @@ Stripe-Vorgabe. Sollte auch Abschnitt 8 (Kunden-Mails) an der Verifizierung
 hängen, verschickt RoSe Rechnungs- und Erinnerungsmails selbst über Resend
 mit `hosted_invoice_url` — die Webhooks liefern die Anlässe.
 
+**Nachtrag 06.09. (spät):** Abschnitt 9 (Webhook) ist **per API erledigt** —
+Endpunkt `we_1UCkgcFnKa5mCIAylVweTuY9` auf
+`https://rose-roomservice.app/api/stripe/webhook` mit zehn Ereignissen,
+Secret in `.env.local` und Vercel; Zustellung in Produktion nachgewiesen.
+Abschnitt 8 (Kunden-Mails) hat der User im Dashboard gesetzt (Rechnungen,
+fehlgeschlagene Zahlungen, Belege, Zahlungsanweisungen für Überweisungen;
+SEPA-Vorabankündigung ist bei Stripe verpflichtend an).
+
 Zwei Dinge vorweg:
 
 - **Sandbox statt „Testmodus".** Stripe hat den alten Testmodus-Schalter durch

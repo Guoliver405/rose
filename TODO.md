@@ -116,15 +116,17 @@ zusammen und gehören vor den ersten zahlenden Kunden.
         Konzept, Abschnitt 2: Charakter-Sheet, Hero, fünf Ablauf-Panels,
         vier Use-Case-Bilder, OG-Hintergrund. Danach Einbau und Umstellung
         des OG-Bilds.
-- [ ] **Zahlungsprovider einbinden** — **06.09.: Schritt 1 von 3 in
+- [ ] **Zahlungsprovider einbinden** — **06.09.: Schritte 1 und 2 von 3 in
       Produktion** ([Stripe-Plan-2026-09-06.md](Sessions/Stripe-Plan-2026-09-06.md),
       Fassung 2: Stripe Invoicing + Stripe Tax statt eigener Rechnung):
       Rechnungsdaten und Zahlungsweg am Konto, Stripe-Kunde bei der
-      Registrierung, Sandbox konfiguriert. **Offen:** Schritt 2 (Monatslauf →
-      Stripe-Rechnung, Webhook, Cron, Karte „Rechnungen"), Schritt 3
-      (Rechtstexte, Übergabe an das UG-Konto); Dashboard-Einstellungen
-      Abschnitte 4/7/8 der Einrichtungsanleitung; E-Rechnung 2028 als
-      eigener Punkt. Anmeldung beim Provider als Teil der
+      Registrierung, Sandbox konfiguriert; Monatslauf mit Stripe-Rechnung
+      (Stripe Tax), Webhook, Cron, Karte „Rechnungen", erste Testrechnung
+      bezahlt. **Offen:** Schritt 3 (Rechtstexte: Datenschutz Abschnitt 7,
+      AVV-Liste, AGB § 6 Abs. 4/6; Übergabe an das UG-Konto mit Präfix `RS`,
+      Kunden-Mails, Verifizierung); Einzug per Karte/Lastschrift am nächsten
+      Monatslauf nachweisen; Erinnerungen für einmalige Rechnungen prüfen
+      (Dashboard) oder über Resend selbst schicken. Anmeldung beim Provider als Teil der
       Registrierung, auch wenn der erste Monat frei ist (Zahlungsmittel liegt
       dann schon vor). ~~Vorher Alternativen gegenüberstellen.~~ **05.09.
       (Abend) Gegenüberstellung liegt vor:**
@@ -145,6 +147,13 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       Offene Entscheidungen des Users stehen in Abschnitt 6. Betrifft
       `/registrieren`, die Karten „Zahlungsverfahren"/„Rechnungen" auf
       `/admin/abrechnung` und die Abrechnung aus `billing_snapshots`.
+- [ ] **E-Rechnungspflicht 2028** (06.09.): ab 01.01.2028 müssen inländische
+      B2B-Rechnungen als E-Rechnung (XRechnung/ZUGFeRD) gestellt werden.
+      Stripe-PDFs sind keine. Rückfall: aus den Stripe-Rechnungsdaten (alle
+      Felder über die API) eine XRechnung erzeugen und dem Kunden zusätzlich
+      anbieten. 2027 prüfen, ob Stripe bis dahin E-Rechnungen für Deutschland
+      liefert. Herkunft: [Stripe-Plan-2026-09-06.md](Sessions/Stripe-Plan-2026-09-06.md),
+      Abschnitt 9.
 - [ ] **Wortmarke „RoSe" anmelden** (05.09., aus Bernds Anregung, ein © ans
       Logo zu setzen): Das © bringt für das Logo nichts — Urheberrecht
       entsteht ohne Vermerk, und ein zweifarbiger Schriftzug erreicht die

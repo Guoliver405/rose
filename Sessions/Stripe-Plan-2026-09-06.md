@@ -1,5 +1,11 @@
 # Stripe im Testmodus — Bauplan (Fassung 2: Stripe Invoicing + Stripe Tax)
 
+> **Stand 06.09.2026 abends:** Schritt 1 und 2 umgesetzt und in Produktion
+> ([Schritt 1](2026-09-06_Stripe-Schritt-1.md), [Schritt 2](2026-09-06_Stripe-Schritt-2.md)).
+> Abweichungen: kein eigenes Produkt (Standard-Steuercode), Webhook-Endpunkt
+> per API statt Dashboard, `invoices.pay` sofort nach Finalisierung.
+> Offen: Schritt 3.
+
 Stand 06.09.2026, nach Rücksprache mit dem User. Setzt den Bauplan aus
 [Zahlungsprovider-Gegenueberstellung-2026-09-05.md](Zahlungsprovider-Gegenueberstellung-2026-09-05.md)
 um, **weicht aber in einem Punkt bewusst davon ab:** Die Rechnung schreibt
