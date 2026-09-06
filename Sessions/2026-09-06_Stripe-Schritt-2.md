@@ -167,7 +167,46 @@ Live-Betrieb zu lösen.
 
 ## 🔖 Wiederaufnahme
 
-Alle drei Schritte des Bauplans sind umgesetzt. Offen: Übergabe
-an das UG-Konto, sobald Bernd es verifiziert hat (Live-Schlüssel, Webhook,
-Steuer-Registrierung, Präfix `RS`, Kunden-Mails). Testkonto „Stripe-Testhaus"
-(zurückdatiert, 3 Zimmer, Rechnung August bezahlt) bleibt stehen.
+**Stand beim Schließen (06.09.2026, spät):** Stripe ist komplett im Sandbox-
+Betrieb — alle drei Schritte des Bauplans in Produktion (Commits `2a6d5a4`
+… `d5bee3c`), Rechtstexte angepasst, Cron am 1. um 04:00 UTC aktiv, Webhook
+`we_1UCkgcFnKa5mCIAylVweTuY9` zeigt auf Produktion. Nichts wird real belastet
+(`sk_test_`, Testbetrieb-Hinweis auf der Konto-Seite).
+
+**Als Erstes beim nächsten Mal — prüfen, nicht bauen:**
+
+1. **Bernds Rückmeldung zum Lizenzvertrag** (Entwurf 2 in `Verträge/`, 12
+   offene Punkte auf dem Deckblatt). Änderungen über
+   `Verträge/build-entwurf-2.js`, nicht in Word.
+2. **Hat der Lauf am 1.10. funktioniert?** (falls das nächste Mal danach
+   liegt) Erwartung: `WVL2WRJW-0003` für Stripe-Testhaus (3 Zimmer, 5,95 €,
+   Visa, sofort `paid`) und `-0004` für Stripe-Testhaus Karte (12 Zimmer,
+   7,14 €, SEPA — einige Tage `open`, dann `paid` per Webhook). Prüfen in
+   `invoices`, `stripe_events` und in der Sandbox; Vercel-Log der Route
+   `/api/billing/run`. Vor dem 1.10. lässt sich nichts mehr auslösen — je
+   Konto und Periode genau eine Rechnung, und der September ist nicht zu.
+3. **Elements-Oberfläche einmal von Hand** (GUI-Katalog, C+M): in
+   Produktion unter Plan & Abrechnung → Zahlungsweg eine Testkarte über das
+   Stripe-Formular speichern — die Browser-Werkzeuge tippen nicht in
+   Stripe-iframes. Konto `zz-stripe-test@rose.local` / `StripeTest2026!`.
+
+**Danach offen, in dieser Reihenfolge:**
+
+- **Übergabe an das UG-Konto**, sobald Bernd verifiziert hat: Live-Schlüssel
+  + Webhook-Endpunkt im UG-Konto (per API wie hier), Steuer-Registrierung,
+  Zahlungsmethoden, Rechnungs-Präfix `RS`, Kunden-Mails, Unternehmensinfos;
+  Vercel-Variablen tauschen (Git-Bash-`printf`-Muster); `ensureStripeCustomer`
+  legt danach neue Kunden an, Zahlungswege müssen neu hinterlegt werden.
+  Anleitung: [Stripe-Einrichtung-Testkonto-2026-09-06.md](Stripe-Einrichtung-Testkonto-2026-09-06.md).
+- **TODO „Mail-Sperre sichtbar machen"** (Supabase-60-Sekunden-Limit bei
+  Einladung/Reset ohne Hinweis und Countdown) — vor dem Live-Betrieb.
+- **Sperre bei Nichtzahlung** (E3) — erst mit echten Kunden.
+- **Anwaltliche Prüfung** von AGB, Datenschutz, AVV (existiert noch nicht)
+  und Lizenzvertrag; **E-Rechnung 2028** in TODO.
+- Illustrationen (User), Coach Marks, Mehrsprachigkeit (Wunschliste).
+
+**Testdaten, die stehen bleiben sollen:** Konten „Stripe-Testhaus" (Visa)
+und „Stripe-Testhaus Karte" (SEPA), beide zurückdatiert mit Zimmern ab
+Sommer, damit Monatsläufe etwas zu tun haben; Rechnungen August in der
+Sandbox bezahlt. Nicht über „Daten löschen" entfernen, solange die
+Oktober-Läufe ausstehen.
