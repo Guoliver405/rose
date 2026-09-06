@@ -1,17 +1,17 @@
 # Offene Punkte
 
-Stand 05.09.2026. Herkunft in Klammern; Erledigtes wird gestrichen, nicht
+Stand 06.09.2026. Herkunft in Klammern; Erledigtes wird gestrichen, nicht
 gelöscht, damit erkennbar bleibt, was einmal offen war.
 
 ## Vor den ersten echten Kunden
 
-- [ ] **Lizenzvertrag mit I²D klären** (06.09., Entwurf von Bernd, Prüfung in
-      `Verträge/Pruefung-Lizenzvertrag-2026-09-06.md`, nicht im Repo). Vor
-      allem anderen: Soll Bernd Mitinhaber der Rechte werden? Dann
-      Innenverhältnis, Kündigungsfristen mit Pflicht-Auslauf für Hotels,
-      Lizenzsatz, Betriebs- und AVV-Vertrag, § 181-Befreiung im Register,
-      Steuerberater (USt, Gutschrift, vGA), Anwalt. **Nächste Sitzung: als
-      Erstes durchsprechen.**
+- [ ] **Lizenzvertrag mit I²D** — 06.09. durchgesprochen und **Entwurf 2 an
+      Bernd geschickt** (in `Verträge/`, nicht im Repo): 50/50 als
+      Innengesellschaft im selben Vertrag, Lizenz als Kette „Nettoerlöse −
+      Kosten − Pauschale, Rest hälftig", Auslaufphase für Hotels, Konten
+      bleiben bei den Lizenzgebern. AGB § 12 Abs. 3 (Vertragsübergang) dazu in
+      Produktion. **Wartet auf Bernd:** Registerauszug, Pauschale,
+      Abrechnungsrhythmus, Wortmarke; danach Steuerberater und Anwalt.
 
 - [x] ~~**Login-Actions testen**~~ — 05.09. erledigt:
       [login.test.ts](tests/integration/login.test.ts) fährt beide Actions
