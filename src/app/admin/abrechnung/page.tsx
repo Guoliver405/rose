@@ -366,7 +366,13 @@ export default async function AbrechnungPage() {
         <ul className="grid gap-x-6 gap-y-2 text-sm text-ink-soft sm:grid-cols-2">
           <Regel>
             <span className="font-semibold text-ink">Abrechnungsintervall:</span> Kalendermonat,
-            monatlich nachträglich.
+            monatlich nachträglich — die Rechnung kommt am 1. des Folgemonats per E-Mail und
+            erscheint hier.
+          </Regel>
+          <Regel>
+            <span className="font-semibold text-ink">Zahlung:</span> mit hinterlegter Karte oder
+            Lastschrift wird mit Rechnungsstellung eingezogen (Lastschrift nach Vorabankündigung),
+            sonst innerhalb von 14 Tagen per Überweisung oder über die Zahlungsseite.
           </Regel>
           <Regel>
             <span className="font-semibold text-ink">Mindestbetrag je Konto,</span> nicht je Haus —

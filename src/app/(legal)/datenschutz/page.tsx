@@ -23,7 +23,12 @@ export const metadata: Metadata = {
  * Einwilligungs-Banner (nur technisch notwendige Cookies), Gäste anonym, die
  * Mail-Adresse eines Gastes wird nicht in RoSe gespeichert (wohl aber im
  * Zustellprotokoll des Mail-Dienstleisters), Fehlversuche der Gast-Anmeldung
- * nur als IP-Hash für 15 Minuten.
+ * nur als IP-Hash für 15 Minuten. Seit 06.09.2026 Abschnitt 6 zu Stripe:
+ * Rechnungsdaten und Zahlungsmittel gehen an Stripe Payments Europe (Irland),
+ * RoSe speichert weder Kartendaten noch IBAN, nur Kennung und letzte Ziffern;
+ * Stripe verschickt Rechnungen und Erinnerungen. Stripe ist KEIN
+ * Unterauftragsverarbeiter der Hotels — es verarbeitet die Daten des Kunden
+ * (Firma, Inhaber), nicht die seiner Gäste; deshalb steht es nicht in § 8 AGB.
  */
 export default function DatenschutzPage() {
   return (
@@ -100,6 +105,11 @@ export default function DatenschutzPage() {
             für das Reinigungsboard (<code className="rounded bg-surface-muted px-1 text-xs text-ink">svc_sb-…</code>)
             und für das Gäste-Portal (<code className="rounded bg-surface-muted px-1 text-xs text-ink">rose_guest</code>).
             Die Cookies enthalten keine Klardaten und verfallen mit dem Abmelden bzw. dem Check-out.
+            Auf der Seite „Zahlungsweg &amp; Rechnungsdaten“ des Kontos bindet RoSe die
+            Zahlungsformulare unseres Zahlungsdienstleisters Stripe ein (Abschnitt 6); Stripe
+            setzt dort eigene technisch notwendige Cookies zur Betrugsvorbeugung
+            (<code className="rounded bg-surface-muted px-1 text-xs text-ink">__stripe_mid</code>,{' '}
+            <code className="rounded bg-surface-muted px-1 text-xs text-ink">__stripe_sid</code>).
             Weitere Cookies setzt RoSe nicht; das helle oder dunkle Design folgt der Einstellung
             Ihres Geräts, ohne dass etwas gespeichert wird.
           </P>
@@ -131,11 +141,40 @@ export default function DatenschutzPage() {
         </P>
       </Section>
 
-      <Section title="6. Zahlungsdaten">
+      <Section title="6. Rechnungen und Zahlungsdaten">
         <P>
-          Derzeit werden keine Zahlungsdaten erhoben. Sobald die Abrechnung über einen
-          Zahlungsdienstleister läuft, wird diese Erklärung um den Dienstleister, die
-          verarbeiteten Daten und die Rechtsgrundlage ergänzt; Kunden werden vorab informiert.
+          Die Abrechnung des Dienstes läuft über <span className="font-semibold text-ink">Stripe Payments
+          Europe, Ltd.</span>, 1 Grand Canal Street Lower, Grand Canal Dock, Dublin, D02 H210, Irland
+          („Stripe“). Betroffen sind ausschließlich Kunden (Beherbergungsbetriebe) und die Personen,
+          die für sie das Konto führen — nicht Gäste und nicht das Personal der Häuser.
+        </P>
+        <P>
+          <span className="font-semibold text-ink">Was Stripe erhält:</span> die Rechnungsdaten des
+          Kontos (Rechnungsempfänger, Anschrift, Land, gegebenenfalls USt-IdNr.), die E-Mail-Adresse
+          des Kontoinhabers für Rechnungsversand und Belege, die Rechnungen selbst (Zeitraum,
+          Zimmerzahl, Beträge) und ihren Zahlungsstatus. Hinterlegt der Kunde eine Karte oder ein
+          SEPA-Lastschriftmandat, gibt er diese Daten in Formularen ein, die Stripe direkt
+          bereitstellt; <span className="font-semibold text-ink">RoSe erhält und speichert keine
+          Kartennummern und keine IBAN</span>, sondern nur eine Kennung des Zahlungsmittels sowie
+          Art und letzte Ziffern zur Anzeige. Bei Überweisung nennt die Rechnung eine
+          Bankverbindung von Stripe; der Eingang wird dort zugeordnet.
+        </P>
+        <P>
+          <span className="font-semibold text-ink">Was Stripe tut:</span> Rechnungen erstellen,
+          nummerieren und per E-Mail zustellen, Zahlungen einziehen oder zuordnen, bei
+          ausbleibender Zahlung erinnern, die Umsatzsteuer nach Land und USt-IdNr. bestimmen
+          (die USt-IdNr. prüft Stripe gegen das EU-Register VIES) und die gesetzlichen Pflichten
+          eines Zahlungsdienstleisters erfüllen (Betrugsvorbeugung, Geldwäscheprävention). Dafür
+          ist Stripe eigener Verantwortlicher; Einzelheiten in der{' '}
+          <a href="https://stripe.com/de/privacy" target="_blank" rel="noopener" className="text-action-strong hover:underline">Datenschutzerklärung von Stripe</a>.
+        </P>
+        <P>
+          <span className="font-semibold text-ink">Rechtsgrundlage</span> ist die Erfüllung des
+          Vertrags mit dem Kunden (Art. 6 Abs. 1 lit. b DSGVO) sowie für Rechnungen und Belege die
+          steuer- und handelsrechtlichen Aufbewahrungspflichten (Art. 6 Abs. 1 lit. c DSGVO;
+          zehn Jahre nach § 147 AO und § 14b UStG). Rechnungen bleiben deshalb auch nach dem
+          Löschen eines Kontos bei Stripe und in einer Belegtabelle des Anbieters erhalten; das
+          Kundenkonto bei Stripe wird mit dem Löschen des RoSe-Kontos gelöscht.
         </P>
       </Section>
 
@@ -147,8 +186,11 @@ export default function DatenschutzPage() {
           Auslieferungsnetz des Hosters), stützt sich die Übermittlung auf die
           EU-Standardvertragsklauseln (Art. 46 Abs. 2 lit. c DSGVO) und — soweit der
           Dienstleister zertifiziert ist — auf den Angemessenheitsbeschluss zum EU-US Data
-          Privacy Framework (Art. 45 DSGVO). Mit allen drei Dienstleistern bestehen
-          Auftragsverarbeitungsverträge.
+          Privacy Framework (Art. 45 DSGVO). Stripe Payments Europe hat seinen Sitz in Irland
+          und kann Daten innerhalb der Stripe-Gruppe an Stripe, Inc. (USA) übermitteln; auch dafür
+          gelten Standardvertragsklauseln und das EU-US Data Privacy Framework. Mit Vercel,
+          Supabase und Resend bestehen Auftragsverarbeitungsverträge; Stripe handelt für die in
+          Abschnitt 6 genannten Zwecke als eigener Verantwortlicher.
         </P>
       </Section>
 

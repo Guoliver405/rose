@@ -217,6 +217,21 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       **In Produktion darf `ALLOW_TEST_ACCOUNTS` nie gesetzt werden** — sonst
       wären vorgelesene Passwörter zurück, die im Juli bewusst abgeschafft
       wurden.
+- [ ] **Mail-Sperre sichtbar machen** (06.09., User): Einladungen und
+      Passwort-Reset laufen über Supabase Auth (Custom SMTP = Resend), und
+      Supabase lässt je Adresse nur **eine Mail pro 60 Sekunden** zu
+      (`over_email_send_rate_limit`, 429). Heute meldet
+      `inviteUserByEmail` in [personal/actions.ts](src/app/h/[slug]/admin/personal/actions.ts)
+      dann nur „konnte nicht verschickt werden, Adresse prüfen" — der
+      eigentliche Grund bleibt im Server-Log; beim Reset schweigt die Seite
+      ganz. Für den Testbetrieb hinnehmbar, **für den Live-Betrieb nicht**:
+      (1) den Fehlercode auswerten und klar sagen „Bitte in 60 Sekunden
+      erneut versuchen", (2) Countdown im Formular bis zum nächsten möglichen
+      Versand, (3) das projektweite Stundenlimit in Supabase (Authentication →
+      Rate Limits) prüfen und anheben, (4) mittelfristig Einladungen wie die
+      Gast-Mail direkt über Resend verschicken (kein Auth-Limit, eigene
+      Vorlage). Der Gast-Zugang per Mail ist nicht betroffen — er geht direkt
+      über die Resend-API.
 - [ ] **Gmail-Zustellbarkeit**: Einladungen landen im Werbung-Ordner. Kein
       Fehler, sondern fehlende Sendereputation — hilft nur regelmäßiger
       Versand über Tage. Praktische Relevanz vermutlich begrenzt, weil Hotels

@@ -160,10 +160,23 @@ export default function AgbPage() {
           Kalendermonat nach dem kostenfreien Zeitraum.
         </P>
         <P>
-          (4) Die Abrechnung erfolgt monatlich nachträglich. Rechnungen werden elektronisch
-          bereitgestellt und sind innerhalb von 14 Tagen ohne Abzug fällig. Solange kein
-          Zahlungsverfahren eingerichtet ist, stellt der Anbieter keine Rechnung; der Kunde
-          wird vor der ersten Berechnung in Textform informiert.
+          (4) Die Abrechnung erfolgt monatlich nachträglich: Am ersten Tag des Folgemonats
+          stellt der Anbieter über seinen Zahlungsdienstleister (Stripe Payments Europe, Ltd.)
+          die Rechnung für den abgelaufenen Kalendermonat und stellt sie elektronisch bereit —
+          per E-Mail mit PDF und Zahlungsseite sowie im Konto unter „Plan &amp; Abrechnung“. Der
+          Kunde hinterlegt dafür im Konto seine Rechnungsdaten (Rechnungsempfänger, Anschrift,
+          Land und, für Unternehmen in der EU außerhalb Deutschlands, die USt-IdNr.); die
+          Umsatzsteuer richtet sich nach diesen Angaben.
+        </P>
+        <P>
+          (4a) Hat der Kunde eine Karte oder ein SEPA-Lastschriftmandat hinterlegt, wird der
+          Rechnungsbetrag mit Rechnungsstellung eingezogen, bei Lastschrift nach
+          Vorabankündigung durch den Zahlungsdienstleister. Andernfalls ist die Rechnung
+          innerhalb von 14 Tagen ohne Abzug zu begleichen — per Überweisung auf die in der
+          Rechnung genannte Bankverbindung des Zahlungsdienstleisters oder über die
+          Zahlungsseite. Schlägt ein Einzug fehl, informiert der Zahlungsdienstleister den
+          Kunden und wiederholt den Einzug; Kosten einer vom Kunden zu vertretenden
+          Rücklastschrift trägt der Kunde.
         </P>
         <P>
           (5) Der Anbieter darf die Preise mit einer Ankündigungsfrist von sechs Wochen zum
