@@ -4,7 +4,8 @@
 > ([Schritt 1](2026-09-06_Stripe-Schritt-1.md), [Schritt 2](2026-09-06_Stripe-Schritt-2.md)).
 > Abweichungen: kein eigenes Produkt (Standard-Steuercode), Webhook-Endpunkt
 > per API statt Dashboard, `invoices.pay` sofort nach Finalisierung.
-> Offen: Schritt 3.
+> Schritt 3 (Rechtstexte) ebenfalls umgesetzt; offen nur die Übergabe an
+> das UG-Konto (Abschnitt 6, Schritt 3 Nr. 3).
 
 Stand 06.09.2026, nach Rücksprache mit dem User. Setzt den Bauplan aus
 [Zahlungsprovider-Gegenueberstellung-2026-09-05.md](Zahlungsprovider-Gegenueberstellung-2026-09-05.md)

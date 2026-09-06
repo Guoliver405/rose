@@ -99,12 +99,53 @@ lokal, im Integrationstest und in Produktion verifiziert.
   Abs. 4 beschreibt noch „solange kein Zahlungsverfahren eingerichtet ist,
   stellt der Anbieter keine Rechnung".
 
+## Schritt 3 — Rechtstexte (06.09., spät, Commit `4c15154`)
+
+- **Datenschutz Abschnitt 6** heißt jetzt „Rechnungen und Zahlungsdaten":
+  Stripe Payments Europe, Ltd. (Dublin) mit Anschrift; was Stripe erhält
+  (Rechnungsdaten, Inhaber-Mail, Rechnungen, Zahlungsstatus; Karte/IBAN nur
+  in Stripe-Formularen, RoSe speichert nur Kennung und letzte Ziffern), was
+  Stripe tut (Rechnungen, Einzug, Erinnerungen, Steuer nach Land und
+  USt-IdNr. mit VIES, Betrugs-/Geldwäscheprävention als eigener
+  Verantwortlicher), Rechtsgrundlage Art. 6 Abs. 1 lit. b und c, zehn Jahre
+  Aufbewahrung (§ 147 AO, § 14b UStG), Rechnungen überleben die
+  Kontolöschung, der Stripe-Kunde nicht. Abschnitt 4: Stripes Cookies
+  `__stripe_mid`/`__stripe_sid` auf der Zahlungsweg-Seite als technisch
+  notwendig. Abschnitt 7: Stripe in Irland, Weitergabe an Stripe, Inc. (USA)
+  unter SCC/DPF; Stripe handelt als eigener Verantwortlicher.
+- **Bewusst nicht** in § 8 AGB (Unterauftragsverarbeiter) und nicht in die
+  AVV-Liste: Stripe verarbeitet die Daten des **Kunden** (Firma, Inhaber),
+  nicht die Gäste- und Personaldaten, die das Hotel in RoSe verarbeitet.
+  Für diese Daten ist der Anbieter Auftragsverarbeiter, für die Abrechnung
+  Verantwortlicher — zwei Rollen, wie Abschnitt 2 der Erklärung sie trennt.
+- **AGB § 6 Abs. 4** neu: Rechnung am 1. des Folgemonats über den
+  Zahlungsdienstleister, elektronisch (Mail mit PDF und Zahlungsseite, im
+  Konto), Rechnungsdaten als Pflicht des Kunden, Umsatzsteuer nach diesen
+  Angaben. **Abs. 4a** neu: Einzug mit Rechnungsstellung bei hinterlegter
+  Karte/Lastschrift (Vorabankündigung durch Stripe), sonst 14 Tage per
+  Überweisung oder Zahlungsseite; fehlgeschlagener Einzug wird wiederholt,
+  Kosten einer vom Kunden zu vertretenden Rücklastschrift trägt er. Der alte
+  Satz „solange kein Zahlungsverfahren eingerichtet ist, stellt der Anbieter
+  keine Rechnung" ist weg. Abs. 6 (Sperre nach 30 Tagen Verzug und Mahnung)
+  bleibt; die Sperre selbst ist E3 und nicht gebaut.
+- **Konto-Seite**, Modalitäten: zwei Regeln zu Rechnungstermin und Zahlung.
+- Lokal geprüft: alle drei Texte rendern, `&amp;` in „Plan & Abrechnung"
+  korrekt. Weiterhin Entwürfe ohne Rechtsrat — anwaltliche Prüfung offen.
+
+Nebenbei aus der Rückfrage des Users: Das **Banner zu überfälligen
+Rechnungen auf `/admin`** sitzt im Konto-Kasten, den nur der Kontoinhaber
+sieht (`getAccountContext` liefert für Manager und Rezeption null; die
+Rezeption landet ohnehin auf `/h/<slug>/admin`). Manager sehen es also
+nicht — Abrechnung ist Inhabersache, so ist es gewollt.
+
+Und ein neuer **TODO-Punkt „Mail-Sperre sichtbar machen"**: Supabase Auth
+lässt je Adresse nur eine Einladung/Reset-Mail pro 60 Sekunden zu, die
+Oberfläche nennt den Grund nicht und zeigt keinen Countdown — für den
+Live-Betrieb zu lösen.
+
 ## 🔖 Wiederaufnahme
 
-Schritt 3: Datenschutz Abschnitt 7 (Stripe Payments Europe, Rechnungsversand
-durch Stripe, Zahlungsdaten), AVV-Liste, AGB § 6 Abs. 3/4/6 an den
-tatsächlichen Ablauf (Rechnung am 1., Einzug mit Rechnungsstellung bzw. 14
-Tage, Erinnerungen durch Stripe); dazu die E-Rechnung 2028 in TODO. Übergabe
+Alle drei Schritte des Bauplans sind umgesetzt. Offen: Übergabe
 an das UG-Konto, sobald Bernd es verifiziert hat (Live-Schlüssel, Webhook,
 Steuer-Registrierung, Präfix `RS`, Kunden-Mails). Testkonto „Stripe-Testhaus"
 (zurückdatiert, 3 Zimmer, Rechnung August bezahlt) bleibt stehen.
