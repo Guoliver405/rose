@@ -109,6 +109,12 @@ lokal, im Integrationstest und in Produktion verifiziert.
   Webhook sucht als Zweites nach Konto + Periode und ergänzt dann nur die
   Stripe-Felder; erst wenn auch das fehlt, legt er eine Zeile an. Die Zeile
   von `WVL2WRJW-0002` wurde von Hand auf 12 Zimmer korrigiert.
+  **Danach** am zweiten Testkonto die Karte durch die Test-IBAN
+  `DE89 3704 0044 0532 0130 00` ersetzt (SetupIntent `sepa_debit` per API mit
+  Offline-Mandat, Speicherung über den Return-URL-Pfad; alte Karte bei Stripe
+  gelöst, Lastschrift als Default) — der Lauf am 1.10. für September (12
+  Zimmer, 7,14 €) zeigt damit den SEPA-Einzug: `invoices.pay` stößt ihn an,
+  die Rechnung bleibt einige Tage `open`, bis Stripe `invoice.paid` meldet.
 - **Stripe-Mails** aus der Sandbox gehen nur an Adressen des Stripe-Kontos;
   das Testkonto hat `zz-stripe-test@rose.local`, es kam also keine Mail.
 - **Schritt 3** (Rechtstexte, Übergabe an das UG-Konto) steht aus; AGB § 6
