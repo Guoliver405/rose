@@ -116,7 +116,15 @@ zusammen und gehören vor den ersten zahlenden Kunden.
         Konzept, Abschnitt 2: Charakter-Sheet, Hero, fünf Ablauf-Panels,
         vier Use-Case-Bilder, OG-Hintergrund. Danach Einbau und Umstellung
         des OG-Bilds.
-- [ ] **Zahlungsprovider einbinden** — Anmeldung beim Provider als Teil der
+- [ ] **Zahlungsprovider einbinden** — **06.09.: Schritt 1 von 3 in
+      Produktion** ([Stripe-Plan-2026-09-06.md](Sessions/Stripe-Plan-2026-09-06.md),
+      Fassung 2: Stripe Invoicing + Stripe Tax statt eigener Rechnung):
+      Rechnungsdaten und Zahlungsweg am Konto, Stripe-Kunde bei der
+      Registrierung, Sandbox konfiguriert. **Offen:** Schritt 2 (Monatslauf →
+      Stripe-Rechnung, Webhook, Cron, Karte „Rechnungen"), Schritt 3
+      (Rechtstexte, Übergabe an das UG-Konto); Dashboard-Einstellungen
+      Abschnitte 4/7/8 der Einrichtungsanleitung; E-Rechnung 2028 als
+      eigener Punkt. Anmeldung beim Provider als Teil der
       Registrierung, auch wenn der erste Monat frei ist (Zahlungsmittel liegt
       dann schon vor). ~~Vorher Alternativen gegenüberstellen.~~ **05.09.
       (Abend) Gegenüberstellung liegt vor:**
