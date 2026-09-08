@@ -2,11 +2,12 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import {
   BedDouble, Check, ChevronRight, Circle, Compass, ConciergeBell, DoorOpen,
-  LayoutGrid, SlidersHorizontal, Smartphone, Sparkles, Users, type LucideIcon,
+  BarChart3, ClipboardList, CreditCard, LayoutGrid, SlidersHorizontal, Smartphone,
+  Sparkles, Users, type LucideIcon,
 } from 'lucide-react'
 import { getAccountContext, getManagementContext } from '@/utils/auth'
 import { createAdminClient } from '@/utils/supabase/service'
-import { einrichtungStart, lotsenFuer, setupProgress, type SetupFacts } from '@/lib/lotsen'
+import { einrichtungStart, lotseStart, lotsenFuer, setupProgress, type SetupFacts } from '@/lib/lotsen'
 
 /**
  * Hilfe & Lotsen — der Tutorial-Bereich des Hauses.
@@ -31,6 +32,9 @@ const ICONS: Record<string, LucideIcon> = {
   services: ConciergeBell,
   reinigung: Sparkles,
   gast: Smartphone,
+  anfragen: ClipboardList,
+  auswertung: BarChart3,
+  konto: CreditCard,
 }
 
 export default async function HilfePage({
@@ -81,7 +85,7 @@ export default async function HilfePage({
     fortschritt = setupProgress(facts)
   }
 
-  const lotsen = lotsenFuer(istVerwaltung)
+  const lotsen = lotsenFuer(istVerwaltung, ctx.isOwner)
   const start = einrichtungStart(ctx.hotelSlug)
 
   return (
@@ -165,7 +169,7 @@ export default async function HilfePage({
             return (
               <Link
                 key={lotse.id}
-                href={`${base}${lotse.steps[0].path}?lotse=${lotse.id}&schritt=0`}
+                href={lotseStart(lotse, ctx.hotelSlug)}
                 className="flex items-start gap-3 rounded-xl border border-edge bg-surface p-4 hover:border-edge-strong"
               >
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-muted text-ink-soft">

@@ -41,7 +41,7 @@ export default function OrdersBoard({ hotelSlug, open, done }: { hotelSlug: stri
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap items-center gap-3">
+      <div data-lotse="anfragen.zaehler" className="flex flex-wrap items-center gap-3">
         <h1 className="text-xl font-black text-ink">Services</h1>
         <span className={`rounded-full px-3 py-1 text-sm font-semibold ${
           open.length > 0 ? 'bg-attention-pill text-attention-deepest' : 'bg-positive-pill text-positive-deepest'
@@ -57,7 +57,7 @@ export default function OrdersBoard({ hotelSlug, open, done }: { hotelSlug: stri
       )}
 
       {open.length === 0 ? (
-        <div className="rounded-xl border border-edge bg-surface p-8 text-center">
+        <div data-lotse="anfragen.liste" className="rounded-xl border border-edge bg-surface p-8 text-center">
           <ClipboardList className="mx-auto mb-2 h-8 w-8 text-ink-muted" />
           <p className="font-semibold text-ink">Keine offenen Service-Anfragen.</p>
           <p className="mt-1 text-sm text-ink-muted">
@@ -65,8 +65,8 @@ export default function OrdersBoard({ hotelSlug, open, done }: { hotelSlug: stri
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
-          {open.map(o => (
+        <div data-lotse="anfragen.liste" className="flex flex-col gap-2">
+          {open.map((o, i) => (
             <div
               key={o.id}
               className={`rounded-xl border bg-surface px-4 py-3 ${
@@ -98,6 +98,7 @@ export default function OrdersBoard({ hotelSlug, open, done }: { hotelSlug: stri
                 <span className="text-sm text-ink-muted">{ageLabel(o.createdAt)}</span>
                 <button
                   type="button"
+                  data-lotse={i === 0 ? 'anfragen.erledigt' : undefined}
                   disabled={pending}
                   onClick={() => runDone(o.id)}
                   className="flex items-center gap-1.5 rounded-lg bg-positive px-4 py-2 font-bold text-positive-foreground hover:opacity-90 disabled:opacity-50"
@@ -111,7 +112,7 @@ export default function OrdersBoard({ hotelSlug, open, done }: { hotelSlug: stri
       )}
 
       {done.length > 0 && (
-        <section>
+        <section data-lotse="anfragen.verlauf">
           <button
             type="button"
             onClick={() => setShowDone(v => !v)}

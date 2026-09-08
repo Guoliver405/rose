@@ -50,8 +50,9 @@ also testbar wie `board.ts` oder `pricing.ts`. Sechs Fach-Lotsen:
 | Personal | `…/admin/personal` | 5 | Verwaltung |
 | Zusatzleistungen | `…/admin/services` | 3 | Verwaltung |
 
-Dazu kamen am selben Tag zwei **nachgebaute Portale** — Reinigungsboard und
-Gäste-Sicht, beide für jede Rolle; siehe Abschnitt 5.
+Dazu kamen am selben Tag zwei **nachgebaute Portale** (Abschnitt 5) und drei
+weitere Fach-Lotsen — Service-Anfragen, Auswertung, Plan & Abrechnung
+(Abschnitt 6). Elf insgesamt.
 
 Der **Einrichtungs-Lotse** ist kein eigener Text, sondern die als `kern`
 markierten Schritte der Fach-Lotsen in Reihenfolge, gerahmt von Begrüßung und
@@ -212,13 +213,50 @@ zeitweise nicht — Koordinaten-Skalierung der Pane, nicht die Anwendung.
 Geprüft wurde dann über `element.click()` im Seitenkontext, was denselben Weg
 durch Reacts Ereignis-Delegation nimmt wie ein echter Klick.
 
-## 6. Offen
+## 6. Zweiter Nachtrag: Service-Anfragen, Auswertung, Konto
+
+Die drei verbliebenen Fach-Lotsen — damit ist jeder Bereich der Oberfläche
+abgedeckt außer den Druckseiten.
+
+- **Service-Anfragen** (`/bestellungen`, 4 Schritte, jede Rolle): wo Anfragen
+  auflaufen, was eine mitbringt, warum es nur „offen" und „erledigt" gibt,
+  und wo Erledigtes nachlesbar bleibt.
+- **Auswertung** (`/auswertung`, 5 Schritte, Verwaltung): Zeitraum in der URL,
+  woraus die Zahlen entstehen, warum Unplausibles aus den Summen fällt, die
+  Tabelle je Kraft samt ausgeschiedener — und der Nachfrage-Teil als Antwort
+  auf die Frage, warum RoSe Gäste nicht nach Wunschzeiten fragt.
+- **Plan & Abrechnung** (`/admin/abrechnung`, 5 Schritte, nur Inhaber).
+
+**Der Konto-Lotse brauchte Arbeit am Gerüst.** `/admin` liegt außerhalb von
+`/h/<slug>/` und damit außerhalb des Layouts, in dem der Pilot hängt — dort
+gab es schlicht keinen. Jetzt trägt [KontoShell.tsx](../src/app/admin/KontoShell.tsx)
+einen zweiten mit `base="/admin"` und `bereich="konto"`. Ein Lotse kennt
+seinen Bereich, jeder Pilot lässt die des anderen liegen (sonst zeigte ein
+Konto-Schritt auf `/h/<slug>/admin/abrechnung`), und `lotseStart(lotse, slug)`
+ist die eine Stelle, die daraus eine URL baut. Beides im Test festgehalten.
+
+Neu ist auch die Zugangsstufe **`inhaber`**: Ein Manager führt Häuser, hat
+aber keinen Zugriff auf Konto und Abrechnung — ein Katalogeintrag dorthin
+wäre eine Sackgasse.
+
+**Beobachtung aus dem Testlauf:** Auf einem Haus ohne Reinigungs-Stiche
+existieren zwei der fünf Auswertungs-Anker nicht (sie leben im Zweig „es gibt
+Daten"). Der Lotse fällt dort auf die Karte unten rechts zurück; deren
+Hinweis nennt jetzt beide Gründe — eine abweichende Einstellung **oder**
+Daten, die es noch nicht gibt. Vorher sprach er nur von Einstellungen und lag
+damit im häufigeren Fall daneben.
+
+Elf Fach-Lotsen im Katalog, `npm run verify` grün (253 Tests).
+
+## 7. Offen
 
 - **Simulierte Lotsen** für Reinigungsboard und Gast-Sicht nach dem
   LiveDemo-Muster — der Grund, warum diese beiden Themen im Katalog noch
   fehlen.
-- Weitere Fach-Lotsen: Services-Board (Anfragen), Auswertung, Konto &
-  Abrechnung, Aushänge und Handouts.
+- Ein Lotse für **Aushänge und Handouts** — der letzte offene Bereich. Die
+  Druckseiten haben eigene Layouts ohne Nav und damit ohne Piloten; zu klären
+  ist, ob er dort hingehört oder die Erklärung besser im Gäste-Zugang-Lotsen
+  aufgehoben ist.
 - Ein kontextuelles „?" auf den Seiten selbst, das den zur Seite passenden
   Lotsen startet — dort wird so etwas tatsächlich benutzt.
 - Ein Merker „schon gesehen" gibt es bewusst noch nicht; die Checkliste
@@ -228,9 +266,9 @@ durch Reacts Ereignis-Delegation nimmt wie ein echter Klick.
 
 ## 🔖 Wiederaufnahme
 
-**Stand:** Acht Fach-Lotsen plus Einrichtungs-Lotse, davon zwei als Nachbau
-(Reinigungsboard, Gäste-Sicht); lokal verifiziert, `npm run verify` grün (250
-Tests). Der Einrichtungs-Lotse läuft über fünf Seiten, der Hilfe-Hub trägt
+**Stand:** Elf Fach-Lotsen plus Einrichtungs-Lotse, davon zwei als Nachbau
+(Reinigungsboard, Gäste-Sicht) und einer im Konto-Bereich (Plan & Abrechnung);
+lokal verifiziert, `npm run verify` grün (253 Tests). Der Einrichtungs-Lotse läuft über fünf Seiten, der Hilfe-Hub trägt
 Checkliste und Katalog, die Registrierung führt hinein.
 
 **Wenn weitergebaut wird:**

@@ -191,7 +191,7 @@ export default async function AuswertungPage({
       </div>
 
       {/* Zeitraum — reines GET-Formular, damit der Stand teil- und druckbar bleibt */}
-      <form method="get" className="flex flex-wrap items-end gap-3 rounded-xl border border-edge bg-surface p-4 print:hidden">
+      <form data-lotse="auswertung.zeitraum" method="get" className="flex flex-wrap items-end gap-3 rounded-xl border border-edge bg-surface p-4 print:hidden">
         <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
           von
           <input
@@ -224,7 +224,7 @@ export default async function AuswertungPage({
       />
 
       {maids.length === 0 ? (
-        <div className="rounded-xl border border-edge bg-surface p-8 text-center">
+        <div data-lotse="auswertung.kennzahlen" className="rounded-xl border border-edge bg-surface p-8 text-center">
           <p className="font-semibold text-ink">Keine Tätigkeiten in diesem Zeitraum.</p>
           <p className="mt-1 text-sm text-ink-muted">
             Sobald Reinigungskräfte Schichten und Reinigungen stechen, erscheinen hier die Kennzahlen.
@@ -233,7 +233,7 @@ export default async function AuswertungPage({
       ) : (
         <>
           {/* Kennzahlen gesamt */}
-          <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+          <section data-lotse="auswertung.kennzahlen" className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
             <Kpi label="Arbeitszeit" value={formatDuration(total.shiftMs)} hint={`${total.shiftCount} Schichten`} />
             <Kpi label="davon Pause" value={formatDuration(total.breakMs)} />
             <Kpi label="Netto-Arbeitszeit" value={formatDuration(total.netMs)} tone="positive" />
@@ -250,6 +250,7 @@ export default async function AuswertungPage({
             />
             <Kpi label="Übrige Zeit" value={formatDuration(total.unassignedMs)} hint="Wege, Rüstzeit" />
             <Kpi
+              anchor="auswertung.auffaellig"
               label="Auffällig"
               value={`${total.implausibleCount + total.abortedCount + total.openCount + total.implausibleShiftCount + total.implausibleBreakCount}`}
               hint={`${total.implausibleShiftCount} Schichten ohne Ende · ${total.abortedCount} abgebrochen · ${total.openCount} offen · ${total.implausibleCount} unplausibel`}
@@ -262,7 +263,7 @@ export default async function AuswertungPage({
           </section>
 
           {/* Je Reinigungskraft */}
-          <section className="overflow-x-auto rounded-xl border border-edge bg-surface">
+          <section data-lotse="auswertung.tabelle" className="overflow-x-auto rounded-xl border border-edge bg-surface">
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead>
                 <tr className="border-b border-edge text-xs font-semibold text-ink-muted">
@@ -392,12 +393,14 @@ export default async function AuswertungPage({
 }
 
 function Kpi({
-  label, value, hint, tone,
+  label, value, hint, tone, anchor,
 }: {
   label: string
   value: string
   hint?: string
   tone?: 'positive' | 'attention' | 'action'
+  /** Ziel eines Lotsen-Schritts, siehe lib/lotsen.ts. */
+  anchor?: string
 }) {
   const toneClass =
     tone === 'positive' ? 'text-positive-deepest' :
@@ -405,7 +408,7 @@ function Kpi({
     tone === 'action' ? 'text-action-deep' :
     'text-ink'
   return (
-    <div className="rounded-xl border border-edge bg-surface px-4 py-3">
+    <div data-lotse={anchor} className="rounded-xl border border-edge bg-surface px-4 py-3">
       <p className="text-xs font-semibold text-ink-muted">{label}</p>
       <p className={`text-xl font-black ${toneClass}`}>{value}</p>
       {hint && <p className="text-xs text-ink-muted">{hint}</p>}

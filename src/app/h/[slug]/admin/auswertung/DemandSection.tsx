@@ -26,7 +26,7 @@ export default function DemandSection({
   const empty = stats.totalWishes + stats.totalCheckouts + stats.totalDnd === 0
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-edge bg-surface p-4">
+    <section data-lotse="auswertung.nachfrage" className="flex flex-col gap-3 rounded-xl border border-edge bg-surface p-4">
       <div className="flex flex-wrap items-baseline gap-3">
         <h2 className="text-lg font-black text-ink">Nachfrage — wann Gäste Reinigung wünschen</h2>
         <span className="text-xs text-ink-muted">{stats.days} {stats.days === 1 ? 'Tag' : 'Tage'}, Ortszeit</span>

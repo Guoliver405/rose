@@ -34,14 +34,16 @@ const monatsName = (periodStart: string) =>
   new Date(`${periodStart}T00:00:00`).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })
 
 function Card({
-  title, icon: Icon, children,
+  title, icon: Icon, children, anchor,
 }: {
   title: string
   icon: React.ComponentType<{ className?: string }>
   children: React.ReactNode
+  /** Ziel eines Lotsen-Schritts, siehe lib/lotsen.ts. */
+  anchor?: string
 }) {
   return (
-    <section className="rounded-xl border border-edge bg-surface p-4">
+    <section data-lotse={anchor} className="rounded-xl border border-edge bg-surface p-4">
       <h2 className="flex items-center gap-2 text-sm font-bold text-ink-soft">
         <Icon className="h-4 w-4" /> {title}
       </h2>
@@ -147,7 +149,7 @@ export default async function AbrechnungPage() {
       )}
 
       {/* ── Plan ───────────────────────────────────────────────────────── */}
-      <Card title="Ihr Plan" icon={Check}>
+      <Card title="Ihr Plan" icon={Check} anchor="konto.plan">
         <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
           <p>
             <span className="text-3xl font-black text-ink">{formatCents(PRICE_PER_ROOM_CENTS)}</span>
@@ -167,7 +169,7 @@ export default async function AbrechnungPage() {
       </Card>
 
       {/* ── Laufender Monat ────────────────────────────────────────────── */}
-      <Card title={`Laufender Monat — ${monatsName(billing.current.periodStart)}`} icon={Building2}>
+      <Card title={`Laufender Monat — ${monatsName(billing.current.periodStart)}`} icon={Building2} anchor="konto.laufend">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -216,7 +218,7 @@ export default async function AbrechnungPage() {
       </Card>
 
       {/* ── Abgeschlossene Monate ──────────────────────────────────────── */}
-      <Card title="Abgeschlossene Monate" icon={FileText}>
+      <Card title="Abgeschlossene Monate" icon={FileText} anchor="konto.monate">
         {abgeschlossen.length === 0 ? (
           <p className="text-sm text-ink-muted">
             Noch kein abgeschlossener Monat — der erste erscheint hier ab dem 1. des Folgemonats.
@@ -281,7 +283,7 @@ export default async function AbrechnungPage() {
 
       {/* ── Zahlungsverfahren + Rechnungen (Platzhalter) ───────────────── */}
       <div className="grid gap-6 md:grid-cols-2">
-        <Card title="Zahlungsverfahren" icon={CreditCard}>
+        <Card title="Zahlungsverfahren" icon={CreditCard} anchor="konto.zahlungsweg">
           {!mitStripe ? (
             <p className="text-sm text-ink-soft">
               Noch kein Zahlungsverfahren hinterlegt — und derzeit auch keines wählbar. Sobald
@@ -321,7 +323,7 @@ export default async function AbrechnungPage() {
             </div>
           )}
         </Card>
-        <Card title="Rechnungen" icon={FileText}>
+        <Card title="Rechnungen" icon={FileText} anchor="konto.rechnungen">
           {rechnungen.length === 0 ? (
             <p className="text-sm text-ink-soft">
               {mitStripe

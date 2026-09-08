@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Compass, X } from 'lucide-react'
-import { clampStep, lotseById } from '@/lib/lotsen'
+import { clampStep, lotseById, type LotseBereich } from '@/lib/lotsen'
 import { meldeSchritt } from './schritt'
 
 /**
@@ -57,7 +57,15 @@ function bewegungReduziert(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-export default function LotsePilot({ base }: { base: string }) {
+export default function LotsePilot({
+  base,
+  bereich = 'haus',
+}: {
+  /** Prefix aller Schritt-Pfade dieses Bereichs. */
+  base: string
+  /** Welchen Bereich dieser Pilot bedient; Lotsen des anderen laesst er liegen. */
+  bereich?: LotseBereich
+}) {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
@@ -68,7 +76,11 @@ export default function LotsePilot({ base }: { base: string }) {
 
   const lotseId = params.get('lotse')
   const schrittParam = params.get('schritt')
-  const lotse = lotseId ? lotseById(lotseId) : null
+  // Haus und Konto haben je einen eigenen Piloten mit eigener Basis. Ein
+  // fremder Lotse wird hier ignoriert, statt ihn mit der falschen Basis zu
+  // verlinken — sonst zeigte ein Konto-Schritt auf /h/<slug>/admin/abrechnung.
+  const gefunden = lotseId ? lotseById(lotseId) : null
+  const lotse = gefunden && (gefunden.bereich ?? 'haus') === bereich ? gefunden : null
 
   // Ein Schlüssel für den Stand, den die URL beschreibt. Er ändert sich bei
   // jedem echten Seitenwechsel — und nur dann.
@@ -255,8 +267,9 @@ export default function LotsePilot({ base }: { base: string }) {
         )}
         {aktuell?.fehlt && (
           <p className="text-xs text-ink-muted">
-            Der beschriebene Bereich ist auf dieser Seite gerade nicht sichtbar — er hängt
-            vielleicht an einer Einstellung, die in Ihrem Haus anders steht.
+            Der beschriebene Bereich ist gerade nicht auf der Seite — er hängt an einer
+            Einstellung, die in Ihrem Haus anders steht, oder an Daten, die es hier noch
+            nicht gibt.
           </p>
         )}
       </div>

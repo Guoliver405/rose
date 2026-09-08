@@ -208,10 +208,14 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       jede Rolle sichtbar, Szenen je Schritt (`sim`-Feld), freie Bedienung
       dazwischen. Offen bleibt der Feinschliff der Beispieldaten, falls sie
       sich im Gebrauch als unpassend erweisen.
-- [ ] **Weitere Fach-Lotsen**: Services-Board (Anfragen), Auswertung, Konto &
-      Abrechnung, Aushänge und Handouts. Je Lotse ein Eintrag in
-      [lotsen.ts](src/lib/lotsen.ts) plus `data-lotse`-Anker; der Anker-Test
-      schlägt an, wenn eines fehlt. (Lotsen 08.09.)
+- [x] ~~**Weitere Fach-Lotsen**: Services-Board (Anfragen), Auswertung,
+      Konto & Abrechnung~~ — 08.09. gebaut. Der Konto-Lotse brauchte einen
+      **zweiten Piloten** im Konto-Rahmen, weil `/admin` außerhalb des
+      Haus-Layouts liegt.
+- [ ] **Lotse für Aushänge und Handouts** — der letzte offene Bereich. Die
+      Druckseiten haben eigene Layouts ohne Nav; zu klären ist, ob der Pilot
+      dort überhaupt sinnvoll liegt oder ob die Erklärung besser in den
+      Gäste-Zugang-Lotsen wandert. (Lotsen 08.09.)
 - [ ] **Kontextuelles „?" auf den Seiten selbst**, das den zur Seite
       passenden Lotsen startet — dort wird so etwas tatsächlich benutzt, der
       Hub ist nur der Katalog. (Lotsen 08.09.)

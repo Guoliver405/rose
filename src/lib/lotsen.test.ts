@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   ALLE_LOTSEN, EINRICHTUNG, EINRICHTUNG_ORDER, LOTSEN, SIM_SZENEN,
-  clampStep, einrichtungStart, lotseById, lotsenFuer, setupProgress, szeneFuerSchritt,
+  clampStep, einrichtungStart, lotseById, lotseStart, lotsenFuer, setupProgress, szeneFuerSchritt,
   type SetupFacts,
 } from './lotsen'
 
@@ -127,8 +127,36 @@ describe('Sichtbarkeit je Rolle', () => {
     expect(rezeption.length).toBeGreaterThan(0)
   })
 
-  it('zeigt der Verwaltung alle Fach-Lotsen', () => {
-    expect(lotsenFuer(true)).toHaveLength(LOTSEN.length)
+  it('hält den Konto-Lotsen vom Manager fern', () => {
+    // Ein Manager führt Häuser, hat aber keinen Zugriff auf Konto und
+    // Abrechnung — ein Katalogeintrag dorthin wäre eine Sackgasse.
+    const manager = lotsenFuer(true)
+    expect(manager.some(l => l.id === 'konto')).toBe(false)
+    expect(lotsenFuer(true, true).some(l => l.id === 'konto')).toBe(true)
+  })
+
+  it('zeigt dem Inhaber alle Fach-Lotsen', () => {
+    expect(lotsenFuer(true, true)).toHaveLength(LOTSEN.length)
+  })
+})
+
+describe('Bereiche', () => {
+  it('legt Konto-Lotsen unter /admin, alle anderen unter das Haus', () => {
+    // Beide Bereiche haben ihren eigenen Piloten mit eigener Basis; eine
+    // falsch gebaute Start-URL landete auf einer Route, die es nicht gibt.
+    expect(lotseStart(lotseById('konto')!, 'haus-am-see'))
+      .toBe('/admin/abrechnung?lotse=konto&schritt=0')
+    expect(lotseStart(lotseById('auswertung')!, 'haus-am-see'))
+      .toBe('/h/haus-am-see/admin/auswertung?lotse=auswertung&schritt=0')
+  })
+
+  it('lässt keinen Lotsen über die Bereichsgrenze laufen', () => {
+    // Ein Pilot bedient genau einen Bereich — Schritte im anderen wären
+    // unerreichbar.
+    for (const lotse of ALLE_LOTSEN) {
+      expect(lotse.steps.every(s => s.path.startsWith('/abrechnung')))
+        .toBe(lotse.bereich === 'konto')
+    }
   })
 })
 

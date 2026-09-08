@@ -1,5 +1,7 @@
+import { Suspense } from 'react'
 import { LogOut } from 'lucide-react'
 import { logoutAction } from '@/app/login/actions'
+import LotsePilot from '@/components/lotse/LotsePilot'
 
 /**
  * Rahmen der Konto-Seiten außerhalb von `/h/<slug>/`: Logo, Name der
@@ -34,6 +36,13 @@ export default function KontoShell({
           </div>
         </div>
       </header>
+
+      {/* Eigener Lotse für den Konto-Bereich: Er liegt außerhalb von
+          `/h/<slug>/` und damit außerhalb des Haus-Layouts, in dem der andere
+          Pilot hängt. Beide unterscheiden sich nur in Basis und Bereich. */}
+      <Suspense fallback={null}>
+        <LotsePilot base="/admin" bereich="konto" />
+      </Suspense>
 
       <main className="mx-auto flex w-full max-w-[900px] flex-1 flex-col gap-6 p-4">
         {children}

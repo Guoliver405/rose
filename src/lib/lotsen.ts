@@ -15,10 +15,23 @@
 
 /**
  * Wer den Lotsen sehen darf. `alle` = jede Rolle mit Zugang zum Haus,
- * `verwaltung` = Inhaber und Manager. Der Wert entscheidet nur über die
- * Anzeige im Hilfe-Hub; die Seiten selbst halten über ihre Guards dicht.
+ * `verwaltung` = Inhaber und Manager, `inhaber` = nur der Kontoinhaber. Der
+ * Wert entscheidet nur über die Anzeige im Hilfe-Hub; die Seiten selbst halten
+ * über ihre Guards dicht.
  */
-export type LotseZugang = 'alle' | 'verwaltung'
+export type LotseZugang = 'alle' | 'verwaltung' | 'inhaber'
+
+/**
+ * In welchem der beiden Auth-Bereiche der Lotse läuft. `haus` = unterhalb von
+ * `/h/<slug>/admin`, `konto` = der Konto-Bereich unter `/admin`.
+ *
+ * Der Unterschied ist nicht kosmetisch: Beide Bereiche haben ihren eigenen
+ * Rahmen und damit ihren eigenen `LotsePilot` mit eigener Basis. Ein Lotse
+ * kann deshalb nicht über die Grenze laufen — und jeder Pilot lässt Lotsen des
+ * anderen Bereichs unangetastet liegen, statt sie mit falscher Basis zu
+ * verlinken.
+ */
+export type LotseBereich = 'haus' | 'konto'
 
 export type LotseStep = {
   /**
@@ -58,6 +71,8 @@ export type Lotse = {
   title: string
   subtitle: string
   zugang: LotseZugang
+  /** Fehlt der Wert, läuft der Lotse im Haus. */
+  bereich?: LotseBereich
   steps: LotseStep[]
 }
 
@@ -271,6 +286,104 @@ const SERVICES: Lotse = {
   ],
 }
 
+const ANFRAGEN: Lotse = {
+  id: 'anfragen',
+  title: 'Service-Anfragen',
+  subtitle: 'Das Board der Rezeption: was Gäste bestellt haben und wie es abgehakt wird',
+  zugang: 'alle',
+  steps: [
+    {
+      path: '/bestellungen', anchor: 'anfragen.zaehler',
+      title: 'Alles, was Gäste bestellt haben',
+      body: 'Hier laufen die Anfragen aus den Gäste-Portalen auf. Dieselbe Zahl steht als Abzeichen an „Services" in der Navigation — sie blinkt rot, sobald mindestens eine Anfrage einen dringenden Service betrifft, und die betroffene Zimmer-Kachel bekommt eine Glocke.',
+    },
+    {
+      path: '/bestellungen', anchor: 'anfragen.liste',
+      title: 'Was eine Anfrage mitbringt',
+      body: 'Zimmernummer, Service, die gewählten Optionen samt Preis, eine freie Anmerkung des Gastes und das Alter der Anfrage. Neue Anfragen erscheinen von selbst — die Seite wird über dieselbe Live-Verbindung aktualisiert wie die Boards.',
+    },
+    {
+      path: '/bestellungen', anchor: 'anfragen.erledigt',
+      title: 'Zwei Zustände, mehr nicht',
+      body: 'Eine Anfrage ist offen oder erledigt; es gibt kein „in Bearbeitung" und keine Zuweisung. Das ist Absicht: Der Ablauf soll am Tresen in einer Sekunde abgehakt sein, und wer erledigt hat, hält RoSe ohnehin fest.',
+    },
+    {
+      path: '/bestellungen', anchor: 'anfragen.verlauf',
+      title: 'Erledigtes bleibt nachvollziehbar',
+      body: 'Abgehakte Anfragen rutschen in die eingeklappte Liste darunter, mit Zeitpunkt und Namen. Sie tauchen außerdem im Verlauf des Zimmers auf — praktisch, wenn ein Gast später nachfragt, ob sein Wunsch angekommen ist.',
+    },
+  ],
+}
+
+const AUSWERTUNG: Lotse = {
+  id: 'auswertung',
+  title: 'Auswertung',
+  subtitle: 'Arbeitszeiten aus den Stichen, Auffälligkeiten und wann Gäste Reinigung wünschen',
+  zugang: 'verwaltung',
+  steps: [
+    {
+      path: '/auswertung', anchor: 'auswertung.zeitraum',
+      title: 'Der Zeitraum steht in der Adresse',
+      body: 'Von–bis als ganz normales Formular, das den Zeitraum in die URL schreibt. Dadurch lässt sich ein Stand verlinken, weiterschicken und drucken — und beim Drucken fällt das Formular selbst weg.',
+    },
+    {
+      path: '/auswertung', anchor: 'auswertung.kennzahlen',
+      title: 'Alles gerechnet, nichts gespeichert',
+      body: 'Die Zahlen entstehen aus den Stichen der Reinigungskräfte: Schichtbeginn und -ende, Pause, sonstige Reinigung, Start und Abschluss je Zimmer. „Netto-Arbeitszeit" ist die Schicht ohne Pause, „Übrige Zeit" das, was weder Zimmer- noch sonstige Reinigung war — Wege und Rüstzeit.',
+    },
+    {
+      path: '/auswertung', anchor: 'auswertung.auffaellig',
+      title: 'Unplausibles fliegt aus den Summen',
+      body: 'Eine Schicht über 16 Stunden ist ein vergessenes Schichtende, eine Pause über vier Stunden dasselbe, und eine Reinigung ohne Abschluss zählt nicht als geleistete Arbeit. Solche Fälle werden hier gezählt statt eingerechnet — sonst schleppte eine offene Schicht die Arbeitszeit tagelang mit und machte die ganze Auswertung unbrauchbar.',
+    },
+    {
+      path: '/auswertung', anchor: 'auswertung.tabelle',
+      title: 'Je Kraft — auch ausgeschiedene',
+      body: 'Wer den Zugang beendet hat, bleibt in der Auswertung sichtbar; der Arbeitsnachweis überlebt das Ausscheiden. Ein Klick auf den Namen öffnet das Tagesprotokoll mit den einzelnen Stichen.',
+    },
+    {
+      path: '/auswertung', anchor: 'auswertung.nachfrage',
+      title: 'Wann die Arbeit anfällt',
+      body: 'Der zweite Teil beantwortet eine Planungsfrage: Zu welchen Stunden wünschen Gäste Reinigung, wann wird ausgecheckt — und wie viele Kräfte waren dann im Dienst? Die Kennzahl „Wünsche ohne Kraft im Dienst" ist der eigentliche Hinweis. Deshalb fragt RoSe Gäste auch nicht nach Wunschzeiten: Die Daten liegen schon vor.',
+    },
+  ],
+}
+
+const KONTO: Lotse = {
+  id: 'konto',
+  title: 'Plan & Abrechnung',
+  subtitle: 'Was das Konto kostet, wie gezählt wird und wo Zahlungsweg und Rechnungen liegen',
+  zugang: 'inhaber',
+  bereich: 'konto',
+  steps: [
+    {
+      path: '/abrechnung', anchor: 'konto.plan',
+      title: 'Ein Preis, keine Pakete',
+      body: 'Abgerechnet wird je Zimmer und Kalendermonat, mit einem Mindestbetrag je Konto — nicht je Haus. Eine Kette zahlt also die Summe ihrer Zimmer und nicht dreimal das Minimum. Alle Funktionen sind enthalten; es gibt nichts, worauf Sie später hochstufen müssten.',
+    },
+    {
+      path: '/abrechnung', anchor: 'konto.laufend',
+      title: 'Gezählt wird großzügig, aber eindeutig',
+      body: 'Ein Zimmer zählt für den Monat, sobald es darin auch nur vorübergehend in Betrieb war — heute außer Betrieb genommen zählt noch mit, heute angelegt ebenfalls. Die Zahl steht deshalb erst mit dem Monatsende fest, und der laufende Monat ist immer eine Vorschau.',
+    },
+    {
+      path: '/abrechnung', anchor: 'konto.monate',
+      title: 'Abgeschlossene Monate liegen fest',
+      body: 'Sobald ein Monat vorbei ist, ändert sich sein Betrag nicht mehr — auch dann nicht, wenn Sie später Zimmer löschen: Vor jeder Löschung wird die Zimmerzahl der betroffenen Monate festgeschrieben. Solange nichts gelöscht wird, entsteht dafür keine einzige Zeile.',
+    },
+    {
+      path: '/abrechnung', anchor: 'konto.zahlungsweg',
+      title: 'Zahlungsweg und Rechnungsdaten',
+      body: 'Karte oder SEPA-Lastschrift werden ohne Belastung hinterlegt und beim Monatslauf eingezogen; wer auf Rechnung zahlen will, bekommt eine Überweisung mit eigener Bankverbindung. Rechnungsempfänger, Anschrift und — außerhalb Deutschlands innerhalb der EU — die USt-IdNr. sind Pflicht, weil sonst die Steuer nicht richtig gerechnet werden kann.',
+    },
+    {
+      path: '/abrechnung', anchor: 'konto.rechnungen',
+      title: 'Rechnungen kommen am Monatsersten',
+      body: 'Für den Vormonat, elektronisch, zahlbar innerhalb von 14 Tagen. Jede Rechnung ist hier als PDF und als Ansichtsseite hinterlegt und bleibt es auch dann, wenn Sie das Konto später löschen — Belege müssen aufbewahrt werden.',
+    },
+  ],
+}
+
 /**
  * Szenen der beiden nachgebauten Portale.
  *
@@ -404,7 +517,10 @@ const GAST: Lotse = {
 }
 
 /** Die Fach-Lotsen in der Reihenfolge des Hubs. */
-export const LOTSEN: Lotse[] = [UEBERSICHT, ZIMMER, REGELN, GASTZUGANG, PERSONAL, SERVICES, REINIGUNG, GAST]
+export const LOTSEN: Lotse[] = [
+  UEBERSICHT, ANFRAGEN, ZIMMER, REGELN, GASTZUGANG, PERSONAL, SERVICES,
+  REINIGUNG, GAST, AUSWERTUNG, KONTO,
+]
 
 /**
  * Szene, in die sich eine Simulation für den gegebenen Schritt versetzt.
@@ -454,7 +570,7 @@ export const EINRICHTUNG: Lotse = {
  * Hilfe-Hub nicht drei Varianten derselben URL zusammenbauen.
  */
 export function einrichtungStart(slug: string): string {
-  return `/h/${slug}/admin${EINRICHTUNG.steps[0].path}?lotse=${EINRICHTUNG.id}&schritt=0`
+  return lotseStart(EINRICHTUNG, slug)
 }
 
 /** Alle Lotsen, die es gibt — Fach-Lotsen plus Einrichtung. */
@@ -465,8 +581,22 @@ export function lotseById(id: string): Lotse | null {
 }
 
 /** Fach-Lotsen, die eine Rolle im Hub sehen darf. */
-export function lotsenFuer(istVerwaltung: boolean): Lotse[] {
-  return LOTSEN.filter(l => istVerwaltung || l.zugang === 'alle')
+export function lotsenFuer(istVerwaltung: boolean, istInhaber = false): Lotse[] {
+  return LOTSEN.filter(l => {
+    if (l.zugang === 'alle') return true
+    if (l.zugang === 'verwaltung') return istVerwaltung
+    return istInhaber
+  })
+}
+
+/**
+ * Vollständige Start-URL eines Lotsen. Die Basis hängt am Bereich: Konto-
+ * Lotsen liegen unter `/admin`, alle anderen unter `/h/<slug>/admin`. Als
+ * Funktion, damit Hub und Seiten nicht jeder für sich raten.
+ */
+export function lotseStart(lotse: Lotse, slug: string): string {
+  const basis = lotse.bereich === 'konto' ? '/admin' : `/h/${slug}/admin`
+  return `${basis}${lotse.steps[0].path}?lotse=${lotse.id}&schritt=0`
 }
 
 /** Alle vorkommenden Anker — Grundlage der Anker-Prüfung gegen die Quellen. */
