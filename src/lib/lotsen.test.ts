@@ -101,6 +101,29 @@ describe('Simulationen', () => {
   })
 })
 
+describe('Aushänge & Handouts', () => {
+  const aushang = () => lotseById('aushang')!
+
+  it('läuft über die drei Seiten, auf denen gedruckt wird', () => {
+    expect(new Set(aushang().steps.map(s => s.path)))
+      .toEqual(new Set(['/zimmer/aushang', '', '/personal']))
+  })
+
+  it('darf den Anker eines anderen Lotsen mitbenutzen', () => {
+    // Absicht, kein Versehen: Handout und Login-Karte entstehen je Zimmer
+    // bzw. je Person, ihre eigenen Routen tragen eine ID. Fest verdrahten
+    // lässt sich davon nichts — also zeigt der Schritt auf die Stelle, von
+    // der aus man hinkommt.
+    const handout = aushang().steps.find(s => s.path === '')
+    expect(handout?.anchor).toBe('uebersicht.kachel')
+  })
+
+  it('ist für jede Rolle sichtbar', () => {
+    // Aushänge und Karten drucken ist ausdrücklich Aufgabe der Rezeption.
+    expect(aushang().zugang).toBe('alle')
+  })
+})
+
 describe('szeneFuerSchritt', () => {
   it('liefert die Szene des angefragten Schritts', () => {
     expect(szeneFuerSchritt('reinigung', 0)).toBe('login')

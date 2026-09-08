@@ -336,7 +336,7 @@ export default function PersonalManager({
    * Handler oben zu, und ein Dutzend durchgereichter Props hätte den Zweck
    * — eine einzige Stelle für alle drei Arten — wieder aufgeweicht.
    */
-  function zeile(e: Entry) {
+  function zeile(e: Entry, i = 0) {
     const beendet = Boolean(e.deactivatedAt)
     return (
       <div
@@ -401,6 +401,7 @@ export default function PersonalManager({
             {e.kind === 'maid' && !beendet && e.pin && (
               <Link
                 href={`/h/${hotelSlug}/admin/personal/karte/${e.id}`}
+                data-lotse={i === 0 ? 'aushang.login' : undefined}
                 className={flachButton}
               >
                 <Printer className="h-4 w-4" /> Karte drucken

@@ -55,7 +55,7 @@ export default function RoomQrSheet({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3 print:hidden">
+      <div data-lotse="aushang.knopf" className="flex flex-wrap items-center gap-3 print:hidden">
         <h1 className="text-xl font-black text-ink">Zimmer-QR-Aushänge</h1>
         {missing > 0 ? (
           <button
@@ -78,7 +78,7 @@ export default function RoomQrSheet({
         )}
       </div>
 
-      <p className="text-sm text-ink-muted print:hidden">
+      <p data-lotse="aushang.hinweis" className="text-sm text-ink-muted print:hidden">
         Einmal drucken, im Zimmer aufhängen — der Gast scannt und tippt nur noch seine PIN.
         Ein neuer Code invalidiert den alten Aushang des Zimmers.
       </p>
@@ -100,9 +100,14 @@ export default function RoomQrSheet({
         </p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 print:block">
-          {cards.map(c => (
+          {cards.map((c, i) => (
             <div key={c.roomId} className="print:break-after-page print:flex print:min-h-screen print:items-center print:justify-center">
-              <div className="relative mx-auto w-full max-w-[340px] overflow-hidden rounded-2xl border-2 border-edge-strong bg-surface print:border-2">
+              {/* Anker nur an der ersten Karte — sonst zeigte der Coach Mark
+                  auf ein beliebiges Zimmer. */}
+              <div
+                data-lotse={i === 0 ? 'aushang.karte' : undefined}
+                className="relative mx-auto w-full max-w-[340px] overflow-hidden rounded-2xl border-2 border-edge-strong bg-surface print:border-2"
+              >
                 <div className="bg-action px-6 pt-5 pb-4 text-center text-action-foreground">
                   <p className="text-[11px] font-black uppercase tracking-[0.2em]">Zimmerservice</p>
                   <h2 className="mt-1 text-3xl font-black">Zimmer {c.number}</h2>
@@ -131,6 +136,7 @@ export default function RoomQrSheet({
                       {canRenew && (
                         <button
                           type="button"
+                          data-lotse={i === 0 ? 'aushang.erneuern' : undefined}
                           disabled={pending}
                           onClick={() => runRegenerate(c.roomId, c.number)}
                           className="mx-auto flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink disabled:opacity-50 print:hidden"

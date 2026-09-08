@@ -50,9 +50,9 @@ also testbar wie `board.ts` oder `pricing.ts`. Sechs Fach-Lotsen:
 | Personal | `…/admin/personal` | 5 | Verwaltung |
 | Zusatzleistungen | `…/admin/services` | 3 | Verwaltung |
 
-Dazu kamen am selben Tag zwei **nachgebaute Portale** (Abschnitt 5) und drei
+Dazu kamen am selben Tag zwei **nachgebaute Portale** (Abschnitt 5), drei
 weitere Fach-Lotsen — Service-Anfragen, Auswertung, Plan & Abrechnung
-(Abschnitt 6). Elf insgesamt.
+(Abschnitt 6) — und der Druck-Lotse (Abschnitt 7). Zwölf insgesamt.
 
 Der **Einrichtungs-Lotse** ist kein eigener Text, sondern die als `kern`
 markierten Schritte der Fach-Lotsen in Reihenfolge, gerahmt von Begrüßung und
@@ -248,7 +248,44 @@ damit im häufigeren Fall daneben.
 
 Elf Fach-Lotsen im Katalog, `npm run verify` grün (253 Tests).
 
-## 7. Offen
+## 7. Dritter Nachtrag: Aushänge & Handouts
+
+Der letzte Bereich — und die Sorge aus dem Wiederaufnahme-Block war
+unbegründet: Die Druckseiten haben **kein** eigenes Layout. Alle drei liegen
+unter `/h/<slug>/admin` und damit in dem Layout, das den Piloten trägt; das
+Overlay ist ohnehin `print:hidden`.
+
+Der Lotse (6 Schritte, jede Rolle — Drucken ist ausdrücklich Rezeptionsarbeit)
+läuft über drei Seiten, weil die drei Papiere an drei Orten entstehen. Genau
+das ist die Erklärung, die bisher fehlte: **Welcher Zettel kommt woher, gilt
+wie lange, und was macht ihn ungültig?**
+
+- **Zimmer-Aushang** (`/zimmer/aushang`, 4 Schritte): gehört zum Zimmer und
+  nicht zum Aufenthalt, gilt über alle Gäste hinweg; fehlende Codes werden
+  gesammelt erzeugt, danach wird derselbe Knopf zum Druck-Knopf; „Code
+  erneuern" macht den alten Aushang ungültig und liegt deshalb nur bei der
+  Verwaltung; im Link-Verfahren gehören die Aushänge gar nicht ins Zimmer.
+- **Check-in-Handout** (Übersicht, 1 Schritt): hängt an einem Aufenthalt,
+  liegt im Zimmer-Dialog, trägt die Kurzanleitung nach den Regeln des Hauses.
+- **Login-Karte** (`/personal`, 1 Schritt): je Person, eine neue macht die
+  alte ungültig, überlebt ein „Zugang beenden".
+
+**Zwei Schritte hängen an fremden Ankern** (`uebersicht.kachel`,
+`aushang.login`). Das ist Absicht und im Test festgehalten, damit es niemand
+„aufräumt": Handout und Login-Karte entstehen je Zimmer bzw. je Person, ihre
+eigenen Routen tragen eine ID — fest verdrahten lässt sich davon nichts. Der
+Schritt zeigt deshalb auf die Stelle, von der aus man hinkommt.
+
+Nachgewiesen im Browser: erste Karte, Knopf-Zeile und „Code erneuern" jeweils
+gerahmt (die Codes dafür im Testhaus erzeugt), der Sprung von der
+Aushang-Seite auf die Übersicht und weiter auf Personal, Katalog führt zwölf
+Lotsen. Wo die Daten fehlen — im Testhaus gibt es keine Reinigungskraft —
+greift die Karte unten rechts mit ihrem Hinweis.
+
+`npm run verify` grün (256 Tests). **Der Tutorial-Bereich ist damit
+vollständig.**
+
+## 8. Offen
 
 - **Simulierte Lotsen** für Reinigungsboard und Gast-Sicht nach dem
   LiveDemo-Muster — der Grund, warum diese beiden Themen im Katalog noch
@@ -266,9 +303,10 @@ Elf Fach-Lotsen im Katalog, `npm run verify` grün (253 Tests).
 
 ## 🔖 Wiederaufnahme
 
-**Stand:** Elf Fach-Lotsen plus Einrichtungs-Lotse, davon zwei als Nachbau
-(Reinigungsboard, Gäste-Sicht) und einer im Konto-Bereich (Plan & Abrechnung);
-lokal verifiziert, `npm run verify` grün (253 Tests). Der Einrichtungs-Lotse läuft über fünf Seiten, der Hilfe-Hub trägt
+**Stand:** Zwölf Fach-Lotsen plus Einrichtungs-Lotse — jeder Bereich der
+Oberfläche ist abgedeckt. Zwei davon sind Nachbauten (Reinigungsboard,
+Gäste-Sicht), einer liegt im Konto-Bereich (Plan & Abrechnung). Lokal
+verifiziert, `npm run verify` grün (256 Tests). Der Einrichtungs-Lotse läuft über fünf Seiten, der Hilfe-Hub trägt
 Checkliste und Katalog, die Registrierung führt hinein.
 
 **Wenn weitergebaut wird:**

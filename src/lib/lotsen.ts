@@ -315,6 +315,57 @@ const ANFRAGEN: Lotse = {
   ],
 }
 
+/**
+ * Alles Gedruckte an einer Stelle. Der Lotse läuft über drei Seiten, weil die
+ * drei Papiere an drei Orten entstehen — und genau das ist die Erklärung, die
+ * fehlt: Welcher Zettel kommt woher, gilt wie lange, und was macht ihn
+ * ungültig.
+ *
+ * Zwei Schritte hängen an fremden Ankern (`uebersicht.kachel`,
+ * `aushang.login`), weil Handout und Login-Karte pro Zimmer bzw. pro Person
+ * entstehen: Ihre eigenen Seiten liegen hinter einer ID in der Route, die ein
+ * fest verdrahteter Schritt gar nicht kennen kann.
+ */
+const AUSHANG: Lotse = {
+  id: 'aushang',
+  title: 'Aushänge & Handouts',
+  subtitle: 'Was gedruckt wird: Zimmer-Aushang, Check-in-Handout, Login-Karte — und wie lange es gilt',
+  zugang: 'alle',
+  steps: [
+    {
+      path: '/zimmer/aushang', anchor: 'aushang.karte',
+      title: 'Ein Aushang je Zimmer',
+      body: 'Die Karte hängt im Zimmer: QR-Code, Zimmernummer, Hausname. Der Gast scannt sie und tippt nur noch seine PIN. Der Code gehört zum Zimmer, nicht zum Aufenthalt — er bleibt über alle Gäste hinweg gültig und wird genau einmal gedruckt.',
+    },
+    {
+      path: '/zimmer/aushang', anchor: 'aushang.knopf',
+      title: 'Erst erzeugen, dann drucken',
+      body: 'Zimmer ohne Code sammeln sich hier: Der Knopf erzeugt die fehlenden auf einmal. Sind alle da, wird er zum Druck-Knopf — eine Seite je Karte, damit man sie einzeln aufhängen kann. Neu angelegte Zimmer brauchen also einen zweiten Durchgang.',
+    },
+    {
+      path: '/zimmer/aushang', anchor: 'aushang.erneuern',
+      title: 'Erneuern macht den alten Aushang ungültig',
+      body: 'Kommt eine Karte abhanden oder soll ein Code aus anderem Grund weg, erzeugt „Code erneuern" einen neuen — und der alte Aushang funktioniert ab dann nicht mehr. Deshalb liegt das nur bei Inhaber und Manager, und deshalb betrifft es immer nur ein Zimmer.',
+    },
+    {
+      path: '/zimmer/aushang', anchor: 'aushang.hinweis',
+      title: 'Nur im Verfahren mit festem Zimmer-QR',
+      body: 'Nutzt Ihr Haus individuelle Zugänge je Aufenthalt, führen diese Aushänge auf eine PIN-Eingabe, die neue Gäste gar nicht bedienen können — dann gehören sie nicht ins Zimmer. Die Seite sagt das oben ausdrücklich, statt sich einfach zu sperren.',
+    },
+    {
+      path: '', anchor: 'uebersicht.kachel',
+      title: 'Das Handout entsteht beim Check-in',
+      body: 'Anders als der Aushang gehört es zu genau einem Aufenthalt. Sie finden es im Zimmer-Dialog, sobald eingecheckt ist: ein Blatt mit PIN, QR-Code und einer Kurzanleitung, die sich nach den Regeln Ihres Hauses richtet — steht die Routine-Reinigung an, sagt der Text das, sonst bittet er darum, die Reinigung im Portal anzufordern. Wahlweise geht dasselbe als E-Mail; die Adresse wird dabei nicht gespeichert.',
+      tun: 'Klicken Sie ein belegtes Zimmer an — der Weg zum Handout liegt im Dialog.',
+    },
+    {
+      path: '/personal', anchor: 'aushang.login',
+      title: 'Login-Karten für die Reinigung',
+      body: 'Die dritte Drucksache: eine Karte je Reinigungskraft, mit der sie sich ohne Tippen am Board anmeldet. Eine neu ausgegebene Karte macht die alte ungültig — genau der Weg, wenn eine verloren geht. Die Karte überlebt ein „Zugang beenden" und gilt nach einer Reaktivierung wieder.',
+    },
+  ],
+}
+
 const AUSWERTUNG: Lotse = {
   id: 'auswertung',
   title: 'Auswertung',
@@ -518,7 +569,7 @@ const GAST: Lotse = {
 
 /** Die Fach-Lotsen in der Reihenfolge des Hubs. */
 export const LOTSEN: Lotse[] = [
-  UEBERSICHT, ANFRAGEN, ZIMMER, REGELN, GASTZUGANG, PERSONAL, SERVICES,
+  UEBERSICHT, ANFRAGEN, ZIMMER, REGELN, GASTZUGANG, AUSHANG, PERSONAL, SERVICES,
   REINIGUNG, GAST, AUSWERTUNG, KONTO,
 ]
 

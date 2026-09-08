@@ -212,10 +212,12 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       Konto & Abrechnung~~ — 08.09. gebaut. Der Konto-Lotse brauchte einen
       **zweiten Piloten** im Konto-Rahmen, weil `/admin` außerhalb des
       Haus-Layouts liegt.
-- [ ] **Lotse für Aushänge und Handouts** — der letzte offene Bereich. Die
-      Druckseiten haben eigene Layouts ohne Nav; zu klären ist, ob der Pilot
-      dort überhaupt sinnvoll liegt oder ob die Erklärung besser in den
-      Gäste-Zugang-Lotsen wandert. (Lotsen 08.09.)
+- [x] ~~**Lotse für Aushänge und Handouts**~~ — 08.09. gebaut. Die Sorge um
+      eigene Druck-Layouts war unbegründet: Alle drei Seiten liegen unter
+      `/h/<slug>/admin` und damit im Layout, das den Piloten trägt. Der Lotse
+      läuft über Aushang-Seite, Übersicht (Handout) und Personal
+      (Login-Karte). **Damit ist der Tutorial-Bereich vollständig** — zwölf
+      Fach-Lotsen plus Einrichtung.
 - [ ] **Kontextuelles „?" auf den Seiten selbst**, das den zur Seite
       passenden Lotsen startet — dort wird so etwas tatsächlich benutzt, der
       Hub ist nur der Katalog. (Lotsen 08.09.)

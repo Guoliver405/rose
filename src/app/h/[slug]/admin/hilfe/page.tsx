@@ -2,8 +2,8 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import {
   BedDouble, Check, ChevronRight, Circle, Compass, ConciergeBell, DoorOpen,
-  BarChart3, ClipboardList, CreditCard, LayoutGrid, SlidersHorizontal, Smartphone,
-  Sparkles, Users, type LucideIcon,
+  BarChart3, ClipboardList, CreditCard, LayoutGrid, Printer, SlidersHorizontal,
+  Smartphone, Sparkles, Users, type LucideIcon,
 } from 'lucide-react'
 import { getAccountContext, getManagementContext } from '@/utils/auth'
 import { createAdminClient } from '@/utils/supabase/service'
@@ -33,6 +33,7 @@ const ICONS: Record<string, LucideIcon> = {
   reinigung: Sparkles,
   gast: Smartphone,
   anfragen: ClipboardList,
+  aushang: Printer,
   auswertung: BarChart3,
   konto: CreditCard,
 }
