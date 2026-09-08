@@ -695,6 +695,8 @@ export type SetupFacts = {
 export type SetupItem = {
   id: string
   label: string
+  /** Dasselbe als Handlungsaufforderung — „Zimmer anlegen" statt „Zimmer angelegt". */
+  todo: string
   hint: string
   done: boolean
   /** Ziel-Route unterhalb von `/h/<slug>/admin`; `null` = außerhalb des Hauses. */
@@ -715,47 +717,76 @@ export type SetupProgress = {
   complete: boolean
 }
 
-export function setupProgress(facts: SetupFacts): SetupProgress {
-  const items: SetupItem[] = [
+/**
+ * Was die **Einrichtung** eines Hauses ausmacht — ohne Meilensteine wie den
+ * ersten Check-in und ohne Freiwilliges.
+ *
+ * Eigener Typ, weil das Band auf der Übersicht genau diese vier Punkte
+ * braucht und sonst nichts: Zimmer und Policies liegen dort ohnehin auf dem
+ * Tisch, die Reinigungskräfte kommen aus einer Abfrage, die es schon gibt.
+ * Der Rest von `SetupFacts` (Services, Aufenthalte, Zahlungsweg) würde eigene
+ * Abfragen kosten — auf der meistbesuchten Seite des Portals.
+ */
+export type SetupKonfig = Pick<SetupFacts, 'rooms' | 'maids' | 'timeZoneChosen' | 'guestAccessChosen'>
+
+/** Die vier Konfigurations-Punkte in Reihenfolge — eine Quelle für Hub und Band. */
+function konfigItems(f: SetupKonfig): SetupItem[] {
+  return [
     {
       id: 'zimmer',
       label: 'Zimmer angelegt',
-      hint: facts.rooms > 0
-        ? `${facts.rooms} Zimmer in Betrieb`
+      todo: 'Zimmer anlegen',
+      hint: f.rooms > 0
+        ? `${f.rooms} Zimmer in Betrieb`
         : 'Ohne Zimmer gibt es keinen Check-in und kein Reinigungsboard',
-      done: facts.rooms > 0,
+      done: f.rooms > 0,
       path: '/zimmer', lotse: 'zimmer',
     },
     {
       id: 'regeln',
       label: 'Regeln des Hauses geprüft',
-      hint: facts.timeZoneChosen
+      todo: 'Regeln des Hauses prüfen',
+      hint: f.timeZoneChosen
         ? 'Zeitzone gesetzt — Routine, Check-out-Frist und Auswertung rechnen richtig'
         : 'Vor allem die Zeitzone: ohne sie liegen alle Uhrzeiten um Stunden daneben',
-      done: facts.timeZoneChosen,
+      done: f.timeZoneChosen,
       path: '/einstellungen/hotel', lotse: 'regeln',
     },
     {
       id: 'gastzugang',
       label: 'Gäste-Zugang gewählt',
-      hint: facts.guestAccessChosen
+      todo: 'Gäste-Zugang wählen',
+      hint: f.guestAccessChosen
         ? 'Das Verfahren steht — jeder Check-in hält es am Aufenthalt fest'
         : 'Fester Zimmer-QR mit PIN oder individueller Zugang je Aufenthalt',
-      done: facts.guestAccessChosen,
+      done: f.guestAccessChosen,
       path: '/einstellungen/gastzugang', lotse: 'gastzugang',
     },
     {
       id: 'personal',
       label: 'Reinigungskraft angelegt',
-      hint: facts.maids > 0
-        ? `${facts.maids === 1 ? 'Ein Zugang' : `${facts.maids} Zugänge`} für die Reinigung`
+      todo: 'Reinigungskraft anlegen',
+      hint: f.maids > 0
+        ? `${f.maids === 1 ? 'Ein Zugang' : `${f.maids} Zugänge`} für die Reinigung`
         : 'Ohne Zugang kommt niemand auf das Reinigungsboard',
-      done: facts.maids > 0,
+      done: f.maids > 0,
       path: '/personal', lotse: 'personal',
     },
+  ]
+}
+
+/** Nur die noch offenen Konfigurations-Punkte — Grundlage des Bands. */
+export function offeneEinrichtung(f: SetupKonfig): SetupItem[] {
+  return konfigItems(f).filter(i => !i.done)
+}
+
+export function setupProgress(facts: SetupFacts): SetupProgress {
+  const items: SetupItem[] = [
+    ...konfigItems(facts),
     {
       id: 'services',
       label: 'Zusatzleistungen eingerichtet',
+      todo: 'Zusatzleistungen einrichten',
       hint: facts.services > 0
         ? `${facts.services === 1 ? 'Ein Service' : `${facts.services} Services`} im Baukasten`
         : 'Freiwillig — ohne Services zeigt das Gastportal nur Reinigung und „Nicht stören"',
@@ -766,6 +797,7 @@ export function setupProgress(facts: SetupFacts): SetupProgress {
     {
       id: 'checkin',
       label: 'Erster Check-in',
+      todo: 'Ersten Check-in ausprobieren',
       hint: facts.stays > 0
         ? 'Der Ablauf ist einmal durchlaufen'
         : 'Ein Klick auf ein Zimmer, dann „Check-in" — die PIN steht sofort am Bildschirm',
@@ -778,6 +810,7 @@ export function setupProgress(facts: SetupFacts): SetupProgress {
     items.push({
       id: 'zahlungsweg',
       label: 'Zahlungsweg hinterlegt',
+      todo: 'Zahlungsweg hinterlegen',
       hint: facts.paymentMethod
         ? 'Rechnungsdaten und Zahlungsweg stehen'
         : 'Der erste Monat ist frei — hinterlegen können Sie den Weg jederzeit',

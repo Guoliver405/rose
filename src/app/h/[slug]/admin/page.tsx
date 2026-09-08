@@ -10,6 +10,7 @@ import {
 } from '@/lib/board'
 import { formatHHMM, parseTimeZone } from '@/lib/tz'
 import RoomGrid, { type FloorGroup, type RoomTileData } from './RoomGrid'
+import SetupBanner from './SetupBanner'
 
 export default async function AdminOverviewPage({
   params,
@@ -32,7 +33,11 @@ export default async function AdminOverviewPage({
     supabase.from('staff_log').select('room_id').eq('hotel_id', ctx.hotelId).eq('kind', 'clean_done').gte('at', todayStartIso(new Date(), parseTimeZone(ctx.policies))),
     supabase.from('service_orders').select('room_id, service_definitions(urgent)').eq('hotel_id', ctx.hotelId).eq('status', 'open'),
     supabase.from('maid_presence').select('profile_id, building, floor, entered_at').eq('hotel_id', ctx.hotelId),
-    supabase.from('profiles').select('id, display_name').eq('hotel_id', ctx.hotelId),
+    // `username` und `deactivated_at` nur für das Einrichtungs-Band: Die
+    // Abfrage läuft ohnehin (Namen der verorteten Kräfte), zwei Spalten mehr
+    // kosten keinen Roundtrip — eine eigene Zählabfrage auf der meistbesuchten
+    // Seite des Portals schon.
+    supabase.from('profiles').select('id, display_name, username, deactivated_at').eq('hotel_id', ctx.hotelId),
   ])
 
   const policies = (hotel?.policies ?? {}) as Record<string, unknown>
@@ -145,6 +150,16 @@ export default async function AdminOverviewPage({
   const dnd = inService.filter(t => t.guestSignal === 'dnd').length
   const inProgress = inService.filter(t => t.cleaningActive).length
 
+  // Einrichtungs-Band: alle vier Angaben liegen hier schon vor — Zimmer und
+  // Personal aus den Abfragen oben, die beiden Policy-Punkte aus dem Kontext.
+  // Die Rezeption sieht das Band nicht; sie kann keinen der Punkte erledigen.
+  const konfig = {
+    rooms: total,
+    maids: (profiles ?? []).filter(p => p.username !== null && p.deactivated_at === null).length,
+    timeZoneChosen: ctx.policies.timeZone !== undefined,
+    guestAccessChosen: ctx.policies.guestAccessMode !== undefined,
+  }
+
   return (
     <div className="flex flex-col gap-5">
       {/* Sticky unterhalb des App-Headers (dessen Höhe = top-Offset, im
@@ -164,6 +179,10 @@ export default async function AdminOverviewPage({
           </div>
         </div>
       </div>
+
+      {ctx.role !== 'reception' && (
+        <SetupBanner base={`/h/${ctx.hotelSlug}/admin`} konfig={konfig} />
+      )}
 
       {total === 0 ? (
         <div className="rounded-xl border border-edge bg-surface p-8 text-center">

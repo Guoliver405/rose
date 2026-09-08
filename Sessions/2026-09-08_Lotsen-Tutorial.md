@@ -285,7 +285,51 @@ greift die Karte unten rechts mit ihrem Hinweis.
 `npm run verify` grün (256 Tests). **Der Tutorial-Bereich ist damit
 vollständig.**
 
-## 8. Offen
+## 8. Vierter Nachtrag: das Einrichtungs-Band
+
+Beim Durchsehen der offenen Punkte fiel auf, dass die Checkliste zwar weiß,
+was fehlt — aber nur, wer den Hilfe-Bereich aufruft, sieht es. Wer die
+Einrichtung nach der Registrierung abbricht, bekam später keinen Anstoß mehr.
+
+Jetzt steht auf der Übersicht ein schmales Band
+([SetupBanner.tsx](../src/app/h/[slug]/admin/SetupBanner.tsx)), solange die
+vier Konfigurations-Punkte nicht stehen: „Einrichtung: noch 3 von 4 Schritten
+— Als Nächstes: Regeln des Hauses prüfen", dazu ein Link in den passenden
+Lotsen und einer auf die ganze Liste.
+
+**Drei Entscheidungen halten es klein.** Es endet von selbst, sobald die vier
+Punkte stehen — deshalb braucht es kein „Später" und keinen gespeicherten
+Ausblend-Zustand, den man über Geräte hinweg mitschleppen müsste. Es nennt
+genau **einen** nächsten Schritt statt der ganzen Liste. Und nur die
+Verwaltung sieht es: Die Rezeption kann keinen dieser Punkte erledigen, für
+sie wäre es ein Vorwurf ohne Handlungsmöglichkeit.
+
+**Erster Check-in und Zusatzleistungen zählen nicht mit.** Der eine ist ein
+Meilenstein, kein Einrichtungsschritt; die anderen sind freiwillig. Würde man
+sie mitzählen, stünde das Band bei einem Haus ohne Zusatzleistungen für immer
+da — genau das Dauer-Banner, das es nicht werden sollte.
+
+**Es kostet keinen Roundtrip.** Zimmerzahl und Policies liegen auf der
+Übersicht ohnehin vor; die Reinigungskräfte kommen aus der `profiles`-Abfrage,
+die dort schon für die Etagen-Verortung läuft — zwei Spalten mehr statt einer
+eigenen Zählabfrage auf der meistbesuchten Seite des Portals. Die Texte
+stammen aus derselben Quelle wie im Hub (`konfigItems` in `lotsen.ts`); dazu
+trägt jeder Punkt neben `label` („Zimmer angelegt") jetzt ein `todo`
+(„Zimmer anlegen"), damit das Band nicht mit einer Regex am Label
+herumschnippelt.
+
+Nachgewiesen im Browser: Band am Testhaus mit 3 von 4 offenen Schritten, 49 px
+hoch, beide Links korrekt (der eine mit `?lotse=regeln&schritt=0`), hell und
+dunkel. `npm run verify` grün (269 Tests).
+
+**Bewusst ohne Ausblenden.** Ein Haus, das einen Punkt dauerhaft überspringen
+will — etwa eine Pension, in der die Inhaberin selbst putzt und keinen
+Reinigungs-Zugang braucht — sähe das Band dauerhaft. Fällt das in der Praxis
+auf, ist ein „Nicht mehr anzeigen" je Person der nächste Schritt; dann aber am
+Konto gespeichert und nicht im Browser, sonst kommt es auf dem nächsten Gerät
+wieder.
+
+## 9. Offen
 
 - **Simulierte Lotsen** für Reinigungsboard und Gast-Sicht nach dem
   LiveDemo-Muster — der Grund, warum diese beiden Themen im Katalog noch

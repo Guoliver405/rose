@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   ALLE_LOTSEN, EINRICHTUNG, EINRICHTUNG_ORDER, LOTSEN, SIM_SZENEN,
-  clampStep, einrichtungStart, lotseById, lotseStart, lotsenFuer, setupProgress, szeneFuerSchritt,
+  clampStep, einrichtungStart, lotseById, lotseStart, lotsenFuer, offeneEinrichtung,
+  setupProgress, szeneFuerSchritt,
   type SetupFacts,
 } from './lotsen'
 
@@ -98,6 +99,41 @@ describe('Simulationen', () => {
   it('ist für jede Rolle sichtbar', () => {
     // Auch die Rezeption erklärt Kolleginnen das Board und den Gästen ihr Portal.
     for (const id of simLotsen) expect(lotseById(id)!.zugang).toBe('alle')
+  })
+})
+
+describe('offeneEinrichtung — das Band auf der Übersicht', () => {
+  const konfig = (patch: Partial<Parameters<typeof offeneEinrichtung>[0]> = {}) => ({
+    rooms: 0, maids: 0, timeZoneChosen: false, guestAccessChosen: false, ...patch,
+  })
+
+  it('nennt bei einem frischen Haus alle vier Punkte in Reihenfolge', () => {
+    expect(offeneEinrichtung(konfig()).map(i => i.id))
+      .toEqual(['zimmer', 'regeln', 'gastzugang', 'personal'])
+  })
+
+  it('schweigt, sobald die vier stehen', () => {
+    // Das Band hat kein „Später" — es endet dadurch, dass die Arbeit getan
+    // ist. Deshalb darf hier nichts übrig bleiben.
+    expect(offeneEinrichtung(konfig({
+      rooms: 12, maids: 2, timeZoneChosen: true, guestAccessChosen: true,
+    }))).toEqual([])
+  })
+
+  it('zählt weder den ersten Check-in noch Freiwilliges mit', () => {
+    // Sonst stünde das Band bei einem Haus ohne Zusatzleistungen für immer da,
+    // und ein Meilenstein wäre als Einrichtungsschritt ausgewiesen.
+    const ids = offeneEinrichtung(konfig()).map(i => i.id)
+    expect(ids).not.toContain('services')
+    expect(ids).not.toContain('checkin')
+    expect(ids).not.toContain('zahlungsweg')
+  })
+
+  it('bleibt mit dem Hub in einer Quelle', () => {
+    const k = konfig({ rooms: 5, timeZoneChosen: true })
+    const ausHub = setupProgress({ ...k, services: 0, stays: 0, paymentMethod: null })
+      .items.filter(i => ['gastzugang', 'personal'].includes(i.id))
+    expect(offeneEinrichtung(k)).toEqual(ausHub)
   })
 })
 
@@ -246,6 +282,15 @@ describe('setupProgress', () => {
       paymentMethod: false,
     }))
     expect(p.complete).toBe(true)
+  })
+
+  it('gibt jedem Punkt eine Handlungsform', () => {
+    // Das Band nennt den nächsten Schritt als Aufforderung, der Hub als
+    // Zustand — beides steht am selben Punkt, damit es nicht auseinanderläuft.
+    for (const item of setupProgress(facts({ paymentMethod: false })).items) {
+      expect(item.todo.length).toBeGreaterThan(3)
+      expect(item.todo).not.toBe(item.label)
+    }
   })
 
   it('verweist jeden Punkt auf ein Ziel', () => {

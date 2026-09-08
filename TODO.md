@@ -69,12 +69,15 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       ausschließlich über einen Link, und was noch fehlt, leitet die
       Einrichtungs-Checkliste aus dem Datenbestand ab. Damit gibt es nichts,
       was auf einem zweiten Gerät „wieder käme".
-- [ ] **Hinweis auf die unfertige Einrichtung außerhalb von „Hilfe"** — die
-      Checkliste weiß, was fehlt, aber nur, wer den Hilfe-Bereich aufruft,
-      sieht es. Wer die Einrichtung nach der Registrierung abbricht, bekommt
-      später keinen Anstoß mehr. Denkbar: ein schmales Band auf der Übersicht,
-      solange Pflichtpunkte offen sind — sparsam, es soll kein Dauer-Banner
-      werden. (Lotsen 08.09.)
+- [x] ~~**Hinweis auf die unfertige Einrichtung außerhalb von „Hilfe"**~~ —
+      08.09. gebaut: schmales Band auf der Übersicht, solange die vier
+      Konfigurations-Punkte offen sind; nennt einen nächsten Schritt, führt in
+      dessen Lotsen, endet von selbst. Nur Verwaltung, kein Roundtrip extra.
+      **Bewusst ohne Ausblenden:** Ein Haus, das einen Punkt dauerhaft
+      überspringen will (etwa eine Pension ohne eigene Reinigungskraft), sähe
+      das Band sonst dauerhaft — falls das in der Praxis auffällt, ist ein
+      „Nicht mehr anzeigen" je Person der nächste Schritt, und dann mit
+      Speicherung am Konto statt im Browser.
 - [x] ~~**Konto-Seite „Plan & Abrechnung"** für den Inhaber~~ — 05.09.
       erledigt: `/admin/abrechnung` zeigt Plan, laufenden Monat je Haus mit
       voraussichtlichem Betrag, abgeschlossene Monate mit Betrag und Status
