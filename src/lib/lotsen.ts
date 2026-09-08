@@ -43,6 +43,14 @@ export type LotseStep = {
    * kurz, ohne dass die Erklärungen dahinter fehlen.
    */
   kern?: boolean
+  /**
+   * Szene, in die sich eine Simulation für diesen Schritt versetzt (siehe
+   * `SIM_SZENEN`). Nur für die beiden nachgebauten Portale relevant: Deren
+   * Anker gibt es erst, wenn der Nachbau im passenden Zustand ist — ein
+   * „Reinigung abschließen"-Slider existiert nun einmal nur während einer
+   * laufenden Reinigung.
+   */
+  sim?: string
 }
 
 export type Lotse = {
@@ -263,8 +271,152 @@ const SERVICES: Lotse = {
   ],
 }
 
+/**
+ * Szenen der beiden nachgebauten Portale.
+ *
+ * Sie stehen hier und nicht in den Komponenten, damit die Zuordnung
+ * Schritt → Szene testbar bleibt: Ein Tippfehler im `sim`-Feld führte sonst
+ * dazu, dass die Simulation stumm in der Ausgangsszene stehen bleibt und der
+ * Coach Mark einen Anker sucht, den es gerade nicht gibt.
+ */
+export const SIM_SZENEN = {
+  reinigung: ['login', 'schicht', 'etagen', 'zimmer', 'dialog', 'reinigung', 'status'],
+  gast: ['zugang', 'portal', 'aufschub', 'gewuenscht', 'dnd', 'services', 'bestellt'],
+} as const
+
+export type SimBereich = keyof typeof SIM_SZENEN
+
+/**
+ * Reinigungsboard und Gäste-Portal sind aus der Rezeptions-Sitzung **nicht**
+ * erreichbar: eigener Cookie-Namespace (`svc_`), eigenes Konto, und das
+ * Gastportal verlangt einen laufenden Aufenthalt samt PIN. Ein Coach Mark
+ * kann dort nicht hinlaufen — deshalb ein Nachbau auf einer eigenen Seite.
+ *
+ * Das ist nicht nur der Ausweg, sondern für diese beiden Themen der bessere
+ * Weg: kein zweites Konto, kein Handy, keine Testdaten, reproduzierbar, und
+ * Zustände wie „Prio und dringende Anfrage gleichzeitig" lassen sich zeigen,
+ * ohne sie erst mühsam herzustellen. Bedienen darf man den Nachbau frei; der
+ * nächste Schritt stellt die Szene wieder her.
+ */
+const REINIGUNG: Lotse = {
+  id: 'reinigung',
+  title: 'Das Reinigungsboard',
+  subtitle: 'Nachgebaut: Anmeldung, Schicht, Etagen, Slider — was die Reinigungskraft am Handy sieht',
+  zugang: 'alle',
+  steps: [
+    {
+      path: '/hilfe/reinigung', anchor: 'reinigung.login', sim: 'login',
+      title: 'Anmeldung ohne E-Mail',
+      body: 'Eine Reinigungskraft hat Benutzernamen und PIN — oder scannt ihre gedruckte Login-Karte und ist sofort drin. Beides gilt nur in diesem Haus; dieselbe Namensvetterin darf es anderswo noch einmal geben.',
+    },
+    {
+      path: '/hilfe/reinigung', anchor: 'reinigung.schicht', sim: 'schicht',
+      title: 'Erst Schichtbeginn, dann Arbeit',
+      body: 'Ohne begonnene Schicht lässt sich keine Reinigung starten. Der Schichtbeginn ist zugleich der erste Stich im Arbeitsnachweis — aus diesen Stichen rechnet die Auswertung später Arbeits-, Pausen- und Reinigungszeiten.',
+      tun: 'Ziehen Sie den Slider ganz durch — er löst erst bei 97 % der Bahn aus.',
+    },
+    {
+      path: '/hilfe/reinigung', anchor: 'reinigung.etagen', sim: 'etagen',
+      title: 'Etagen statt einer langen Liste',
+      body: 'Nach dem Schichtbeginn kommt zuerst die Etagen-Ebene, in fester Reihenfolge wie in der Rezeption. Jede Zeile sagt, wie viel dort offen ist, ob eine Priorität wartet und wer schon vor Ort arbeitet.',
+    },
+    {
+      path: '/hilfe/reinigung', anchor: 'reinigung.naechstes', sim: 'etagen',
+      title: '„Als Nächstes" ist eine Empfehlung, keine Zuweisung',
+      body: 'Genau eine Etage trägt das Abzeichen: die höchste noch offene Dringlichkeit, geteilt durch die Zahl der Kräfte vor Ort plus eins. Wo schon jemand arbeitet, lohnt der Weg weniger. Etagen ohne offene Arbeit fallen heraus, bei Gleichstand gewinnt die untere — damit die Empfehlung nicht hin und her springt.',
+    },
+    {
+      path: '/hilfe/reinigung', anchor: 'reinigung.kacheln', sim: 'zimmer',
+      title: 'Eine Etage wählen heißt einbuchen',
+      body: 'Die Kollegin steht ab jetzt sichtbar auf dieser Etage — in der Rezeptions-Übersicht und für alle anderen Kräfte. Ausgegraute Zimmer sind nicht gesperrt, sondern nur ohne Auftrag: unbelegt, „Nicht stören", oder ein Wunsch, der erst später gilt.',
+    },
+    {
+      path: '/hilfe/reinigung', anchor: 'reinigung.starten', sim: 'dialog',
+      title: 'Starten per Slider, nicht per Knopf',
+      body: 'Ein Tipp auf die Kachel öffnet das Zimmer. Gestartet wird mit einem Zug, der am Griff beginnen und die Bahn fast ganz zurücklegen muss — ein Handy in der Schürzentasche soll keine Reinigung auslösen.',
+    },
+    {
+      path: '/hilfe/reinigung', anchor: 'reinigung.abschliessen', sim: 'reinigung',
+      title: 'Abschließen — und was passiert, wenn es jemand vergisst',
+      body: 'Zwischen Start und Abschluss steht das Zimmer für alle als „in Arbeit". Wird der Abschluss vergessen, geht das Zimmer nach der eingestellten Zeit von selbst wieder auf offen, und der Verlauf hält fest, dass das Zeitlimit gerissen ist — statt dass ein halber Vorgang für immer stehen bleibt.',
+    },
+    {
+      path: '/hilfe/reinigung', anchor: 'reinigung.status', sim: 'status',
+      title: 'Pause, sonstige Reinigung, Schichtende',
+      body: 'Alle Zustandswechsel liegen auf einer eigenen Seite, nicht auf dem Board — am Handy greift so die Zurück-Taste. Pause und sonstige Reinigung sind Zeiträume innerhalb der Schicht und dürfen sich mit nichts überschneiden; das Schichtende beendet beides. Darunter steht die Tagesbilanz der Kraft.',
+    },
+    {
+      path: '/hilfe/reinigung', anchor: 'reinigung.verlassen', sim: 'zimmer',
+      title: 'Die Etage verlässt man bewusst',
+      body: 'Auch der Rückweg ist ein Slider, und zwar von rechts nach links. Ein Fehltipper soll niemanden aus der Etage werfen — das würde die Verortung für die Kolleginnen falsch machen.',
+    },
+  ],
+}
+
+const GAST: Lotse = {
+  id: 'gast',
+  title: 'Was der Gast sieht',
+  subtitle: 'Nachgebaut: das Gäste-Portal am Handy — Reinigung, „frühestens ab", Nicht stören, Services',
+  zugang: 'alle',
+  steps: [
+    {
+      path: '/hilfe/gast', anchor: 'gast.zugang', sim: 'zugang',
+      title: 'Kein Konto, keine App',
+      body: 'Der Gast scannt den QR-Aushang im Zimmer und gibt die PIN vom Handout ein — oder er öffnet den individuellen Link, den er beim Check-in bekommen hat, und ist ohne PIN drin. Welcher der beiden Wege gilt, entscheidet das Haus unter „Gäste-Zugang".',
+    },
+    {
+      path: '/hilfe/gast', anchor: 'gast.portal', sim: 'portal',
+      title: 'Ein Bildschirm, mehr nicht',
+      body: 'Nach der Anmeldung merkt sich ein Cookie den Aufenthalt — die PIN wird kein zweites Mal verlangt. Das Portal nennt Haus und Zimmer, damit niemand versehentlich für das Nachbarzimmer bestellt.',
+    },
+    {
+      path: '/hilfe/gast', anchor: 'gast.reinigen', sim: 'portal',
+      title: 'Ein Tipp genügt',
+      body: '„Zimmer reinigen" setzt den Wunsch, und das Zimmer erscheint sofort auf dem Reinigungsboard und in der Rezeptions-Übersicht. Erneut tippen nimmt ihn zurück. Nichts davon ist ein Termin — das Housekeeping kommt, wenn es in die Runde passt.',
+      tun: 'Tippen Sie ruhig darauf; der Nachbau reagiert wie das echte Portal.',
+    },
+    {
+      path: '/hilfe/gast', anchor: 'gast.aufschub', sim: 'aufschub',
+      title: '„Frühestens ab" — für Ausschläfer',
+      body: 'Der Gast wünscht Reinigung, aber nicht vor einer Uhrzeit. Bis dahin gilt das Zimmer auf dem Board als nicht offen, die Kachel zeigt eine Uhr. Wie weit aufgeschoben werden darf, gibt das Haus vor — und das Portal sagt dazu, dass die Grenze vom Haus stammt.',
+    },
+    {
+      path: '/hilfe/gast', anchor: 'gast.aktiv', sim: 'gewuenscht',
+      title: 'Der Gast sieht, was er ausgelöst hat',
+      body: 'Ein aktiver Wunsch bleibt sichtbar, samt der gewählten Uhrzeit. Das ist die einzige Rückmeldung, die das Portal gibt — bewusst: Ein Versprechen, wann jemand kommt, könnte RoSe ohne Zuweisungslogik nicht halten.',
+    },
+    {
+      path: '/hilfe/gast', anchor: 'gast.dnd', sim: 'dnd',
+      title: '„Nicht stören" schlägt alles',
+      body: 'Solange es aktiv ist, klopft niemand, und auch die tägliche Routine-Reinigung setzt aus. Zurücknehmen geht jederzeit — anders als der Reinigungswunsch ist „Nicht stören" nie durch ein Zeitfenster gesperrt, sonst säße jemand damit fest.',
+    },
+    {
+      path: '/hilfe/gast', anchor: 'gast.services', sim: 'services',
+      title: 'Zusatzleistungen aus dem Baukasten',
+      body: 'Der Gast sieht genau die Services, die das Haus angelegt hat, mit den Preisen als Anzeige. Bestellt wird mit einem Tipp; die Anfrage landet auf dem Services-Board der Rezeption. Abgerechnet wird in RoSe nichts.',
+    },
+    {
+      path: '/hilfe/gast', anchor: 'gast.bestellt', sim: 'bestellt',
+      title: 'Und dann ist Schluss',
+      body: 'Offene Anfragen bleiben für den Gast sichtbar, bis die Rezeption sie erledigt. Mit dem Check-out erlöschen PIN, Link und Cookie sofort — der Aufenthalt bleibt anonym, es war nie ein Name im Spiel.',
+    },
+  ],
+}
+
 /** Die Fach-Lotsen in der Reihenfolge des Hubs. */
-export const LOTSEN: Lotse[] = [UEBERSICHT, ZIMMER, REGELN, GASTZUGANG, PERSONAL, SERVICES]
+export const LOTSEN: Lotse[] = [UEBERSICHT, ZIMMER, REGELN, GASTZUGANG, PERSONAL, SERVICES, REINIGUNG, GAST]
+
+/**
+ * Szene, in die sich eine Simulation für den gegebenen Schritt versetzt.
+ * `null` = keine Vorgabe (dann bleibt der Nachbau, wie der Nutzer ihn
+ * hinterlassen hat, bzw. startet in seiner Ausgangsszene).
+ */
+export function szeneFuerSchritt(lotseId: string | null, schritt: string | number | null): string | null {
+  if (!lotseId) return null
+  const lotse = lotseById(lotseId)
+  if (!lotse) return null
+  return lotse.steps[clampStep(lotse, schritt)]?.sim ?? null
+}
 
 /**
  * Der Einrichtungs-Lotse ist kein eigener Text, sondern die Kernschritte der

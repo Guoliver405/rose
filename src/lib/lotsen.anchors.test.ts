@@ -32,7 +32,7 @@ function sammle(dir: string, treffer: string[] = []): string[] {
  */
 const quellen = sammle(SRC)
   .filter(p => !/[\\/]lib[\\/]lotsen[.a-z]*\.tsx?$/.test(p))
-  .filter(p => !/[\\/]components[\\/]lotse[\\/]/.test(p))
+  .filter(p => !/LotsePilot\.tsx$/.test(p))
   .map(p => readFileSync(p, 'utf8'))
 
 /** Anker, die als festes Attribut im JSX stehen. */

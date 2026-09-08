@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Compass, X } from 'lucide-react'
 import { clampStep, lotseById } from '@/lib/lotsen'
+import { meldeSchritt } from './schritt'
 
 /**
  * Der Lotse — Coach Marks über den echten Seiten.
@@ -131,6 +132,13 @@ export default function LotsePilot({ base }: { base: string }) {
     }
   }, [anchor, index, stepKey, versteckt])
 
+  // Auch eine echte Navigation ist ein Schrittwechsel: Wer einen Lotsen über
+  // einen Link startet, ändert die Adresszeile über den Router — dabei feuert
+  // weder `popstate` noch das Ereignis aus `gehe`. Ohne diese Meldung bliebe
+  // eine Simulation auf der Seite in dem Zustand stehen, den der Nutzer ihr
+  // zuletzt gegeben hat, statt in die Szene des ersten Schritts zu springen.
+  useEffect(() => { meldeSchritt() }, [urlKey])
+
   // Steht in der URL ein Schritt, der auf einer anderen Seite liegt (von Hand
   // geändert, alter Link, Zurück-Taste), führt der Lotse selbst dorthin.
   // Sonst suchte er einen Anker, den es hier gar nicht geben kann, und
@@ -147,6 +155,7 @@ export default function LotsePilot({ base }: { base: string }) {
     rest.delete('schritt')
     const query = rest.toString()
     window.history.replaceState(null, '', query ? `${pathname}?${query}` : pathname)
+    meldeSchritt()
     setVerstecktKey(urlKey)
   }, [params, pathname, urlKey])
 
@@ -161,6 +170,10 @@ export default function LotsePilot({ base }: { base: string }) {
       router.push(`${url}?${query.toString()}`)
     } else {
       window.history.replaceState(null, '', `${url}?${query.toString()}`)
+      // Simulationen auf der Seite folgen dem Schritt — sie koennen die
+      // Adresszeile nicht ueber Next beobachten, weil hier bewusst nicht
+      // navigiert wird.
+      meldeSchritt()
       setLokal({ key: urlKey, index: grenze })
     }
   }, [base, lotse, params, pathname, router, setLokal, urlKey])

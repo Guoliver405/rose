@@ -50,6 +50,9 @@ also testbar wie `board.ts` oder `pricing.ts`. Sechs Fach-Lotsen:
 | Personal | `…/admin/personal` | 5 | Verwaltung |
 | Zusatzleistungen | `…/admin/services` | 3 | Verwaltung |
 
+Dazu kamen am selben Tag zwei **nachgebaute Portale** — Reinigungsboard und
+Gäste-Sicht, beide für jede Rolle; siehe Abschnitt 5.
+
 Der **Einrichtungs-Lotse** ist kein eigener Text, sondern die als `kern`
 markierten Schritte der Fach-Lotsen in Reihenfolge, gerahmt von Begrüßung und
 Abschluss — 16 Schritte über fünf Seiten. So kann dieselbe Erklärung nicht an
@@ -155,7 +158,61 @@ Tutorial-Bereich.
 - Zimmer-Dialog öffnet bei offenem Lotsen; die Karte verdeckt ihn nicht.
 - Hell und Dunkel geprüft.
 
-## 5. Offen
+## 5. Nachtrag am selben Tag: die simulierten Lotsen
+
+Direkt im Anschluss gebaut — die beiden Themen, die per Coach Mark nicht
+erreichbar sind.
+
+**Zwei neue Seiten** unter Hilfe: `…/hilfe/reinigung` und `…/hilfe/gast`,
+beide über `getManagementContext` und damit für **jede Rolle**. Das ist
+Absicht: Auch die Rezeption erklärt Kolleginnen das Board und Gästen ihr
+Portal, und zu sehen bekommt sie beides sonst nie.
+
+**Die Nachbauten** [SimReinigung.tsx](../src/components/lotse/SimReinigung.tsx)
+(9 Schritte: Anmeldung, Schichtbeginn, Etagen, „Als Nächstes", Kacheln,
+Starten, Abschließen, Status-Seite, Etage verlassen) und
+[SimGast.tsx](../src/components/lotse/SimGast.tsx) (8 Schritte: Zugang,
+Portal, Reinigungswunsch, „frühestens ab", aktiver Wunsch, Nicht stören,
+Services, Ende) folgen dem Muster von `LiveDemo.tsx`: eigene Miniaturen in der
+Farbsprache der Boards, nur der Slider ist der echte `SlideAction`. Die
+Ableitungen spiegeln `board.ts` — einschließlich der Etagen-Empfehlung, die
+im Nachbau auch etwas zu zeigen hat: Etage 3 trägt die Priorität, bekommt das
+Abzeichen aber **nicht**, weil dort schon eine Kollegin arbeitet.
+
+**Szenen statt Zufall.** Ein Schritt kann den Nachbau in einen Zustand
+versetzen (`sim`-Feld, erlaubte Werte in `SIM_SZENEN`, gegen die Schritte
+getestet). Ohne das gäbe es die Hälfte der Anker gar nicht — einen
+„Reinigung abschließen"-Slider gibt es nun einmal nur während einer
+laufenden Reinigung. Bedient werden darf trotzdem frei: Die eigene Bedienung
+hängt am Schritt-Schlüssel und gilt, bis der nächste Schritt die Szene
+wiederherstellt — dieselbe Ableitung wie im `LotsePilot`, wieder ohne
+`setState` im Effekt.
+
+**Der Fallstrick, der zweimal zugeschlagen hat:** Der Nachbau kann den Schritt
+**nicht** über `useSearchParams` lesen. Innerhalb einer Seite schreibt der
+Pilot nur `history.replaceState` — davon erfährt Next nichts, und beide
+Lotsen liegen vollständig auf je einer Seite. Also ein externer Store über
+`location.search` ([schritt.ts](../src/components/lotse/schritt.ts)), den der
+Pilot bei jedem Wechsel anstößt. Beim ersten Anlauf fehlte darin der Fall
+**echte Navigation**: Wer den Lotsen über den Link „Lotse starten" beginnt,
+ändert die Adresszeile über den Router, und weder `popstate` noch das eigene
+Ereignis feuern — der Nachbau blieb in dem Zustand stehen, den der Nutzer ihm
+zuletzt gegeben hatte. Ein `useEffect` am `urlKey` des Piloten meldet jetzt
+auch diese Wechsel.
+
+**Nachgewiesen im Browser:** Szenenwechsel bei jedem Schritt (Anmeldung →
+Schichtbeginn → Etagen → Empfehlung → Kacheln → laufende Reinigung), die
+Empfehlung landet auf Etage 2 statt auf der Prio-Etage 3, das Gäste-Portal
+zeigt „frühestens ab" mit gewählter Uhrzeit und die offene Anfrage, freie
+Bedienung wirkt und wird vom nächsten Schritt zurückgesetzt, Katalog führt
+acht Lotsen, hell und dunkel geprüft. `npm run verify` grün (250 Tests).
+
+**Werkzeug-Notiz:** Die Vorschau-Klicks trafen die Schaltflächen des Nachbaus
+zeitweise nicht — Koordinaten-Skalierung der Pane, nicht die Anwendung.
+Geprüft wurde dann über `element.click()` im Seitenkontext, was denselben Weg
+durch Reacts Ereignis-Delegation nimmt wie ein echter Klick.
+
+## 6. Offen
 
 - **Simulierte Lotsen** für Reinigungsboard und Gast-Sicht nach dem
   LiveDemo-Muster — der Grund, warum diese beiden Themen im Katalog noch
@@ -171,8 +228,9 @@ Tutorial-Bereich.
 
 ## 🔖 Wiederaufnahme
 
-**Stand:** Lotsen-Gerüst steht und ist lokal verifiziert; `npm run verify`
-grün. Der Einrichtungs-Lotse läuft über fünf Seiten, der Hilfe-Hub trägt
+**Stand:** Acht Fach-Lotsen plus Einrichtungs-Lotse, davon zwei als Nachbau
+(Reinigungsboard, Gäste-Sicht); lokal verifiziert, `npm run verify` grün (250
+Tests). Der Einrichtungs-Lotse läuft über fünf Seiten, der Hilfe-Hub trägt
 Checkliste und Katalog, die Registrierung führt hinein.
 
 **Wenn weitergebaut wird:**
@@ -186,10 +244,12 @@ Checkliste und Katalog, die Registrierung führt hinein.
    `EINRICHTUNG_ORDER` vorgibt.
 3. **Anker in Komponenten mit Listen** brauchen die „erste Zeile"-Regel (siehe
    `RoomGrid`), sonst zeigt der Coach Mark auf ein zufälliges Element.
-4. **Simulierte Lotsen**: `LiveDemo.tsx` ist der Bauplan — ein `useReducer`-
-   Modell, nachgebaute Miniaturen, Schrittanzeige. Für das Reinigungsboard
-   müssten Etagenwahl, Slider (der echte `SlideAction`) und Schicht/Pause
-   nachgestellt werden; die Zustandsableitung spiegelt `board.ts`.
+4. **Neue Szene in einem Nachbau** = ein Eintrag in `SIM_SZENEN`, ein Zweig in
+   `szeneState` der Komponente und das `sim`-Feld am Schritt. Der Test hält
+   fest, dass jeder Schritt eine bekannte Szene nennt.
+5. **Wer einen dritten Nachbau baut**, denkt an die Schritt-Meldung: Ohne den
+   externen Store aus [schritt.ts](../src/components/lotse/schritt.ts) bekommt
+   die Simulation von Schrittwechseln innerhalb einer Seite nichts mit.
 
 **Nicht vergessen:** Der Katalog ist Text, der veraltet. Ändert sich eine
 Regel des Hauses (etwa eine neue Policy), gehört der zugehörige Lotsen-Schritt

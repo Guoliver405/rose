@@ -203,12 +203,11 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       Registrierung), Hilfe-Hub mit **abgeleiteter** Einrichtungs-Checkliste.
       Protokoll:
       [2026-09-08_Lotsen-Tutorial.md](Sessions/2026-09-08_Lotsen-Tutorial.md).
-- [ ] **Simulierte Lotsen für Reinigungsboard und Gast-Sicht** — beide sind
-      aus der Rezeptions-Sitzung nicht erreichbar (`svc_`-Cookies, eigenes
-      Konto, Aufenthalt mit PIN); ein Coach Mark kann dort nicht hinlaufen.
-      Bauplan ist [LiveDemo.tsx](src/components/landing/LiveDemo.tsx):
-      `useReducer`-Modell, nachgebaute Miniaturen, echter `SlideAction`.
-      (Lotsen 08.09.)
+- [x] ~~**Simulierte Lotsen für Reinigungsboard und Gast-Sicht**~~ — 08.09.
+      gebaut: Nachbauten unter `…/hilfe/reinigung` und `…/hilfe/gast`, für
+      jede Rolle sichtbar, Szenen je Schritt (`sim`-Feld), freie Bedienung
+      dazwischen. Offen bleibt der Feinschliff der Beispieldaten, falls sie
+      sich im Gebrauch als unpassend erweisen.
 - [ ] **Weitere Fach-Lotsen**: Services-Board (Anfragen), Auswertung, Konto &
       Abrechnung, Aushänge und Handouts. Je Lotse ein Eintrag in
       [lotsen.ts](src/lib/lotsen.ts) plus `data-lotse`-Anker; der Anker-Test

@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import {
   BedDouble, Check, ChevronRight, Circle, Compass, ConciergeBell, DoorOpen,
-  LayoutGrid, SlidersHorizontal, Users, type LucideIcon,
+  LayoutGrid, SlidersHorizontal, Smartphone, Sparkles, Users, type LucideIcon,
 } from 'lucide-react'
 import { getAccountContext, getManagementContext } from '@/utils/auth'
 import { createAdminClient } from '@/utils/supabase/service'
@@ -29,6 +29,8 @@ const ICONS: Record<string, LucideIcon> = {
   gastzugang: DoorOpen,
   personal: Users,
   services: ConciergeBell,
+  reinigung: Sparkles,
+  gast: Smartphone,
 }
 
 export default async function HilfePage({

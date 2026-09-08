@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  ALLE_LOTSEN, EINRICHTUNG, EINRICHTUNG_ORDER, LOTSEN,
-  clampStep, einrichtungStart, lotseById, lotsenFuer, setupProgress,
+  ALLE_LOTSEN, EINRICHTUNG, EINRICHTUNG_ORDER, LOTSEN, SIM_SZENEN,
+  clampStep, einrichtungStart, lotseById, lotsenFuer, setupProgress, szeneFuerSchritt,
   type SetupFacts,
 } from './lotsen'
 
@@ -61,6 +61,62 @@ describe('Einrichtungs-Lotse', () => {
   it('startet auf der Zimmer-Seite mit Schritt 0', () => {
     expect(einrichtungStart('haus-am-see'))
       .toBe('/h/haus-am-see/admin/zimmer?lotse=einrichtung&schritt=0')
+  })
+})
+
+describe('Simulationen', () => {
+  const simLotsen = ['reinigung', 'gast'] as const
+
+  it('kennt für jeden Simulations-Schritt eine gültige Szene', () => {
+    // Ein Tippfehler im `sim`-Feld fiele sonst erst im Betrieb auf: Der
+    // Nachbau bliebe in der Ausgangsszene, und der Coach Mark suchte einen
+    // Anker, den es dort nicht gibt.
+    for (const id of simLotsen) {
+      const lotse = lotseById(id)!
+      const erlaubt: readonly string[] = SIM_SZENEN[id]
+      for (const step of lotse.steps) {
+        expect(step.sim, `${id}: „${step.title}" ohne Szene`).toBeTruthy()
+        expect(erlaubt).toContain(step.sim!)
+      }
+    }
+  })
+
+  it('liegt vollständig auf der eigenen Nachbau-Seite', () => {
+    // Die Anker stecken in der Simulation; ein Schritt auf einer anderen
+    // Route fände sie nie.
+    expect(lotseById('reinigung')!.steps.every(s => s.path === '/hilfe/reinigung')).toBe(true)
+    expect(lotseById('gast')!.steps.every(s => s.path === '/hilfe/gast')).toBe(true)
+  })
+
+  it('gehört keiner in die Ersteinrichtung', () => {
+    // Die Nachbauten erklären den laufenden Betrieb, nicht das Aufsetzen.
+    for (const id of simLotsen) {
+      expect(lotseById(id)!.steps.some(s => s.kern)).toBe(false)
+    }
+  })
+
+  it('ist für jede Rolle sichtbar', () => {
+    // Auch die Rezeption erklärt Kolleginnen das Board und den Gästen ihr Portal.
+    for (const id of simLotsen) expect(lotseById(id)!.zugang).toBe('alle')
+  })
+})
+
+describe('szeneFuerSchritt', () => {
+  it('liefert die Szene des angefragten Schritts', () => {
+    expect(szeneFuerSchritt('reinigung', 0)).toBe('login')
+    expect(szeneFuerSchritt('gast', '0')).toBe('zugang')
+  })
+
+  it('begrenzt einen zu großen Schritt wie clampStep', () => {
+    const letzte = lotseById('gast')!.steps.at(-1)!.sim
+    expect(szeneFuerSchritt('gast', '999')).toBe(letzte)
+  })
+
+  it('bleibt still, wenn kein oder ein anderer Lotse läuft', () => {
+    expect(szeneFuerSchritt(null, null)).toBeNull()
+    expect(szeneFuerSchritt('gibt-es-nicht', 0)).toBeNull()
+    // Fach-Lotsen ohne Nachbau tragen keine Szene.
+    expect(szeneFuerSchritt('zimmer', 0)).toBeNull()
   })
 })
 
