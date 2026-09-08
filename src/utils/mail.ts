@@ -101,10 +101,11 @@ function html(m: GuestAccessMail): string {
   <h2 style="margin-top:28px;font-size:15px">So funktioniert das Portal</h2>
   <p>${escape(m.guide.purpose)}</p>
   <ul style="padding-left:20px">
-    <li style="margin-bottom:8px"><strong>Reinigung:</strong> ${escape(m.guide.cleaning)}</li>
-    <li style="margin-bottom:8px"><strong>Ruhe:</strong> ${escape(m.guide.dnd)}</li>
-    <li style="margin-bottom:8px"><strong>Services:</strong> ${escape(m.guide.services)}</li>
-    <li style="margin-bottom:8px"><strong>Zugang:</strong> ${escape(m.guide.access)}</li>
+    <li style="margin-bottom:8px"><strong>${escape(m.guide.labels.cleaning)}:</strong> ${escape(m.guide.cleaning)}</li>
+    <li style="margin-bottom:8px"><strong>${escape(m.guide.labels.sustainability)}:</strong> ${escape(m.guide.sustainability)}</li>
+    <li style="margin-bottom:8px"><strong>${escape(m.guide.labels.dnd)}:</strong> ${escape(m.guide.dnd)}</li>
+    <li style="margin-bottom:8px"><strong>${escape(m.guide.labels.services)}:</strong> ${escape(m.guide.services)}</li>
+    <li style="margin-bottom:8px"><strong>${escape(m.guide.labels.access)}:</strong> ${escape(m.guide.access)}</li>
   </ul>
 </body></html>`
 }

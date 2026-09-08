@@ -9,22 +9,58 @@
  * sonst wartet er vergeblich. Das Zeitfenster (`cleaningWindow*`) kommt dazu,
  * wenn es gesetzt ist.
  *
+ * **Vier Sprachen** (08.09.2026): Das gedruckte Handout ist DIN A4 und trägt
+ * die Anleitung neben dem QR-Bereich in Deutsch, Englisch, Spanisch und
+ * Französisch — ein Gast, der kein Deutsch liest, soll den Zettel nicht
+ * weglegen müssen. Alle vier stammen aus derselben Vorlage, damit eine neue
+ * Regel nicht in einer Sprache vergessen wird; fehlt ein Satz, fällt es im
+ * Test auf. Die Mail bleibt vorerst deutsch (Standardsprache), weil sie sonst
+ * viermal so lang würde.
+ *
+ * **Nachhaltigkeit** ist ein eigener Punkt, und er ist ehrlich verzweigt:
+ * Reinigt das Haus nur auf Wunsch, ist der Verzicht der Normalfall und wird
+ * begründet. Läuft die Routine, ist „Bitte nicht stören" der Hebel, den der
+ * Gast in der Hand hat. Ein Werbetext, der zum Verzicht aufruft, während
+ * ohnehin täglich gereinigt wird, wäre eine Lüge auf Papier.
+ *
  * Ohne I/O: Policies rein, Text raus — testbar in `guest-guide.test.ts`.
  */
 import { parseCleanDefer, parseCleaningWindow, parseStayoverPolicy, stayoverDueTime } from './board'
 import type { GuestAccessMode } from './guest-access'
 
+/** Sprachen des gedruckten Handouts, in Druckreihenfolge. */
+export const GUIDE_LANGS = ['de', 'en', 'es', 'fr'] as const
+export type GuideLang = (typeof GUIDE_LANGS)[number]
+
+/** Sprache der Mail und aller Stellen ohne ausdrückliche Wahl. */
+export const DEFAULT_GUIDE_LANG: GuideLang = 'de'
+
 export type GuestGuide = {
+  lang: GuideLang
+  /** Name der Sprache in der Sprache selbst — Überschrift des Blocks. */
+  langLabel: string
+  /** „So funktioniert's". */
+  heading: string
   /** Wozu das Portal da ist. */
   purpose: string
   /** Reinigung: Routine oder auf Wunsch — der Satz, der an den Policies hängt. */
   cleaning: string
+  /** Warum weniger Reinigung gut ist — verzweigt nach Routine an/aus. */
+  sustainability: string
   /** „Bitte nicht stören". */
   dnd: string
   /** Service-Anfragen. */
   services: string
   /** Wie man hineinkommt und wie lange der Zugang gilt. */
   access: string
+  /** Beschriftungen der Aufzählung, in derselben Sprache. */
+  labels: {
+    cleaning: string
+    sustainability: string
+    dnd: string
+    services: string
+    access: string
+  }
 }
 
 export type GuestGuideOptions = {
@@ -34,6 +70,206 @@ export type GuestGuideOptions = {
   deepLink: boolean
 }
 
+/** Beschriftungen des Zugangs-Bereichs — auf dem Blatt vierfach nebeneinander. */
+export type SheetLabels = {
+  welcome: string
+  room: string
+  scan: string
+  pin: string
+  withoutQr: string
+  /** Nur im Verfahren `link`: Der Zettel IST der Zugang. */
+  keep: string
+}
+
+type Vorlage = {
+  langLabel: string
+  heading: string
+  sheet: SheetLabels
+  labels: GuestGuide['labels']
+  purpose: string
+  dnd: string
+  services: string
+  cleaningRoutine: (due: string) => string
+  cleaningOnRequest: string
+  window: (start: string, end: string) => string
+  defer: (limit: string) => string
+  sustainabilityRoutine: string
+  sustainabilityOnRequest: string
+  accessLink: string
+  accessPinDeep: string
+  accessPinManual: string
+}
+
+/**
+ * Die Vorlagen. Typografische Apostrophe und Anführungszeichen sind Absicht —
+ * das hier wird gedruckt.
+ */
+const VORLAGEN: Record<GuideLang, Vorlage> = {
+  de: {
+    langLabel: 'Deutsch',
+    heading: 'So funktioniert’s',
+    sheet: {
+      welcome: 'Willkommen',
+      room: 'Zimmer',
+      scan: 'QR-Code scannen',
+      pin: 'Ihre PIN',
+      withoutQr: 'Ohne QR-Code',
+      keep: 'Bitte aufbewahren — dieser Zettel ist Ihr Zugang.',
+    },
+    labels: {
+      cleaning: 'Reinigung',
+      sustainability: 'Nachhaltigkeit',
+      dnd: 'Ruhe',
+      services: 'Services',
+      access: 'Zugang',
+    },
+    purpose:
+      'Über das Gäste-Portal erreichen Sie die Rezeption direkt vom Zimmer aus — rund um die Uhr, ohne Anruf.',
+    dnd: '„Bitte nicht stören" im Portal hält das Personal von Ihrem Zimmer fern, bis Sie es wieder zurücknehmen.',
+    services:
+      'Wünsche wie frische Handtücher oder eine Reparatur bestellen Sie direkt im Portal — die Rezeption sieht Ihre Anfrage sofort.',
+    cleaningRoutine: due =>
+      `Ihr Zimmer wird täglich ab ${due} Uhr gereinigt — Sie müssen nichts anfordern; am Abreisetag nach dem Check-out. Möchten Sie zwischendurch eine Reinigung, fordern Sie sie im Portal an.`,
+    cleaningOnRequest:
+      'Ihr Zimmer wird auf Wunsch gereinigt: Bitte fordern Sie die Reinigung im Portal an, sobald es Ihnen passt — ohne Anforderung bleibt das Zimmer unberührt.',
+    window: (start, end) => ` Reinigungswünsche nimmt das Portal täglich von ${start} bis ${end} Uhr entgegen.`,
+    defer: limit => ` Im Portal können Sie die Reinigung auch bis spätestens ${limit} Uhr aufschieben — vorher kommt dann niemand.`,
+    sustainabilityRoutine:
+      'Sie brauchen heute keine Reinigung? Ein Tipp auf „Bitte nicht stören" spart Wasser, Waschmittel und Energie — und Ihnen die Störung.',
+    sustainabilityOnRequest:
+      'Weniger Reinigung, weniger Verbrauch: Jede Reinigung, die nicht nötig ist, spart Wasser, Waschmittel und Energie. Deshalb kommen wir nur, wenn Sie es möchten.',
+    accessLink:
+      'Der QR-Code bzw. Link ist Ihr persönlicher Zugang — ohne PIN. Er gilt nur für diesen Aufenthalt und erlischt mit dem Check-out.',
+    accessPinDeep:
+      'QR-Code scannen und PIN eingeben — danach bleiben Sie angemeldet. Die PIN gilt bis zum Check-out.',
+    accessPinManual:
+      'Adresse öffnen, Zimmernummer und PIN eingeben — danach bleiben Sie angemeldet. Die PIN gilt bis zum Check-out.',
+  },
+
+  en: {
+    langLabel: 'English',
+    heading: 'How it works',
+    sheet: {
+      welcome: 'Welcome',
+      room: 'Room',
+      scan: 'Scan the QR code',
+      pin: 'Your PIN',
+      withoutQr: 'Without a QR code',
+      keep: 'Please keep this slip — it is your access.',
+    },
+    labels: {
+      cleaning: 'Cleaning',
+      sustainability: 'Sustainability',
+      dnd: 'Quiet',
+      services: 'Services',
+      access: 'Access',
+    },
+    purpose:
+      'The guest portal connects you to reception straight from your room — around the clock, without a phone call.',
+    dnd: '“Do not disturb” in the portal keeps staff away from your room until you switch it off again.',
+    services:
+      'Ask for fresh towels, a repair or other services directly in the portal — reception sees your request immediately.',
+    cleaningRoutine: due =>
+      `Your room is cleaned daily from ${due} — you don’t have to request anything; on your day of departure after check-out. Would you like cleaning in between? Simply request it in the portal.`,
+    cleaningOnRequest:
+      'Your room is cleaned on request: please ask for cleaning in the portal whenever it suits you — without a request we leave your room untouched.',
+    window: (start, end) => ` The portal accepts cleaning requests daily from ${start} to ${end}.`,
+    defer: limit => ` You can also postpone cleaning until ${limit} at the latest — nobody will come before then.`,
+    sustainabilityRoutine:
+      'No cleaning needed today? One tap on “Do not disturb” saves water, detergent and energy — and spares you the interruption.',
+    sustainabilityOnRequest:
+      'Less cleaning, less consumption: every cleaning that isn’t needed saves water, detergent and energy. That is why we only come when you want us to.',
+    accessLink:
+      'The QR code or link is your personal access — no PIN needed. It is valid for this stay only and expires at check-out.',
+    accessPinDeep:
+      'Scan the QR code and enter the PIN — you stay signed in afterwards. The PIN is valid until check-out.',
+    accessPinManual:
+      'Open the address, enter your room number and PIN — you stay signed in afterwards. The PIN is valid until check-out.',
+  },
+
+  es: {
+    langLabel: 'Español',
+    heading: 'Cómo funciona',
+    sheet: {
+      welcome: 'Bienvenido',
+      room: 'Habitación',
+      scan: 'Escanee el código QR',
+      pin: 'Su PIN',
+      withoutQr: 'Sin código QR',
+      keep: 'Conserve este papel: es su acceso.',
+    },
+    labels: {
+      cleaning: 'Limpieza',
+      sustainability: 'Sostenibilidad',
+      dnd: 'Tranquilidad',
+      services: 'Servicios',
+      access: 'Acceso',
+    },
+    purpose:
+      'El portal de huéspedes le conecta con recepción desde su propia habitación, las 24 horas y sin llamar por teléfono.',
+    dnd: '«No molestar» en el portal mantiene al personal fuera de su habitación hasta que usted lo desactive.',
+    services:
+      'Pida toallas limpias, una reparación u otros servicios directamente en el portal: recepción ve su solicitud al instante.',
+    cleaningRoutine: due =>
+      `Su habitación se limpia a diario a partir de las ${due} — no tiene que solicitar nada; el día de salida, después del check-out. ¿Desea limpieza antes? Solicítela en el portal.`,
+    cleaningOnRequest:
+      'Su habitación se limpia cuando usted lo pide: solicite la limpieza en el portal cuando le venga bien — sin solicitud, no entramos en la habitación.',
+    window: (start, end) => ` El portal admite solicitudes de limpieza a diario de ${start} a ${end}.`,
+    defer: limit => ` También puede aplazar la limpieza hasta las ${limit} como máximo: antes no vendrá nadie.`,
+    sustainabilityRoutine:
+      '¿Hoy no necesita limpieza? Un toque en «No molestar» ahorra agua, detergente y energía, y a usted le evita la interrupción.',
+    sustainabilityOnRequest:
+      'Menos limpieza, menos consumo: cada limpieza que no hace falta ahorra agua, detergente y energía. Por eso solo vamos cuando usted lo desea.',
+    accessLink:
+      'El código QR o el enlace es su acceso personal, sin PIN. Solo es válido para esta estancia y caduca con el check-out.',
+    accessPinDeep:
+      'Escanee el código QR e introduzca el PIN; después permanecerá conectado. El PIN es válido hasta el check-out.',
+    accessPinManual:
+      'Abra la dirección, introduzca el número de habitación y el PIN; después permanecerá conectado. El PIN es válido hasta el check-out.',
+  },
+
+  fr: {
+    langLabel: 'Français',
+    heading: 'Comment ça marche',
+    sheet: {
+      welcome: 'Bienvenue',
+      room: 'Chambre',
+      scan: 'Scannez le QR code',
+      pin: 'Votre code PIN',
+      withoutQr: 'Sans QR code',
+      keep: 'Conservez ce papier : c’est votre accès.',
+    },
+    labels: {
+      cleaning: 'Ménage',
+      sustainability: 'Durabilité',
+      dnd: 'Tranquillité',
+      services: 'Services',
+      access: 'Accès',
+    },
+    purpose:
+      'Le portail client vous met en relation avec la réception depuis votre chambre, 24 h/24 et sans appel téléphonique.',
+    dnd: '« Ne pas déranger » sur le portail tient le personnel à l’écart de votre chambre jusqu’à ce que vous le désactiviez.',
+    services:
+      'Demandez des serviettes propres, une réparation ou d’autres services directement sur le portail — la réception voit votre demande immédiatement.',
+    cleaningRoutine: due =>
+      `Votre chambre est nettoyée chaque jour à partir de ${due} — vous n’avez rien à demander ; le jour du départ, après le check-out. Vous souhaitez un ménage entre-temps ? Demandez-le sur le portail.`,
+    cleaningOnRequest:
+      'Votre chambre est nettoyée à la demande : demandez le ménage sur le portail quand cela vous convient — sans demande, nous n’entrons pas dans la chambre.',
+    window: (start, end) => ` Le portail accepte les demandes de ménage tous les jours de ${start} à ${end}.`,
+    defer: limit => ` Vous pouvez aussi reporter le ménage jusqu’à ${limit} au plus tard : personne ne viendra avant.`,
+    sustainabilityRoutine:
+      'Pas besoin de ménage aujourd’hui ? Un appui sur « Ne pas déranger » économise eau, lessive et énergie — et vous évite le dérangement.',
+    sustainabilityOnRequest:
+      'Moins de ménage, moins de consommation : chaque ménage inutile économise de l’eau, de la lessive et de l’énergie. C’est pourquoi nous ne venons que si vous le souhaitez.',
+    accessLink:
+      'Le QR code ou le lien est votre accès personnel, sans code PIN. Il n’est valable que pour ce séjour et expire au check-out.',
+    accessPinDeep:
+      'Scannez le QR code et saisissez le code PIN — vous restez ensuite connecté. Le code PIN est valable jusqu’au check-out.',
+    accessPinManual:
+      'Ouvrez l’adresse, saisissez le numéro de chambre et le code PIN — vous restez ensuite connecté. Le code PIN est valable jusqu’au check-out.',
+  },
+}
+
 function hhmm(hour: number, minute: number): string {
   return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
 }
@@ -41,47 +277,59 @@ function hhmm(hour: number, minute: number): string {
 export function buildGuestGuide(
   policies: Record<string, unknown>,
   opts: GuestGuideOptions,
+  lang: GuideLang = DEFAULT_GUIDE_LANG,
 ): GuestGuide {
+  const v = VORLAGEN[lang]
   const stayover = parseStayoverPolicy(policies)
   const window = parseCleaningWindow(policies)
   const defer = parseCleanDefer(policies)
-  const deferSentence = defer.enabled
-    ? ` Im Portal können Sie die Reinigung auch bis spätestens ${hhmm(defer.hour, defer.minute)} Uhr aufschieben — vorher kommt dann niemand.`
-    : ''
 
-  const windowSentence = window.enabled
-    ? ` Reinigungswünsche nimmt das Portal täglich von ${window.start} bis ${window.end} Uhr entgegen.`
-    : ''
+  const zusatz =
+    (window.enabled ? v.window(window.start, window.end) : '') +
+    (defer.enabled ? v.defer(hhmm(defer.hour, defer.minute)) : '')
 
   // Genannt wird die Zeit, ab der die Routine WIRKLICH fällig wird — nie vor
   // der Check-out-Frist des Hauses (siehe `stayoverDueTime`).
   const due = stayoverDueTime(stayover)
   const cleaning = stayover.enabled
-    ? `Ihr Zimmer wird täglich ab ${hhmm(due.hour, due.minute)} Uhr gereinigt — Sie müssen nichts anfordern; ` +
-      `am Abreisetag nach dem Check-out. ` +
-      `Möchten Sie zwischendurch eine Reinigung, fordern Sie sie im Portal an.${windowSentence}${deferSentence}`
-    : `Ihr Zimmer wird auf Wunsch gereinigt: Bitte fordern Sie die Reinigung im Portal an, ` +
-      `sobald es Ihnen passt — ohne Anforderung bleibt das Zimmer unberührt.${windowSentence}${deferSentence}`
+    ? `${v.cleaningRoutine(hhmm(due.hour, due.minute))}${zusatz}`
+    : `${v.cleaningOnRequest}${zusatz}`
 
   const access =
     opts.accessMode === 'link'
-      ? 'Der QR-Code bzw. Link ist Ihr persönlicher Zugang — ohne PIN. Er gilt nur für diesen Aufenthalt und erlischt mit dem Check-out.'
+      ? v.accessLink
       : opts.deepLink
-        ? 'QR-Code scannen und PIN eingeben — danach bleiben Sie angemeldet. Die PIN gilt bis zum Check-out.'
-        : 'Adresse öffnen, Zimmernummer und PIN eingeben — danach bleiben Sie angemeldet. Die PIN gilt bis zum Check-out.'
+        ? v.accessPinDeep
+        : v.accessPinManual
 
   return {
-    purpose:
-      'Über das Gäste-Portal erreichen Sie die Rezeption direkt vom Zimmer aus — rund um die Uhr, ohne Anruf.',
+    lang,
+    langLabel: v.langLabel,
+    heading: v.heading,
+    purpose: v.purpose,
     cleaning,
-    dnd: '„Bitte nicht stören" im Portal hält das Personal von Ihrem Zimmer fern, bis Sie es wieder zurücknehmen.',
-    services:
-      'Wünsche wie frische Handtücher oder eine Reparatur bestellen Sie direkt im Portal — die Rezeption sieht Ihre Anfrage sofort.',
+    sustainability: stayover.enabled ? v.sustainabilityRoutine : v.sustainabilityOnRequest,
+    dnd: v.dnd,
+    services: v.services,
     access,
+    labels: v.labels,
   }
+}
+
+/** Alle Sprachen des Handouts, in Druckreihenfolge. */
+export function buildGuestGuides(
+  policies: Record<string, unknown>,
+  opts: GuestGuideOptions,
+): GuestGuide[] {
+  return GUIDE_LANGS.map(lang => buildGuestGuide(policies, opts, lang))
+}
+
+/** Beschriftungen des Zugangs-Bereichs je Sprache. */
+export function sheetLabels(lang: GuideLang): SheetLabels {
+  return VORLAGEN[lang].sheet
 }
 
 /** Die Punkte in Lesereihenfolge — für Reintext und Aufzählungen. */
 export function guideLines(g: GuestGuide): string[] {
-  return [g.purpose, g.cleaning, g.dnd, g.services, g.access]
+  return [g.purpose, g.cleaning, g.sustainability, g.dnd, g.services, g.access]
 }

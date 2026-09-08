@@ -233,6 +233,13 @@ zusammen und gehören vor den ersten zahlenden Kunden.
 
 (alle drei: 6d-Plan, Abschnitt 13)
 
+- [ ] **Zugangs-Mail mehrsprachig?** Das gedruckte Handout trägt seit dem
+      08.09. vier Sprachen, die Mail bleibt deutsch — viermal derselbe Text
+      wäre als Mail unlesbar. Denkbar wäre eine Sprachwahl beim Versand
+      (die Rezeption weiß, mit wem sie spricht) oder eine Sprachumschaltung
+      im Gastportal selbst; letzteres wäre der größere Wurf, weil das Portal
+      heute komplett deutsch ist. (Handout 08.09.)
+
 ## Kleinkram und Beobachtungen
 
 - [ ] **Test-Szenario ausbauen**, wenn es nicht mehr gebraucht wird — samt

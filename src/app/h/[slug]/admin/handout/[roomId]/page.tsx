@@ -5,7 +5,7 @@ import { getManagementContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import { roomAccessUrl, stayAccessUrl, type GuestAccessMode } from '@/lib/guest-access'
 import { mailReady } from '@/utils/mail'
-import { buildGuestGuide } from '@/lib/guest-guide'
+import { buildGuestGuides } from '@/lib/guest-guide'
 import GuestHandoutCard from './GuestHandoutCard'
 
 /**
@@ -81,7 +81,7 @@ export default async function HandoutPage({
           manualUrl={manualUrl}
           deepLink={deepLink}
           mailReady={mailReady()}
-          guide={buildGuestGuide(ctx.policies, { accessMode, deepLink })}
+          guides={buildGuestGuides(ctx.policies, { accessMode, deepLink })}
         />
       )}
     </div>
