@@ -58,13 +58,23 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       `cleanDeferUntil` (Default 11:00, an), Chips im Gastportal mit Hinweis
       auf die Grenze, Boards zeigen „Reinigung ab HH:MM". Feste Wunschzeiten
       weiterhin bewusst nicht.
-- [ ] **Coach Marks für die Ersteinrichtung** — beim ersten Aufruf nach der
-      Registrierung führt eine Folge von Hinweisen durch Zimmer-Setup, Personal,
-      Service-Baukasten, Gast-Zugang und Aushänge. Muss über die Einstellungen
-      **reaktivierbar** sein („Einführung erneut anzeigen"). Zwei Teilaufgaben:
-      Texte formulieren und Ankerpunkte im UI festlegen; Gesehen-Zustand je
-      Person speichern (nicht nur im Browser, sonst kommt die Tour auf jedem
-      Gerät wieder).
+- [x] ~~**Coach Marks für die Ersteinrichtung**~~ — 08.09. als **Lotsen**
+      gebaut (zwölf Fach-Lotsen plus Einrichtungs-Lotse, Nav-Punkt „Hilfe";
+      Protokoll: [2026-09-08_Lotsen-Tutorial.md](Sessions/2026-09-08_Lotsen-Tutorial.md)).
+      Die Registrierung führt direkt hinein, reaktivierbar ist alles über den
+      Hilfe-Hub. **Zwei Vorgaben dieses Eintrags sind bewusst anders gelöst:**
+      Der Katalog liegt in der Nav statt in den Einstellungen (wer Hilfe sucht,
+      sucht sie oben), und einen gespeicherten „Gesehen"-Zustand gibt es gar
+      nicht — er wäre nur nötig, wenn die Tour von selbst aufginge. Sie startet
+      ausschließlich über einen Link, und was noch fehlt, leitet die
+      Einrichtungs-Checkliste aus dem Datenbestand ab. Damit gibt es nichts,
+      was auf einem zweiten Gerät „wieder käme".
+- [ ] **Hinweis auf die unfertige Einrichtung außerhalb von „Hilfe"** — die
+      Checkliste weiß, was fehlt, aber nur, wer den Hilfe-Bereich aufruft,
+      sieht es. Wer die Einrichtung nach der Registrierung abbricht, bekommt
+      später keinen Anstoß mehr. Denkbar: ein schmales Band auf der Übersicht,
+      solange Pflichtpunkte offen sind — sparsam, es soll kein Dauer-Banner
+      werden. (Lotsen 08.09.)
 - [x] ~~**Konto-Seite „Plan & Abrechnung"** für den Inhaber~~ — 05.09.
       erledigt: `/admin/abrechnung` zeigt Plan, laufenden Monat je Haus mit
       voraussichtlichem Betrag, abgeschlossene Monate mit Betrag und Status
@@ -233,6 +243,11 @@ zusammen und gehören vor den ersten zahlenden Kunden.
 
 (alle drei: 6d-Plan, Abschnitt 13)
 
+- [ ] **Handout wirklich drucken** — die A4-Aufteilung ist im Browser
+      gerechnet (230 mm bei 186 mm Blattbreite), aber noch nie durch einen
+      echten Druckdialog gegangen. Zu prüfen: Seitenränder, ob die farbige
+      Kopflinie kommt, Lesbarkeit der 10-px-Sätze auf Papier und ob der
+      QR-Code in gedruckter Größe zuverlässig scannt. (Handout 08.09.)
 - [ ] **Zugangs-Mail mehrsprachig?** Das gedruckte Handout trägt seit dem
       08.09. vier Sprachen, die Mail bleibt deutsch — viermal derselbe Text
       wäre als Mail unlesbar. Denkbar wäre eine Sprachwahl beim Versand
