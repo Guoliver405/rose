@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/service'
 import { slugify, uniqueSlug } from '@/lib/slug'
 import { DEFAULT_PIN_LENGTH } from '@/lib/ids'
+import { einrichtungStart } from '@/lib/lotsen'
 import serviceTemplates from '@/lib/service-templates.json'
 import { ensureStripeCustomer, stripeReady } from '@/utils/stripe'
 
@@ -179,5 +180,5 @@ export async function signupAction(formData: FormData): Promise<Result> {
   // redirect() wirft intern — bewusst außerhalb jeder Fehlerbehandlung.
   // Mit Stripe: Schritt 2 (Rechnungsdaten + Zahlungsweg), von dort ins
   // Zimmer-Setup; ohne Stripe direkt dorthin.
-  redirect(mitStripe ? `/admin/abrechnung/zahlungsweg?neu=${slug}` : `/h/${slug}/admin/zimmer`)
+  redirect(mitStripe ? `/admin/abrechnung/zahlungsweg?neu=${slug}` : einrichtungStart(slug))
 }

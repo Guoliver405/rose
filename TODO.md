@@ -197,6 +197,26 @@ zusammen und gehören vor den ersten zahlenden Kunden.
          `RoomDialog`/`ServiceBoard` (`useOptimistic`), doppeltes Rendern nach
          Actions (`revalidatePath` + eigenes Realtime-Ereignis) entkoppeln.
 
+- [x] ~~**Tutorial-Bereich „Lotsen"**~~ — 08.09. gebaut: Nav-Punkt „Hilfe",
+      sechs Fach-Lotsen als Coach Marks über den echten Seiten,
+      Einrichtungs-Lotse über fünf Seiten (Einstieg direkt aus der
+      Registrierung), Hilfe-Hub mit **abgeleiteter** Einrichtungs-Checkliste.
+      Protokoll:
+      [2026-09-08_Lotsen-Tutorial.md](Sessions/2026-09-08_Lotsen-Tutorial.md).
+- [ ] **Simulierte Lotsen für Reinigungsboard und Gast-Sicht** — beide sind
+      aus der Rezeptions-Sitzung nicht erreichbar (`svc_`-Cookies, eigenes
+      Konto, Aufenthalt mit PIN); ein Coach Mark kann dort nicht hinlaufen.
+      Bauplan ist [LiveDemo.tsx](src/components/landing/LiveDemo.tsx):
+      `useReducer`-Modell, nachgebaute Miniaturen, echter `SlideAction`.
+      (Lotsen 08.09.)
+- [ ] **Weitere Fach-Lotsen**: Services-Board (Anfragen), Auswertung, Konto &
+      Abrechnung, Aushänge und Handouts. Je Lotse ein Eintrag in
+      [lotsen.ts](src/lib/lotsen.ts) plus `data-lotse`-Anker; der Anker-Test
+      schlägt an, wenn eines fehlt. (Lotsen 08.09.)
+- [ ] **Kontextuelles „?" auf den Seiten selbst**, das den zur Seite
+      passenden Lotsen startet — dort wird so etwas tatsächlich benutzt, der
+      Hub ist nur der Katalog. (Lotsen 08.09.)
+
 ## Komfort für Mehrhaus-Kunden (Ketten)
 
 - [ ] **Konto-weite Service-Vorschlagsliste**

@@ -207,9 +207,14 @@ export default function RoomGrid({
     ? floorGroups.flatMap(g => g.rooms).find(r => r.id === selectedId) ?? null
     : null
 
+  // Die Lotsen-Anker sitzen auf der ERSTEN Etage und deren erstem Zimmer —
+  // sonst trügen alle Kacheln denselben Anker und der Coach Mark zeigte auf
+  // ein beliebiges davon.
+  const ersteEtage = floorGroups[0]
   const floorSection = (group: FloorGroup) => (
     <section
       key={`${group.building ?? ''}#${group.floor}`}
+      data-lotse={group === ersteEtage ? 'uebersicht.etage' : undefined}
       className="rounded-xl border border-edge bg-surface px-4 py-2"
     >
       <h3 className="mb-1.5 flex items-center text-sm font-bold text-ink-soft">
@@ -225,8 +230,13 @@ export default function RoomGrid({
         )}
       </h3>
       <div className="flex flex-wrap gap-2 pb-1">
-        {group.rooms.map(room => (
-          <RoomTile key={room.id} room={room} onClick={() => setSelectedId(room.id)} />
+        {group.rooms.map((room, i) => (
+          <RoomTile
+            key={room.id}
+            room={room}
+            anchor={group === ersteEtage && i === 0 ? 'uebersicht.kachel' : undefined}
+            onClick={() => setSelectedId(room.id)}
+          />
         ))}
       </div>
     </section>
@@ -255,10 +265,11 @@ export default function RoomGrid({
   )
 }
 
-function RoomTile({ room, onClick }: { room: RoomTileData; onClick: () => void }) {
+function RoomTile({ room, onClick, anchor }: { room: RoomTileData; onClick: () => void; anchor?: string }) {
   return (
     <button
       type="button"
+      data-lotse={anchor}
       onClick={onClick}
       title={statusLabel(room)}
       className={`flex w-20 flex-col overflow-hidden rounded-lg border text-left shadow-sm hover:border-edge-strong ${

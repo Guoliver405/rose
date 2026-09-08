@@ -153,7 +153,7 @@ export default async function AdminOverviewPage({
       <div className="sticky top-[57px] z-30 -mx-4 -mt-4 bg-surface-sunken px-4 pb-2 pt-4">
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-xl font-black text-ink">Zimmer-Übersicht</h1>
-          <div className="ml-auto flex flex-wrap gap-2 text-sm">
+          <div data-lotse="uebersicht.kpi" className="ml-auto flex flex-wrap gap-2 text-sm">
             <Kpi label="Zimmer" value={total} />
             <Kpi label="belegt" value={occupied} tone={occupied > 0 ? 'fresh' : undefined} />
             <Kpi label="bereit" value={ready} tone={ready > 0 ? 'positive' : undefined} />

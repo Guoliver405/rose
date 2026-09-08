@@ -564,7 +564,7 @@ export default function PersonalManager({
       </div>
 
       {canManage && (
-        <p className="text-xs text-ink-muted">
+        <p data-lotse="personal.liste" className="text-xs text-ink-muted">
           Für alle Zugänge gilt dasselbe:{' '}
           <strong className="font-semibold text-ink-soft">Bearbeiten</strong> korrigiert den Namen,{' '}
           <strong className="font-semibold text-ink-soft">Zugang beenden</strong> sperrt die
@@ -577,6 +577,7 @@ export default function PersonalManager({
       {/* Anlegen — nur Verwaltung */}
       {canManage && (
         <form
+          data-lotse="personal.reinigung"
           onSubmit={e => { e.preventDefault(); runCreate(e.currentTarget) }}
           className="rounded-xl border border-edge bg-surface p-4"
         >
@@ -614,7 +615,7 @@ export default function PersonalManager({
               Anlegen
             </button>
           </div>
-          <p className="mt-2 text-xs text-ink-muted">
+          <p data-lotse="personal.karte" className="mt-2 text-xs text-ink-muted">
             PIN (6 Ziffern) und QR-Login-Karte werden automatisch erzeugt — danach über
             &bdquo;Karte drucken&ldquo; aushändigen.
           </p>
@@ -674,7 +675,7 @@ export default function PersonalManager({
       {/* Rezeptions-Zugänge — nur Verwaltung */}
       {canManage && (
         <>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
+          <div data-lotse="personal.rezeption" className="mt-2 flex flex-wrap items-center gap-3">
             <h2 className="text-xl font-black text-ink">Personal — Rezeption</h2>
             <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-semibold text-ink-soft">
               {recEntries.filter(e => !e.deactivatedAt).length}{' '}
@@ -752,7 +753,7 @@ export default function PersonalManager({
           zweiten Mal ohne neuen Zugang über die Auswahl. */}
       {isOwner && (
         <>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
+          <div data-lotse="personal.manager" className="mt-2 flex flex-wrap items-center gap-3">
             <h2 className="text-xl font-black text-ink">Personal — Manager</h2>
             <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-semibold text-ink-soft">
               {mgrEntries.filter(e => !e.deactivatedAt).length}{' '}

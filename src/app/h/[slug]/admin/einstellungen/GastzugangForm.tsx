@@ -117,7 +117,7 @@ export default function GastzugangForm({
         unterschiedlich treffen.
       </p>
 
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div data-lotse="gastzugang.wahl" className="grid gap-3 lg:grid-cols-2">
         {KARTEN.map(k => {
           const aktiv = gewaehlt === k.mode
           const istAktuell = initial === k.mode
@@ -234,6 +234,7 @@ export default function GastzugangForm({
       )}
 
       <button
+        data-lotse="gastzugang.speichern"
         type="button"
         onClick={speichern}
         disabled={pending || !geaendert}

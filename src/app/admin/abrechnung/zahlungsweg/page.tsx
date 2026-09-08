@@ -7,6 +7,7 @@ import {
   stripeReady,
 } from '@/utils/stripe'
 import { COUNTRY_CODES } from '@/lib/vat'
+import { einrichtungStart } from '@/lib/lotsen'
 import KontoShell from '../../KontoShell'
 import BillingDetailsForm from './BillingDetailsForm'
 import PaymentMethodPanel from './PaymentMethodPanel'
@@ -84,7 +85,7 @@ export default async function ZahlungswegPage({
               {'„Plan & Abrechnung“'} nachholen.
             </p>
             <Link
-              href={`/h/${neuSlug}/admin/zimmer`}
+              href={einrichtungStart(neuSlug)}
               className="mt-2 inline-flex items-center gap-1 font-semibold underline hover:no-underline"
             >
               Später — weiter zum Zimmer-Setup <ArrowRight className="h-4 w-4" />

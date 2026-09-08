@@ -48,7 +48,7 @@ export default async function GastzugangPage({
       <GastzugangForm hotelSlug={ctx.hotelSlug} initial={mode} />
 
       {mode === 'pin' ? (
-        <section className="flex flex-col gap-3 border-t border-edge pt-5">
+        <section data-lotse="gastzugang.aushang" className="flex flex-col gap-3 border-t border-edge pt-5">
           <h2 className="text-base font-black text-ink">QR-Aushänge für die Zimmer</h2>
           <p className="text-sm text-ink-soft">
             Im Verfahren mit festem Zimmer-QR braucht jedes Zimmer seinen Aushang. Die Codes

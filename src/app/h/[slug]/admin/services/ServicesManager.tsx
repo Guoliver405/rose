@@ -41,6 +41,7 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
 
       {/* Anlegen */}
       <form
+        data-lotse="services.anlegen"
         onSubmit={e => {
           e.preventDefault()
           const form = e.currentTarget
@@ -101,6 +102,7 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
             Gäste sehen den Baukasten in ihrem Portal und bestellen mit einem Tipp.
           </p>
           <button
+            data-lotse="services.beispiele"
             type="button"
             disabled={pending}
             onClick={() => run(() => createExampleServicesAction(hotelSlug))}
@@ -110,8 +112,12 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
           </button>
         </div>
       ) : (
-        services.map(s => (
-          <section key={s.id} className="rounded-xl border border-edge bg-surface p-4">
+        services.map((s, i) => (
+          <section
+            key={s.id}
+            data-lotse={i === 0 ? 'services.liste' : undefined}
+            className="rounded-xl border border-edge bg-surface p-4"
+          >
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-base font-bold text-ink">{s.name}</h2>
               {s.urgent && (

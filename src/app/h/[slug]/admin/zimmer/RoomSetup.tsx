@@ -185,13 +185,14 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
     <div className="flex flex-col gap-6">
       {/* Anlegen */}
       <form
+        data-lotse="zimmer.anlegen"
         onSubmit={handleCreate}
         className="flex flex-col gap-3 rounded-xl border border-edge bg-surface p-4"
       >
         <h2 className="font-bold text-ink">Zimmer anlegen</h2>
 
         {/* Modus-Switch */}
-        <div className="flex w-fit rounded-lg border border-edge p-0.5" role="radiogroup" aria-label="Anlege-Modus">
+        <div data-lotse="zimmer.modus" className="flex w-fit rounded-lg border border-edge p-0.5" role="radiogroup" aria-label="Anlege-Modus">
           {([
             ['individual', 'Etagen individuell'],
             ['identical', 'Etagen identisch'],
@@ -218,7 +219,7 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
             : 'Derselbe Nummernkreis wird auf jeder angegebenen Etage angelegt.'}
         </p>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div data-lotse="zimmer.bereich" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1">
             <span className="text-sm font-semibold text-ink-soft">Gebäudeteil (optional)</span>
             <input
@@ -257,7 +258,7 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
           )}
         </div>
 
-        <label className="flex flex-col gap-1">
+        <label data-lotse="zimmer.nummern" className="flex flex-col gap-1">
           <span className="text-sm font-semibold text-ink-soft">
             {mode === 'individual'
               ? 'Zimmernummern — einzeln, Komma-Liste oder Bereich'
@@ -273,7 +274,7 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
           />
         </label>
 
-        <label className="flex w-fit cursor-pointer items-center gap-2">
+        <label data-lotse="zimmer.praefix" className="flex w-fit cursor-pointer items-center gap-2">
           <input
             type="checkbox"
             checked={prefixFloor}
@@ -310,6 +311,7 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
           </p>
         )}
         <button
+          data-lotse="zimmer.absenden"
           type="submit"
           disabled={pending || plannedFlat.length === 0}
           className="self-start rounded-lg bg-action px-4 py-2.5 font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
@@ -320,9 +322,9 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
 
       {/* Bestand */}
       {rooms.length === 0 ? (
-        <p className="text-sm text-ink-muted">Noch keine Zimmer vorhanden.</p>
+        <p data-lotse="zimmer.bestand" className="text-sm text-ink-muted">Noch keine Zimmer vorhanden.</p>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div data-lotse="zimmer.bestand" className="flex flex-col gap-3">
           <p className="text-xs text-ink-muted">
             Zimmer, Etage oder Gebäudeteil anklicken, um sie zu <strong className="font-semibold text-ink-soft">bearbeiten</strong>,{' '}
             <strong className="font-semibold text-ink-soft">außer Betrieb zu nehmen</strong> oder{' '}

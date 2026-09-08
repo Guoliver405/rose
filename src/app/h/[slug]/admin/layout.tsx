@@ -1,10 +1,12 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Building2, LogOut } from 'lucide-react'
+import { Suspense } from 'react'
+import { Building2, LifeBuoy, LogOut } from 'lucide-react'
 import { getManagementContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import { logoutAction } from '@/app/login/actions'
 import RealtimeListener from '@/components/RealtimeListener'
+import LotsePilot from '@/components/lotse/LotsePilot'
 
 export default async function AdminLayout({
   children,
@@ -75,6 +77,13 @@ export default async function AdminLayout({
               <Link href={`${base}/auswertung`} className="hover:text-ink">Auswertung</Link>
             )}
             <Link href={`${base}/einstellungen`} className="hover:text-ink">Einstellungen</Link>
+            {/* Die Lotsen stehen in der Nav und nicht im Einstellungen-Hub:
+                Wer Hilfe sucht, sucht sie oben — und die Rezeption erreicht
+                den Hub-Bereich ohnehin nur zum Teil. */}
+            <Link href={`${base}/hilfe`} className="flex items-center gap-1.5 hover:text-ink">
+              <LifeBuoy className="h-4 w-4" />
+              Hilfe
+            </Link>
           </nav>
 
           <div className="ml-auto flex items-center gap-3">
@@ -108,6 +117,13 @@ export default async function AdminLayout({
       </header>
 
       <RealtimeListener token={session?.access_token} pollMs={60_000} />
+
+      {/* Der Lotse liegt im Layout, weil er seitenuebergreifend laeuft: Sein
+          Schritt steht in der URL und ueberlebt so den Seitenwechsel.
+          `useSearchParams` braucht die Suspense-Grenze. */}
+      <Suspense fallback={null}>
+        <LotsePilot base={base} />
+      </Suspense>
 
       <main className="mx-auto w-full max-w-[1400px] flex-1 p-4">{children}</main>
     </div>

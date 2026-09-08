@@ -63,7 +63,7 @@ export default function HotelSettingsForm({ hotelSlug, initial }: { hotelSlug: s
         <input name="hotelName" required minLength={2} defaultValue={initial.hotelName} className={`${inputClass} w-72`} />
       </label>
 
-      <div className="rounded-lg border border-edge bg-surface-sunken p-3">
+      <div data-lotse="regeln.adresse" className="rounded-lg border border-edge bg-surface-sunken p-3">
         <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
           Adresse des Hauses (nur Kleinbuchstaben, Ziffern, Bindestriche)
           <input
@@ -93,7 +93,7 @@ export default function HotelSettingsForm({ hotelSlug, initial }: { hotelSlug: s
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-4">
+      <div data-lotse="regeln.pin" className="flex flex-wrap gap-4">
         <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
           Gast-PIN-Länge (4–8)
           <input
@@ -110,7 +110,7 @@ export default function HotelSettingsForm({ hotelSlug, initial }: { hotelSlug: s
         </label>
       </div>
 
-      <div className="rounded-lg border border-edge bg-surface-sunken p-3">
+      <div data-lotse="regeln.routine" className="rounded-lg border border-edge bg-surface-sunken p-3">
         <label className="flex items-center gap-2 text-sm font-semibold text-ink">
           <input
             type="checkbox"
@@ -136,7 +136,7 @@ export default function HotelSettingsForm({ hotelSlug, initial }: { hotelSlug: s
             Uhr
           </label>
         )}
-        <label className="mt-3 flex items-center gap-2 border-t border-edge pt-3 text-xs font-semibold text-ink-muted">
+        <label data-lotse="regeln.checkout" className="mt-3 flex items-center gap-2 border-t border-edge pt-3 text-xs font-semibold text-ink-muted">
           Check-out bis
           <input
             name="checkoutUntil" type="time" required
@@ -152,7 +152,7 @@ export default function HotelSettingsForm({ hotelSlug, initial }: { hotelSlug: s
         </p>
       </div>
 
-      <div className="rounded-lg border border-edge bg-surface-sunken p-3">
+      <div data-lotse="regeln.aufschub" className="rounded-lg border border-edge bg-surface-sunken p-3">
         <label className="flex items-center gap-2 text-sm font-semibold text-ink">
           <input
             type="checkbox"
@@ -187,7 +187,7 @@ export default function HotelSettingsForm({ hotelSlug, initial }: { hotelSlug: s
         )}
       </div>
 
-      <div className="rounded-lg border border-edge bg-surface-sunken p-3">
+      <div data-lotse="regeln.zeitzone" className="rounded-lg border border-edge bg-surface-sunken p-3">
         <label className="flex flex-col gap-1 text-sm font-semibold text-ink">
           Zeitzone des Hauses
           <select name="timeZone" defaultValue={initial.timeZone} className={inputClass}>
@@ -201,7 +201,7 @@ export default function HotelSettingsForm({ hotelSlug, initial }: { hotelSlug: s
         </p>
       </div>
 
-      <div className="rounded-lg border border-edge bg-surface-sunken p-3">
+      <div data-lotse="regeln.fenster" className="rounded-lg border border-edge bg-surface-sunken p-3">
         <label className="flex items-center gap-2 text-sm font-semibold text-ink">
           <input
             type="checkbox"
@@ -246,6 +246,7 @@ export default function HotelSettingsForm({ hotelSlug, initial }: { hotelSlug: s
       )}
 
       <button
+        data-lotse="regeln.speichern"
         type="submit"
         disabled={pending}
         className="flex items-center gap-1.5 self-start rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
