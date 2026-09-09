@@ -47,13 +47,13 @@ export default function PortalLegend({ texts }: { texts: GuestSheetText[] }) {
     <div className="rounded-[20px] border-2 border-edge-strong p-3.5">
       {/* Handy-Andeutung: die Hörmuschel-Leiste macht aus dem Rahmen einen
           Bildschirm, ohne eine Fläche zu drucken. */}
-      <div className="mx-auto mb-3 h-1 w-14 rounded-full border-2 border-edge" />
+      <div className="mx-auto mb-2.5 h-1 w-14 rounded-full border-2 border-edge" />
 
-      <ul className="flex flex-col gap-2.5">
+      <ul className="flex flex-col gap-2">
         {KNOEPFE.map(({ key, Icon, ton }) => (
           <li
             key={key}
-            className="flex items-center gap-3.5 rounded-2xl border-2 border-edge px-3.5 py-2.5"
+            className="flex items-center gap-3.5 rounded-2xl border-2 border-edge px-3.5 py-2"
           >
             <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border ${TON[ton]}`}>
               <Icon className="h-6 w-6" strokeWidth={2.5} />

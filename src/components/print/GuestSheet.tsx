@@ -71,9 +71,14 @@ export function GuestSheetA4(p: GuestSheetProps) {
   const zimmer = p.texts.map(t => t.room).join(' · ')
 
   return (
+    // Das Blatt ist ein Dokument mit festem Format, kein Layout, das umbricht:
+    // Am schmalen Fenster wird es GESCROLLT, nicht gequetscht. Sonst liefe die
+    // PIN aus ihrer Spalte, und die Vorschau zeigte etwas, das so nie
+    // gedruckt wird.
+    <div className="w-full overflow-x-auto print:overflow-visible">
     <article
       data-theme="light"
-      className="w-full max-w-[820px] rounded-2xl border border-edge bg-surface p-8 shadow-lg print:w-[186mm] print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none"
+      className="mx-auto w-[820px] shrink-0 rounded-2xl border border-edge bg-surface p-8 shadow-lg print:w-[186mm] print:rounded-none print:border-0 print:p-0 print:shadow-none"
     >
       {/* ── Kopf: Logo links, Zimmernummer rechts ──────────────────────── */}
       <header className="border-t-4 border-action pt-4">
@@ -100,7 +105,7 @@ export function GuestSheetA4(p: GuestSheetProps) {
       </header>
 
       {/* ── Zugang: QR links, PIN und Adresse rechts ───────────────────── */}
-      <section className="mt-6 flex items-start gap-7 border-y border-edge py-5">
+      <section className="mt-5 flex items-start gap-7 border-y border-edge py-4">
         <div className="shrink-0">
           <QrImage
             value={p.qrUrl}
@@ -159,12 +164,12 @@ export function GuestSheetA4(p: GuestSheetProps) {
       </section>
 
       {/* ── Legende der Portal-Knöpfe ──────────────────────────────────── */}
-      <section className="mt-5">
+      <section className="mt-4">
         <PortalLegend texts={p.texts} />
       </section>
 
       {/* ── Variabler Block: Regel nur aufs Handout ────────────────────── */}
-      <section className="mt-5 flex flex-col gap-2.5">
+      <section className="mt-4 flex flex-col gap-2.5">
         {p.variant === 'handout' && (
           <Doppelsatz
             {...zweisprachig(t => t.cleaningRule)}
@@ -186,13 +191,14 @@ export function GuestSheetA4(p: GuestSheetProps) {
         </div>
       </section>
 
-      <footer className="mt-4 flex flex-wrap items-baseline justify-between gap-x-4 border-t border-edge pt-2">
+      <footer className="mt-3 flex flex-wrap items-baseline justify-between gap-x-4 border-t border-edge pt-2">
         <p className="text-[11px] font-semibold text-ink-soft">{p.hotelName}</p>
         <p className="text-[11px] text-ink-muted">
           {p.texts.map(t => t.footer).join(' · ')}
         </p>
       </footer>
     </article>
+    </div>
   )
 }
 
