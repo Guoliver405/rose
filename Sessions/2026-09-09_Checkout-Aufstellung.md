@@ -133,6 +133,38 @@ pflegen lohnt sich, weil beim Check-out die Summe steht. Dazu ein neuer
 eigener Lotse** — er hätte drei Schritte und hinge an einem Zimmerzustand, den es
 beim Durchlauf meistens nicht gibt.
 
+## Zwei Funde aus dem Durchlauf (09.09., lokal gegen die Produktions-DB)
+
+1. **Die Schreib-Seite des Namens-Snapshots fehlte.** Die erste Bestellung lief
+   über das echte Gastportal und landete mit `service_name = null` in der
+   Datenbank: Migration und Lese-Seite waren da, `placeOrderAction` schrieb den
+   Namen aber nicht. Der Join-Rückfall verdeckte das in der Anzeige — der
+   Snapshot wäre erst beim ersten Umbenennen aufgefallen, also genau dann, wenn
+   er hätte helfen sollen. Jetzt schreiben Gast-Bestellung und Test-Szenario ihn
+   mit.
+2. **Der Check-out schließt auch die kostenfreien Anfragen.** Das folgt aus der
+   Entscheidung „offene Anfragen werden geschlossen", stand aber nirgends —
+   und es ist der unangenehmere Fall: Ein gemeldeter Defekt hört nicht auf zu
+   existieren, weil der Gast abreist. Er verschwände nur vom Board, und der
+   nächste Gast zöge in ein kaputtes Zimmer. `openFreeCount` zählt sie deshalb
+   getrennt (auf die Aufstellung gehören sie nicht, sie kosten nichts), und
+   Bestätigung wie Abschluss-Bildschirm sagen es. **Offen für den User:** ob
+   Defekte beim Check-out überhaupt geschlossen werden sollen — sie gehören
+   eher zum Zimmer als zum Aufenthalt.
+
+## Durchlauf
+
+Zimmer 101 des Stripe-Testhauses, drei Anfragen: Wäsche klein (12,00 €) über
+das echte Gastportal, Wäsche groß (20,00 €) und technischer Dienst (ohne Preis).
+Abgehakt wurde die 12,00 € **im Check-out-Kasten selbst**, die Summe sprang
+sofort. Bestätigung nannte Summe, die offene 20,00-€-Anfrage und die kostenfreie.
+Nach dem Klick: Abschluss-Bildschirm mit 12,00 €, beide Hinweise, Link auf das
+Blatt. In der Datenbank danach `done` / `cancelled` / `cancelled`, jeweils mit
+Zeitpunkt und Person. Das Blatt zeigt die 20,00 € durchgestrichen mit
+Kennzeichen, der technische Dienst steht nirgends, Gesamtsumme 12,00 €. Verlauf:
+„Service nicht erbracht: …" und am Check-out der Link „Aufstellung". Fall b) auf
+Zimmer 102 gegengeprüft: Hinweis statt Summe, kein Details-Knopf.
+
 ## Reihenfolge beim Einspielen
 
 Die Migration ist **additiv** (Alt-Code schreibt nie `'cancelled'` und liest
@@ -141,9 +173,12 @@ neue Code fragt `service_name` ab.
 
 ## 🔖 Wiederaufnahme
 
-- **Offen:** Ein Durchlauf am echten Zimmer (Bestellung → erledigt → Check-out →
-  Blatt drucken) steht noch aus; ebenso der Fall „offene Anfrage abhaken direkt
-  im Check-out-Kasten".
+- **Erledigt:** Der Durchlauf (Bestellung → erledigt → Check-out → Blatt) ist
+  gefahren, siehe oben. Offen bleibt die **Druckprobe auf Papier** — die
+  Bildschirmfassung sagt nichts über den Seitenumbruch bei vielen Posten.
+- **Zu entscheiden:** ob der Check-out kostenfreie Anfragen (technischer Dienst)
+  wirklich schließen soll. Sie gehören eher zum Zimmer als zum Aufenthalt;
+  aktuell werden sie geschlossen und der Dialog sagt es vorher.
 - **Bewusst nicht gebaut:** Zahlungsstatus, Rechnungsnummer, Sammelaufstellung
   über mehrere Zimmer, Export.
 - **Denkbar als Nächstes:** ein Halbsatz im gedruckten Handout, dass

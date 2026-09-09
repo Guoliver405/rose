@@ -472,6 +472,15 @@ function RoomDialog({
             </p>
           )}
 
+          {done && done.openFreeCount > 0 && (
+            <p className="mt-3 rounded-lg border border-edge bg-surface-sunken px-3 py-2 text-xs text-ink-soft">
+              {done.openFreeCount === 1
+                ? 'Eine kostenfreie Anfrage wurde'
+                : `${done.openFreeCount} kostenfreie Anfragen wurden`}
+              {' '}mitgeschlossen (etwa technischer Dienst) — ein noch offener Defekt gehört
+              {' '}ins Zimmer, nicht zum Aufenthalt.
+            </p>
+          )}
           {done && done.openCount > 0 && (
             <p className="mt-3 rounded-lg border border-edge bg-surface-sunken px-3 py-2 text-xs text-ink-soft">
               {done.openCount === 1 ? 'Eine offene Anfrage wurde' : `${done.openCount} offene Anfragen wurden`}
@@ -724,6 +733,12 @@ function RoomDialog({
           {room.occupied && bill && !bill.hasPositions && (
             <p className="rounded-xl border border-edge bg-surface-sunken px-3 py-2 text-xs text-ink-soft">
               Keine kostenpflichtigen Zusatzleistungen — beim Check-out ist nichts zu kassieren.
+              {bill.openFreeCount > 0 && (
+                <>
+                  {' '}{bill.openFreeCount === 1 ? 'Eine kostenfreie Anfrage ist' : `${bill.openFreeCount} kostenfreie Anfragen sind`}
+                  {' '}noch offen.
+                </>
+              )}
             </p>
           )}
 
@@ -752,6 +767,16 @@ function RoomDialog({
                   {bill.openCount === 1 ? 'Eine offene Anfrage' : `${bill.openCount} offene Anfragen`}
                   {' '}({formatCents(bill.openCents)}) {bill.openCount === 1 ? 'wird' : 'werden'} als
                   {' '}„nicht erbracht“ geschlossen.
+                </p>
+              )}
+              {bill && bill.openFreeCount > 0 && (
+                <p className="mt-1 text-xs font-semibold text-ink-soft">
+                  {bill.openFreeCount === 1
+                    ? 'Eine kostenfreie Anfrage wird'
+                    : `${bill.openFreeCount} kostenfreie Anfragen werden`}
+                  {' '}ebenfalls geschlossen (etwa technischer Dienst). Bei einem gemeldeten
+                  {' '}Defekt: vorher prüfen, ob er behoben ist — sonst verschwindet er
+                  {' '}unbemerkt vom Board.
                 </p>
               )}
               <div className="mt-2 flex gap-2">

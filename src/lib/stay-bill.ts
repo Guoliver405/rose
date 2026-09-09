@@ -61,12 +61,19 @@ export type StayBill = {
   openCents: number
   /** Als „nicht erbracht" geschlossene kostenpflichtige Anfragen. */
   notDoneCount: number
+  /**
+   * Offene Anfragen OHNE Preis — sie stehen auf keiner Aufstellung, werden vom
+   * Check-out aber genauso geschlossen. Der Dialog nennt sie trotzdem: Ein
+   * gemeldeter Defekt hört nicht auf zu existieren, weil der Gast abreist.
+   */
+  openFreeCount: number
   /** Gab es überhaupt etwas Kostenpflichtiges? Entscheidet Fall a) gegen b). */
   hasPositions: boolean
 }
 
 export function buildStayBill(orders: BillOrderInput[]): StayBill {
   const positions: BillPosition[] = []
+  let openFreeCount = 0
 
   for (const order of orders ?? []) {
     const items = (order.items ?? [])
@@ -74,7 +81,10 @@ export function buildStayBill(orders: BillOrderInput[]): StayBill {
       .map(i => ({ label: i.label, priceCents: i.price_cents as number }))
     const totalCents = items.reduce((sum, i) => sum + i.priceCents, 0)
     // Kostet nichts ⇒ nichts zu kassieren ⇒ nicht auf die Aufstellung.
-    if (totalCents <= 0) continue
+    if (totalCents <= 0) {
+      if (order.status === 'open') openFreeCount++
+      continue
+    }
 
     positions.push({
       id: order.id,
@@ -99,6 +109,7 @@ export function buildStayBill(orders: BillOrderInput[]): StayBill {
     openCount: offen.length,
     openCents: offen.reduce((sum, p) => sum + p.totalCents, 0),
     notDoneCount: positions.filter(p => p.status === 'cancelled').length,
+    openFreeCount,
     hasPositions: positions.length > 0,
   }
 }
@@ -110,5 +121,6 @@ export const EMPTY_BILL: StayBill = {
   openCount: 0,
   openCents: 0,
   notDoneCount: 0,
+  openFreeCount: 0,
   hasPositions: false,
 }

@@ -217,7 +217,7 @@ export async function placeOrderAction(
 
   const { data: service } = await admin
     .from('service_definitions')
-    .select('id, hotel_id, archived_at')
+    .select('id, hotel_id, archived_at, name')
     .eq('id', serviceId)
     .maybeSingle()
   if (!service || service.hotel_id !== ctx.hotelId || service.archived_at) {
@@ -242,6 +242,9 @@ export async function placeOrderAction(
     room_id: ctx.roomId,
     stay_id: ctx.stayId,
     service_id: serviceId,
+    // Name UND Optionen einfrieren: Eine Umbenennung im Baukasten soll weder
+    // den Verlauf noch die Check-out-Aufstellung rueckwirkend aendern.
+    service_name: service.name,
     items_snapshot: chosen.map(i => ({ label: i.label, price_cents: i.price_cents })),
     note: trimmedNote || null,
   })

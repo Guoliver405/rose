@@ -342,7 +342,7 @@ export async function seedTestScenarioAction(
   if (ordersCount > 0) {
     const { data: service } = await admin
       .from('service_definitions')
-      .select('id')
+      .select('id, name')
       .eq('hotel_id', ctx.hotelId)
       .is('archived_at', null)
       .order('sort_order')
@@ -364,6 +364,7 @@ export async function seedTestScenarioAction(
         room_id: r.id,
         stay_id: stayByRoom.get(r.id) ?? null,
         service_id: service.id,
+        service_name: service.name,
         items_snapshot: (items ?? []).map(i => ({ label: i.label, price_cents: i.price_cents })),
         note: 'Testbestellung (Szenario-Seed)',
       }))

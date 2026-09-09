@@ -41,6 +41,17 @@ describe('buildStayBill', () => {
     expect(bill.totalCents).toBe(1200)
   })
 
+  it('zählt offene kostenfreie Anfragen getrennt — der Check-out schließt sie mit', () => {
+    const bill = buildStayBill([
+      order({ id: 'defekt', serviceName: 'Technischer Dienst', items: [], status: 'open', closedAt: null }),
+      order({ id: 'erledigter defekt', serviceName: 'Technischer Dienst', items: [] }),
+      order({ id: 'wäsche' }),
+    ])
+    expect(bill.openFreeCount).toBe(1)
+    expect(bill.openCount).toBe(0)
+    expect(bill.positions.map(p => p.id)).toEqual(['wäsche'])
+  })
+
   it('lässt Optionen ohne Preisangabe weg, behält die bepreiste', () => {
     const bill = buildStayBill([
       order({ items: [{ label: 'Kissen weich', price_cents: null }, { label: 'klein', price_cents: 1200 }] }),
