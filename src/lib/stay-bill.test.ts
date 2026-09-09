@@ -43,13 +43,41 @@ describe('buildStayBill', () => {
 
   it('zählt offene kostenfreie Anfragen getrennt — der Check-out schließt sie mit', () => {
     const bill = buildStayBill([
-      order({ id: 'defekt', serviceName: 'Technischer Dienst', items: [], status: 'open', closedAt: null }),
-      order({ id: 'erledigter defekt', serviceName: 'Technischer Dienst', items: [] }),
+      order({ id: 'handtücher', serviceName: 'Extra Handtücher', items: [], status: 'open', closedAt: null }),
       order({ id: 'wäsche' }),
     ])
     expect(bill.openFreeCount).toBe(1)
+    expect(bill.openMaintenanceCount).toBe(0)
     expect(bill.openCount).toBe(0)
     expect(bill.positions.map(p => p.id)).toEqual(['wäsche'])
+  })
+
+  it('zählt Meldungen ans Haus getrennt — sie überleben den Check-out', () => {
+    const bill = buildStayBill([
+      order({
+        id: 'defekt', serviceName: 'Technischer Dienst', items: [],
+        status: 'open', closedAt: null, maintenance: true,
+      }),
+      order({ id: 'wäsche' }),
+    ])
+    expect(bill.openMaintenanceCount).toBe(1)
+    expect(bill.openFreeCount).toBe(0)
+    expect(bill.positions.map(p => p.id)).toEqual(['wäsche'])
+  })
+
+  it('hält eine Meldung auch mit Preis von der Aufstellung fern', () => {
+    // Ein Handwerker-Einsatz kann Geld kosten und gehört trotzdem zum Zimmer,
+    // nicht zum Aufenthalt — deshalb trägt das Kennzeichen die Regel, nicht der
+    // Preis.
+    const bill = buildStayBill([
+      order({
+        id: 'handwerker', serviceName: 'Technischer Dienst', maintenance: true,
+        items: [{ label: 'Einsatz', price_cents: 8000 }],
+      }),
+      order({ id: 'wäsche' }),
+    ])
+    expect(bill.positions.map(p => p.id)).toEqual(['wäsche'])
+    expect(bill.totalCents).toBe(1200)
   })
 
   it('lässt Optionen ohne Preisangabe weg, behält die bepreiste', () => {

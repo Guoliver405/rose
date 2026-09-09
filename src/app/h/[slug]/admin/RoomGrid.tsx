@@ -472,13 +472,20 @@ function RoomDialog({
             </p>
           )}
 
+          {done && done.openMaintenanceCount > 0 && (
+            <p className="mt-3 rounded-lg border border-attention-tint-edge bg-attention-tint px-3 py-2 text-xs text-attention-deepest">
+              {done.openMaintenanceCount === 1
+                ? 'Eine Meldung ans Haus ist weiterhin offen'
+                : `${done.openMaintenanceCount} Meldungen ans Haus sind weiterhin offen`}
+              {' '}— das Zimmer trägt sie bis zur Erledigung, und der nächste Check-in warnt.
+            </p>
+          )}
           {done && done.openFreeCount > 0 && (
             <p className="mt-3 rounded-lg border border-edge bg-surface-sunken px-3 py-2 text-xs text-ink-soft">
               {done.openFreeCount === 1
                 ? 'Eine kostenfreie Anfrage wurde'
                 : `${done.openFreeCount} kostenfreie Anfragen wurden`}
-              {' '}mitgeschlossen (etwa technischer Dienst) — ein noch offener Defekt gehört
-              {' '}ins Zimmer, nicht zum Aufenthalt.
+              {' '}mitgeschlossen.
             </p>
           )}
           {done && done.openCount > 0 && (
@@ -739,6 +746,14 @@ function RoomDialog({
                   {' '}noch offen.
                 </>
               )}
+              {bill.openMaintenanceCount > 0 && (
+                <>
+                  {' '}{bill.openMaintenanceCount === 1
+                    ? 'Eine Meldung ans Haus ist offen und bleibt es'
+                    : `${bill.openMaintenanceCount} Meldungen ans Haus sind offen und bleiben es`}
+                  {' '}über den Check-out hinaus.
+                </>
+              )}
             </p>
           )}
 
@@ -774,9 +789,17 @@ function RoomDialog({
                   {bill.openFreeCount === 1
                     ? 'Eine kostenfreie Anfrage wird'
                     : `${bill.openFreeCount} kostenfreie Anfragen werden`}
-                  {' '}ebenfalls geschlossen (etwa technischer Dienst). Bei einem gemeldeten
-                  {' '}Defekt: vorher prüfen, ob er behoben ist — sonst verschwindet er
-                  {' '}unbemerkt vom Board.
+                  {' '}ebenfalls geschlossen.
+                </p>
+              )}
+              {bill && bill.openMaintenanceCount > 0 && (
+                <p className="mt-1 text-xs font-semibold text-ink-soft">
+                  {bill.openMaintenanceCount === 1
+                    ? 'Eine Meldung ans Haus bleibt offen'
+                    : `${bill.openMaintenanceCount} Meldungen ans Haus bleiben offen`}
+                  {' '}— sie {bill.openMaintenanceCount === 1 ? 'gehört' : 'gehören'} zum Zimmer und
+                  {' '}{bill.openMaintenanceCount === 1 ? 'steht' : 'stehen'} weiter auf dem
+                  {' '}Services-Board.
                 </p>
               )}
               <div className="mt-2 flex gap-2">

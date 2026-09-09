@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Archive, Loader2, Plus, Siren, Sparkles, Wrench } from 'lucide-react'
+import { Archive, Hammer, Loader2, Plus, Siren, Sparkles, Wrench } from 'lucide-react'
 import { formatCents } from '@/lib/money'
 import {
   archiveServiceAction, archiveServiceItemAction, createExampleServicesAction,
-  createServiceAction, createServiceItemAction, setServiceUrgentAction,
+  createServiceAction, createServiceItemAction, setServiceMaintenanceAction, setServiceUrgentAction,
 } from './actions'
 
 export type ServiceRow = {
@@ -13,6 +13,8 @@ export type ServiceRow = {
   name: string
   description: string | null
   urgent: boolean
+  /** Meldung ans Haus (Defekt): gehört zum Zimmer, nicht zum Aufenthalt. */
+  maintenance: boolean
   items: { id: string; label: string; priceCents: number | null }[]
 }
 
@@ -74,6 +76,10 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
             <input type="checkbox" name="urgent" className="h-4 w-4 accent-current" />
             Dringend
           </label>
+          <label className="flex items-center gap-2 pb-2 text-sm font-semibold text-ink-soft">
+            <input type="checkbox" name="maintenance" className="h-4 w-4 accent-current" />
+            Meldung ans Haus
+          </label>
           <button
             type="submit"
             disabled={pending}
@@ -83,9 +89,19 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
             Anlegen
           </button>
         </div>
-        <p className="mt-2 text-xs text-ink-muted">
-          Dringende Bestellungen werden der Rezeption hervorgehoben. Auswahl-Optionen (mit optionalem Preis) kommen pro Service dazu.
-        </p>
+        <div className="mt-2 flex flex-col gap-1 text-xs text-ink-muted">
+          <p>
+            Dringende Bestellungen werden der Rezeption hervorgehoben. Auswahl-Optionen
+            (mit optionalem Preis) kommen pro Service dazu.
+          </p>
+          <p>
+            <span className="font-semibold text-ink-soft">Meldung ans Haus</span> ist für
+            Defekte und Instandhaltung gedacht — etwas am Zimmer, nicht am Aufenthalt.
+            Solche Anfragen bleiben beim Check-out offen (ein Defekt verschwindet nicht
+            mit dem Gast), erscheinen auf keiner Check-out-Aufstellung und warnen beim
+            nächsten Check-in.
+          </p>
+        </div>
       </form>
 
       {error && (
@@ -125,6 +141,11 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
                   <Siren className="h-3.5 w-3.5" /> dringend
                 </span>
               )}
+              {s.maintenance && (
+                <span className="flex items-center gap-1 rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-bold text-ink-soft">
+                  <Hammer className="h-3.5 w-3.5" /> Meldung ans Haus
+                </span>
+              )}
               <div className="ml-auto flex items-center gap-2">
                 <button
                   type="button"
@@ -133,6 +154,14 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
                   className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
                 >
                   {s.urgent ? 'Dringend aus' : 'Dringend an'}
+                </button>
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => run(() => setServiceMaintenanceAction(hotelSlug, s.id, !s.maintenance))}
+                  className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
+                >
+                  {s.maintenance ? 'Keine Meldung' : 'Als Meldung'}
                 </button>
                 <button
                   type="button"

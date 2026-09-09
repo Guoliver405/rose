@@ -165,20 +165,57 @@ Kennzeichen, der technische Dienst steht nirgends, Gesamtsumme 12,00 €. Verlau
 „Service nicht erbracht: …" und am Check-out der Link „Aufstellung". Fall b) auf
 Zimmer 102 gegengeprüft: Hinweis statt Summe, kein Details-Knopf.
 
+## Nachtrag: Instandhaltung ist eine eigene Art von Service
+
+Aus dem zweiten Fund wurde eine Entscheidung des Users: **Meldungen bleiben
+offen, und dafür braucht der Baukasten ein ausdrückliches Kennzeichen.** Das ist
+die richtige Korrektur an meinem ersten Vorschlag — der Preis kann diese Grenze
+nicht ziehen. Kostenfreie Extra-Handtücher gehören zum Aufenthalt, ein
+kostenpflichtiger Handwerker-Einsatz gehört zum Zimmer. Für die *Aufstellung*
+war die Preisregel tragfähig (was nichts kostet, muss niemand prüfen); für den
+*Lebenszyklus* ist sie es nicht.
+
+`service_definitions.maintenance` (Migration
+[2026-09-09_service_definitions_maintenance.sql](../Supabase_sql/2026-09-09_service_definitions_maintenance.sql),
+Häkchen „Meldung ans Haus" im Baukasten) bedeutet deshalb **ein** Ding —
+*gehört zum Zimmer, nicht zum Aufenthalt* — mit drei Folgen:
+
+1. **Bleibt beim Check-out offen.** `checkOutAction` liest die offenen Anfragen
+   des Aufenthalts, nimmt die Meldungen heraus und schließt nur den Rest. Zwei
+   Schritte statt eines Filters auf der eingebetteten Spalte, damit der Update
+   über eine gelesene ID-Liste läuft und nie mehr trifft als beabsichtigt.
+2. **Steht auf keiner Aufstellung** — auch mit Preis. Eine Meldung ist keine
+   Leistung an den Gast.
+3. **Warnt beim nächsten Check-in.** Sonst wäre „bleibt offen" folgenlos: Die
+   Anfrage stünde am freien Zimmer, und der nächste Gast zöge trotzdem ein. Der
+   Grund erscheint in der bestehenden Warnung neben „nicht gereinigt", mit
+   demselben Override. Die Abfrage läuft im vorhandenen `Promise.all` mit,
+   kostet also keinen zusätzlichen Roundtrip in Reihe.
+
+Zwei bewusste Nicht-Entscheidungen: Das Kennzeichen wird **nicht** in die
+Bestellung eingefroren (anders als `service_name`) — es steuert Verhalten, nicht
+den Inhalt eines alten Belegs; und es ist **unabhängig von `urgent`**, weil die
+beiden verschiedene Fragen beantworten: wie laut die Anfrage ist gegen wem sie
+gehört.
+
+Der Bestand wird eng begrenzt nachgezogen: `name = 'Technischer Dienst'` stammt
+ausnahmslos aus der Seed-Vorlage und ist genau dieser Fall. Alles andere wäre
+geraten.
+
 ## Reihenfolge beim Einspielen
 
-Die Migration ist **additiv** (Alt-Code schreibt nie `'cancelled'` und liest
-`service_name` nicht) und muss **vor** dem Deployment eingespielt werden: Der
-neue Code fragt `service_name` ab.
+Beide Migrationen sind **additiv** (Alt-Code schreibt nie `'cancelled'` und
+kennt weder `service_name` noch `maintenance`) und müssen **vor** dem
+Deployment eingespielt werden: Der neue Code fragt beide Spalten ab.
 
 ## 🔖 Wiederaufnahme
 
 - **Erledigt:** Der Durchlauf (Bestellung → erledigt → Check-out → Blatt) ist
   gefahren, siehe oben. Offen bleibt die **Druckprobe auf Papier** — die
   Bildschirmfassung sagt nichts über den Seitenumbruch bei vielen Posten.
-- **Zu entscheiden:** ob der Check-out kostenfreie Anfragen (technischer Dienst)
-  wirklich schließen soll. Sie gehören eher zum Zimmer als zum Aufenthalt;
-  aktuell werden sie geschlossen und der Dialog sagt es vorher.
+- **Entschieden (09.09.):** Meldungen ans Haus bleiben offen, erkennbar am
+  neuen Häkchen im Baukasten. Kostenfreie *Gast*-Anfragen (Extra-Handtücher)
+  werden weiterhin geschlossen — sie gehören zum Aufenthalt.
 - **Bewusst nicht gebaut:** Zahlungsstatus, Rechnungsnummer, Sammelaufstellung
   über mehrere Zimmer, Export.
 - **Denkbar als Nächstes:** ein Halbsatz im gedruckten Handout, dass

@@ -21,7 +21,7 @@ export async function loadStayBill(
 ): Promise<StayBill> {
   const { data } = await admin
     .from('service_orders')
-    .select('id, service_name, items_snapshot, note, status, created_at, done_at, service_definitions(name)')
+    .select('id, service_name, items_snapshot, note, status, created_at, done_at, service_definitions(name, maintenance)')
     .eq('hotel_id', hotelId)
     .eq('stay_id', stayId)
     .order('created_at', { ascending: true })
@@ -40,6 +40,10 @@ export async function loadStayBill(
       status: o.status as BillOrderStatus,
       createdAt: o.created_at as string,
       closedAt: (o.done_at as string | null) ?? null,
+      // Aus der Definition, nicht aus der Bestellung: Das Kennzeichen
+      // entscheidet über das Verhalten beim Check-out, nicht über den Inhalt
+      // eines alten Belegs.
+      maintenance: Boolean(def?.maintenance),
     }
   })
 

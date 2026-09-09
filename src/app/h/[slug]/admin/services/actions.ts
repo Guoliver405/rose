@@ -29,7 +29,10 @@ export async function createExampleServicesAction(slug: string): Promise<ActionR
     if (existingNames.has(t.name.toLowerCase())) continue
     const { data: svc, error } = await admin
       .from('service_definitions')
-      .insert({ hotel_id: ctx.hotelId, name: t.name, description: t.description, urgent: t.urgent })
+      .insert({
+        hotel_id: ctx.hotelId, name: t.name, description: t.description,
+        urgent: t.urgent, maintenance: t.maintenance ?? false,
+      })
       .select('id')
       .single()
     if (error) return { error: error.message }
@@ -54,8 +57,12 @@ export async function createExampleServicesAction(slug: string): Promise<ActionR
 }
 
 /**
- * Service anlegen. Baukasten bewusst abgespeckt (siehe AGENTS.md):
- * nur urgent-Flag, Preise optional als Anzeige-Info.
+ * Service anlegen. Baukasten bewusst abgespeckt (siehe AGENTS.md): zwei
+ * Kennzeichen (`urgent`, `maintenance`), Preise optional.
+ *
+ * Die beiden Kennzeichen beantworten verschiedene Fragen und sind deshalb
+ * unabhängig: `urgent` sagt, wie laut die Anfrage ist (blinkende Glocke),
+ * `maintenance` sagt, wem sie gehört — dem Zimmer statt dem Aufenthalt.
  */
 export async function createServiceAction(slug: string, formData: FormData): Promise<ActionResult> {
   const ctx = await getAdminContext(slug)
@@ -64,6 +71,7 @@ export async function createServiceAction(slug: string, formData: FormData): Pro
   const name = ((formData.get('name') as string) ?? '').trim()
   const description = ((formData.get('description') as string) ?? '').trim()
   const urgent = formData.get('urgent') === 'on'
+  const maintenance = formData.get('maintenance') === 'on'
 
   if (name.length < 2) return { error: 'Name muss mindestens 2 Zeichen haben.' }
 
@@ -73,6 +81,7 @@ export async function createServiceAction(slug: string, formData: FormData): Pro
     name,
     description: description || null,
     urgent,
+    maintenance,
   })
   if (error) return { error: error.message }
 
@@ -113,6 +122,33 @@ export async function setServiceUrgentAction(
   const { error } = await admin
     .from('service_definitions')
     .update({ urgent })
+    .eq('id', serviceId)
+    .eq('hotel_id', ctx.hotelId)
+  if (error) return { error: error.message }
+
+  revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
+  return {}
+}
+
+/**
+ * Instandhaltung an/aus. Wirkt nur nach vorn: Bereits geschlossene Anfragen
+ * bleiben geschlossen, laufende folgen ab sofort der neuen Einordnung. Das
+ * Kennzeichen entscheidet über das Verhalten beim Check-out, nicht über den
+ * Inhalt eines alten Belegs — deshalb wird es (anders als der Name) nicht in
+ * die Bestellung eingefroren.
+ */
+export async function setServiceMaintenanceAction(
+  slug: string,
+  serviceId: string,
+  maintenance: boolean,
+): Promise<ActionResult> {
+  const ctx = await getAdminContext(slug)
+  if (!ctx) return { error: 'Keine Berechtigung.' }
+
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('service_definitions')
+    .update({ maintenance })
     .eq('id', serviceId)
     .eq('hotel_id', ctx.hotelId)
   if (error) return { error: error.message }

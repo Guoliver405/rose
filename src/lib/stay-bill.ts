@@ -11,9 +11,12 @@
  *
  * 1. **Was keinen Preis trägt, steht nicht drauf.** Optionen ohne Preisangabe
  *    fallen weg, und eine Anfrage, die danach bei 0,00 € landet, fällt ganz
- *    weg. Damit ist auch „Wartung" erledigt, ohne dass es dafür ein eigenes
- *    Kennzeichen am Service bräuchte: Der technische Dienst hat keine
- *    bepreisten Optionen, also gibt es nichts zu prüfen.
+ *    weg.
+ * 1b. **Instandhaltung steht nie drauf** — auch mit Preis. Eine Meldung gehört
+ *    zum Zimmer, nicht zum Aufenthalt; sie überlebt den Check-out und ist
+ *    keine Leistung an den Gast. Der Preis allein könnte das nicht trennen:
+ *    Kostenfreie Extra-Handtücher gehören zum Aufenthalt, ein
+ *    kostenpflichtiger Handwerker-Einsatz nicht.
  * 2. **Nur Erbrachtes zählt.** Offene und als „nicht erbracht" geschlossene
  *    Anfragen bleiben sichtbar — sonst verschwände eine Diskussion mit dem
  *    Gast einfach vom Blatt —, gehen aber nicht in die Summe ein.
@@ -36,6 +39,8 @@ export type BillOrderInput = {
   createdAt: string
   /** `done_at` — Zeitpunkt des Abschlusses, egal in welche Richtung. */
   closedAt?: string | null
+  /** `service_definitions.maintenance` — Meldung ans Haus statt Gast-Leistung. */
+  maintenance?: boolean
 }
 
 export type BillPosition = {
@@ -62,11 +67,16 @@ export type StayBill = {
   /** Als „nicht erbracht" geschlossene kostenpflichtige Anfragen. */
   notDoneCount: number
   /**
-   * Offene Anfragen OHNE Preis — sie stehen auf keiner Aufstellung, werden vom
-   * Check-out aber genauso geschlossen. Der Dialog nennt sie trotzdem: Ein
-   * gemeldeter Defekt hört nicht auf zu existieren, weil der Gast abreist.
+   * Offene Anfragen ohne Preis, die KEINE Meldung sind (etwa kostenfreie
+   * Extra-Handtücher). Sie stehen auf keiner Aufstellung, werden vom Check-out
+   * aber geschlossen — der Dialog nennt sie deshalb.
    */
   openFreeCount: number
+  /**
+   * Offene Meldungen ans Haus. Sie überleben den Check-out bewusst und stehen
+   * danach am freien Zimmer; der Dialog sagt das zu, statt es zu verschweigen.
+   */
+  openMaintenanceCount: number
   /** Gab es überhaupt etwas Kostenpflichtiges? Entscheidet Fall a) gegen b). */
   hasPositions: boolean
 }
@@ -75,7 +85,16 @@ export function buildStayBill(orders: BillOrderInput[]): StayBill {
   const positions: BillPosition[] = []
   let openFreeCount = 0
 
+  let openMaintenanceCount = 0
+
   for (const order of orders ?? []) {
+    // Meldungen ans Haus sind keine Leistung an den Gast — weder Position noch
+    // Summe, unabhängig vom Preis.
+    if (order.maintenance) {
+      if (order.status === 'open') openMaintenanceCount++
+      continue
+    }
+
     const items = (order.items ?? [])
       .filter(i => typeof i?.price_cents === 'number' && Number.isFinite(i.price_cents))
       .map(i => ({ label: i.label, priceCents: i.price_cents as number }))
@@ -110,6 +129,7 @@ export function buildStayBill(orders: BillOrderInput[]): StayBill {
     openCents: offen.reduce((sum, p) => sum + p.totalCents, 0),
     notDoneCount: positions.filter(p => p.status === 'cancelled').length,
     openFreeCount,
+    openMaintenanceCount,
     hasPositions: positions.length > 0,
   }
 }
@@ -122,5 +142,6 @@ export const EMPTY_BILL: StayBill = {
   openCents: 0,
   notDoneCount: 0,
   openFreeCount: 0,
+  openMaintenanceCount: 0,
   hasPositions: false,
 }

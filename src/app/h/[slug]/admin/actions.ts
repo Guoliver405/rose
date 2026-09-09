@@ -68,10 +68,21 @@ export async function checkInAction(
   // in einem Roundtrip statt nacheinander; die Policies liegen bereits im
   // Kontext. Vorher standen hier vier Abfragen in Reihe — vor dem eigentlichen
   // Schreiben.
-  const [{ data: room }, { data: activeStay }, { data: state }] = await Promise.all([
+  const [{ data: room }, { data: activeStay }, { data: state }, { data: meldungen }] = await Promise.all([
     admin.from('rooms').select('id, hotel_id, number, deactivated_at').eq('id', roomId).single(),
     admin.from('stays').select('id').eq('room_id', roomId).is('checked_out_at', null).maybeSingle(),
     admin.from('room_states').select('checkout_pending, cleaning_by, priority').eq('room_id', roomId).maybeSingle(),
+    // Offene Meldungen ans Haus überleben den Check-out — genau deshalb müssen
+    // sie beim nächsten Check-in auffallen, sonst zieht der nächste Gast in
+    // ein Zimmer mit bekanntem Defekt.
+    admin
+      .from('service_orders')
+      .select('service_name, service_definitions!inner(name, maintenance)')
+      .eq('hotel_id', ctx.hotelId)
+      .eq('room_id', roomId)
+      .eq('status', 'open')
+      .eq('service_definitions.maintenance', true)
+      .limit(5),
   ])
   if (!room || room.hotel_id !== ctx.hotelId) return { error: 'Zimmer nicht gefunden.' }
   if (room.deactivated_at) {
@@ -84,6 +95,10 @@ export async function checkInAction(
     if (state?.checkout_pending) reasons.push('Das Zimmer ist seit dem letzten Check-out noch nicht gereinigt.')
     if (state?.priority) reasons.push('Für das Zimmer ist eine priorisierte Reinigung offen.')
     if (state?.cleaning_by) reasons.push('Das Zimmer wird gerade gereinigt.')
+    for (const m of meldungen ?? []) {
+      const def = Array.isArray(m.service_definitions) ? m.service_definitions[0] : m.service_definitions
+      reasons.push(`Offene Meldung ans Haus: ${m.service_name ?? def?.name ?? 'Service'}.`)
+    }
     if (reasons.length > 0) return { warning: { reasons } }
   }
 
@@ -194,11 +209,16 @@ export async function setExpectedCheckoutAction(
  * Check-out per Klick: beendet den Stay (PIN + Gast-Cookie sofort tot) und
  * schließt offene Service-Anfragen dieses Aufenthalts als „nicht erbracht".
  *
- * Das Schließen ist kein Beiwerk: Eine Anfrage gehört zum Aufenthalt, nicht
- * zum Zimmer. Bliebe sie offen, läge sie morgen auf dem Board eines längst
+ * Das Schließen ist kein Beiwerk: Eine bestellte Leistung gehört zum
+ * Aufenthalt. Bliebe sie offen, läge sie morgen auf dem Board eines längst
  * leeren Zimmers, und niemand könnte sie noch klären. Was tatsächlich erbracht
  * wurde, hakt die Rezeption vor dem Check-out ab — der Dialog weist mit Betrag
  * darauf hin, bevor der Klick fällt.
+ *
+ * **Ausgenommen sind Meldungen ans Haus** (`service_definitions.maintenance`):
+ * Ein gemeldeter Defekt gehört zum Zimmer und hört nicht auf zu existieren,
+ * weil der Gast abreist. Er bleibt offen, steht danach am freien Zimmer und
+ * warnt beim nächsten Check-in.
  *
  * Gibt die `stayId` zurück, damit der Dialog danach auf die Aufstellung
  * verlinken kann: Das Zimmer ist dann frei und kennt den Aufenthalt nicht mehr.
@@ -227,6 +247,23 @@ export async function checkOutAction(
     .eq('id', stay.id)
   if (updErr) return { error: `Check-out fehlgeschlagen: ${updErr.message}` }
 
+  // Offene Anfragen des Aufenthalts holen, um die Meldungen auszunehmen. Zwei
+  // Schritte statt eines Filters auf der eingebetteten Spalte: Der Update soll
+  // ausdrücklich über eine Liste von IDs laufen, damit hier nie mehr getroffen
+  // wird, als vorher gelesen wurde.
+  const { data: offene } = await admin
+    .from('service_orders')
+    .select('id, service_definitions!inner(maintenance)')
+    .eq('hotel_id', ctx.hotelId)
+    .eq('stay_id', stay.id)
+    .eq('status', 'open')
+  const zuSchliessen = (offene ?? [])
+    .filter(o => {
+      const def = Array.isArray(o.service_definitions) ? o.service_definitions[0] : o.service_definitions
+      return !def?.maintenance
+    })
+    .map(o => o.id)
+
   await Promise.all([
     admin.from('room_states')
       .update({ checkout_pending: true, guest_signal: 'none', ...auditFields(ctx.userId) })
@@ -234,11 +271,12 @@ export async function checkOutAction(
       .eq('hotel_id', ctx.hotelId),
     // `done_at`/`done_by` tragen auch hier Zeitpunkt und Person — welcher
     // Endzustand es war, sagt `status`.
-    admin.from('service_orders')
-      .update({ status: 'cancelled', done_at: new Date().toISOString(), done_by: ctx.userId })
-      .eq('hotel_id', ctx.hotelId)
-      .eq('stay_id', stay.id)
-      .eq('status', 'open'),
+    zuSchliessen.length > 0
+      ? admin.from('service_orders')
+          .update({ status: 'cancelled', done_at: new Date().toISOString(), done_by: ctx.userId })
+          .eq('hotel_id', ctx.hotelId)
+          .in('id', zuSchliessen)
+      : Promise.resolve(),
   ])
 
   revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')

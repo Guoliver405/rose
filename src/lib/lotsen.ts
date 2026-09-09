@@ -277,7 +277,8 @@ const SERVICES: Lotse = {
     {
       path: '/services', anchor: 'services.anlegen', kern: true,
       title: 'Ein Service ist ein Baukasten',
-      body: 'Oben steht der Service — „Wäscheservice", „Technischer Dienst" —, darunter hängen die Optionen, die der Gast auswählt. Der Haken „dringend" ist der einzige Unterschied im Ablauf: Eine dringende Anfrage lässt die Glocke auf der Zimmer-Kachel und die Zahl in der Navigation rot blinken.',
+      body: 'Oben steht der Service — „Wäscheservice", „Technischer Dienst" —, darunter hängen die Optionen, die der Gast auswählt. Zwei Haken entscheiden über den Ablauf: „dringend" lässt die Glocke auf der Zimmer-Kachel und die Zahl in der Navigation rot blinken. „Meldung ans Haus" ist für Defekte — solche Anfragen gehören zum Zimmer, nicht zum Aufenthalt, und bleiben deshalb über den Check-out hinaus offen.',
+      tun: 'Setzen Sie „Meldung ans Haus" bei allem, was kaputtgehen kann — der technische Dienst ist der Standardfall.',
     },
     {
       path: '/services', anchor: 'services.beispiele',
@@ -287,7 +288,7 @@ const SERVICES: Lotse = {
     {
       path: '/services', anchor: 'services.liste', kern: true,
       title: 'Preise landen beim Check-out auf der Aufstellung',
-      body: 'Optionen dürfen einen Preis tragen; der Gast sieht ihn bei der Bestellung. Beim Check-out zeigt der Zimmer-Dialog die Summe der erbrachten Leistungen — deshalb lohnt es sich, die Preise gleich hier zu pflegen. Was keinen Preis trägt (etwa der technische Dienst), taucht auf keiner Aufstellung auf. RoSe bucht und kassiert nichts, es rechnet nur zusammen.',
+      body: 'Optionen dürfen einen Preis tragen; der Gast sieht ihn bei der Bestellung. Beim Check-out zeigt der Zimmer-Dialog die Summe der erbrachten Leistungen — deshalb lohnt es sich, die Preise gleich hier zu pflegen. Ohne Preis steht eine Anfrage auf keiner Aufstellung, und Meldungen ans Haus stehen dort auch mit Preis nicht: Sie sind keine Leistung an den Gast. RoSe bucht und kassiert nichts, es rechnet nur zusammen.',
       tun: 'Tragen Sie bei einer Option einen Preis ein — ab der nächsten Bestellung steht sie damit beim Check-out auf dem Blatt.',
     },
   ],
@@ -312,7 +313,7 @@ const ANFRAGEN: Lotse = {
     {
       path: '/bestellungen', anchor: 'anfragen.erledigt',
       title: 'Der Haken entscheidet über den Betrag',
-      body: 'Eine Anfrage ist offen oder abgeschlossen; es gibt kein „in Bearbeitung" und keine Zuweisung. Beim Abschluss zählt der Unterschied: „Erledigt" heißt erbracht — und erscheint mit Betrag auf der Aufstellung beim Check-out. Was bis dahin offen bleibt, schließt RoSe als „nicht erbracht": gekennzeichnet, aber nicht berechnet. Deshalb lohnt sich das Abhaken hier direkt nach der Leistung.',
+      body: 'Eine Anfrage ist offen oder abgeschlossen; es gibt kein „in Bearbeitung" und keine Zuweisung. Beim Abschluss zählt der Unterschied: „Erledigt" heißt erbracht — und erscheint mit Betrag auf der Aufstellung beim Check-out. Was bis dahin offen bleibt, schließt RoSe als „nicht erbracht": gekennzeichnet, aber nicht berechnet. Ausgenommen sind Meldungen ans Haus: Ein Defekt bleibt offen, bis ihn jemand abhakt — auch über den Check-out hinaus, und der nächste Check-in warnt davor.',
       tun: 'Haken Sie eine erledigte Anfrage gleich ab — sonst fehlt sie am Ende in der Summe.',
     },
     {

@@ -17,7 +17,7 @@ export default async function ServicesPage({
   const [{ data: services }, { data: items }] = await Promise.all([
     supabase
       .from('service_definitions')
-      .select('id, name, description, urgent')
+      .select('id, name, description, urgent, maintenance')
       .eq('hotel_id', ctx.hotelId)
       .is('archived_at', null)
       .order('name'),
@@ -42,6 +42,7 @@ export default async function ServicesPage({
   const rows: ServiceRow[] = (services ?? []).map(s => ({
     id: s.id,
     name: s.name,
+    maintenance: s.maintenance ?? false,
     description: s.description,
     urgent: s.urgent,
     items: itemsByService.get(s.id) ?? [],
