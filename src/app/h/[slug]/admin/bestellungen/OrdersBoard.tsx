@@ -15,6 +15,8 @@ export type OrderRow = {
   createdAt: string
   doneAt: string | null
   doneBy: string | null
+  /** Beim Check-out geschlossen, weil nicht erbracht — zählt in keiner Aufstellung. */
+  notDone: boolean
 }
 
 function ageLabel(iso: string): string {
@@ -119,7 +121,7 @@ export default function OrdersBoard({ hotelSlug, open, done }: { hotelSlug: stri
             className="flex items-center gap-1.5 text-sm font-semibold text-ink-muted hover:text-ink"
           >
             <ChevronDown className={`h-4 w-4 transition-transform ${showDone ? 'rotate-180' : ''}`} />
-            Zuletzt erledigt ({done.length})
+            Zuletzt abgeschlossen ({done.length})
           </button>
           {showDone && (
             <ul className="mt-2 flex flex-col gap-1.5">
@@ -132,6 +134,11 @@ export default function OrdersBoard({ hotelSlug, open, done }: { hotelSlug: stri
                   <span>{o.serviceName}</span>
                   {o.items.length > 0 && (
                     <span className="text-ink-muted">({o.items.map(i => i.label).join(', ')})</span>
+                  )}
+                  {o.notDone && (
+                    <span className="rounded-full border border-edge-strong px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-ink-muted">
+                      nicht erbracht
+                    </span>
                   )}
                   <span className="ml-auto text-ink-muted">
                     {o.doneAt ? ageLabel(o.doneAt) : ''}{o.doneBy ? ` · ${o.doneBy}` : ''}

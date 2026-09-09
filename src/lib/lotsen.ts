@@ -107,6 +107,12 @@ const UEBERSICHT: Lotse = {
       body: 'Im Dialog liegen Check-in und Check-out, die Gast-PIN zum Vorlesen, das Handout zum Drucken, das Abreisedatum, die Priorität und der Verlauf der letzten 30 Tage. Der Check-in ist ein Klick; das Abreisedatum ist freiwillig und lässt sich jederzeit nachtragen.',
       tun: 'Klicken Sie ruhig ein Zimmer an — der Lotse bleibt offen.',
     },
+    {
+      path: '',
+      title: 'Beim Check-out steht der Betrag',
+      body: 'Hat der Gast kostenpflichtige Leistungen bestellt, zeigt der Dialog schon vor der Bestätigung hervorgehoben, was zu kassieren ist — mit „Details" als druckbare Aufstellung: Zimmer, Zeitraum, Posten mit Zeitpunkten, Summe. Kein Gastname, keine Rechnung. Wurde nichts Kostenpflichtiges bestellt, steht dort nur ein Hinweis, und Sie checken aus wie bisher.',
+      tun: 'Offene Anfragen schließt der Check-out als „nicht erbracht" — was tatsächlich erbracht wurde, haken Sie vorher im selben Kasten ab. Später kommen Sie über den Verlauf des Zimmers wieder an die Aufstellung: Der Eintrag „Check-out" trägt den Link.',
+    },
   ],
 }
 
@@ -280,8 +286,9 @@ const SERVICES: Lotse = {
     },
     {
       path: '/services', anchor: 'services.liste', kern: true,
-      title: 'Preise sind Anzeige, keine Abrechnung',
-      body: 'Optionen dürfen einen Preis tragen; der Gast sieht ihn bei der Bestellung. RoSe rechnet damit nicht ab und bucht nichts — die Anfrage landet auf dem Services-Board der Rezeption und wird dort auf „erledigt" gesetzt.',
+      title: 'Preise landen beim Check-out auf der Aufstellung',
+      body: 'Optionen dürfen einen Preis tragen; der Gast sieht ihn bei der Bestellung. Beim Check-out zeigt der Zimmer-Dialog die Summe der erbrachten Leistungen — deshalb lohnt es sich, die Preise gleich hier zu pflegen. Was keinen Preis trägt (etwa der technische Dienst), taucht auf keiner Aufstellung auf. RoSe bucht und kassiert nichts, es rechnet nur zusammen.',
+      tun: 'Tragen Sie bei einer Option einen Preis ein — ab der nächsten Bestellung steht sie damit beim Check-out auf dem Blatt.',
     },
   ],
 }
@@ -304,13 +311,14 @@ const ANFRAGEN: Lotse = {
     },
     {
       path: '/bestellungen', anchor: 'anfragen.erledigt',
-      title: 'Zwei Zustände, mehr nicht',
-      body: 'Eine Anfrage ist offen oder erledigt; es gibt kein „in Bearbeitung" und keine Zuweisung. Das ist Absicht: Der Ablauf soll am Tresen in einer Sekunde abgehakt sein, und wer erledigt hat, hält RoSe ohnehin fest.',
+      title: 'Der Haken entscheidet über den Betrag',
+      body: 'Eine Anfrage ist offen oder abgeschlossen; es gibt kein „in Bearbeitung" und keine Zuweisung. Beim Abschluss zählt der Unterschied: „Erledigt" heißt erbracht — und erscheint mit Betrag auf der Aufstellung beim Check-out. Was bis dahin offen bleibt, schließt RoSe als „nicht erbracht": gekennzeichnet, aber nicht berechnet. Deshalb lohnt sich das Abhaken hier direkt nach der Leistung.',
+      tun: 'Haken Sie eine erledigte Anfrage gleich ab — sonst fehlt sie am Ende in der Summe.',
     },
     {
       path: '/bestellungen', anchor: 'anfragen.verlauf',
-      title: 'Erledigtes bleibt nachvollziehbar',
-      body: 'Abgehakte Anfragen rutschen in die eingeklappte Liste darunter, mit Zeitpunkt und Namen. Sie tauchen außerdem im Verlauf des Zimmers auf — praktisch, wenn ein Gast später nachfragt, ob sein Wunsch angekommen ist.',
+      title: 'Abgeschlossenes bleibt nachvollziehbar',
+      body: 'Abgeschlossene Anfragen rutschen in die eingeklappte Liste darunter, mit Zeitpunkt und Namen; nicht erbrachte tragen dort ein Kennzeichen. Sie tauchen außerdem im Verlauf des Zimmers auf — praktisch, wenn ein Gast später nachfragt, ob sein Wunsch angekommen ist.',
     },
   ],
 }

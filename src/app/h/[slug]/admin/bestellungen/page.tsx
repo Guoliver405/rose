@@ -18,7 +18,7 @@ export default async function BestellungenPage({
       // Offene zuerst (älteste oben — FIFO), dazu die letzten Erledigten
       supabase
         .from('service_orders')
-        .select('id, room_id, service_id, items_snapshot, note, status, created_at, done_at, done_by')
+        .select('id, room_id, service_id, service_name, items_snapshot, note, status, created_at, done_at, done_by')
         .eq('hotel_id', ctx.hotelId)
         .order('created_at', { ascending: true }),
       supabase.from('service_definitions').select('id, name, urgent').eq('hotel_id', ctx.hotelId),
@@ -35,20 +35,26 @@ export default async function BestellungenPage({
     return {
       id: o.id,
       roomNumber: roomById.get(o.room_id) ?? '?',
-      serviceName: service?.name ?? 'Service',
+      // Snapshot vor Join: Eine Umbenennung im Baukasten soll alte Anfragen
+      // nicht umschreiben.
+      serviceName: o.service_name ?? service?.name ?? 'Service',
       urgent: service?.urgent ?? false,
       items: ((o.items_snapshot ?? []) as { label: string; price_cents: number | null }[]),
       note: o.note,
       createdAt: o.created_at,
       doneAt: o.done_at,
       doneBy: o.done_by ? (nameById.get(o.done_by) ?? '—') : null,
+      notDone: o.status === 'cancelled',
     }
   }
 
   const all = orders ?? []
   const open = all.filter(o => o.status === 'open').map(toRow)
+  // Abgeschlossen heißt erledigt ODER „nicht erbracht" (Check-out schließt
+  // offene Anfragen). Beide gehören in dieselbe Liste — sonst verschwände
+  // eine Anfrage, über die der Gast womöglich noch spricht, spurlos.
   const done = all
-    .filter(o => o.status === 'done')
+    .filter(o => o.status === 'done' || o.status === 'cancelled')
     .sort((a, b) => (b.done_at ?? '').localeCompare(a.done_at ?? ''))
     .slice(0, 20)
     .map(toRow)

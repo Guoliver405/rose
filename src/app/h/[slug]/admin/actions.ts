@@ -190,8 +190,23 @@ export async function setExpectedCheckoutAction(
   return {}
 }
 
-/** Check-out per Klick: beendet den Stay (PIN + Gast-Cookie sofort tot). */
-export async function checkOutAction(slug: string, roomId: string): Promise<{ error?: string }> {
+/**
+ * Check-out per Klick: beendet den Stay (PIN + Gast-Cookie sofort tot) und
+ * schließt offene Service-Anfragen dieses Aufenthalts als „nicht erbracht".
+ *
+ * Das Schließen ist kein Beiwerk: Eine Anfrage gehört zum Aufenthalt, nicht
+ * zum Zimmer. Bliebe sie offen, läge sie morgen auf dem Board eines längst
+ * leeren Zimmers, und niemand könnte sie noch klären. Was tatsächlich erbracht
+ * wurde, hakt die Rezeption vor dem Check-out ab — der Dialog weist mit Betrag
+ * darauf hin, bevor der Klick fällt.
+ *
+ * Gibt die `stayId` zurück, damit der Dialog danach auf die Aufstellung
+ * verlinken kann: Das Zimmer ist dann frei und kennt den Aufenthalt nicht mehr.
+ */
+export async function checkOutAction(
+  slug: string,
+  roomId: string,
+): Promise<{ error?: string; stayId?: string }> {
   const ctx = await getManagementContext(slug)
   if (!ctx) return { error: 'Nicht angemeldet.' }
   const admin = createAdminClient()
@@ -212,13 +227,22 @@ export async function checkOutAction(slug: string, roomId: string): Promise<{ er
     .eq('id', stay.id)
   if (updErr) return { error: `Check-out fehlgeschlagen: ${updErr.message}` }
 
-  await admin.from('room_states')
-    .update({ checkout_pending: true, guest_signal: 'none', ...auditFields(ctx.userId) })
-    .eq('room_id', roomId)
-    .eq('hotel_id', ctx.hotelId)
+  await Promise.all([
+    admin.from('room_states')
+      .update({ checkout_pending: true, guest_signal: 'none', ...auditFields(ctx.userId) })
+      .eq('room_id', roomId)
+      .eq('hotel_id', ctx.hotelId),
+    // `done_at`/`done_by` tragen auch hier Zeitpunkt und Person — welcher
+    // Endzustand es war, sagt `status`.
+    admin.from('service_orders')
+      .update({ status: 'cancelled', done_at: new Date().toISOString(), done_by: ctx.userId })
+      .eq('hotel_id', ctx.hotelId)
+      .eq('stay_id', stay.id)
+      .eq('status', 'open'),
+  ])
 
   revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
-  return {}
+  return { stayId: stay.id }
 }
 
 /** Priorisierte Reinigung an/aus — manueller Rezeptions-Eingriff. */

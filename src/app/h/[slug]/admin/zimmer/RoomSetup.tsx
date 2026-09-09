@@ -786,7 +786,7 @@ function ImpactList({ impact }: { impact: DeletionImpact }) {
   }
   if (impact.ordersDone > 0) {
     lost.push(
-      plural(impact.ordersDone, 'erledigte Service-Anfrage', 'erledigte Service-Anfragen') +
+      plural(impact.ordersDone, 'abgeschlossene Service-Anfrage', 'abgeschlossene Service-Anfragen') +
         (impact.ordersDoneCents > 0 ? ` (${formatCents(impact.ordersDoneCents)})` : ''),
     )
   }

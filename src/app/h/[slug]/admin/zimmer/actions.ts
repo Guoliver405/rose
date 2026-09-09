@@ -400,14 +400,17 @@ async function countByRoom(
 async function countOrders(
   admin: SupabaseClient,
   roomIds: string[],
-  status: 'open' | 'done',
+  // 'cancelled' (nicht erbracht) gehört zu den abgeschlossenen: Ein Bereich,
+  // dessen Anfragen alle beim Check-out geschlossen wurden, sähe sonst
+  // historienfrei aus und ließe sich ohne Abtipp-Riegel löschen.
+  statuses: ('open' | 'done' | 'cancelled')[],
 ): Promise<number> {
   if (roomIds.length === 0) return 0
   const { count } = await admin
     .from('service_orders')
     .select('*', { count: 'exact', head: true })
     .in('room_id', roomIds)
-    .eq('status', status)
+    .in('status', statuses)
   return count ?? 0
 }
 
@@ -440,8 +443,8 @@ async function buildImpact(
     await Promise.all([
       occupiedIds(admin, ids),
       countByRoom(admin, 'stays', ids),
-      countOrders(admin, ids, 'open'),
-      countOrders(admin, ids, 'done'),
+      countOrders(admin, ids, ['open']),
+      countOrders(admin, ids, ['done', 'cancelled']),
       doneOrderCents(admin, ids),
       countByRoom(admin, 'staff_log', ids),
       countByRoom(admin, 'room_state_transitions', ids),

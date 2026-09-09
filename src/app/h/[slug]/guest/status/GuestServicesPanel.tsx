@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Check, CheckCircle2, ChevronDown, Clock } from 'lucide-react'
+import { Check, CheckCircle2, ChevronDown, Clock, XCircle } from 'lucide-react'
 import { formatCents } from '@/lib/money'
 import { placeOrderAction } from '@/app/guest/actions'
 
@@ -16,7 +16,7 @@ export type GuestOrder = {
   id: string
   serviceName: string
   itemLabels: string[]
-  status: 'open' | 'done'
+  status: 'open' | 'done' | 'cancelled'
   createdAt: string
 }
 
@@ -60,7 +60,9 @@ export default function GuestServicesPanel({
               >
                 {o.status === 'done'
                   ? <CheckCircle2 className="h-5 w-5 shrink-0 text-positive-strong" />
-                  : <Clock className="h-5 w-5 shrink-0 text-attention-strong" />}
+                  : o.status === 'cancelled'
+                    ? <XCircle className="h-5 w-5 shrink-0 text-ink-muted" />
+                    : <Clock className="h-5 w-5 shrink-0 text-attention-strong" />}
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-bold text-ink">
                     {o.serviceName}
@@ -71,7 +73,9 @@ export default function GuestServicesPanel({
                   <span className="block text-xs text-ink-muted">
                     {new Date(o.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
                     {' · '}
-                    {o.status === 'done' ? 'erledigt' : 'in Bearbeitung'}
+                    {o.status === 'done'
+                      ? 'erledigt'
+                      : o.status === 'cancelled' ? 'nicht erbracht' : 'in Bearbeitung'}
                   </span>
                 </span>
               </li>

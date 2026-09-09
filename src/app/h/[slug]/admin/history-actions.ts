@@ -26,6 +26,12 @@ export type RoomHistoryEvent = {
   /** „Gast", Klarname der Kraft, „Rezeption", … — nie eine Gast-Identität. */
   actor: string
   tone: EventTone
+  /**
+   * Nur am Check-out gesetzt: Die Aufstellung der Zusatzleistungen hängt am
+   * Aufenthalt. Nach dem Check-out ist das Zimmer frei und kennt ihn nicht
+   * mehr — der Verlauf ist der einzige Weg zurück zu einem älteren Blatt.
+   */
+  stayId?: string
 }
 
 export type RoomHistoryResult = { events?: RoomHistoryEvent[]; error?: string }
@@ -88,14 +94,14 @@ export async function getRoomHistoryAction(slug: string, roomId: string): Promis
         .limit(MAX_EVENTS),
       admin
         .from('stays')
-        .select('checked_in_at, checked_out_at, created_by, checked_out_by')
+        .select('id, checked_in_at, checked_out_at, created_by, checked_out_by')
         .eq('room_id', roomId)
         .gte('checked_in_at', since)
         .order('checked_in_at', { ascending: false })
         .limit(30),
       admin
         .from('service_orders')
-        .select('created_at, done_at, done_by, service_definitions(name)')
+        .select('created_at, done_at, done_by, status, service_name, service_definitions(name)')
         .eq('room_id', roomId)
         .gte('created_at', since)
         .order('created_at', { ascending: false })
@@ -172,6 +178,7 @@ export async function getRoomHistoryAction(slug: string, roomId: string): Promis
         label: 'Check-out',
         actor: (s.checked_out_by ? nameById.get(s.checked_out_by) : null) ?? 'Rezeption',
         tone: 'desk',
+        stayId: s.id,
       })
     }
   }
@@ -179,12 +186,16 @@ export async function getRoomHistoryAction(slug: string, roomId: string): Promis
   for (const o of orders ?? []) {
     // FK-Join kommt je nach Supabase-Version als Objekt oder Array zurück.
     const def = Array.isArray(o.service_definitions) ? o.service_definitions[0] : o.service_definitions
-    const name = def?.name ?? 'Service'
+    // Servicename bevorzugt aus dem Snapshot der Bestellung — eine spätere
+    // Umbenennung im Baukasten soll den Verlauf nicht umschreiben.
+    const name = o.service_name ?? def?.name ?? 'Service'
     events.push({ at: o.created_at, label: `Service angefragt: ${name}`, actor: 'Gast', tone: 'service' })
     if (o.done_at) {
+      // `done_at` trägt beide Endzustände; welcher es war, sagt `status`.
+      const abgebrochen = o.status === 'cancelled'
       events.push({
         at: o.done_at,
-        label: `Service erledigt: ${name}`,
+        label: abgebrochen ? `Service nicht erbracht: ${name}` : `Service erledigt: ${name}`,
         actor: (o.done_by ? nameById.get(o.done_by) : null) ?? 'Rezeption',
         tone: 'service',
       })

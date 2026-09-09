@@ -3,13 +3,17 @@
 import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import {
-  AlertTriangle, Ban, BedDouble, Clock, ConciergeBell, DoorOpen, Flag, History, Loader2, Luggage,
-  PowerOff, Printer, RefreshCw, Sparkles, Users, X,
+  AlertTriangle, Ban, BedDouble, Check, Clock, ConciergeBell, DoorOpen, Flag, History, Loader2, Luggage,
+  PowerOff, Printer, ReceiptText, RefreshCw, Sparkles, Users, X,
 } from 'lucide-react'
 import { dateKeyAfterNights } from '@/lib/board'
+import { formatCents } from '@/lib/money'
+import type { StayBill } from '@/lib/stay-bill'
 import {
   checkInAction, checkOutAction, markCleanedAction, setExpectedCheckoutAction, setPriorityAction,
 } from './actions'
+import { getRoomBillAction } from './bill-actions'
+import { markOrderDoneAction } from './bestellungen/actions'
 import { getRoomHistoryAction, type RoomHistoryEvent } from './history-actions'
 
 export type RoomTileData = {
@@ -348,6 +352,25 @@ function RoomDialog({
     return () => { alive = false }
   }, [hotelSlug, room.id, pending])
 
+  // Aufstellung der Zusatzleistungen — gleiche Nachladen-Mechanik wie der
+  // Verlauf, aber nur für belegte Zimmer: Ohne Aufenthalt gibt es nichts zu
+  // kassieren.
+  const [bill, setBill] = useState<StayBill | null>(null)
+  const [stayId, setStayId] = useState<string | null>(null)
+  useEffect(() => {
+    let alive = true
+    if (pending || !room.occupied) return
+    getRoomBillAction(hotelSlug, room.id).then(res => {
+      if (!alive || res.error) return
+      setBill(res.bill ?? null)
+      setStayId(res.stayId ?? null)
+    })
+    return () => { alive = false }
+  }, [hotelSlug, room.id, room.occupied, pending])
+
+  /** Nach dem Check-out: Das Zimmer ist frei, der Betrag muss trotzdem stehen bleiben. */
+  const [checkedOut, setCheckedOut] = useState<{ stayId: string; bill: StayBill | null } | null>(null)
+
   const needsCleaning = room.checkoutPending || room.priority || room.guestSignal === 'please_clean' || room.stayoverDue
 
   function runCheckIn(force: boolean) {
@@ -369,7 +392,23 @@ function RoomDialog({
     startTransition(async () => {
       const res = await checkOutAction(hotelSlug, room.id)
       if (res.error) { setError(res.error); return }
-      onClose()
+      // Nicht schließen: Offene Anfragen sind eben als „nicht erbracht"
+      // geschlossen worden, und die Summe soll noch am Bildschirm stehen.
+      // Der Stand von vor dem Klick ist der richtige — die Aufstellung selbst
+      // liegt hinter dem Link.
+      if (res.stayId) setCheckedOut({ stayId: res.stayId, bill })
+      else onClose()
+    })
+  }
+
+  /** Offene Anfrage direkt aus dem Check-out heraus abhaken. */
+  function runOrderDone(orderId: string) {
+    setError(null)
+    startTransition(async () => {
+      const res = await markOrderDoneAction(hotelSlug, orderId)
+      if (res.error) { setError(res.error); return }
+      const fresh = await getRoomBillAction(hotelSlug, room.id)
+      if (!fresh.error) setBill(fresh.bill ?? null)
     })
   }
 
@@ -402,6 +441,65 @@ function RoomDialog({
         day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
       })
     : null
+
+  // ── Nach dem Check-out ───────────────────────────────────────────────────
+  // Eigener Bildschirm statt des üblichen Dialogs: Das Zimmer ist jetzt frei,
+  // der reguläre Inhalt böte „Check-in" an — während am Tresen noch der Betrag
+  // gebraucht wird.
+  if (checkedOut) {
+    const done = checkedOut.bill
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
+        <div
+          className="w-full max-w-md rounded-2xl border border-edge bg-surface-elevated p-5 shadow-xl"
+          onClick={e => e.stopPropagation()}
+        >
+          <h3 className="text-xl font-black text-ink">Check-out — Zimmer {room.number}</h3>
+          <p className="mt-1 text-sm text-ink-muted">Der Gast-Zugang ist beendet.</p>
+
+          {done && done.totalCents > 0 ? (
+            <div className="mt-4 rounded-xl border-2 border-attention bg-attention-tint p-4 text-center">
+              <p className="text-xs font-black uppercase tracking-wider text-attention-deepest">
+                Zu kassieren
+              </p>
+              <p className="mt-1 text-4xl font-black text-attention-deepest">
+                {formatCents(done.totalCents)}
+              </p>
+            </div>
+          ) : (
+            <p className="mt-4 rounded-xl border border-edge bg-surface-sunken px-4 py-3 text-sm font-semibold text-ink-soft">
+              Keine kostenpflichtigen Zusatzleistungen — es ist nichts zu kassieren.
+            </p>
+          )}
+
+          {done && done.openCount > 0 && (
+            <p className="mt-3 rounded-lg border border-edge bg-surface-sunken px-3 py-2 text-xs text-ink-soft">
+              {done.openCount === 1 ? 'Eine offene Anfrage wurde' : `${done.openCount} offene Anfragen wurden`}
+              {' '}als „nicht erbracht“ geschlossen und {done.openCount === 1 ? 'ist' : 'sind'} nicht berechnet.
+            </p>
+          )}
+
+          <div className="mt-4 flex flex-col gap-2">
+            {done?.hasPositions && (
+              <Link
+                href={`/h/${hotelSlug}/admin/aufstellung/${checkedOut.stayId}`}
+                className="flex items-center justify-center gap-2 rounded-xl bg-action px-4 py-3 font-bold text-action-foreground hover:bg-action-strong"
+              >
+                <ReceiptText className="h-4 w-4" /> Details — Aufstellung drucken
+              </Link>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-edge px-4 py-3 font-semibold text-ink-soft hover:bg-surface-muted"
+            >
+              Schließen
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
@@ -567,6 +665,68 @@ function RoomDialog({
             </div>
           )}
 
+          {/* Zusatzleistungen — steht VOR dem Check-out-Knopf und ist deutlich
+              hervorgehoben: Nach dem Klick ist der Gast weg, und die Frage
+              „muss noch kassiert werden?" beantwortet sich nicht mehr von
+              selbst. Wartung und alles ohne Preis stehen hier bewusst nicht —
+              es gäbe nichts zu prüfen. */}
+          {room.occupied && bill?.hasPositions && (
+            <div className="rounded-xl border-2 border-attention bg-attention-tint p-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-attention-deepest">
+                  <ReceiptText className="h-3.5 w-3.5" /> Zu kassieren
+                </p>
+                <p className="text-2xl font-black tabular-nums text-attention-deepest">
+                  {formatCents(bill.totalCents)}
+                </p>
+              </div>
+
+              {bill.openCount > 0 && (
+                <div className="mt-2 border-t border-attention-tint-edge pt-2">
+                  <p className="text-xs font-semibold text-attention-deepest">
+                    Noch offen und deshalb nicht in der Summe. Bereits erbracht?
+                    Dann jetzt abhaken — der Check-out schließt offene Anfragen
+                    als „nicht erbracht“.
+                  </p>
+                  <ul className="mt-1.5 flex flex-col gap-1">
+                    {bill.positions.filter(p => p.status === 'open').map(p => (
+                      <li key={p.id} className="flex items-center gap-2">
+                        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-attention-deepest">
+                          {p.serviceName}
+                        </span>
+                        <span className="text-sm font-bold tabular-nums text-attention-deepest">
+                          {formatCents(p.totalCents)}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => runOrderDone(p.id)}
+                          className="flex items-center gap-1 rounded-lg bg-attention px-2 py-1 text-xs font-bold text-attention-foreground disabled:opacity-50"
+                        >
+                          <Check className="h-3 w-3" /> erbracht
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {stayId && (
+                <Link
+                  href={`/h/${hotelSlug}/admin/aufstellung/${stayId}`}
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-attention-tint-edge px-3 py-1.5 text-sm font-bold text-attention-deepest hover:bg-surface"
+                >
+                  <Printer className="h-4 w-4" /> Details
+                </Link>
+              )}
+            </div>
+          )}
+          {room.occupied && bill && !bill.hasPositions && (
+            <p className="rounded-xl border border-edge bg-surface-sunken px-3 py-2 text-xs text-ink-soft">
+              Keine kostenpflichtigen Zusatzleistungen — beim Check-out ist nichts zu kassieren.
+            </p>
+          )}
+
           {room.occupied && !confirmCheckout && (
             <button
               type="button"
@@ -582,6 +742,18 @@ function RoomDialog({
               <p className="text-sm font-semibold text-ink">
                 Check-out bestätigen? Der Gast-Zugang wird sofort beendet.
               </p>
+              {bill?.hasPositions && bill.totalCents > 0 && (
+                <p className="mt-2 text-sm font-bold text-attention-strong">
+                  Zu kassieren: {formatCents(bill.totalCents)}
+                </p>
+              )}
+              {bill && bill.openCount > 0 && (
+                <p className="mt-1 text-xs font-semibold text-ink-soft">
+                  {bill.openCount === 1 ? 'Eine offene Anfrage' : `${bill.openCount} offene Anfragen`}
+                  {' '}({formatCents(bill.openCents)}) {bill.openCount === 1 ? 'wird' : 'werden'} als
+                  {' '}„nicht erbracht“ geschlossen.
+                </p>
+              )}
               <div className="mt-2 flex gap-2">
                 <button
                   type="button"
@@ -655,6 +827,17 @@ function RoomDialog({
                     <span className="block text-sm font-semibold text-ink">{e.label}</span>
                     <span className="block text-xs text-ink-muted">
                       {historyTime(e.at)} · {e.actor}
+                      {e.stayId && (
+                        <>
+                          {' · '}
+                          <Link
+                            href={`/h/${hotelSlug}/admin/aufstellung/${e.stayId}`}
+                            className="font-semibold text-action underline hover:text-action-strong"
+                          >
+                            Aufstellung
+                          </Link>
+                        </>
+                      )}
                     </span>
                   </span>
                 </li>
