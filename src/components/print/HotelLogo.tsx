@@ -10,6 +10,13 @@
  *   nicht über den Kopf hinauslaufen, ein quadratisches Wappen den Kopf nicht
  *   in die Höhe treiben.
  *
+ * **Zwei Maßangaben, nicht eine:** In mm angegebene Grenzen rechnet der
+ * Browser mit 96 dpi um (1 mm ≈ 3,78 px) — die Vorschau ist aber breiter
+ * skaliert als das Blatt im Druck (756 px Inhalt ↔ 186 mm, also 1 mm ≈
+ * 4,07 px). Nur mm hieße: Auf dem Bildschirm sieht das Logo kleiner aus, als
+ * es gedruckt wird. Deshalb Bildschirm-Pixel für die Vorschau und `print:`-mm
+ * fürs Papier, beide auf dasselbe Verhältnis gerechnet.
+ *
  * `next/image` lohnt hier nicht: die Datei liegt im öffentlichen
  * Storage-Bucket, wird gedruckt (keine Größenvarianten nötig) und müsste sonst
  * als Remote-Pattern konfiguriert werden.
@@ -38,8 +45,8 @@ export default function HotelLogo({
       alt={hotelName}
       className={
         variant === 'a4'
-          ? 'max-h-[16mm] max-w-[55mm] object-contain object-left'
-          : 'max-h-[10mm] max-w-[34mm] object-contain object-left'
+          ? 'max-h-[65px] max-w-[224px] object-contain object-left print:max-h-[16mm] print:max-w-[55mm]'
+          : 'max-h-[35px] max-w-[117px] object-contain object-left print:max-h-[10mm] print:max-w-[34mm]'
       }
     />
   )

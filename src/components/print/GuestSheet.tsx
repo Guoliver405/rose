@@ -104,11 +104,11 @@ export function GuestSheetA4(p: GuestSheetProps) {
         <div className="shrink-0">
           <QrImage
             value={p.qrUrl}
-            size={208}
+            size={224}
             renderPx={700}
             quietModules={4}
             alt="QR-Code zum Gäste-Portal"
-            className="h-[208px] w-[208px] rounded-lg border-2 border-edge print:h-[55mm] print:w-[55mm]"
+            className="h-[224px] w-[224px] rounded-lg border-2 border-edge print:h-[55mm] print:w-[55mm]"
           />
           <p className="mt-2 flex items-start gap-1.5 text-[12px] font-bold leading-tight text-ink">
             <QrCode className="mt-px h-3.5 w-3.5 shrink-0" strokeWidth={2.5} />
@@ -238,7 +238,7 @@ export function GuestSheetCompact(p: GuestSheetProps) {
           renderPx={600}
           quietModules={4}
           alt="QR-Code zum Gäste-Portal"
-          className="h-[118px] w-[118px] shrink-0 rounded border border-edge print:h-[42mm] print:w-[42mm]"
+          className="h-[145px] w-[145px] shrink-0 rounded border border-edge print:h-[42mm] print:w-[42mm]"
         />
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
           {p.pin ? (
