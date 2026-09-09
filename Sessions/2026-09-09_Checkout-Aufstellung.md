@@ -202,6 +202,20 @@ Der Bestand wird eng begrenzt nachgezogen: `name = 'Technischer Dienst'` stammt
 ausnahmslos aus der Seed-Vorlage und ist genau dieser Fall. Alles andere wäre
 geraten.
 
+### Durchlauf der Instandhaltung (09.09., Zimmer 103)
+
+Baukasten: Beide Haken stehen im Anlege-Formular, „Technischer Dienst" trug nach
+der Migration sofort das Abzeichen „Meldung ans Haus" (Backfill), der Schalter
+„Keine Meldung" / „Als Meldung" wechselt es je Service.
+
+Zimmer 103 mit zwei offenen Anfragen ausgecheckt — einer bepreisten (20,00 €)
+und einer Meldung. Der Kasten zeigte nur die bepreiste; die Bestätigung sagte
+beides an („wird als nicht erbracht geschlossen" gegen „bleibt offen — gehört
+zum Zimmer"). Danach in der Datenbank: Meldung `open`, Rest `cancelled`. Der
+nächste Check-in auf 103 warnte mit **„Offene Meldung ans Haus: Technischer
+Dienst."** neben „noch nicht gereinigt", mit Override. Abgehakt wird die Meldung
+ganz normal auf dem Services-Board.
+
 ## Reihenfolge beim Einspielen
 
 Beide Migrationen sind **additiv** (Alt-Code schreibt nie `'cancelled'` und
