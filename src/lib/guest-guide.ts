@@ -17,6 +17,32 @@
  * Test auf. Die Mail bleibt vorerst deutsch (Standardsprache), weil sie sonst
  * viermal so lang würde.
  *
+ * **Kehrtwende 09.09.2026 — Piktogramme statt Sprachliste** (`GuestSheetText`,
+ * Bauplan `Sessions/Druckblaetter-Plan-2026-09-09.md`): Vier Sprachen auf einem
+ * Blatt sind willkürlich — ein italienischer, polnischer oder chinesischer Gast
+ * bekommt vier Blöcke, von denen ihm keiner hilft, und sie sind der Grund,
+ * warum das Blatt ein dichtes Formular bei 10 px ist. Das gedruckte Blatt trägt
+ * deshalb **Piktogramme der Portal-Knöpfe** und Text in **einer bis zwei**
+ * Sprachen (`policies.sheetLanguage` / `sheetLanguage2`, Vorgabe de + en). Die
+ * Details liefert das Portal, das der Gast ohnehin gerade öffnet — Papier ist
+ * die Einladung, der Bildschirm die Anleitung.
+ *
+ * Zwei Feinheiten, die dabei zählen:
+ *
+ * - **Der permanente Zimmer-Aushang darf keine Regel drucken.** Sie hängt an
+ *   den Policies, und ein gedruckter Satz veraltet stillschweigend, wenn das
+ *   Haus die Routine umstellt. Dafür ist `sustainabilityNeutral` da: in beiden
+ *   Welten wahr. Der verzweigte `cleaningRule` gehört nur aufs Handout, das je
+ *   Aufenthalt frisch entsteht.
+ * - **Die Knopf-Beschriftung folgt der Sprache des PORTALS, nicht der des
+ *   Blattes** (`portalLang`). Eine Legende, die „Clean my room" nennt, während
+ *   auf dem Bildschirm „Zimmer reinigen" steht, ist keine Legende. Der Hinweis
+ *   daneben steht dagegen in der Blatt-Sprache. Sobald das Portal übersetzt
+ *   ist, wandert `portalLang` mit.
+ *
+ * Die vier Sprachen bleiben trotzdem vollständig: sie tragen die Mail und sind
+ * die Saat für die Portal-Übersetzung.
+ *
  * **Nachhaltigkeit** ist ein eigener Punkt, und er ist ehrlich verzweigt:
  * Reinigt das Haus nur auf Wunsch, ist der Verzicht der Normalfall und wird
  * begründet. Läuft die Routine, ist „Bitte nicht stören" der Hebel, den der
@@ -76,9 +102,49 @@ export type SheetLabels = {
   room: string
   scan: string
   pin: string
+  /** Aushang: Die PIN steht nicht auf dem Aushang, sondern kommt vom Check-in. */
+  pinFromReception: string
   withoutQr: string
   /** Nur im Verfahren `link`: Der Zettel IST der Zugang. */
   keep: string
+}
+
+/** Ein Knopf des Portals, wie ihn das Blatt als Legende zeigt. */
+export type SheetButton = {
+  /** Wortgleich mit dem Portal — Sprache des Portals, nicht des Blattes. */
+  label: string
+  /** Was der Knopf bewirkt, in der Sprache des Blattes. */
+  hint: string
+}
+
+/**
+ * Ein Textblock des gedruckten Blattes. Kurz gehalten: was hier steht, muss
+ * neben Piktogrammen und einem 50-mm-QR auf DIN A4 Platz haben.
+ */
+export type GuestSheetText = {
+  lang: GuideLang
+  langLabel: string
+  welcome: string
+  room: string
+  scan: string
+  pinLabel: string
+  pinFromReception: string
+  withoutQr: string
+  keep: string
+  /** Legende der drei Portal-Knöpfe. */
+  buttons: {
+    clean: SheetButton
+    dnd: SheetButton
+    services: SheetButton
+  }
+  /** Policy-NEUTRAL, für den permanenten Aushang — in beiden Welten wahr. */
+  sustainabilityNeutral: string
+  /** Verzweigt und mit Uhrzeiten — nur fürs Handout je Aufenthalt. */
+  cleaningRule: string
+  /** Verzweigt — nur fürs Handout. */
+  sustainability: string
+  access: string
+  footer: string
 }
 
 type Vorlage = {
@@ -86,6 +152,10 @@ type Vorlage = {
   heading: string
   sheet: SheetLabels
   labels: GuestGuide['labels']
+  buttons: GuestSheetText['buttons']
+  /** Ohne Uhrzeit und ohne Policy-Verzweigung — siehe Kopfkommentar. */
+  sustainabilityNeutral: string
+  footer: string
   purpose: string
   dnd: string
   services: string
@@ -113,9 +183,23 @@ const VORLAGEN: Record<GuideLang, Vorlage> = {
       room: 'Zimmer',
       scan: 'QR-Code scannen',
       pin: 'Ihre PIN',
+      pinFromReception: 'PIN erhalten Sie beim Check-in.',
       withoutQr: 'Ohne QR-Code',
       keep: 'Bitte aufbewahren — dieser Zettel ist Ihr Zugang.',
     },
+    // Beschriftungen wortgleich mit dem Gastportal (GuestSignalPanel,
+    // GuestServicesPanel) — das Blatt ist die Legende zum Bildschirm.
+    buttons: {
+      clean: { label: 'Zimmer reinigen', hint: 'Tippen, wenn Ihr Zimmer gereinigt werden soll.' },
+      dnd: { label: 'Bitte nicht stören', hint: 'Niemand klopft, keine Reinigung.' },
+      services: {
+        label: 'Service bestellen',
+        hint: 'Handtücher, Reparaturen und mehr — die Rezeption sieht es sofort.',
+      },
+    },
+    sustainabilityNeutral:
+      'Jede Reinigung, die nicht nötig ist, spart Wasser, Waschmittel und Energie — Sie entscheiden im Portal.',
+    footer: 'Alle Angaben und die aktuellen Zeiten stehen im Portal.',
     labels: {
       cleaning: 'Reinigung',
       sustainability: 'Nachhaltigkeit',
@@ -154,9 +238,21 @@ const VORLAGEN: Record<GuideLang, Vorlage> = {
       room: 'Room',
       scan: 'Scan the QR code',
       pin: 'Your PIN',
+      pinFromReception: 'You receive your PIN at check-in.',
       withoutQr: 'Without a QR code',
       keep: 'Please keep this slip — it is your access.',
     },
+    buttons: {
+      clean: { label: 'Clean my room', hint: 'Tap whenever you would like your room cleaned.' },
+      dnd: { label: 'Do not disturb', hint: 'Nobody knocks, no cleaning.' },
+      services: {
+        label: 'Order a service',
+        hint: 'Towels, repairs and more — reception sees it right away.',
+      },
+    },
+    sustainabilityNeutral:
+      'Every cleaning that isn’t needed saves water, detergent and energy — it is your choice in the portal.',
+    footer: 'All details and current times are in the portal.',
     labels: {
       cleaning: 'Cleaning',
       sustainability: 'Sustainability',
@@ -195,9 +291,21 @@ const VORLAGEN: Record<GuideLang, Vorlage> = {
       room: 'Habitación',
       scan: 'Escanee el código QR',
       pin: 'Su PIN',
+      pinFromReception: 'Recibirá su PIN al hacer el check-in.',
       withoutQr: 'Sin código QR',
       keep: 'Conserve este papel: es su acceso.',
     },
+    buttons: {
+      clean: { label: 'Limpiar la habitación', hint: 'Pulse cuando desee que limpiemos su habitación.' },
+      dnd: { label: 'No molestar', hint: 'Nadie llama a la puerta, no hay limpieza.' },
+      services: {
+        label: 'Pedir un servicio',
+        hint: 'Toallas, reparaciones y más: recepción lo ve al instante.',
+      },
+    },
+    sustainabilityNeutral:
+      'Cada limpieza que no hace falta ahorra agua, detergente y energía: usted decide en el portal.',
+    footer: 'Todos los datos y los horarios actuales están en el portal.',
     labels: {
       cleaning: 'Limpieza',
       sustainability: 'Sostenibilidad',
@@ -236,9 +344,21 @@ const VORLAGEN: Record<GuideLang, Vorlage> = {
       room: 'Chambre',
       scan: 'Scannez le QR code',
       pin: 'Votre code PIN',
+      pinFromReception: 'Vous recevez votre code PIN à l’arrivée.',
       withoutQr: 'Sans QR code',
       keep: 'Conservez ce papier : c’est votre accès.',
     },
+    buttons: {
+      clean: { label: 'Nettoyer la chambre', hint: 'Appuyez quand vous souhaitez le ménage.' },
+      dnd: { label: 'Ne pas déranger', hint: 'Personne ne frappe, pas de ménage.' },
+      services: {
+        label: 'Commander un service',
+        hint: 'Serviettes, réparations et plus : la réception le voit aussitôt.',
+      },
+    },
+    sustainabilityNeutral:
+      'Chaque ménage inutile économise eau, lessive et énergie — c’est vous qui décidez sur le portail.',
+    footer: 'Toutes les informations et les horaires actuels sont sur le portail.',
     labels: {
       cleaning: 'Ménage',
       sustainability: 'Durabilité',
@@ -329,7 +449,102 @@ export function sheetLabels(lang: GuideLang): SheetLabels {
   return VORLAGEN[lang].sheet
 }
 
+/**
+ * Name der Sprache in ihrer eigenen Sprache — für die Auswahl im Haus.
+ * Absichtlich nicht übersetzt: „Français" findet auch, wer kein Deutsch kann.
+ */
+export function sheetLanguageLabel(lang: GuideLang): string {
+  return VORLAGEN[lang].langLabel
+}
+
 /** Die Punkte in Lesereihenfolge — für Reintext und Aufzählungen. */
 export function guideLines(g: GuestGuide): string[] {
   return [g.purpose, g.cleaning, g.sustainability, g.dnd, g.services, g.access]
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Das gedruckte Blatt (ab 09.09.2026) — ein bis zwei Sprachen, siehe Kopf.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/** Erste Sprache des Blattes, wenn das Haus nichts gewählt hat. */
+export const SHEET_LANG_DEFAULT: GuideLang = 'de'
+/** Zweite Sprache, wenn das Haus nichts gewählt hat. */
+export const SHEET_LANG2_DEFAULT: GuideLang = 'en'
+
+function alsSprache(wert: unknown): GuideLang | null {
+  return typeof wert === 'string' && (GUIDE_LANGS as readonly string[]).includes(wert)
+    ? (wert as GuideLang)
+    : null
+}
+
+/**
+ * Die Sprachen des gedruckten Blattes, in Druckreihenfolge — eine oder zwei.
+ *
+ * Drei Fälle, die auseinandergehalten werden müssen: Ein **fehlender**
+ * Schlüssel ist Altbestand und bekommt die Vorgabe (de + en). Eine
+ * **ausdrücklich leere** zweite Sprache heißt „nur eine Sprache" — ohne diese
+ * Unterscheidung könnte ein Haus die zweite nie abwählen. Ein **unbekannter**
+ * Wert in der zweiten Position ist kein Auftrag, Englisch zu drucken: er fällt
+ * ersatzlos weg. Die erste Sprache muss es dagegen immer geben.
+ */
+export function parseSheetLanguages(policies: Record<string, unknown>): GuideLang[] {
+  const erste = alsSprache(policies.sheetLanguage) ?? SHEET_LANG_DEFAULT
+  const roh = policies.sheetLanguage2
+  const zweite =
+    roh === undefined || roh === null ? SHEET_LANG2_DEFAULT : alsSprache(roh)
+
+  return zweite && zweite !== erste ? [erste, zweite] : [erste]
+}
+
+export type GuestSheetOptions = GuestGuideOptions & {
+  /**
+   * Sprache, in der das PORTAL seine Knöpfe zeigt — heute immer die
+   * Standardsprache, weil das Gastportal noch nicht übersetzt ist. Die
+   * Beschriftungen der Legende folgen ihr, damit auf Papier dasselbe Wort
+   * steht wie auf dem Bildschirm.
+   */
+  portalLang?: GuideLang
+}
+
+/** Ein Sprachblock des gedruckten Blattes. */
+export function buildGuestSheet(
+  policies: Record<string, unknown>,
+  opts: GuestSheetOptions,
+  lang: GuideLang = DEFAULT_GUIDE_LANG,
+): GuestSheetText {
+  const v = VORLAGEN[lang]
+  const portal = VORLAGEN[opts.portalLang ?? DEFAULT_GUIDE_LANG]
+  // Reinigung, Nachhaltigkeit und Zugang verzweigen an den Policies — die
+  // Verzweigung steht genau einmal, in `buildGuestGuide`.
+  const g = buildGuestGuide(policies, opts, lang)
+
+  return {
+    lang,
+    langLabel: v.langLabel,
+    welcome: v.sheet.welcome,
+    room: v.sheet.room,
+    scan: v.sheet.scan,
+    pinLabel: v.sheet.pin,
+    pinFromReception: v.sheet.pinFromReception,
+    withoutQr: v.sheet.withoutQr,
+    keep: v.sheet.keep,
+    buttons: {
+      clean: { label: portal.buttons.clean.label, hint: v.buttons.clean.hint },
+      dnd: { label: portal.buttons.dnd.label, hint: v.buttons.dnd.hint },
+      services: { label: portal.buttons.services.label, hint: v.buttons.services.hint },
+    },
+    sustainabilityNeutral: v.sustainabilityNeutral,
+    cleaningRule: g.cleaning,
+    sustainability: g.sustainability,
+    access: g.access,
+    footer: v.footer,
+  }
+}
+
+/** Die Blöcke des Blattes in Druckreihenfolge, nach der Wahl des Hauses. */
+export function buildGuestSheets(
+  policies: Record<string, unknown>,
+  opts: GuestSheetOptions,
+): GuestSheetText[] {
+  return parseSheetLanguages(policies).map(lang => buildGuestSheet(policies, opts, lang))
 }

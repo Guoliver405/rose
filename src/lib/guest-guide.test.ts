@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  GUIDE_LANGS, buildGuestGuide, buildGuestGuides, guideLines, sheetLabels,
+  GUIDE_LANGS, buildGuestGuide, buildGuestGuides, buildGuestSheet, buildGuestSheets,
+  guideLines, parseSheetLanguages, sheetLabels,
   type GuideLang,
 } from './guest-guide'
 
@@ -149,5 +150,131 @@ describe('guideLines', () => {
     expect(guideLines(g)).toEqual([
       g.purpose, g.cleaning, g.sustainability, g.dnd, g.services, g.access,
     ])
+  })
+})
+
+describe('parseSheetLanguages', () => {
+  it('ohne Angabe: Deutsch, dann Englisch', () => {
+    expect(parseSheetLanguages({})).toEqual(['de', 'en'])
+  })
+
+  it('folgt der Wahl des Hauses, in dieser Reihenfolge', () => {
+    expect(parseSheetLanguages({ sheetLanguage: 'es', sheetLanguage2: 'fr' })).toEqual(['es', 'fr'])
+  })
+
+  it('ausdrücklich leere Zweitsprache heißt: nur eine', () => {
+    // Ohne diesen Fall könnte ein Haus die zweite Sprache nie abwählen.
+    expect(parseSheetLanguages({ sheetLanguage: 'en', sheetLanguage2: '' })).toEqual(['en'])
+  })
+
+  it('zweimal dieselbe Sprache ergibt einen Block', () => {
+    expect(parseSheetLanguages({ sheetLanguage: 'de', sheetLanguage2: 'de' })).toEqual(['de'])
+  })
+
+  it('unbekannte Werte: erste Sprache auf Vorgabe, zweite fällt weg', () => {
+    // Es muss immer eine erste Sprache geben; ein Wert, den wir nicht kennen,
+    // ist dagegen kein Auftrag, Englisch zu drucken.
+    expect(parseSheetLanguages({ sheetLanguage: 'xx' })).toEqual(['de', 'en'])
+    expect(parseSheetLanguages({ sheetLanguage: 'fr', sheetLanguage2: 'xx' })).toEqual(['fr'])
+    expect(parseSheetLanguages({ sheetLanguage: 42, sheetLanguage2: {} })).toEqual(['de'])
+  })
+})
+
+describe('buildGuestSheet — Legende', () => {
+  it('beschriftet die Knöpfe in der Sprache des PORTALS, den Hinweis in der des Blattes', () => {
+    // Eine Legende, die „Clean my room" nennt, während auf dem Bildschirm
+    // „Zimmer reinigen" steht, ist keine Legende.
+    const en = buildGuestSheet({}, pinDeep, 'en')
+    expect(en.buttons.clean.label).toBe('Zimmer reinigen')
+    expect(en.buttons.dnd.label).toBe('Bitte nicht stören')
+    expect(en.buttons.services.label).toBe('Service bestellen')
+    expect(en.buttons.clean.hint).toMatch(/cleaned/)
+  })
+
+  it('zieht mit, sobald das Portal übersetzt ist', () => {
+    const en = buildGuestSheet({}, { ...pinDeep, portalLang: 'en' }, 'en')
+    expect(en.buttons.clean.label).toBe('Clean my room')
+    expect(en.buttons.dnd.label).toBe('Do not disturb')
+  })
+
+  it('deutsche Beschriftungen sind wortgleich mit dem Gastportal', () => {
+    // Quelle: GuestSignalPanel.tsx („Zimmer reinigen", „Bitte nicht stören")
+    // und GuestServicesPanel.tsx („Service bestellen"). Wer dort umbenennt,
+    // muss hier nachziehen.
+    const de = buildGuestSheet({}, pinDeep)
+    expect([de.buttons.clean.label, de.buttons.dnd.label, de.buttons.services.label])
+      .toEqual(['Zimmer reinigen', 'Bitte nicht stören', 'Service bestellen'])
+  })
+})
+
+describe('buildGuestSheet — Aushang gegen Handout', () => {
+  it('der neutrale Nachhaltigkeits-Satz nennt keine Uhrzeit', () => {
+    // Er steht auf dem PERMANENTEN Aushang. Eine gedruckte Uhrzeit veraltet
+    // stillschweigend, sobald das Haus seine Zeiten ändert.
+    const policies = {
+      stayoverAutoClean: true, stayoverAutoCleanTime: '10:30',
+      cleaningWindowEnabled: true, cleaningWindowStart: '08:00', cleaningWindowEnd: '15:00',
+    }
+    for (const lang of GUIDE_LANGS) {
+      const s = buildGuestSheet(policies, pinDeep, lang)
+      expect(s.sustainabilityNeutral, lang).not.toMatch(/\d{1,2}:\d{2}/)
+    }
+  })
+
+  it('der neutrale Satz ist in beiden Policy-Welten derselbe', () => {
+    for (const lang of GUIDE_LANGS) {
+      const wunsch = buildGuestSheet({}, pinDeep, lang).sustainabilityNeutral
+      const routine = buildGuestSheet({ stayoverAutoClean: true }, pinDeep, lang).sustainabilityNeutral
+      expect(routine, lang).toBe(wunsch)
+    }
+  })
+
+  it('spricht auch neutral von Wasser und Energie', () => {
+    const begriffe: Record<GuideLang, RegExp> = {
+      de: /Wasser.+Energie/,
+      en: /water.+energy/,
+      es: /agua.+energía/,
+      fr: /eau.+énergie/,
+    }
+    for (const lang of GUIDE_LANGS) {
+      expect(buildGuestSheet({}, pinDeep, lang).sustainabilityNeutral).toMatch(begriffe[lang])
+    }
+  })
+
+  it('die Regel fürs Handout verzweigt und nennt die effektive Zeit', () => {
+    const s = buildGuestSheet({ stayoverAutoClean: true, stayoverAutoCleanTime: '9:30' }, pinDeep)
+    // Check-out-Frist (Default 11:00) ist die Untergrenze der Routine.
+    expect(s.cleaningRule).toMatch(/täglich ab 11:00 Uhr/)
+    expect(buildGuestSheet({}, pinDeep).cleaningRule).toMatch(/auf Wunsch/)
+    // Identisch mit der Langfassung — die Verzweigung steht nur an einer Stelle.
+    expect(s.cleaningRule).toBe(
+      buildGuestGuide({ stayoverAutoClean: true, stayoverAutoCleanTime: '9:30' }, pinDeep).cleaning,
+    )
+  })
+})
+
+describe('buildGuestSheets', () => {
+  it('liefert die Blöcke in der Reihenfolge des Hauses', () => {
+    const blocks = buildGuestSheets({ sheetLanguage: 'fr', sheetLanguage2: 'de' }, pinDeep)
+    expect(blocks.map(b => b.lang)).toEqual(['fr', 'de'])
+  })
+
+  it('lässt in keiner Sprache ein Feld leer', () => {
+    // Derselbe Wächter wie für die Langfassung: Ein neuer Punkt, der in einer
+    // Übersetzung vergessen wird, fehlt still auf dem gedruckten Blatt.
+    for (const lang of GUIDE_LANGS) {
+      const s = buildGuestSheet({}, pinDeep, lang)
+      for (const [feld, wert] of Object.entries(s)) {
+        if (feld === 'lang') continue // Sprachkürzel, kein Text
+        if (feld === 'buttons') {
+          for (const [knopf, b] of Object.entries(s.buttons)) {
+            expect(b.label.trim().length, `${lang}.${knopf}.label`).toBeGreaterThan(2)
+            expect(b.hint.trim().length, `${lang}.${knopf}.hint`).toBeGreaterThan(2)
+          }
+        } else {
+          expect(String(wert).trim().length, `${lang}.${feld}`).toBeGreaterThan(2)
+        }
+      }
+    }
   })
 })

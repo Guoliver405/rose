@@ -9,7 +9,7 @@ import {
   parseGuestAccessMode, roomAccessUrl, stayAccessUrl, type GuestAccessMode,
 } from '@/lib/guest-access'
 import { mailReady, sendGuestAccessMail } from '@/utils/mail'
-import { buildGuestGuide, type GuestGuide } from '@/lib/guest-guide'
+import { buildGuestGuide, parseSheetLanguages, type GuestGuide } from '@/lib/guest-guide'
 
 export type CheckInResult = {
   /** Nur beim Verfahren `pin`. */
@@ -387,6 +387,10 @@ export async function getGuestAccessAction(
 
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
   const mode = stay.access_mode === 'link' ? 'link' : 'pin'
+  // Die Mail folgt der ERSTEN Sprache des Hauses (Vorgabe Deutsch). Die zweite
+  // Sprache und die Piktogramme sind Sache des Ausdrucks — eine Mail in zwei
+  // Sprachen wäre doppelt so lang, ohne mehr zu sagen.
+  const [mailLang] = parseSheetLanguages(ctx.policies)
 
   if (mode === 'link') {
     if (!stay.guest_token) return { error: 'Diesem Aufenthalt fehlt der Zugang.' }
@@ -397,7 +401,7 @@ export async function getGuestAccessAction(
         hotelName: ctx.hotelName,
         url: stayAccessUrl(site, stay.guest_token),
         mailReady: mailReady(),
-        guide: buildGuestGuide(ctx.policies, { accessMode: 'link', deepLink: true }),
+        guide: buildGuestGuide(ctx.policies, { accessMode: 'link', deepLink: true }, mailLang),
       },
     }
   }
@@ -414,7 +418,7 @@ export async function getGuestAccessAction(
       url: token ? roomAccessUrl(site, token.token) : `${site}/h/${ctx.hotelSlug}/guest`,
       pin: stay.pin ?? undefined,
       mailReady: mailReady(),
-      guide: buildGuestGuide(ctx.policies, { accessMode: 'pin', deepLink: Boolean(token) }),
+      guide: buildGuestGuide(ctx.policies, { accessMode: 'pin', deepLink: Boolean(token) }, mailLang),
     },
   }
 }

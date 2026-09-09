@@ -4,7 +4,9 @@ import { ArrowLeft, ChevronRight, QrCode } from 'lucide-react'
 import { getAdminContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import { parseGuestAccessMode } from '@/lib/guest-access'
+import { parseSheetLanguages } from '@/lib/guest-guide'
 import GastzugangForm from '../GastzugangForm'
+import SprachenForm from '../SprachenForm'
 
 /**
  * Gäste-Zugang — welcher Weg führt ins Gäste-Portal?
@@ -31,7 +33,9 @@ export default async function GastzugangPage({
   const { data: hotel } = await supabase
     .from('hotels').select('policies').eq('id', ctx.hotelId).single()
 
-  const mode = parseGuestAccessMode((hotel?.policies ?? {}) as Record<string, unknown>)
+  const policies = (hotel?.policies ?? {}) as Record<string, unknown>
+  const mode = parseGuestAccessMode(policies)
+  const [erste, zweite] = parseSheetLanguages(policies)
 
   return (
     <div className="flex max-w-4xl flex-col gap-5">
@@ -46,6 +50,18 @@ export default async function GastzugangPage({
       </div>
 
       <GastzugangForm hotelSlug={ctx.hotelSlug} initial={mode} />
+
+      {/* Gilt für BEIDE Verfahren: Ein Handout entsteht so oder so, und die
+          Mail folgt derselben ersten Sprache. */}
+      <section data-lotse="gastzugang.sprachen" className="flex flex-col gap-3 border-t border-edge pt-5">
+        <h2 className="text-base font-black text-ink">Sprachen der Ausdrucke</h2>
+        <p className="text-sm text-ink-soft">
+          Die gedruckten Blätter erklären das Portal mit Piktogrammen seiner Knöpfe — dazu Text
+          in einer Hauptsprache und wahlweise einer zweiten. Die <strong>erste</strong> Sprache
+          ist zugleich die der Zugangs-Mail.
+        </p>
+        <SprachenForm hotelSlug={ctx.hotelSlug} erste={erste} zweite={zweite ?? null} />
+      </section>
 
       {mode === 'pin' ? (
         <section data-lotse="gastzugang.aushang" className="flex flex-col gap-3 border-t border-edge pt-5">
@@ -65,7 +81,8 @@ export default async function GastzugangPage({
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-bold text-ink">QR-Aushänge ansehen und drucken</span>
               <span className="block text-xs text-ink-muted">
-                Eine Karte je Zimmer, eine Seite je Karte — fehlende Codes erzeugen, einzelne erneuern
+                DIN A4 je Zimmer oder vier kompakte Karten je Seite — fehlende Codes erzeugen,
+                einzelne erneuern
               </span>
             </span>
             <ChevronRight className="h-4 w-4 shrink-0 text-ink-muted" />

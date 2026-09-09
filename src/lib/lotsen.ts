@@ -168,6 +168,11 @@ const REGELN: Lotse = {
   zugang: 'verwaltung',
   steps: [
     {
+      path: '/einstellungen/hotel', anchor: 'regeln.logo',
+      title: 'Ihr Logo auf den Ausdrucken',
+      body: 'Zimmer-Aushang und Gast-Handout tragen oben links Ihr Logo; ohne eines steht dort der Name des Hauses. PNG, JPG oder SVG, höchstens 1 MB. Zwei Fallen: Ein zu kleines Bild wird auf 55 mm unscharf, und ein helles Logo für dunkle Hintergründe ist auf weißem Papier unsichtbar — die Vorschau zeigt es deshalb auf Weiß.',
+    },
+    {
       path: '/einstellungen/hotel', anchor: 'regeln.zeitzone', kern: true,
       title: 'Zeitzone zuerst',
       body: 'Alle Uhrzeiten dieser Seite gelten in dieser Zeitzone — und die Server laufen in UTC. Steht hier das Falsche, wird eine Routine „ab 10:00" in Wahrheit erst um 12:00 fällig, und auch die Tagesgrenzen der Auswertung liegen daneben.',
@@ -227,9 +232,15 @@ const GASTZUGANG: Lotse = {
       body: 'Das Verfahren wird beim Check-in am Aufenthalt festgehalten, nicht bei jedem Zugriff neu gelesen. Ausgegebene Zugänge funktionieren deshalb bis zum Check-out weiter; erst der nächste Check-in folgt dem neuen Verfahren. Kein Stichtag, keine Umstellung von Bestandsdaten.',
     },
     {
+      path: '/einstellungen/gastzugang', anchor: 'gastzugang.sprachen',
+      title: 'Piktogramme statt Sprachliste',
+      body: 'Die gedruckten Blätter erklären das Portal mit Bildern seiner Knöpfe — daneben steht Text in einer Hauptsprache und wahlweise einer zweiten. Mehr Sprachen aufs Papier zu drucken hilft weniger, als es an Platz kostet: Wer weder Ihre Landessprache noch Englisch liest, kommt über die Bilder und den QR-Code weiter und übersetzt im Portal mit dem Handy.',
+      tun: 'Die erste Sprache ist zugleich die der Zugangs-Mail — die zweite steht nur auf dem Ausdruck.',
+    },
+    {
       path: '/einstellungen/gastzugang', anchor: 'gastzugang.aushang',
       title: 'Die Aushänge für die Zimmer',
-      body: 'Im PIN-Verfahren braucht jedes Zimmer seinen Aushang — eine Karte je Zimmer, einmal gedruckt, dauerhaft gültig. Im Verfahren mit individuellem Zugang sind die Aushänge ausgeblendet: Sie führten auf eine PIN-Eingabe, die dort niemand bedienen kann.',
+      body: 'Im PIN-Verfahren braucht jedes Zimmer seinen Aushang: DIN A4 für Rahmen, Aufsteller oder Mappe, oder vier kompakte Karten je Seite zum Auseinanderschneiden. Einmal gedruckt, dauerhaft gültig. Im Verfahren mit individuellem Zugang sind die Aushänge ausgeblendet: Sie führten auf eine PIN-Eingabe, die dort niemand bedienen kann.',
     },
   ],
 }

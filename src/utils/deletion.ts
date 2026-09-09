@@ -25,6 +25,7 @@
  */
 
 import { createAdminClient } from '@/utils/supabase/service'
+import { purgeHotelLogos } from '@/utils/logo'
 import { deleteStripeCustomer } from '@/utils/stripe'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -210,7 +211,7 @@ async function stammhausUmhaengen(
 
 /**
  * Ein Haus restlos entfernen. Reihenfolge ist wesentlich:
- * erst die Stammhäuser retten, dann die kaskadenfreien Zeilen, dann das Haus
+ * erst die Stammhäuser retten, dann die kaskadenfreien Zeilen und Dateien, dann das Haus
  * (Kaskade), dann die Anmeldekonten — die lassen sich erst danach zuverlässig
  * beurteilen.
  *
@@ -230,6 +231,12 @@ async function purgeHotel(
     const { error } = await admin.from(table).delete().eq('hotel_id', hotelId)
     if (error) return `${table}: ${error.message}`
   }
+
+  // Storage kennt keine Fremdschlüssel — dieselbe Falle wie oben, nur in einem
+  // anderen Speicher. Muss VOR dem Löschen des Hauses laufen: danach ist die
+  // Hotel-ID nicht mehr aus einer Zeile zu lesen.
+  const logoFehler = await purgeHotelLogos(hotelId)
+  if (logoFehler.error) return `hotel-logos: ${logoFehler.error}`
 
   const { error } = await admin.from('hotels').delete().eq('id', hotelId)
   if (error) return `hotels: ${error.message}`

@@ -9,6 +9,9 @@ import { createClient } from '@/utils/supabase/server'
 import { getAdminContext, getManagementContext } from '@/utils/auth'
 import { clampPinLength } from '@/lib/ids'
 import { clampStaleMinutes } from '@/lib/board'
+import { GUIDE_LANGS } from '@/lib/guest-guide'
+import { LOGO_HEAD_BYTES, validateLogoUpload } from '@/lib/logo'
+import { removeHotelLogo, uploadHotelLogo } from '@/utils/logo'
 import { isValidSlug, SLUG_MAX_LENGTH } from '@/lib/slug'
 
 type ActionResult = { error?: string }
@@ -203,6 +206,75 @@ export async function changePasswordAction(slug: string, formData: FormData): Pr
  * behalten ihren ausgegebenen Zugang, weil das Verfahren am Aufenthalt
  * festgehalten ist (`stays.access_mode`).
  */
+/**
+ * Hotel-Logo hochladen. Geprüft wird die **Datei**, nicht ihr Name: Endung und
+ * der vom Browser gemeldete Typ sind beide frei wählbar, die ersten Bytes
+ * nicht (`validateLogoUpload`).
+ */
+export async function uploadHotelLogoAction(
+  slug: string,
+  formData: FormData,
+): Promise<ActionResult> {
+  const ctx = await getAdminContext(slug)
+  if (!ctx) return { error: 'Keine Berechtigung.' }
+
+  const datei = formData.get('logo')
+  if (!(datei instanceof File) || datei.size === 0) return { error: 'Keine Datei gewählt.' }
+
+  const bytes = new Uint8Array(await datei.arrayBuffer())
+  const check = validateLogoUpload(bytes.byteLength, bytes.subarray(0, LOGO_HEAD_BYTES))
+  if ('error' in check) return { error: check.error }
+
+  const res = await uploadHotelLogo(ctx.hotelId, bytes, check.mime)
+  if (res.error) return { error: res.error }
+
+  revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
+  return {}
+}
+
+export async function removeHotelLogoAction(slug: string): Promise<ActionResult> {
+  const ctx = await getAdminContext(slug)
+  if (!ctx) return { error: 'Keine Berechtigung.' }
+
+  const res = await removeHotelLogo(ctx.hotelId)
+  if (res.error) return { error: res.error }
+
+  revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
+  return {}
+}
+
+export async function updateSheetLanguagesAction(
+  slug: string,
+  erste: string,
+  zweite: string,
+): Promise<ActionResult> {
+  const ctx = await getAdminContext(slug)
+  if (!ctx) return { error: 'Keine Berechtigung.' }
+
+  const erlaubt = GUIDE_LANGS as readonly string[]
+  if (!erlaubt.includes(erste)) return { error: 'Unbekannte Sprache.' }
+  // Leer ist gültig und heißt „nur eine Sprache" — siehe `parseSheetLanguages`.
+  if (zweite !== '' && !erlaubt.includes(zweite)) return { error: 'Unbekannte Sprache.' }
+  if (zweite === erste) return { error: 'Die zweite Sprache muss eine andere sein.' }
+
+  const admin = createAdminClient()
+  const { data: hotel } = await admin
+    .from('hotels').select('policies').eq('id', ctx.hotelId).single()
+
+  const merged = {
+    ...((hotel?.policies ?? {}) as Record<string, unknown>),
+    sheetLanguage: erste,
+    sheetLanguage2: zweite,
+  }
+
+  const { error } = await admin
+    .from('hotels').update({ policies: merged }).eq('id', ctx.hotelId)
+  if (error) return { error: error.message }
+
+  revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
+  return {}
+}
+
 export async function updateGuestAccessModeAction(
   slug: string,
   mode: string,

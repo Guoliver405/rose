@@ -20,6 +20,13 @@ export type HotelHandle = {
   /** Konto, dem das Haus gehört — Grundlage der Inhaber-Berechtigung. */
   accountId: string
   policies: Record<string, unknown>
+  /**
+   * Pfad des Hotel-Logos im Storage (`hotels.logo_path`), sonst `null`.
+   * Liegt hier, weil die Haus-Zeile ohnehin geladen wird: eine kurze
+   * Zeichenkette kostet keinen Roundtrip, das Bild selbst holt der Browser
+   * beim CDN.
+   */
+  logoPath: string | null
 }
 
 /**
@@ -33,7 +40,7 @@ export const findHotelBySlug = cache(
 
     const { data } = await createAdminClient()
       .from('hotels')
-      .select('id, name, slug, account_id, policies')
+      .select('id, name, slug, account_id, policies, logo_path')
       .eq('slug', normalized)
       .maybeSingle()
 
@@ -44,6 +51,7 @@ export const findHotelBySlug = cache(
       slug: data.slug,
       accountId: data.account_id,
       policies: (data.policies ?? {}) as Record<string, unknown>,
+      logoPath: data.logo_path ?? null,
     }
   },
 )

@@ -6,7 +6,9 @@ import { createClient } from '@/utils/supabase/server'
 import { clampPinLength } from '@/lib/ids'
 import { clampStaleMinutes, parseCleanDefer, parseCleaningWindow, parseStayoverPolicy } from '@/lib/board'
 import { listTimeZones, parseTimeZone } from '@/lib/tz'
+import { logoUrlFor } from '@/utils/logo'
 import HotelSettingsForm from '../HotelSettingsForm'
+import LogoForm from '../LogoForm'
 
 export default async function HotelSettingsPage({
   params,
@@ -41,6 +43,19 @@ export default async function HotelSettingsPage({
         </Link>
         <h1 className="text-xl font-black text-ink">Hotel &amp; Regeln</h1>
       </div>
+
+      <section data-lotse="regeln.logo" className="flex flex-col gap-3">
+        <h2 className="text-sm font-bold text-ink-soft">Logo</h2>
+        <p className="text-sm text-ink-soft">
+          Ihr Logo steht im Kopf der gedruckten Blätter — Zimmer-Aushang und Gast-Handout.
+          Ohne Logo steht dort der Name des Hauses.
+        </p>
+        <LogoForm
+          hotelSlug={ctx.hotelSlug}
+          hotelName={ctx.hotelName}
+          logoUrl={logoUrlFor(ctx.logoPath)}
+        />
+      </section>
 
       <HotelSettingsForm
         hotelSlug={ctx.hotelSlug}

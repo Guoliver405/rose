@@ -4,10 +4,13 @@ import { ArrowLeft, TriangleAlert } from 'lucide-react'
 import { getManagementContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import { parseGuestAccessMode } from '@/lib/guest-access'
+import { buildGuestSheets } from '@/lib/guest-guide'
+import { logoUrlFor } from '@/utils/logo'
 import RoomQrSheet, { type RoomQrData } from './RoomQrSheet'
 
 /**
- * Zimmer-QR-Aushänge: eine Karte pro Zimmer (Print: eine pro Seite).
+ * Zimmer-QR-Aushänge: ein Blatt je Zimmer, wahlweise DIN A4 (eine Seite je
+ * Zimmer) oder kompakt (vier Karten je Seite zum Auseinanderschneiden).
  * Der QR führt auf /guest/r/<token> — der Gast tippt dort nur noch die PIN.
  *
  * Erreichbar über Einstellungen → Gäste-Zugang (Inhaber/Manager) bzw. die
@@ -71,7 +74,21 @@ export default async function AushangPage({
         </p>
       )}
 
-      <RoomQrSheet hotelSlug={ctx.hotelSlug} cards={cards} hotelName={ctx.hotelName} canRenew={isAdmin} />
+      <RoomQrSheet
+        hotelSlug={ctx.hotelSlug}
+        cards={cards}
+        hotelName={ctx.hotelName}
+        logoUrl={logoUrlFor(ctx.logoPath)}
+        // Der Aushang gehört zum PIN-Verfahren: fester Zimmer-QR, PIN vom
+        // Check-in. Auch in einem Link-Haus zeigt die Vorschau diesen Text —
+        // der Hinweis oben erklärt, warum die Aushänge dort nichts nützen.
+        texts={buildGuestSheets((hotel?.policies ?? {}) as Record<string, unknown>, {
+          accessMode: 'pin',
+          deepLink: true,
+        })}
+        manualUrl={`${origin}/h/${ctx.hotelSlug}/guest`}
+        canRenew={isAdmin}
+      />
     </div>
   )
 }

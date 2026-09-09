@@ -60,6 +60,8 @@ export type ManagementContext = {
    * `hotels`-Abfrage. Wer Policies ÄNDERT, liest danach nicht hieraus.
    */
   policies: Record<string, unknown>
+  /** `hotels.logo_path` — Pfad, nicht URL; die baut `logoUrlFor`. */
+  logoPath: string | null
 }
 
 /**
@@ -115,6 +117,7 @@ export const getManagementContext = cache(
       hotelName: hotel.name,
       accountId: hotel.accountId,
       policies: hotel.policies,
+      logoPath: hotel.logoPath,
     }
 
     if (owner) {

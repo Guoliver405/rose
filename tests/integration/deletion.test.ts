@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { buildWorld, destroyWorld, serviceClient, type World } from './helpers/world'
 import { deleteAccountData, deleteHotelData, previewAccountDeletion } from '@/utils/deletion'
+import { LOGO_BUCKET } from '@/lib/logo'
 
 /**
  * Löschbegehren — „entfernt alle meine Daten".
@@ -14,6 +15,11 @@ import { deleteAccountData, deleteHotelData, previewAccountDeletion } from '@/ut
  *
  * Geprüft wird deshalb beides: dass wirklich nichts übrig bleibt, und dass das
  * Nachbarkonto dabei unberührt bleibt.
+ *
+ * Seit 09.09.2026 gehört das **Hotel-Logo** dazu: Es liegt in Supabase
+ * Storage, und Storage kennt keine Fremdschlüssel. Ohne den ausdrücklichen
+ * Aufruf in `purgeHotel` bliebe die Datei öffentlich abrufbar stehen, nachdem
+ * das Haus gelöscht ist.
  */
 
 let world: World
@@ -27,6 +33,24 @@ async function zaehle(table: string, spalte: string, wert: string): Promise<numb
   const { count } = await admin()
     .from(table).select('*', { count: 'exact', head: true }).eq(spalte, wert)
   return count ?? 0
+}
+
+/** 1×1-PNG — der Inhalt ist gleichgültig, die Signatur macht es zu einem Bild. */
+const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64',
+)
+
+async function logoAblegen(hotelId: string): Promise<void> {
+  const pfad = `${hotelId}/logo-itest.png`
+  await admin().storage
+    .from(LOGO_BUCKET).upload(pfad, PNG, { contentType: 'image/png', upsert: true })
+  await admin().from('hotels').update({ logo_path: pfad }).eq('id', hotelId)
+}
+
+async function logoDateien(hotelId: string): Promise<number> {
+  const { data } = await admin().storage.from(LOGO_BUCKET).list(hotelId)
+  return data?.length ?? 0
 }
 
 async function authUserExistiert(userId: string): Promise<boolean> {
@@ -54,8 +78,13 @@ describe('Löschbegehren — ganzes Konto', () => {
       rooms: 1,
     })
 
+    // Logo beider Konten: eines geht mit, das andere muss bleiben.
+    await logoAblegen(beta.b1.id)
+    await logoAblegen(world.alpha.a2.id)
+
     expect(await zaehle('room_state_transitions', 'hotel_id', beta.b1.id)).toBe(1)
     expect(await zaehle('billing_snapshots', 'hotel_id', beta.b1.id)).toBe(1)
+    expect(await logoDateien(beta.b1.id)).toBe(1)
 
     // Die Vorschau muss die Anmeldekonten benennen — sie sind der Kern eines
     // Löschbegehrens, alles andere sind Betriebsdaten.
@@ -79,7 +108,10 @@ describe('Löschbegehren — ganzes Konto', () => {
     expect(await zaehle('room_state_transitions', 'hotel_id', beta.b1.id)).toBe(0)
     expect(await zaehle('billing_snapshots', 'hotel_id', beta.b1.id)).toBe(0)
 
-    // 3) Die Anmeldekonten selbst — das Wesentliche
+    // 3) Die Logo-Datei im Storage — ohne Fremdschlüssel, ohne Kaskade
+    expect(await logoDateien(beta.b1.id)).toBe(0)
+
+    // 4) Die Anmeldekonten selbst — das Wesentliche
     expect(await authUserExistiert(beta.owner.id)).toBe(false)
     expect(await authUserExistiert(beta.maid.id)).toBe(false)
   }, 60_000)
@@ -92,6 +124,12 @@ describe('Löschbegehren — ganzes Konto', () => {
     expect(await authUserExistiert(alpha.owner.id)).toBe(true)
     expect(await authUserExistiert(alpha.maid.id)).toBe(true)
     expect(await authUserExistiert(alpha.manager.id)).toBe(true)
+    expect(await logoDateien(alpha.a2.id)).toBe(1)
+
+    // Selbst aufräumen: `destroyWorld` löscht Zeilen über IDs und fasst den
+    // Storage nicht an — diese Datei hat der Test erzeugt, also nimmt er sie
+    // auch wieder mit.
+    await admin().storage.from(LOGO_BUCKET).remove([`${alpha.a2.id}/logo-itest.png`])
   })
 })
 
@@ -114,9 +152,12 @@ describe('Löschbegehren — einzelnes Haus', () => {
       .from('profiles').select('hotel_id').eq('id', alpha.owner.id).maybeSingle()
     expect(vorher?.hotel_id).toBe(alpha.a1.id)
 
+    await logoAblegen(alpha.a1.id)
+
     const res = await deleteHotelData(alpha.a1.id)
     expect(res.error).toBeUndefined()
     expect(await zaehle('hotels', 'id', alpha.a1.id)).toBe(0)
+    expect(await logoDateien(alpha.a1.id)).toBe(0)
 
     // Das Profil lebt und zeigt jetzt auf das verbliebene Haus.
     const { data: nachher } = await admin()

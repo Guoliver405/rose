@@ -185,7 +185,8 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       Mail an Bernd dazu:
       [Mail-Bernd-Copyright-und-Marke-2026-09-05.md](Sessions/Mail-Bernd-Copyright-und-Marke-2026-09-05.md).
 - [ ] **Mehrsprachigkeit**: en, es, fr, de. Betrifft alle drei Portale, die
-      Landing-Page, Mails und Druckseiten (Aushänge, Handouts, Karten). Die
+      Landing-Page und Mails; die **Druckseiten sind seit dem 09.09. erledigt**
+      (Piktogramme plus ein bis zwei Sprachen je Haus). Die
       Gast-Sprache muss unabhängig von der Hotel-Sprache wählbar sein — das
       Gastportal ist die Fläche mit den meisten Sprachen. i18n-Ansatz für den
       App Router festlegen (Next.js-16-Doku in `node_modules/next/dist/docs/`
@@ -247,17 +248,31 @@ zusammen und gehören vor den ersten zahlenden Kunden.
 
 (alle drei: 6d-Plan, Abschnitt 13)
 
-- [ ] **Handout wirklich drucken** — die A4-Aufteilung ist im Browser
-      gerechnet (230 mm bei 186 mm Blattbreite), aber noch nie durch einen
-      echten Druckdialog gegangen. Zu prüfen: Seitenränder, ob die farbige
-      Kopflinie kommt, Lesbarkeit der 10-px-Sätze auf Papier und ob der
-      QR-Code in gedruckter Größe zuverlässig scannt. (Handout 08.09.)
-- [ ] **Zugangs-Mail mehrsprachig?** Das gedruckte Handout trägt seit dem
-      08.09. vier Sprachen, die Mail bleibt deutsch — viermal derselbe Text
-      wäre als Mail unlesbar. Denkbar wäre eine Sprachwahl beim Versand
-      (die Rezeption weiß, mit wem sie spricht) oder eine Sprachumschaltung
-      im Gastportal selbst; letzteres wäre der größere Wurf, weil das Portal
-      heute komplett deutsch ist. (Handout 08.09.)
+- [ ] **Blätter wirklich drucken** — die Höhen sind im Browser gerechnet
+      (Aushang 219 mm, Handout 240 mm bei 186 mm Satzbreite), aber noch nie
+      durch einen echten Druckdialog gegangen. Fälle J5, **J7–J9** im
+      [GUI-Testkatalog](Sessions/GUI-Testkatalog.md): Graustufen, ob die vier
+      kompakten Karten sauber auf eine Seite fallen, Scan des A4-Blatts aus
+      ~50 cm. (Handout 08.09., neu gefasst 09.09.)
+- [x] ~~**Zugangs-Mail mehrsprachig?**~~ — 09.09. entschieden und erledigt: Die
+      Mail folgt der **ersten Sprache des Hauses** (`policies.sheetLanguage`,
+      Vorgabe Deutsch); zwei Sprachen in einer Mail wären doppelt so lang, ohne
+      mehr zu sagen. Das gedruckte Blatt trägt seither Piktogramme plus ein bis
+      zwei Sprachen statt vier. (Handout 08.09.)
+- [ ] **Gastportal mehrsprachig** — der eigentliche Grund, warum das Papier seit
+      dem 09.09. kurz sein darf („Papier ist die Einladung, der Bildschirm die
+      Anleitung"). Rangfolge: ausdrückliche Wahl im Portal → `Accept-Language`
+      → erste Sprache des Hauses. Die vier Vorlagen in
+      [guest-guide.ts](src/lib/guest-guide.ts) sind die Saat; `portalLang` in
+      `buildGuestSheet` zieht die Knopf-Beschriftungen der Blätter dann
+      automatisch mit. Teil der großen Mehrsprachigkeit oben.
+- [ ] **Logo im Gästeportal und in der Mail** — der Unterbau steht seit dem
+      09.09. (`hotels.logo_path`, Storage-Bucket, `logoUrlFor`), beides ist ein
+      Einzeiler. Bewusst offen: im Portal-Kopf konkurriert es mit der
+      Zimmernummer, in der Mail mit der Spam-Bewertung. (Druckblätter 09.09.)
+- [ ] **A5 als drittes Druckformat**, falls Tester es verlangen — viele
+      Tischaufsteller sind A5; heute gibt es DIN A4 und kompakt (92 × 130 mm,
+      vier je Seite). (Druckblätter 09.09.)
 
 ## Kleinkram und Beobachtungen
 

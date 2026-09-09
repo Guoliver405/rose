@@ -202,8 +202,14 @@ formuliert, dass ein Abweichen ein Befund ist.
 | J2 | Versand | an eigenes Postfach | Meldung „verschickt … Spam-Ordner"; Resend-Log „Delivered"; Absender = Hotelname; Link auf Produktions-URL; kein QR-Bild; Text-Teil vorhanden | **C+M** |
 | J3 | Zustellbarkeit | Gmail, Yahoo, eigene Domain | Posteingang oder Spam notieren; `Authentication-Results` dreimal `pass` | **M** |
 | J4 | Link-Mail nach Check-out | Link aus der Mail | erloschen (D10) | C |
-| J5 | Druck | Aushänge, Handout, Karte | eine Karte je Seite, Bedienelemente `print:hidden`, Light-Theme im Druck | **M** |
+| J5 | Druck | Aushänge, Handout, Karte | Bedienelemente `print:hidden`, Light-Theme im Druck, A4-Blatt bleibt **eine** Seite | **M** |
 | J6 | QR scannen | Aushang, Handout (beide Verfahren), Karte | Handy landet richtig (PIN-Formular / Portal / Board) | **M** |
+| J7 | Graustufen-Druck | A4-Blatt schwarz-weiß drucken | alles lesbar, nichts verschwunden (keine helle Schrift auf Fläche), Piktogramme und Logo erkennbar | **M** |
+| J8 | Kompakt, vier je Seite | kompaktes Format, ≥ 5 Zimmer drucken | genau vier Karten je Seite, keine über den Umbruch, gestrichelte Kante zum Schneiden sichtbar | **M** |
+| J9 | Scan-Abstand | A4 im Rahmen aus ~50 cm, kompakt aus ~30 cm | QR wird erkannt (55 bzw. 42 mm, Ruhezone 4 Module) | **M** |
+| J10 | Sprachen | Gäste-Zugang: zweite Sprache abwählen, erste auf English | Blatt trägt einen bzw. englischen Block; **Knopfnamen bleiben deutsch** (Sprache des Portals); Mail folgt der ersten Sprache | C |
+| J11 | Logo | Hotel & Regeln: PNG, SVG, zu kleines Bild, helles Logo, entfernen | Vorschau auf Weiß; Hinweis unter ~400 px; erscheint im Kopf beider Blätter; nach „Entfernen" wieder der Hausname | C+M (Dateiauswahl) |
+| J12 | Logo-Ablage | nach Upload und nach Entfernen | Storage-Ordner `hotel-logos/<hotelId>` enthält genau eine bzw. keine Datei; alter Gegenstand ist weg (kein CDN-Rest) | C |
 
 ### K — Theme und Robustheit
 
