@@ -12,7 +12,8 @@ Der User hat die Anforderung in zwei Fällen formuliert:
   eine druckbare Liste (Zimmer, Aufenthaltszeitraum, Posten mit den Zeitpunkten
   der Statuswechsel — kein Gastname, den kennt RoSe nicht). Bestellte, aber
   nicht erbrachte Leistungen werden gekennzeichnet und zählen nicht mit;
-  Wartung erscheint gar nicht.
+  Wartung erscheint gar nicht (wie sie erkannt wird, war die offene Frage —
+  siehe „Nachtrag").
 - **b)** nichts in Anspruch genommen ⇒ nur ein Hinweis, keine Summe, kein Knopf.
 
 Die Durchsicht des Bestands ergab: **Die Daten waren schon da.**
@@ -24,11 +25,12 @@ drei Dinge, und zwei davon waren echte Lücken.
 
 ## Drei Entscheidungen des Users
 
-1. **Wartung wird abgeleitet, nicht konfiguriert.** „Alles ohne Preis kann
-   wegfallen." Damit braucht es kein Kennzeichen am Service: Der technische
-   Dienst hat keine bepreisten Optionen, also gibt es nichts zu prüfen. Die
-   Regel steht in [stay-bill.ts](../src/lib/stay-bill.ts) und deckt zugleich
-   Optionen ohne Preisangabe und Anfragen ab, die insgesamt bei 0,00 € landen.
+1. **Was keinen Preis trägt, fällt weg.** „Alles ohne Preis kann wegfallen."
+   Die Regel steht in [stay-bill.ts](../src/lib/stay-bill.ts) und deckt
+   Optionen ohne Preisangabe wie Anfragen ab, die insgesamt bei 0,00 € landen.
+   **Revidiert am selben Tag** (siehe „Nachtrag" unten): Für die Aufstellung
+   trägt der Preis, für die Abgrenzung der *Instandhaltung* nicht — die bekam
+   ein eigenes Kennzeichen.
 2. **Offene Anfragen werden beim Check-out geschlossen**, mit Hinweis auf
    mögliche Diskussionen.
 3. **Die Summe steht vor der Bestätigung** und deutlich hervorgehoben. „Der
@@ -59,7 +61,8 @@ Join zurück.
 [stay-bill.ts](../src/lib/stay-bill.ts) — `buildStayBill(orders)`:
 
 - Optionen ohne Preisangabe fallen weg; eine Anfrage, die danach bei 0,00 €
-  landet, fällt ganz weg (**das ist die Wartungsregel**).
+  landet, fällt ganz weg.
+- Meldungen ans Haus fallen weg, auch mit Preis (siehe „Nachtrag").
 - Nur `done` zählt in die Summe. Offene und als nicht erbracht geschlossene
   Anfragen bleiben **sichtbar** — sonst verschwände eine Diskussion mit dem Gast
   einfach vom Blatt —, gehen aber nicht ein.
@@ -118,7 +121,7 @@ was es ist, und verweist auf die Abrechnung im System des Hauses.
 
 - **a)** kostenpflichtige Leistungen ⇒ Summe + Details.
 - **b)** nichts bestellt ⇒ Hinweis.
-- **c)** nur Kostenfreies oder Wartung bestellt ⇒ verhält sich wie b), aber der
+- **c)** nur Kostenfreies oder eine Meldung ans Haus bestellt ⇒ verhält sich wie b), aber der
   Text lügt nicht: „Keine **kostenpflichtigen** Zusatzleistungen." Sonst
   widerspräche das Blatt dem Verlauf, in dem die Anfrage steht.
 
