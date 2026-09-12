@@ -173,7 +173,9 @@ async function dispatch(d: Dispatch): Promise<MailResult> {
   const admin = createAdminClient()
   const wait = await cooldown(admin, d)
   if (wait > 0) {
-    return { wait, error: `Gerade erst verschickt — ein erneuter Versand ist in ${wait} s möglich.` }
+    // Ohne Zahl im Text: die Oberfläche zählt daneben live herunter, eine
+    // eingefrorene Sekundenangabe stünde sonst neben dem laufenden Countdown.
+    return { wait, error: 'Gerade erst verschickt — bitte kurz warten, bevor erneut gesendet wird.' }
   }
   await aufraeumen(admin)
 
