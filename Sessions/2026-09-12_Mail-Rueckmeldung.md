@@ -118,26 +118,39 @@ ersten echten Kunden vermerkt.
   bleibt bei „übergeben" und meldet nach 90 s „unbestätigt". Das ist korrekt,
   nicht kaputt.
 
+## Produktionslauf (12.09.2026, abends, Claude fährt Chrome, Lotsen-Haus)
+
+Migration eingespielt, Webhook im Resend-Dashboard angelegt, `RESEND_WEBHOOK_SECRET`
+in Vercel, Push, Deploy. Die Route antwortet auf einen unsignierten Aufruf mit
+400 „ungültige Signatur" (Secret gesetzt, Prüfung aktiv).
+
+| Fall | Ergebnis |
+|---|---|
+| Testhäkchen „Ohne E-Mail anlegen" bei Rezeption und Manager | in Produktion sichtbar |
+| Einladung an nicht existierende **Domain** (`…@dfki-gibt-es-nicht.de`) | „Übergeben", Countdown 60 s am Knopf; **kein** Bounce innerhalb des Fensters — Resend versucht bei DNS-Fehlern weiter, die Zeile bleibt `sent`, nach 90 s „Zustellung noch unbestätigt" |
+| Einladung an nicht existierendes **Postfach** bei Gmail | nach ~10 s „Nicht angekommen" mit Gmails Hard-Bounce-Text (Permanent/General); zwei Webhook-Zustellungen, beide 200, Status idempotent |
+| „Erneut senden" innerhalb der Minute | Meldung **an der Zeile**: „Gerade erst verschickt …", Knopf zählt herunter |
+| „Erneut senden" nach Ablauf (Recovery-Link statt zweiter Einladung) | Mail übergeben — aber **kein** Webhook mehr: Resend unterdrückt Sendungen an Adressen, die hart gebounct haben, ohne Ereignis. Die Zeile bleibt `sent`, die Oberfläche sagt nach 90 s „unbestätigt". Richtig so — sie behauptet nichts, was sie nicht weiß |
+| Gast-Mail vom Handout an eine echte Adresse | „Zugestellt an …" nach ~3 s, Knopf zählt herunter |
+| Passwort vergessen | in Produktion nicht fahrbar, weil die Seite Angemeldete weiterleitet; Countdown lokal gesehen, Action-Pfad ist derselbe Code |
+
+Ein Schönheitsfehler direkt behoben: Die Drossel-Meldung trug eine eingefrorene
+Sekundenzahl neben dem laufenden Countdown (Commit `87eb79c`).
+
+Aufgeräumt: beide Test-Zugänge endgültig gelöscht, Zimmer 101 ausgecheckt.
+
+**Erkenntnis für den nächsten Freenet-Fall:** Ein harter Bounce erscheint mit
+Grund in der Oberfläche (Gmail hat es vorgemacht). Hat eine Adresse einmal hart
+gebounct, liefert Resend spätere Sendungen dorthin still nicht mehr aus — dann
+hilft nur, die Adresse im Resend-Dashboard aus der Suppression-Liste zu nehmen
+oder eine andere Adresse zu verwenden. Das steht so noch nicht in der
+Oberfläche (offen, siehe TODO).
+
 ## 🔖 Wiederaufnahme
 
-**Stand:** Code fertig, Tests grün, committet. Vor dem Push fehlen drei
-Handgriffe des Users:
-
-1. Migration `Supabase_sql/2026-09-12_mail_log.sql` im SQL-Editor einspielen
-   (additiv — erst einspielen, dann pushen; danach per `git mv` nach
-   `archive/`).
-2. Im Resend-Dashboard unter **Webhooks** einen Endpunkt anlegen:
-   `https://rose-roomservice.app/api/resend/webhook`, Ereignisse `email.sent`,
-   `email.delivered`, `email.delivery_delayed`, `email.bounced`,
-   `email.complained`, `email.failed`. Signing Secret (`whsec_…`) als
-   `RESEND_WEBHOOK_SECRET` in Vercel (Production) setzen — Git-Bash-`printf`-
-   Muster, dann redeployen.
-3. Produktionslauf: Rezeption mit echter Adresse einladen → Statuszeile
-   „zugestellt"; dieselbe Adresse mit Tippfehler in der Domain → „abgewiesen"
-   mit Grund; „Erneut senden" innerhalb der Minute → Countdown am Knopf;
-   Gast-Mail vom Handout; Passwort vergessen mit Countdown. Und: den nächsten
-   Freenet-Bounce mit Grund lesen — dann wissen wir, warum.
-
-**Danach:** Supabase-Mail-Vorlagen können bleiben (unbenutzt), Custom-SMTP in
-Supabase kann bleiben (nur noch für Mails, die Supabase von sich aus schickt —
-aktuell keine).
+**Stand:** Alles in Produktion, Produktionslauf bestanden (Tabelle oben).
+Offen: (1) Hinweis in der Oberfläche, dass Resend Adressen nach einem harten
+Bounce unterdrückt („erneut senden" bringt dann nichts, Adresse prüfen oder
+im Resend-Dashboard freigeben) — TODO. (2) Den nächsten echten Freenet-Bounce
+mit Grund lesen. (3) `ALLOW_TEST_ACCOUNTS` vor dem ersten echten Kunden aus
+Vercel entfernen.
