@@ -295,12 +295,13 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       zugestellt oder abgewiesen wurde (mit Grund) — vorher blieb ein Bounce
       (Freenet) unbemerkt. Siehe AGENTS.md „Mail-Versand mit Rückmeldung".
       **Produktionslauf 12.09. bestanden** (Bounce mit Grund, Zustellung,
-      Countdown, Meldung an der Zeile). **Offen daraus:** (a) Resend
-      unterdrückt Sendungen an Adressen, die einmal hart gebounct haben —
-      ohne Webhook-Ereignis; „Erneut senden" bleibt dann bei „unbestätigt".
-      Die Oberfläche sollte nach einem Bounce sagen, dass die Adresse zu
-      prüfen bzw. im Resend-Dashboard freizugeben ist. (b) Den nächsten echten
-      Freenet-Bounce mit Grund lesen.
+      Countdown, Meldung an der Zeile). **Sperrliste am selben Abend
+      gelöst** (User: kein Support-Fall): Abfrage bei Resend vor jedem
+      Versand, „Adresse freigeben und erneut senden", „Einladungslink
+      anzeigen" als Ausweg ohne Mail, Provider-Muster aus dem Protokoll.
+      **Offen:** den nächsten echten Freenet-Bounce mit Grund lesen — dann
+      entscheiden, ob eine dedizierte Resend-IP oder ein zweiter Versender
+      für deutsche Provider nötig ist.
 - [ ] **Gmail-Zustellbarkeit**: Einladungen landen im Werbung-Ordner. Kein
       Fehler, sondern fehlende Sendereputation — hilft nur regelmäßiger
       Versand über Tage. Praktische Relevanz vermutlich begrenzt, weil Hotels

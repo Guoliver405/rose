@@ -17,7 +17,7 @@
  * gesetzt, nie zurück — `advance` entscheidet das ohne Uhrzeitvergleich.
  */
 
-import { createHmac, timingSafeEqual } from 'node:crypto'
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
 
 export type MailPurpose = 'invite' | 'recovery' | 'guest_access'
 
@@ -28,6 +28,7 @@ export type MailStatus =
   | 'delivered'   // Empfänger-Server hat angenommen
   | 'complained'  // Empfänger hat als Spam gemeldet
   | 'bounced'     // Empfänger-Server hat abgewiesen
+  | 'suppressed'  // Resend hat gar nicht erst zugestellt: Adresse steht auf der Sperrliste
   | 'failed'      // Resend konnte gar nicht senden (oder hat abgelehnt)
 
 /**
@@ -51,6 +52,7 @@ const RANK: Record<MailStatus, number> = {
   delivered: 3,
   complained: 4,
   bounced: 5,
+  suppressed: 5,
   failed: 5,
 }
 
@@ -61,12 +63,13 @@ export function advance(current: MailStatus, next: MailStatus): boolean {
 
 /** Endzustand — die Oberfläche hört auf zu fragen. */
 export function isFinalMailStatus(status: MailStatus): boolean {
-  return status === 'delivered' || status === 'bounced' || status === 'complained' || status === 'failed'
+  return status === 'delivered' || status === 'bounced' || status === 'complained'
+    || status === 'suppressed' || status === 'failed'
 }
 
 /** Ist die Mail nachweislich NICHT angekommen? */
 export function isMailFailure(status: MailStatus): boolean {
-  return status === 'bounced' || status === 'failed' || status === 'complained'
+  return status === 'bounced' || status === 'failed' || status === 'complained' || status === 'suppressed'
 }
 
 /**
@@ -80,6 +83,7 @@ export function statusFromEvent(type: string): MailStatus | null {
     case 'email.delivered': return 'delivered'
     case 'email.complained': return 'complained'
     case 'email.bounced': return 'bounced'
+    case 'email.suppressed': return 'suppressed'
     case 'email.failed': return 'failed'
     default: return null
   }
@@ -93,6 +97,7 @@ export type ResendEvent = {
     /** Beim Senden als Liste übergeben, im Webhook teils als Objekt geliefert. */
     tags?: Record<string, string> | { name: string; value: string }[]
     bounce?: { message?: string; type?: string; subType?: string }
+    suppressed?: { message?: string; type?: string }
     failed?: { reason?: string }
   }
 }
@@ -115,6 +120,7 @@ export function detailFromEvent(ev: ResendEvent): string | null {
     return art ? `${b.message} (${art})` : b.message
   }
   if (ev.data?.failed?.reason) return ev.data.failed.reason
+  if (ev.data?.suppressed) return ev.data.suppressed.message ?? ev.data.suppressed.type ?? null
   return null
 }
 
@@ -129,10 +135,63 @@ export function mailStatusText(status: MailStatus, detail: string | null): strin
     case 'bounced': return detail
       ? `Vom Empfänger-Server abgewiesen: ${detail}`
       : 'Vom Empfänger-Server abgewiesen.'
+    case 'suppressed': return 'Nicht zugestellt: Die Adresse steht nach einem früheren Bounce auf der Sperrliste des Versanddienstes. Erst freigeben, dann erneut senden.'
     case 'failed': return detail
       ? `Konnte nicht verschickt werden: ${detail}`
       : 'Konnte nicht verschickt werden.'
   }
+}
+
+// ── Adresse: Hash und Domain ─────────────────────────────────────────────────
+
+/**
+ * Pseudonym einer Adresse fürs Protokoll — wie `ip_hash` bei der Gast-
+ * Anmeldung: SHA-256, erste 32 Hex-Zeichen, kleingeschrieben. Damit lässt sich
+ * fragen „hat diese Adresse schon einmal abgewiesen?", ohne die Adresse zu
+ * speichern.
+ */
+export function recipientHash(email: string): string {
+  return createHash('sha256').update(email.trim().toLowerCase()).digest('hex').slice(0, 32)
+}
+
+/** Domain-Teil der Adresse, kleingeschrieben — kein Personenbezug. */
+export function recipientDomain(email: string): string {
+  const at = email.lastIndexOf('@')
+  return at < 0 ? '' : email.slice(at + 1).trim().toLowerCase()
+}
+
+/** Was das Protokoll über frühere Sendungen an eine Domain weiß. */
+export type DomainRow = { recipientHash: string; status: MailStatus; createdAt: string }
+
+/**
+ * Erkennt, ob ein **Provider** unsere Mails ablehnt — im Unterschied zum
+ * Tippfehler in einer einzelnen Adresse (12.09.2026, Anlass Freenet).
+ *
+ * Regel: Unter den Sendungen mit Endzustand an diese Domain gibt es
+ * **mindestens zwei verschiedene Adressen**, die hart gebounct sind, und
+ * **keine einzige Zustellung** seit dem ersten dieser Bounces. Eine einzelne
+ * Adresse kann falsch geschrieben sein; zwei verschiedene, die beide
+ * abgewiesen werden, während nichts ankommt, sind ein Muster. Unterdrückte
+ * Sendungen (`suppressed`) zählen nicht — sie sind Folge, nicht Ursache.
+ *
+ * Kein Pflegeaufwand: Die Warnung entsteht aus dem Protokoll und verschwindet
+ * von selbst, sobald wieder etwas zugestellt wird.
+ */
+export function domainPattern(rows: DomainRow[]): { bounced: number; since: string } | null {
+  const sorted = [...rows].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+  const bounced = new Set<string>()
+  let ersterBounce: string | null = null
+  let zugestelltSeitdem = false
+  for (const r of sorted) {
+    if (r.status === 'bounced') {
+      bounced.add(r.recipientHash)
+      ersterBounce ??= r.createdAt
+    } else if (r.status === 'delivered' && ersterBounce) {
+      zugestelltSeitdem = true
+    }
+  }
+  if (bounced.size < 2 || zugestelltSeitdem || !ersterBounce) return null
+  return { bounced: bounced.size, since: ersterBounce }
 }
 
 // ── Webhook-Signatur (Svix-Format, wie Resend es benutzt) ───────────────────

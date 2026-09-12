@@ -146,11 +146,60 @@ hilft nur, die Adresse im Resend-Dashboard aus der Suppression-Liste zu nehmen
 oder eine andere Adresse zu verwenden. Das steht so noch nicht in der
 Oberfläche (offen, siehe TODO).
 
+## Zweiter Schritt: Sperrliste selbst erkennen und lösen
+
+Rückmeldung des Users auf den Produktionslauf: Die stille Sperre nach einem
+Bounce ist kritisch. Vorgabe: **automatisch, ohne Pflege durch uns; die
+Person am Bildschirm erkennt und löst es selbst, kein Support-Fall.**
+
+Recherche vorab: Resend hat eine Sperrlisten-API (`GET/DELETE
+/suppressions/<adresse>`, Antwort mit `origin` = bounce/complaint/manual und
+`source_id` = Kennung der auslösenden Mail) und ein Ereignis
+`email.suppressed`, das wir nicht abonniert hatten — deshalb kam beim zweiten
+Versand nichts zurück. Die API verlangt einen Schlüssel mit **Vollzugriff**;
+unser bisheriger ist send-only.
+
+Gebaut:
+
+- **Abfrage vor dem Senden** (`findBlock` in mail.ts): steht die Adresse auf
+  der Liste, wird nicht gesendet; zurück kommt `blocked` mit Herkunft, Datum
+  und dem Grund des Empfänger-Servers aus dem eigenen Protokoll (über
+  `source_id`). Ist Resend nicht fragbar (Sende-Schlüssel, Störung), fällt
+  die Prüfung auf `recipient_hash` im eigenen Protokoll zurück — dann ohne
+  Freigabe.
+- **Freigabe** (`releaseSuppression`): `DELETE`, dann derselbe Versand mit
+  `release: true`. Bounct die Adresse wieder, sperrt Resend sie von selbst
+  erneut und der neue Grund steht in der Statuszeile. Die Freigabe ist also
+  folgenlos, wenn die Adresse wirklich falsch ist, und genau richtig, wenn
+  der Fehler behoben wurde.
+- **Einladungslink anzeigen** (`inviteLinkAction`): der Ausweg ohne Mail.
+  Frischer Recovery-Link zum Kopieren, mit dem Hinweis, dass er das Passwort
+  setzt, einmalig ist und ein Missbrauch auffällt. Wer den Zugang anlegen
+  darf, darf ihn auch so übergeben. Beim Gast ist der Ausweg der Druck.
+- **Provider-Muster** (`domainPattern`, getestet): zwei verschiedene
+  Adressen einer Domain hart gebounct, seitdem keine Zustellung → Warnung
+  unter der Statuszeile, Senden bleibt erlaubt, erlischt mit der nächsten
+  Zustellung. Keine gepflegte Liste.
+- Status `suppressed` (Ereignis `email.suppressed`), Spalten
+  `recipient_hash`/`recipient_domain` (Migration
+  `2026-09-12_mail_log_sperrliste.sql`), `MailStatusLine` nimmt die Auswege
+  als `children`.
+
+**Wer sieht was:** Jede Person, die an eine gesperrte Adresse senden will,
+sieht die Sperre **vor** dem Senden, in jedem Haus, solange die Adresse bei
+Resend gesperrt ist (kein 30-Tage-Limit, weil live gefragt wird). Nur die
+Passwort-vergessen-Seite bleibt still — dort wäre jede Auskunft eine
+Kontoauskunft; der Ausweg ist Inhaber oder Manager auf der Personal-Seite.
+
 ## 🔖 Wiederaufnahme
 
-**Stand:** Alles in Produktion, Produktionslauf bestanden (Tabelle oben).
-Offen: (1) Hinweis in der Oberfläche, dass Resend Adressen nach einem harten
-Bounce unterdrückt („erneut senden" bringt dann nichts, Adresse prüfen oder
-im Resend-Dashboard freigeben) — TODO. (2) Den nächsten echten Freenet-Bounce
-mit Grund lesen. (3) `ALLOW_TEST_ACCOUNTS` vor dem ersten echten Kunden aus
-Vercel entfernen.
+**Stand:** Zweiter Schritt gebaut, Tests grün, committet. Vor dem Push drei
+Handgriffe des Users: (1) Migration `2026-09-12_mail_log_sperrliste.sql`
+einspielen. (2) Im Resend-Dashboard einen API-Schlüssel mit **Vollzugriff**
+anlegen und als `RESEND_API_KEY` in Vercel ersetzen (Git-Bash-`printf`). (3)
+Am Webhook das Ereignis `email.suppressed` hinzufügen. Danach Push und
+Produktionslauf: Einladung an die gesperrte Gmail-Adresse → „Nicht gesendet —
+Adresse gesperrt" mit Grund → „freigeben und erneut senden" → neuer Bounce mit
+Grund → „Einladungslink anzeigen". Offen danach: den nächsten echten
+Freenet-Bounce lesen; `ALLOW_TEST_ACCOUNTS` vor dem ersten echten Kunden
+entfernen.

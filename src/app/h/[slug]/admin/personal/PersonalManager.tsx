@@ -4,17 +4,19 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  Building2, IdCard, KeyRound, Loader2, MailCheck, Pencil, Plus, Printer, Send, Sparkles, Trash2,
+  Building2, IdCard, KeyRound, Link2, Loader2, MailCheck, Pencil, Plus, Printer, RotateCw, Send, Sparkles, Trash2,
   UserCheck,
   UserMinus, UserRound,
 } from 'lucide-react'
 import {
   attachManagerAction, createMaidAction, createManagerAction, createReceptionAction,
   deleteStaffAction, getStaffDeletionImpactAction, issueMaidLoginCardAction, renameStaffAction,
-  resendInvitationAction, setStaffActiveAction,
+  inviteLinkAction, resendInvitationAction, setStaffActiveAction,
   type Einladung, type StaffDeletionImpact, type StaffKind, type Zugangsdaten,
 } from './actions'
-import { MailStatusLine, sendLabel, useMailDispatch } from '@/components/mail/MailDispatch'
+import {
+  auswegButton, beginFrom, InviteLinkBox, MailStatusLine, sendLabel, useMailDispatch, type MailDispatch,
+} from '@/components/mail/MailDispatch'
 
 export type MaidRow = {
   id: string
@@ -120,6 +122,8 @@ export default function PersonalManager({
   const mgrMail = useMailDispatch()
   const resendMail = useMailDispatch()
   const [resendTarget, setResendTarget] = useState<string | null>(null)
+  /** Angezeigter Einladungslink (Ausweg ohne Mail), je Zugang. */
+  const [inviteLink, setInviteLink] = useState<{ userId: string; url: string } | null>(null)
   /**
    * Testbetrieb: frisch angelegter Zugang samt Passwort. Steht genau einmal
    * hier — danach nur noch über „Passwort zurücksetzen" erreichbar.
@@ -271,9 +275,7 @@ export default function PersonalManager({
       if (res.error) { setError(res.error); return }
       form.reset()
       setRecEinladung(res.einladung ?? null)
-      if (res.einladung) {
-        recMail.begin({ logId: res.einladung.logId, recipient: res.einladung.email, error: res.einladung.mailError })
-      }
+      if (res.einladung) recMail.begin(beginFrom(res.einladung.mail, res.einladung.email))
       setZugang(res.zugang ?? null)
       router.refresh()
     })
@@ -290,9 +292,7 @@ export default function PersonalManager({
       if (res.error) { setError(res.error); return }
       form.reset()
       setMgrEinladung(res.einladung ?? null)
-      if (res.einladung) {
-        mgrMail.begin({ logId: res.einladung.logId, recipient: res.einladung.email, error: res.einladung.mailError })
-      }
+      if (res.einladung) mgrMail.begin(beginFrom(res.einladung.mail, res.einladung.email))
       setZugang(res.zugang ?? null)
       router.refresh()
     })
@@ -317,14 +317,58 @@ export default function PersonalManager({
    * Einladung erneut schicken — für Zugänge, die noch offen sind. Meldung
    * und Status erscheinen AN DER ZEILE, nicht im Banner oben.
    */
-  function runResend(userId: string) {
+  function runResend(userId: string, opts: { release?: boolean; into?: MailDispatch } = {}) {
     setError(null)
     setNotice(null)
-    setResendTarget(userId)
+    setInviteLink(null)
+    const ziel = opts.into ?? resendMail
+    if (!opts.into) setResendTarget(userId)
     startTransition(async () => {
-      const res = await resendInvitationAction(hotelSlug, userId)
-      resendMail.begin({ logId: res.logId, recipient: res.email, error: res.error, wait: res.wait })
+      const res = await resendInvitationAction(hotelSlug, userId, { release: opts.release })
+      ziel.begin(res.mail ? beginFrom(res.mail, res.email) : { error: res.error, recipient: res.email })
     })
+  }
+
+  /** Einladungslink anzeigen — der Ausweg, wenn keine Mail ankommt. */
+  function runInviteLink(userId: string) {
+    setError(null)
+    startTransition(async () => {
+      const res = await inviteLinkAction(hotelSlug, userId)
+      if (res.error || !res.url) { setError(res.error ?? 'Link konnte nicht erzeugt werden.'); return }
+      setInviteLink({ userId, url: res.url })
+    })
+  }
+
+  /**
+   * Die Auswege unter einer Statuszeile: freigeben und erneut senden, Link
+   * anzeigen. Erscheinen nur, wenn die Mail nachweislich nicht ankam oder
+   * gar nicht gesendet wurde.
+   */
+  function auswege(userId: string, mail: MailDispatch) {
+    if (!mail.failed) return null
+    const kannFreigeben = mail.run?.blocked?.canRelease !== false
+    return (
+      <>
+        {kannFreigeben && (
+          <button
+            type="button"
+            disabled={pending || mail.remaining > 0}
+            onClick={() => runResend(userId, { release: true, into: mail })}
+            className={`${auswegButton} text-critical-strong`}
+          >
+            <RotateCw className="h-3.5 w-3.5" /> Adresse freigeben und erneut senden
+          </button>
+        )}
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => runInviteLink(userId)}
+          className={`${auswegButton} text-critical-strong`}
+        >
+          <Link2 className="h-3.5 w-3.5" /> Einladungslink anzeigen
+        </button>
+      </>
+    )
   }
 
   // ─── Darstellung ──────────────────────────────────────────────────────────
@@ -493,7 +537,12 @@ export default function PersonalManager({
           </div>
         </div>
 
-        {resendTarget === e.id && <MailStatusLine mail={resendMail} className="mt-3" />}
+        {resendTarget === e.id && (
+          <MailStatusLine mail={resendMail} className="mt-3">{auswege(e.id, resendMail)}</MailStatusLine>
+        )}
+        {inviteLink?.userId === e.id && (
+          <InviteLinkBox url={inviteLink.url} onClose={() => setInviteLink(null)} />
+        )}
 
         {editId === e.id && (
           <StaffEditPanel
@@ -758,7 +807,10 @@ export default function PersonalManager({
               <p className="flex items-center gap-1.5 text-sm font-bold text-ink">
                 <MailCheck className="h-4 w-4" /> Zugang für {recEinladung.displayName} angelegt
               </p>
-              <MailStatusLine mail={recMail} className="mt-2" />
+              <MailStatusLine mail={recMail} className="mt-2">{auswege(recEinladung.userId, recMail)}</MailStatusLine>
+              {inviteLink?.userId === recEinladung.userId && (
+                <InviteLinkBox url={inviteLink.url} onClose={() => setInviteLink(null)} />
+              )}
               <p className="mt-2 text-xs text-ink-muted">
                 Sobald die Einladung angenommen ist, verschwindet der Hinweis
                 &bdquo;Einladung offen&ldquo; aus der Liste. Kommt die Mail nicht an, hilft
@@ -870,7 +922,10 @@ export default function PersonalManager({
               <p className="flex items-center gap-1.5 text-sm font-bold text-ink">
                 <MailCheck className="h-4 w-4" /> Zugang für {mgrEinladung.displayName} angelegt
               </p>
-              <MailStatusLine mail={mgrMail} className="mt-2" />
+              <MailStatusLine mail={mgrMail} className="mt-2">{auswege(mgrEinladung.userId, mgrMail)}</MailStatusLine>
+              {inviteLink?.userId === mgrEinladung.userId && (
+                <InviteLinkBox url={inviteLink.url} onClose={() => setInviteLink(null)} />
+              )}
               <p className="mt-2 text-xs text-ink-muted">
                 Kommt die Mail nicht an, hilft &bdquo;Erneut senden&ldquo; an der Zeile.
               </p>

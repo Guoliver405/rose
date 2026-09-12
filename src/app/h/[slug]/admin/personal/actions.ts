@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/utils/supabase/service'
 import { getAdminContext, getManagementContext } from '@/utils/auth'
-import { confirmUrl, sendInviteMail, sendRecoveryMail } from '@/utils/mail'
+import { confirmUrl, sendInviteMail, sendRecoveryMail, type MailResult } from '@/utils/mail'
 import { generatePin, generateToken } from '@/lib/ids'
 import { buildMaidEmail, normalizeUsername } from '@/lib/maid'
 import { testzugaengeErlaubt } from '@/lib/test-accounts'
@@ -527,7 +527,13 @@ export async function deleteStaffAction(
  * Zugang zwar angelegt, die Mail aber nicht übergeben werden konnte — dann
  * bleibt „Erneut senden" der Ausweg.
  */
-export type Einladung = { displayName: string; email: string; logId?: string; mailError?: string }
+export type Einladung = {
+  userId: string
+  displayName: string
+  email: string
+  /** Ergebnis des Versands — Zeilen-ID, Fehler, Sperre, Provider-Hinweis. */
+  mail: MailResult
+}
 
 /**
  * Profil + Hausmitgliedschaft für einen frisch erzeugten Auth-Nutzer.
@@ -682,7 +688,7 @@ async function ladeEin(opts: {
 
   revalidatePath(`/h/${hotelSlug}/admin`, 'layout')
   revalidatePath('/admin')
-  return { einladung: { displayName, email, logId: mail.logId, mailError: mail.error } }
+  return { einladung: { userId: link.user.id, displayName, email, mail } }
 }
 
 /**
@@ -701,7 +707,49 @@ async function ladeEin(opts: {
 export async function resendInvitationAction(
   slug: string,
   userId: string,
-): Promise<{ error?: string; email?: string; logId?: string; wait?: number }> {
+  opts: { release?: boolean } = {},
+): Promise<{ error?: string; email?: string; mail?: MailResult }> {
+  const vorbereitet = await einladungsLink(slug, userId)
+  if ('error' in vorbereitet) return { error: vorbereitet.error }
+  const { ctx, email, url } = vorbereitet
+
+  const mail = await sendRecoveryMail({
+    to: email,
+    userId,
+    hotelId: ctx.hotelId,
+    url,
+    einladung: true,
+    release: opts.release,
+  })
+  return { email, mail }
+}
+
+/**
+ * Einladungslink zum Kopieren — der Ausweg, wenn keine Mail ankommt
+ * (Provider lehnt ab, Adresse gesperrt, Postfach unerreichbar). Die Person
+ * am Bildschirm übergibt ihn per Messenger, SMS oder Zettel; niemand muss
+ * uns anrufen.
+ *
+ * Sicherheitsabwägung: Wer den Link hat, setzt das Passwort dieses Zugangs.
+ * Das kann nur, wer den Zugang ohnehin anlegen darf (`getAdminContext`,
+ * Manager nur der Inhaber), der Link ist einmalig und begrenzt gültig, und
+ * ein Missbrauch fällt auf — die eingeladene Person scheitert am benutzten
+ * Link. Das ist deutlich schwächer als das vorgelesene Passwort von Juli.
+ */
+export async function inviteLinkAction(
+  slug: string,
+  userId: string,
+): Promise<{ error?: string; url?: string; email?: string }> {
+  const vorbereitet = await einladungsLink(slug, userId)
+  if ('error' in vorbereitet) return { error: vorbereitet.error }
+  return { url: vorbereitet.url, email: vorbereitet.email }
+}
+
+/** Gemeinsamer Unterbau: Berechtigung, Adresse, frischer Recovery-Link. */
+async function einladungsLink(slug: string, userId: string): Promise<
+  | { ctx: NonNullable<Awaited<ReturnType<typeof getAdminContext>>>; email: string; url: string }
+  | { error: string }
+> {
   const ctx = await getAdminContext(slug)
   if (!ctx) return { error: 'Keine Berechtigung.' }
 
@@ -730,14 +778,7 @@ export async function resendInvitationAction(
     return { error: 'Der Link konnte nicht erzeugt werden.' }
   }
 
-  const mail = await sendRecoveryMail({
-    to: email,
-    userId,
-    hotelId: ctx.hotelId,
-    url: confirmUrl(tokenHash, 'recovery', '/passwort-neu?einladung=1'),
-    einladung: true,
-  })
-  return { email, logId: mail.logId, error: mail.error, wait: mail.wait }
+  return { ctx, email, url: confirmUrl(tokenHash, 'recovery', '/passwort-neu?einladung=1') }
 }
 
 /**

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createHmac } from 'node:crypto'
 import {
-  advance, detailFromEvent, isFinalMailStatus, isMailFailure, logIdFromEvent,
-  mailStatusText, statusFromEvent, verifyResendSignature,
+  advance, detailFromEvent, domainPattern, isFinalMailStatus, isMailFailure, logIdFromEvent,
+  mailStatusText, recipientDomain, recipientHash, statusFromEvent, verifyResendSignature,
 } from './mail-status'
 import { inviteMail, recoveryMail } from './mail-templates'
 
@@ -30,6 +30,11 @@ describe('Statusfolge', () => {
     expect(statusFromEvent('email.delivered')).toBe('delivered')
     expect(statusFromEvent('email.delivery_delayed')).toBe('delayed')
     expect(statusFromEvent('email.bounced')).toBe('bounced')
+    expect(statusFromEvent('email.suppressed')).toBe('suppressed')
+    expect(isMailFailure('suppressed')).toBe(true)
+    expect(isFinalMailStatus('suppressed')).toBe(true)
+    expect(detailFromEvent({ type: 'email.suppressed', data: { suppressed: { message: 'on list', type: 'OnAccountSuppressionList' } } }))
+      .toBe('on list')
     expect(statusFromEvent('email.opened')).toBeNull()
     expect(statusFromEvent('irgendwas')).toBeNull()
   })
@@ -92,5 +97,46 @@ describe('Vorlagen', () => {
     expect(recoveryMail({ url: 'https://x.test/l' }).subject).toBe('Neues Passwort für RoSe')
     expect(recoveryMail({ url: 'https://x.test/l', einladung: true }).text).toContain('zu vergeben')
     expect(recoveryMail({ url: 'https://x.test/l' }).text).toContain('https://x.test/l')
+  })
+})
+
+describe('Adresse und Provider-Muster', () => {
+  it('hasht unabhängig von Schreibweise und trennt die Domain ab', () => {
+    expect(recipientHash('Anna@Freenet.de ')).toBe(recipientHash('anna@freenet.de'))
+    expect(recipientHash('a@x.de')).not.toBe(recipientHash('b@x.de'))
+    expect(recipientHash('a@x.de')).toHaveLength(32)
+    expect(recipientDomain('Anna@Freenet.DE')).toBe('freenet.de')
+    expect(recipientDomain('kaputt')).toBe('')
+  })
+
+  it('warnt erst bei zwei verschiedenen abgewiesenen Adressen ohne Zustellung', () => {
+    const t = (n: number) => `2026-09-12T10:0${n}:00Z`
+    // Eine Adresse, zweimal abgewiesen: Tippfehler, kein Muster.
+    expect(domainPattern([
+      { recipientHash: 'a', status: 'bounced', createdAt: t(1) },
+      { recipientHash: 'a', status: 'bounced', createdAt: t(2) },
+    ])).toBeNull()
+    // Zwei Adressen abgewiesen, nichts zugestellt: Muster.
+    expect(domainPattern([
+      { recipientHash: 'a', status: 'bounced', createdAt: t(1) },
+      { recipientHash: 'b', status: 'bounced', createdAt: t(2) },
+    ])).toEqual({ bounced: 2, since: t(1) })
+    // Danach eine Zustellung: Muster erloschen.
+    expect(domainPattern([
+      { recipientHash: 'a', status: 'bounced', createdAt: t(1) },
+      { recipientHash: 'b', status: 'bounced', createdAt: t(2) },
+      { recipientHash: 'c', status: 'delivered', createdAt: t(3) },
+    ])).toBeNull()
+    // Zustellung VOR den Bounces zählt nicht dagegen.
+    expect(domainPattern([
+      { recipientHash: 'c', status: 'delivered', createdAt: t(0) },
+      { recipientHash: 'a', status: 'bounced', createdAt: t(1) },
+      { recipientHash: 'b', status: 'bounced', createdAt: t(2) },
+    ])).not.toBeNull()
+    // Unterdrückte Sendungen sind Folge, nicht Ursache.
+    expect(domainPattern([
+      { recipientHash: 'a', status: 'bounced', createdAt: t(1) },
+      { recipientHash: 'b', status: 'suppressed', createdAt: t(2) },
+    ])).toBeNull()
   })
 })

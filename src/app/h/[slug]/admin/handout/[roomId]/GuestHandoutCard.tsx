@@ -4,7 +4,8 @@ import { useState, useTransition } from 'react'
 import { Loader2, Mail, Printer } from 'lucide-react'
 import { GuestSheetA4, GuestSheetCompact, type GuestSheetProps } from '@/components/print/GuestSheet'
 import { mailGuestAccessAction } from '../../actions'
-import { MailStatusLine, sendLabel, useMailDispatch } from '@/components/mail/MailDispatch'
+import { auswegButton, beginFrom, MailStatusLine, sendLabel, useMailDispatch } from '@/components/mail/MailDispatch'
+import { RotateCw } from 'lucide-react'
 import type { GuestAccessMode } from '@/lib/guest-access'
 import type { GuestSheetText } from '@/lib/guest-guide'
 
@@ -68,16 +69,28 @@ export default function GuestHandoutCard({
    */
   const mail = useMailDispatch()
 
-  function sendMail(e: React.FormEvent) {
+  function sendMail(e: React.FormEvent, release = false) {
     e.preventDefault()
     const to = email.trim()
     startTransition(async () => {
-      const res = await mailGuestAccessAction(hotelSlug, roomId, to)
-      mail.begin({ logId: res.logId, recipient: to, error: res.error, wait: res.wait })
+      const res = await mailGuestAccessAction(hotelSlug, roomId, to, { release })
+      mail.begin(beginFrom(res, to))
       // Die Adresse bleibt im Feld: bei einem Bounce ist der nächste Schritt
       // „Schreibweise prüfen", nicht „noch einmal tippen".
     })
   }
+
+  /** Ausweg nach Sperre oder Bounce: Adresse freigeben und denselben Versand wiederholen. */
+  const freigeben = mail.failed && mail.run?.blocked?.canRelease !== false ? (
+    <button
+      type="button"
+      disabled={pending || mail.remaining > 0}
+      onClick={e => sendMail(e, true)}
+      className={`${auswegButton} text-critical-strong`}
+    >
+      <RotateCw className="h-3.5 w-3.5" /> Adresse freigeben und erneut senden
+    </button>
+  ) : null
 
   const individuell = accessMode === 'link'
   const blatt: GuestSheetProps = {
@@ -151,7 +164,12 @@ export default function GuestHandoutCard({
               Die Mail geht in der ersten Sprache des Hauses heraus; Piktogramme und die
               zweite Sprache stehen nur auf dem Ausdruck.
             </p>
-            <MailStatusLine mail={mail} />
+            <MailStatusLine mail={mail}>
+              {freigeben}
+              {mail.failed && (
+                <span className="self-center text-xs text-ink-muted">Oder: das Handout drucken — es trägt denselben Zugang.</span>
+              )}
+            </MailStatusLine>
           </form>
         ) : (
           <p className="w-[380px] rounded-xl border border-edge bg-surface px-4 py-3 text-xs text-ink-muted">

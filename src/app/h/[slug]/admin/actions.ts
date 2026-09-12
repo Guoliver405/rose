@@ -439,6 +439,7 @@ export async function mailGuestAccessAction(
   slug: string,
   roomId: string,
   email: string,
+  opts: { release?: boolean } = {},
 ): Promise<MailResult> {
   const { access, error } = await getGuestAccessAction(slug, roomId)
   if (!access) return { error: error ?? 'Zugang nicht gefunden.' }
@@ -454,5 +455,6 @@ export async function mailGuestAccessAction(
     url: access.url,
     pin: access.pin,
     guide: access.guide,
+    release: opts.release,
   })
 }
