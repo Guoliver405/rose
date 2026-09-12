@@ -540,7 +540,8 @@ export default function PersonalManager({
         {resendTarget === e.id && (
           <MailStatusLine mail={resendMail} className="mt-3">{auswege(e.id, resendMail)}</MailStatusLine>
         )}
-        {inviteLink?.userId === e.id && (
+        {/* Der Link steht an der Zeile — außer der Einladungskasten oben zeigt ihn schon. */}
+        {inviteLink?.userId === e.id && recEinladung?.userId !== e.id && mgrEinladung?.userId !== e.id && (
           <InviteLinkBox url={inviteLink.url} onClose={() => setInviteLink(null)} />
         )}
 

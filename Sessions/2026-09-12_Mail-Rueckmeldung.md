@@ -191,15 +191,25 @@ Resend gesperrt ist (kein 30-Tage-Limit, weil live gefragt wird). Nur die
 Passwort-vergessen-Seite bleibt still — dort wäre jede Auskunft eine
 Kontoauskunft; der Ausweg ist Inhaber oder Manager auf der Personal-Seite.
 
+### Produktionslauf zweiter Schritt (Lotsen-Haus, Chrome)
+
+Migration eingespielt, Vollzugriffs-Schlüssel („blocklist_management") in
+Vercel und `.env.local`, `email.suppressed` am Webhook, Deploy.
+
+| Fall | Ergebnis |
+|---|---|
+| Schlüssel-Probe per API | `GET /suppressions/<gmail>` → auf der Liste, `origin: bounce`, `source_id` = Resend-Kennung der gebouncten Mail; unbekannte Adresse → 404 |
+| Einladung an die gesperrte Gmail-Adresse | **nicht gesendet**, Kasten „Nicht gesendet — Adresse gesperrt" mit Datum (12.09., 17:47) und beiden Auswegen. Der damalige Grund fehlte — die Protokollzeile war mit dem gelöschten Test-Zugang kaskadiert (FK `user_id`), korrekt |
+| „Adresse freigeben und erneut senden" | Freigabe bei Resend, Versand, nach ~3 s neuer Hard-Bounce mit Gmails Text; Resend hat die Adresse von selbst wieder gesperrt (API: 200). Der Kreis schließt sich, ohne dass jemand ein Dashboard braucht |
+| „Einladungslink anzeigen" | Link-Kasten mit `token_hash`-URL, „Link kopieren", Sicherheitshinweis. Nicht geöffnet — er würde in diesem Browser die Inhaber-Sitzung ersetzen |
+| Provider-Muster | nicht in Produktion provoziert (bräuchte zweite gebouncte Gmail-Adresse und kostet Reputation); Regel in `domainPattern` getestet |
+
+Schönheitsfehler direkt behoben: der Link-Kasten erschien zweimal (unter dem
+Einladungskasten und an der Zeile). Test-Zugang gelöscht.
+
 ## 🔖 Wiederaufnahme
 
-**Stand:** Zweiter Schritt gebaut, Tests grün, committet. Vor dem Push drei
-Handgriffe des Users: (1) Migration `2026-09-12_mail_log_sperrliste.sql`
-einspielen. (2) Im Resend-Dashboard einen API-Schlüssel mit **Vollzugriff**
-anlegen und als `RESEND_API_KEY` in Vercel ersetzen (Git-Bash-`printf`). (3)
-Am Webhook das Ereignis `email.suppressed` hinzufügen. Danach Push und
-Produktionslauf: Einladung an die gesperrte Gmail-Adresse → „Nicht gesendet —
-Adresse gesperrt" mit Grund → „freigeben und erneut senden" → neuer Bounce mit
-Grund → „Einladungslink anzeigen". Offen danach: den nächsten echten
-Freenet-Bounce lesen; `ALLOW_TEST_ACCOUNTS` vor dem ersten echten Kunden
-entfernen.
+**Stand:** Beide Schritte in Produktion, beide Läufe bestanden. Offen: den
+nächsten echten Freenet-Bounce mit Grund lesen und dann entscheiden
+(dedizierte Resend-IP oder zweiter Versender für deutsche Provider);
+`ALLOW_TEST_ACCOUNTS` vor dem ersten echten Kunden aus Vercel entfernen.
