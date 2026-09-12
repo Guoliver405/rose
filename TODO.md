@@ -299,9 +299,9 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       gelöst** (User: kein Support-Fall): Abfrage bei Resend vor jedem
       Versand, „Adresse freigeben und erneut senden", „Einladungslink
       anzeigen" als Ausweg ohne Mail, Provider-Muster aus dem Protokoll.
-      **Offen:** den nächsten echten Freenet-Bounce mit Grund lesen — dann
-      entscheiden, ob eine dedizierte Resend-IP oder ein zweiter Versender
-      für deutsche Provider nötig ist.
+      **Freenet-Fall am selben Abend im Resend-Log geklärt:** `550 unrouteable
+      address` = unbekanntes Postfach, Buchstabendreher in der Adresse;
+      Freenet hat nie blockiert. Keine dedizierte IP nötig. Erledigt.
 - [ ] **Gmail-Zustellbarkeit**: Einladungen landen im Werbung-Ordner. Kein
       Fehler, sondern fehlende Sendereputation — hilft nur regelmäßiger
       Versand über Tage. Praktische Relevanz vermutlich begrenzt, weil Hotels

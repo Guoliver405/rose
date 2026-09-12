@@ -96,7 +96,13 @@ export type ResendEvent = {
     email_id?: string
     /** Beim Senden als Liste übergeben, im Webhook teils als Objekt geliefert. */
     tags?: Record<string, string> | { name: string; value: string }[]
-    bounce?: { message?: string; type?: string; subType?: string }
+    bounce?: {
+      message?: string
+      type?: string
+      subType?: string
+      /** Die eigentliche SMTP-Antwort des Empfänger-Servers, z. B. „smtp; 550 unrouteable address". */
+      diagnosticCode?: string[]
+    }
     suppressed?: { message?: string; type?: string }
     failed?: { reason?: string }
   }
@@ -112,12 +118,22 @@ export function logIdFromEvent(ev: ResendEvent): string | null {
   return typeof tags.log === 'string' ? tags.log : null
 }
 
-/** Der Grund, wie ihn der Empfänger-Server oder Resend genannt hat. */
+/**
+ * Der Grund, wie ihn der Empfänger-Server oder Resend genannt hat.
+ *
+ * **Der SMTP-Code zuerst** (12.09.2026, Blick ins Resend-Log): Resends
+ * Prosa („sent a general bounce message …") ist für alle Bounces gleich —
+ * was den Fall unterscheidet, steht in `diagnosticCode`: „550 unrouteable
+ * address" ist ein unbekanntes Postfach (Tippfehler), „550 5.7.1 blocked"
+ * wäre ein Provider, der uns ablehnt. Genau das muss die Rezeption lesen.
+ */
 export function detailFromEvent(ev: ResendEvent): string | null {
   const b = ev.data?.bounce
-  if (b?.message) {
+  if (b?.message || b?.diagnosticCode?.length) {
     const art = [b.type, b.subType].filter(Boolean).join('/')
-    return art ? `${b.message} (${art})` : b.message
+    const diag = (b.diagnosticCode ?? []).map(d => d.replace(/^smtp;\s*/i, '').trim()).filter(Boolean).join('; ')
+    const teile = [diag, b.message].filter(Boolean).join(' — ')
+    return art ? `${teile} (${art})` : teile
   }
   if (ev.data?.failed?.reason) return ev.data.failed.reason
   if (ev.data?.suppressed) return ev.data.suppressed.message ?? ev.data.suppressed.type ?? null
@@ -160,8 +176,21 @@ export function recipientDomain(email: string): string {
   return at < 0 ? '' : email.slice(at + 1).trim().toLowerCase()
 }
 
+/**
+ * Sagt der Bounce-Text „dieses Postfach gibt es nicht"? Dann ist die Adresse
+ * das Problem, nicht der Provider — Tippfehler, gelöschtes Konto. Solche
+ * Bounces zählen **nicht** für das Provider-Muster: Zwei vertippte
+ * Freenet-Adressen wären sonst „Freenet lehnt uns ab" (genau so geschehen
+ * am 12.09.2026 — der Blick ins Resend-Log zeigte `550 unrouteable address`
+ * und einen Buchstabendreher).
+ */
+export function isMailboxBounce(detail: string | null): boolean {
+  if (!detail) return false
+  return /unrouteable|unroutable|no such user|user unknown|unknown user|user not found|does not exist|doesn't exist|no mailbox|mailbox (not found|unavailable|does not exist)|invalid recipient|recipient (address )?rejected|5\.1\.[01]\b|address rejected|not exist/i.test(detail)
+}
+
 /** Was das Protokoll über frühere Sendungen an eine Domain weiß. */
-export type DomainRow = { recipientHash: string; status: MailStatus; createdAt: string }
+export type DomainRow = { recipientHash: string; status: MailStatus; createdAt: string; detail?: string | null }
 
 /**
  * Erkennt, ob ein **Provider** unsere Mails ablehnt — im Unterschied zum
@@ -172,7 +201,9 @@ export type DomainRow = { recipientHash: string; status: MailStatus; createdAt: 
  * **keine einzige Zustellung** seit dem ersten dieser Bounces. Eine einzelne
  * Adresse kann falsch geschrieben sein; zwei verschiedene, die beide
  * abgewiesen werden, während nichts ankommt, sind ein Muster. Unterdrückte
- * Sendungen (`suppressed`) zählen nicht — sie sind Folge, nicht Ursache.
+ * Sendungen (`suppressed`) zählen nicht — sie sind Folge, nicht Ursache —,
+ * und Bounces mit „Postfach unbekannt" (`isMailboxBounce`) auch nicht, sie
+ * sind Adressfehler.
  *
  * Kein Pflegeaufwand: Die Warnung entsteht aus dem Protokoll und verschwindet
  * von selbst, sobald wieder etwas zugestellt wird.
@@ -184,6 +215,8 @@ export function domainPattern(rows: DomainRow[]): { bounced: number; since: stri
   let zugestelltSeitdem = false
   for (const r of sorted) {
     if (r.status === 'bounced') {
+      // Unbekanntes Postfach: die Adresse ist falsch, nicht der Provider.
+      if (isMailboxBounce(r.detail ?? null)) continue
       bounced.add(r.recipientHash)
       ersterBounce ??= r.createdAt
     } else if (r.status === 'delivered' && ersterBounce) {

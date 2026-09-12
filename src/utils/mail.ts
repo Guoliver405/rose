@@ -251,14 +251,14 @@ async function domainWarningFor(
   if (!domain) return undefined
   const { data } = await admin
     .from('mail_log')
-    .select('recipient_hash, status, created_at')
+    .select('recipient_hash, status, created_at, detail')
     .eq('recipient_domain', domain)
     .in('status', ['delivered', 'bounced', 'suppressed'])
     .order('created_at', { ascending: false })
     .limit(50)
   const rows: DomainRow[] = (data ?? [])
     .filter(r => r.recipient_hash)
-    .map(r => ({ recipientHash: r.recipient_hash as string, status: r.status as MailStatus, createdAt: r.created_at }))
+    .map(r => ({ recipientHash: r.recipient_hash as string, status: r.status as MailStatus, createdAt: r.created_at, detail: r.detail ?? null }))
   const muster = domainPattern(rows)
   return muster ? { domain, ...muster } : undefined
 }

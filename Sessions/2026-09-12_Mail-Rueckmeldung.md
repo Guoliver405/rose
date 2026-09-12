@@ -207,9 +207,34 @@ Vercel und `.env.local`, `email.suppressed` am Webhook, Deploy.
 Schönheitsfehler direkt behoben: der Link-Kasten erschien zweimal (unter dem
 Einladungskasten und an der Zeile). Test-Zugang gelöscht.
 
+### Nachtrag: der Freenet-Fall im Resend-Log
+
+Mit dem Vollzugriffs-Schlüssel lässt sich das Resend-Log per API lesen
+(`GET /emails`, `GET /emails/<id>` mit `bounce.diagnosticCode`). Befund:
+
+- `frediijaeger@freenet.de` (zwei i) bounct seit 09.09. bei jedem Versuch mit
+  `smtp; 550 unrouteable address` — Freenets Antwort für **unbekanntes
+  Postfach**. `fredijaeger@freenet.de` (ein i) wurde am 18.08. **zugestellt**.
+  Ein Buchstabendreher, kein Provider-Problem.
+- `seek35@freenet.de`: derselbe Code, zweimal — Postfach existiert nicht.
+- `bernd.koehl@iclaud.com`: Tippfehler in der Domain, nach 14 Stunden
+  Zustellversuchen abgelaufen.
+- **Freenet hat uns nie blockiert.** Kein Eintrag mit Reputations- oder
+  Policy-Code.
+- Resend stuft „550 unrouteable address" als **Transient** ein — die
+  Freenet-Adressen stehen deshalb NICHT auf der Sperrliste (dort nur die
+  Gmail-Testadresse und eine GMX-Adresse vom Mai). Jeder Versuch ging also
+  wirklich raus und bounzte wieder; der Grund war nur nie in der Oberfläche.
+
+Zwei Folgen im Code: (1) `detailFromEvent` stellt den **SMTP-Code voran** —
+Resends Prosa ist für alle Bounces gleich, der Code unterscheidet Tippfehler
+von Ablehnung. (2) `isMailboxBounce` schließt „Postfach unbekannt"-Bounces
+aus dem Provider-Muster aus — sonst hätten die zwei vertippten
+Freenet-Adressen ein falsches „Freenet lehnt uns ab" ausgelöst.
+
 ## 🔖 Wiederaufnahme
 
-**Stand:** Beide Schritte in Produktion, beide Läufe bestanden. Offen: den
-nächsten echten Freenet-Bounce mit Grund lesen und dann entscheiden
-(dedizierte Resend-IP oder zweiter Versender für deutsche Provider);
-`ALLOW_TEST_ACCOUNTS` vor dem ersten echten Kunden aus Vercel entfernen.
+**Stand:** Beide Schritte in Produktion, beide Läufe bestanden, Freenet-Fall
+geklärt (Tippfehler, kein Provider-Problem — keine dedizierte IP nötig).
+Offen: `ALLOW_TEST_ACCOUNTS` vor dem ersten echten Kunden aus Vercel
+entfernen.

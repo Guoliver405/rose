@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createHmac } from 'node:crypto'
 import {
-  advance, detailFromEvent, domainPattern, isFinalMailStatus, isMailFailure, logIdFromEvent,
+  advance, detailFromEvent, domainPattern, isFinalMailStatus, isMailboxBounce, isMailFailure, logIdFromEvent,
   mailStatusText, recipientDomain, recipientHash, statusFromEvent, verifyResendSignature,
 } from './mail-status'
 import { inviteMail, recoveryMail } from './mail-templates'
@@ -48,6 +48,11 @@ describe('Statusfolge', () => {
       type: 'email.bounced',
       data: { bounce: { message: 'mailbox unavailable', type: 'Permanent', subType: 'General' } },
     })).toBe('mailbox unavailable (Permanent/General)')
+    // Der SMTP-Code steht vorn — er unterscheidet die Fälle, die Prosa nicht.
+    expect(detailFromEvent({
+      type: 'email.bounced',
+      data: { bounce: { message: 'general bounce', type: 'Transient', subType: 'General', diagnosticCode: ['smtp; 550 unrouteable address'] } },
+    })).toBe('550 unrouteable address — general bounce (Transient/General)')
     expect(detailFromEvent({ type: 'email.failed', data: { failed: { reason: 'domain not verified' } } }))
       .toBe('domain not verified')
     expect(detailFromEvent({ type: 'email.delivered', data: {} })).toBeNull()
@@ -133,10 +138,30 @@ describe('Adresse und Provider-Muster', () => {
       { recipientHash: 'a', status: 'bounced', createdAt: t(1) },
       { recipientHash: 'b', status: 'bounced', createdAt: t(2) },
     ])).not.toBeNull()
+    // Unbekanntes Postfach (Tippfehler) ist ein Adressfehler, kein Provider-Muster.
+    expect(domainPattern([
+      { recipientHash: 'a', status: 'bounced', createdAt: t(1), detail: '550 unrouteable address — general bounce (Transient/General)' },
+      { recipientHash: 'b', status: 'bounced', createdAt: t(2), detail: '550 5.1.1 The email account that you tried to reach does not exist' },
+    ])).toBeNull()
+    expect(domainPattern([
+      { recipientHash: 'a', status: 'bounced', createdAt: t(1), detail: '550 5.7.1 Service unavailable; client blocked using RBL' },
+      { recipientHash: 'b', status: 'bounced', createdAt: t(2), detail: '554 rejected for policy reasons' },
+    ])).not.toBeNull()
     // Unterdrückte Sendungen sind Folge, nicht Ursache.
     expect(domainPattern([
       { recipientHash: 'a', status: 'bounced', createdAt: t(1) },
       { recipientHash: 'b', status: 'suppressed', createdAt: t(2) },
     ])).toBeNull()
+  })
+})
+
+describe('Postfach-Bounce erkennen', () => {
+  it('trennt Adressfehler von Provider-Ablehnung', () => {
+    expect(isMailboxBounce('550 unrouteable address')).toBe(true)
+    expect(isMailboxBounce('550 5.1.1 The email account that you tried to reach does not exist')).toBe(true)
+    expect(isMailboxBounce('550 Requested action not taken: mailbox unavailable')).toBe(true)
+    expect(isMailboxBounce('550 5.7.1 Service unavailable; client blocked using RBL')).toBe(false)
+    expect(isMailboxBounce('The recipient\'s email provider sent a hard bounce message, but didn\'t specify the reason')).toBe(false)
+    expect(isMailboxBounce(null)).toBe(false)
   })
 })
