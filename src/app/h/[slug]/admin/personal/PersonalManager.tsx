@@ -14,6 +14,7 @@ import {
   resendInvitationAction, setStaffActiveAction,
   type Einladung, type StaffDeletionImpact, type StaffKind, type Zugangsdaten,
 } from './actions'
+import { MailStatusLine, sendLabel, useMailDispatch } from '@/components/mail/MailDispatch'
 
 export type MaidRow = {
   id: string
@@ -107,6 +108,18 @@ export default function PersonalManager({
   const [notice, setNotice] = useState<string | null>(null)
   const [recEinladung, setRecEinladung] = useState<Einladung | null>(null)
   const [mgrEinladung, setMgrEinladung] = useState<Einladung | null>(null)
+  /**
+   * Countdown und Zustellstatus je Sendestelle (12.09.2026). Drei Instanzen,
+   * damit das Formular „Rezeption" nicht den Knopf „Erneut senden" in der
+   * Liste sperrt. Für „Erneut senden" merkt `resendTarget`, an welcher Zeile
+   * die Statuszeile erscheint — vorher stand die Meldung ganz oben über der
+   * Reinigungsliste, während der Knopf weit unten sitzt; wer dort klickte, sah
+   * keine Reaktion und hielt den Versand für ignoriert.
+   */
+  const recMail = useMailDispatch()
+  const mgrMail = useMailDispatch()
+  const resendMail = useMailDispatch()
+  const [resendTarget, setResendTarget] = useState<string | null>(null)
   /**
    * Testbetrieb: frisch angelegter Zugang samt Passwort. Steht genau einmal
    * hier — danach nur noch über „Passwort zurücksetzen" erreichbar.
@@ -258,6 +271,9 @@ export default function PersonalManager({
       if (res.error) { setError(res.error); return }
       form.reset()
       setRecEinladung(res.einladung ?? null)
+      if (res.einladung) {
+        recMail.begin({ logId: res.einladung.logId, recipient: res.einladung.email, error: res.einladung.mailError })
+      }
       setZugang(res.zugang ?? null)
       router.refresh()
     })
@@ -274,6 +290,9 @@ export default function PersonalManager({
       if (res.error) { setError(res.error); return }
       form.reset()
       setMgrEinladung(res.einladung ?? null)
+      if (res.einladung) {
+        mgrMail.begin({ logId: res.einladung.logId, recipient: res.einladung.email, error: res.einladung.mailError })
+      }
       setZugang(res.zugang ?? null)
       router.refresh()
     })
@@ -294,14 +313,17 @@ export default function PersonalManager({
     })
   }
 
-  /** Einladung erneut schicken — für Zugänge, die noch offen sind. */
-  function runResend(userId: string, name: string) {
+  /**
+   * Einladung erneut schicken — für Zugänge, die noch offen sind. Meldung
+   * und Status erscheinen AN DER ZEILE, nicht im Banner oben.
+   */
+  function runResend(userId: string) {
     setError(null)
     setNotice(null)
+    setResendTarget(userId)
     startTransition(async () => {
       const res = await resendInvitationAction(hotelSlug, userId)
-      if (res.error) { setError(res.error); return }
-      setNotice(`Neuer Link an ${name} verschickt (${res.email}).`)
+      resendMail.begin({ logId: res.logId, recipient: res.email, error: res.error, wait: res.wait })
     })
   }
 
@@ -374,11 +396,12 @@ export default function PersonalManager({
               {canManage && (
                 <button
                   type="button"
-                  disabled={pending}
-                  onClick={() => runResend(e.id, e.displayName)}
+                  disabled={pending || resendMail.remaining > 0}
+                  onClick={() => runResend(e.id)}
                   className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-xs font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
                 >
-                  <Send className="h-3.5 w-3.5" /> Erneut senden
+                  <Send className="h-3.5 w-3.5" />
+                  {resendTarget === e.id ? sendLabel('Erneut senden', resendMail) : 'Erneut senden'}
                 </button>
               )}
             </>
@@ -469,6 +492,8 @@ export default function PersonalManager({
             )}
           </div>
         </div>
+
+        {resendTarget === e.id && <MailStatusLine mail={resendMail} className="mt-3" />}
 
         {editId === e.id && (
           <StaffEditPanel
@@ -712,11 +737,11 @@ export default function PersonalManager({
               </label>
               <button
                 type="submit"
-                disabled={pending}
-                className="flex items-center gap-1.5 rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
+                disabled={pending || recMail.remaining > 0}
+                className="flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
               >
                 {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                Anlegen
+                {sendLabel('Anlegen', recMail)}
               </button>
             </div>
             {testHaken}
@@ -729,14 +754,15 @@ export default function PersonalManager({
           </form>
 
           {recEinladung && (
-            <div className="rounded-xl border border-positive-pill-edge bg-positive-tint p-4">
-              <p className="flex items-center gap-1.5 text-sm font-bold text-positive-deep">
-                <MailCheck className="h-4 w-4" /> Einladung an {recEinladung.displayName} verschickt
+            <div className="rounded-xl border border-edge bg-surface p-4">
+              <p className="flex items-center gap-1.5 text-sm font-bold text-ink">
+                <MailCheck className="h-4 w-4" /> Zugang für {recEinladung.displayName} angelegt
               </p>
-              <p className="mt-1 font-mono text-sm text-positive-deep">{recEinladung.email}</p>
-              <p className="mt-2 text-xs text-positive-deep">
+              <MailStatusLine mail={recMail} className="mt-2" />
+              <p className="mt-2 text-xs text-ink-muted">
                 Sobald die Einladung angenommen ist, verschwindet der Hinweis
-                &bdquo;Einladung offen&ldquo; aus der Liste.
+                &bdquo;Einladung offen&ldquo; aus der Liste. Kommt die Mail nicht an, hilft
+                &bdquo;Erneut senden&ldquo; an der Zeile.
               </p>
             </div>
           )}
@@ -790,11 +816,11 @@ export default function PersonalManager({
               </label>
               <button
                 type="submit"
-                disabled={pending}
-                className="flex items-center gap-1.5 rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
+                disabled={pending || mgrMail.remaining > 0}
+                className="flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
               >
                 {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                Anlegen
+                {sendLabel('Anlegen', mgrMail)}
               </button>
             </div>
             {testHaken}
@@ -840,11 +866,14 @@ export default function PersonalManager({
           )}
 
           {mgrEinladung && (
-            <div className="rounded-xl border border-positive-pill-edge bg-positive-tint p-4">
-              <p className="flex items-center gap-1.5 text-sm font-bold text-positive-deep">
-                <MailCheck className="h-4 w-4" /> Einladung an {mgrEinladung.displayName} verschickt
+            <div className="rounded-xl border border-edge bg-surface p-4">
+              <p className="flex items-center gap-1.5 text-sm font-bold text-ink">
+                <MailCheck className="h-4 w-4" /> Zugang für {mgrEinladung.displayName} angelegt
               </p>
-              <p className="mt-1 font-mono text-sm text-positive-deep">{mgrEinladung.email}</p>
+              <MailStatusLine mail={mgrMail} className="mt-2" />
+              <p className="mt-2 text-xs text-ink-muted">
+                Kommt die Mail nicht an, hilft &bdquo;Erneut senden&ldquo; an der Zeile.
+              </p>
             </div>
           )}
 

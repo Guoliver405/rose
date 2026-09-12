@@ -8,7 +8,7 @@ import { generatePin, generateToken, clampPinLength } from '@/lib/ids'
 import {
   parseGuestAccessMode, roomAccessUrl, stayAccessUrl, type GuestAccessMode,
 } from '@/lib/guest-access'
-import { mailReady, sendGuestAccessMail } from '@/utils/mail'
+import { mailReady, sendGuestAccessMail, type MailResult } from '@/utils/mail'
 import { buildGuestGuide, parseSheetLanguages, type GuestGuide } from '@/lib/guest-guide'
 
 export type CheckInResult = {
@@ -352,6 +352,8 @@ export async function markCleanedAction(slug: string, roomId: string): Promise<{
 
 export type GuestAccess = {
   accessMode: GuestAccessMode
+  /** Der laufende Aufenthalt — Bezug der Mail-Protokollzeile (keine Adresse). */
+  stayId: string
   roomNumber: string
   hotelName: string
   /** Adresse, die den Gast ins Portal bringt (Zimmer-QR bzw. Aufenthalts-Link). */
@@ -379,7 +381,7 @@ export async function getGuestAccessAction(
 
   const { data: stay } = await admin
     .from('stays')
-    .select('pin, guest_token, access_mode')
+    .select('id, pin, guest_token, access_mode')
     .eq('room_id', roomId)
     .is('checked_out_at', null)
     .maybeSingle()
@@ -397,6 +399,7 @@ export async function getGuestAccessAction(
     return {
       access: {
         accessMode: 'link',
+        stayId: stay.id,
         roomNumber: room.number,
         hotelName: ctx.hotelName,
         url: stayAccessUrl(site, stay.guest_token),
@@ -413,6 +416,7 @@ export async function getGuestAccessAction(
   return {
     access: {
       accessMode: 'pin',
+      stayId: stay.id,
       roomNumber: room.number,
       hotelName: ctx.hotelName,
       url: token ? roomAccessUrl(site, token.token) : `${site}/h/${ctx.hotelSlug}/guest`,
@@ -427,18 +431,24 @@ export async function getGuestAccessAction(
  * Zugang per Mail schicken.
  *
  * Die Adresse wird **nicht gespeichert** — sie lebt nur für die Dauer dieses
- * Aufrufs. `stays` bleibt anonym.
+ * Aufrufs. `stays` bleibt anonym; die Protokollzeile in `mail_log` trägt nur
+ * den Aufenthalt als Bezug (Drossel: eine Mail je Aufenthalt und Minute) und
+ * kaskadiert mit ihm.
  */
 export async function mailGuestAccessAction(
   slug: string,
   roomId: string,
   email: string,
-): Promise<{ error?: string }> {
+): Promise<MailResult> {
   const { access, error } = await getGuestAccessAction(slug, roomId)
   if (!access) return { error: error ?? 'Zugang nicht gefunden.' }
+  const ctx = await getManagementContext(slug)
+  if (!ctx) return { error: 'Nicht angemeldet.' }
 
   return sendGuestAccessMail({
     to: email.trim(),
+    hotelId: ctx.hotelId,
+    stayId: access.stayId,
     hotelName: access.hotelName,
     roomNumber: access.roomNumber,
     url: access.url,

@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { Loader2, Mail, Printer } from 'lucide-react'
 import { GuestSheetA4, GuestSheetCompact, type GuestSheetProps } from '@/components/print/GuestSheet'
 import { mailGuestAccessAction } from '../../actions'
+import { MailStatusLine, sendLabel, useMailDispatch } from '@/components/mail/MailDispatch'
 import type { GuestAccessMode } from '@/lib/guest-access'
 import type { GuestSheetText } from '@/lib/guest-guide'
 
@@ -59,21 +60,22 @@ export default function GuestHandoutCard({
   const [pending, startTransition] = useTransition()
   const [format, setFormat] = useState<'a4' | 'kompakt'>('a4')
   const [email, setEmail] = useState('')
-  const [mailNotice, setMailNotice] = useState<string | null>(null)
-  const [mailError, setMailError] = useState<string | null>(null)
+  /**
+   * Countdown und Zustellstatus (12.09.2026): nach dem Senden zählt der Knopf
+   * eine Minute herunter, und die Zeile darunter zeigt, ob der Empfänger-
+   * Server die Mail angenommen oder abgewiesen hat — vorher hieß es
+   * „verschickt", auch wenn Freenet sie eine Sekunde später zurückwies.
+   */
+  const mail = useMailDispatch()
 
   function sendMail(e: React.FormEvent) {
     e.preventDefault()
-    setMailNotice(null)
-    setMailError(null)
+    const to = email.trim()
     startTransition(async () => {
-      const res = await mailGuestAccessAction(hotelSlug, roomId, email)
-      if (res.error) { setMailError(res.error); return }
-      // Die Absender-Domain ist jung und hat kaum Sendehistorie — bis sich
-      // Reputation aufgebaut hat, sortieren manche Anbieter die Mail in den
-      // Spam-Ordner. Der Hinweis gehört an die Rezeption, die es dem Gast sagt.
-      setMailNotice(`Zugang an ${email} verschickt. Bitte den Gast darauf hinweisen, notfalls im Spam-Ordner nachzusehen.`)
-      setEmail('')
+      const res = await mailGuestAccessAction(hotelSlug, roomId, to)
+      mail.begin({ logId: res.logId, recipient: to, error: res.error, wait: res.wait })
+      // Die Adresse bleibt im Feld: bei einem Bounce ist der nächste Schritt
+      // „Schreibweise prüfen", nicht „noch einmal tippen".
     })
   }
 
@@ -137,11 +139,11 @@ export default function GuestHandoutCard({
               />
               <button
                 type="submit"
-                disabled={pending}
-                className="flex items-center gap-1.5 rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
+                disabled={pending || mail.remaining > 0}
+                className="flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
               >
                 {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                Senden
+                {sendLabel('Senden', mail)}
               </button>
             </div>
             <p className="text-xs text-ink-muted">
@@ -149,16 +151,7 @@ export default function GuestHandoutCard({
               Die Mail geht in der ersten Sprache des Hauses heraus; Piktogramme und die
               zweite Sprache stehen nur auf dem Ausdruck.
             </p>
-            {mailNotice && (
-              <p className="rounded-lg border border-positive-pill-edge bg-positive-tint px-3 py-2 text-sm font-semibold text-positive-deep">
-                {mailNotice}
-              </p>
-            )}
-            {mailError && (
-              <p className="rounded-lg border border-critical-tint-edge bg-critical-tint px-3 py-2 text-sm font-semibold text-critical-strong">
-                {mailError}
-              </p>
-            )}
+            <MailStatusLine mail={mail} />
           </form>
         ) : (
           <p className="w-[380px] rounded-xl border border-edge bg-surface px-4 py-3 text-xs text-ink-muted">

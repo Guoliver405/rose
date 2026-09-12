@@ -1,6 +1,6 @@
 # Offene Punkte
 
-Stand 06.09.2026. Herkunft in Klammern; Erledigtes wird gestrichen, nicht
+Stand 12.09.2026. Herkunft in Klammern; Erledigtes wird gestrichen, nicht
 gelöscht, damit erkennbar bleibt, was einmal offen war.
 
 ## Vor den ersten echten Kunden
@@ -281,24 +281,21 @@ zusammen und gehören vor den ersten zahlenden Kunden.
 - [ ] **Testzugänge ohne Mailversand ausbauen** (gehört zum selben Rückbau):
       `ALLOW_TEST_ACCOUNTS`, [test-accounts.ts](src/lib/test-accounts.ts), der
       `ohneMail`-Zweig in `ladeEin` und das Häkchen in `PersonalManager`.
-      **In Produktion darf `ALLOW_TEST_ACCOUNTS` nie gesetzt werden** — sonst
+      **Seit 12.09. ist `ALLOW_TEST_ACCOUNTS` auch in Vercel gesetzt** (User:
+      Tester brauchen fiktives Personal ohne Postfach, und getestet wird in
+      Produktion). **Vor dem ersten echten Kunden wieder entfernen** — sonst
       wären vorgelesene Passwörter zurück, die im Juli bewusst abgeschafft
       wurden.
-- [ ] **Mail-Sperre sichtbar machen** (06.09., User): Einladungen und
-      Passwort-Reset laufen über Supabase Auth (Custom SMTP = Resend), und
-      Supabase lässt je Adresse nur **eine Mail pro 60 Sekunden** zu
-      (`over_email_send_rate_limit`, 429). Heute meldet
-      `inviteUserByEmail` in [personal/actions.ts](src/app/h/[slug]/admin/personal/actions.ts)
-      dann nur „konnte nicht verschickt werden, Adresse prüfen" — der
-      eigentliche Grund bleibt im Server-Log; beim Reset schweigt die Seite
-      ganz. Für den Testbetrieb hinnehmbar, **für den Live-Betrieb nicht**:
-      (1) den Fehlercode auswerten und klar sagen „Bitte in 60 Sekunden
-      erneut versuchen", (2) Countdown im Formular bis zum nächsten möglichen
-      Versand, (3) das projektweite Stundenlimit in Supabase (Authentication →
-      Rate Limits) prüfen und anheben, (4) mittelfristig Einladungen wie die
-      Gast-Mail direkt über Resend verschicken (kein Auth-Limit, eigene
-      Vorlage). Der Gast-Zugang per Mail ist nicht betroffen — er geht direkt
-      über die Resend-API.
+- [x] ~~**Mail-Sperre sichtbar machen**~~ (06.09., User) — **12.09. erledigt,
+      und weiter gegangen:** Alle Mails (Einladung, Passwort-Link, Gast-Zugang)
+      verschickt die Anwendung jetzt selbst über Resend; Supabase liefert nur
+      noch den Link (`generateLink`). Damit ist das Auth-Limit weg, die
+      Minuten-Drossel sitzt in `mail_log` und zählt an jedem Sende-Knopf
+      sichtbar herunter, und der **Resend-Webhook** meldet zurück, ob die Mail
+      zugestellt oder abgewiesen wurde (mit Grund) — vorher blieb ein Bounce
+      (Freenet) unbemerkt. Siehe AGENTS.md „Mail-Versand mit Rückmeldung".
+      **Offen daraus:** die Freenet-Ursache im Resend-Log nachlesen, sobald
+      der nächste Bounce mit Grund in der Oberfläche steht.
 - [ ] **Gmail-Zustellbarkeit**: Einladungen landen im Werbung-Ordner. Kein
       Fehler, sondern fehlende Sendereputation — hilft nur regelmäßiger
       Versand über Tage. Praktische Relevanz vermutlich begrenzt, weil Hotels

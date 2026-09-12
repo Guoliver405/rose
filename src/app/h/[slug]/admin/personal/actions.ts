@@ -3,8 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/utils/supabase/service'
-import { createClient } from '@/utils/supabase/server'
 import { getAdminContext, getManagementContext } from '@/utils/auth'
+import { confirmUrl, sendInviteMail, sendRecoveryMail } from '@/utils/mail'
 import { generatePin, generateToken } from '@/lib/ids'
 import { buildMaidEmail, normalizeUsername } from '@/lib/maid'
 import { testzugaengeErlaubt } from '@/lib/test-accounts'
@@ -521,7 +521,13 @@ export async function deleteStaffAction(
 }
 
 /** Rückmeldung nach einer verschickten Einladung. */
-export type Einladung = { displayName: string; email: string }
+/**
+ * Ergebnis einer Einladung. `logId` ist die Zeile in `mail_log`, über die
+ * die Oberfläche den Zustellstatus nachfragt; `mailError` steht, wenn der
+ * Zugang zwar angelegt, die Mail aber nicht übergeben werden konnte — dann
+ * bleibt „Erneut senden" der Ausweg.
+ */
+export type Einladung = { displayName: string; email: string; logId?: string; mailError?: string }
 
 /**
  * Profil + Hausmitgliedschaft für einen frisch erzeugten Auth-Nutzer.
@@ -564,18 +570,18 @@ async function legeMitgliedschaftAn(
 /**
  * Gemeinsamer Einladungs-Pfad für Rezeption und Manager.
  *
- * Statt ein Passwort zu erzeugen und vorlesen zu lassen, verschickt Supabase
- * eine Einladung über dieselbe SMTP-Strecke wie der Passwort-Reset. Die
- * eingeladene Person vergibt ihr Passwort selbst — es existiert zu keinem
- * Zeitpunkt außerhalb ihres Kopfes.
+ * Statt ein Passwort zu erzeugen und vorlesen zu lassen, bekommt die Person
+ * einen Link, über den sie ihr Passwort selbst vergibt — es existiert zu
+ * keinem Zeitpunkt außerhalb ihres Kopfes.
  *
- * **Kein Resend-Code nötig:** `inviteUserByEmail` geht denselben Weg wie
- * `resetPasswordForEmail`. Der Resend-Schlüssel lebt weiterhin ausschließlich
- * in Supabases SMTP-Einstellung, nicht im Projekt.
- *
- * Der Link in der Mail muss auf `/auth/confirm` zeigen (Vorlage in Supabase) —
- * PKCE scheidet bei Einladungen aus, weil der einladende Browser ein anderer
- * ist als der annehmende.
+ * **Seit 12.09.2026 verschickt die Anwendung selbst.** Supabase liefert über
+ * `generateLink` nur den `token_hash` (und legt den Auth-Nutzer an), die Mail
+ * baut `sendInviteMail` und übergibt sie an Resend — mit Protokollzeile, aus
+ * der die Oberfläche den Zustellstatus liest. Vorher lief die Mail über
+ * Supabase-SMTP, und ob sie ankam, wusste niemand. Nebeneffekt: Die Mail-
+ * Vorlagen im Supabase-Dashboard sind unbenutzt; der Link zeigt weiter auf
+ * `/auth/confirm`, weil der Hash am Konto hängt, nicht am Browser (PKCE
+ * scheidet bei Einladungen aus — einladender ≠ annehmender Browser).
  */
 /**
  * Zugangsdaten eines **Testzugangs** — nur im Testbetrieb, siehe
@@ -584,6 +590,10 @@ async function legeMitgliedschaftAn(
  */
 export type Zugangsdaten = { displayName: string; email: string; password: string }
 
+function rolleLabel(role: 'reception' | 'manager'): 'Rezeption' | 'Manager' {
+  return role === 'manager' ? 'Manager' : 'Rezeption'
+}
+
 async function ladeEin(opts: {
   email: string
   displayName: string
@@ -591,10 +601,12 @@ async function ladeEin(opts: {
   hotelSlug: string
   hotelName: string
   role: 'reception' | 'manager'
+  /** Wer einlädt — steht in der Mail. */
+  invitedBy?: string
   /** Testbetrieb: Zugang direkt anlegen, Passwort anzeigen, keine Mail. */
   ohneMail?: boolean
 }): Promise<{ einladung?: Einladung; zugang?: Zugangsdaten; error?: string }> {
-  const { email, displayName, hotelId, hotelSlug, hotelName, role, ohneMail } = opts
+  const { email, displayName, hotelId, hotelSlug, hotelName, role, ohneMail, invitedBy } = opts
   const admin = createAdminClient()
 
   // ── Testbetrieb: ohne Mail, Passwort einmal anzeigen ───────────────────
@@ -627,55 +639,69 @@ async function ladeEin(opts: {
     return { zugang: { displayName, email, password } }
   }
 
-  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
-  const { data: invited, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(email, {
-    redirectTo: `${base}/auth/confirm?next=/passwort-neu`,
-    // Landet in `user_metadata` und ist in der Mail-Vorlage als
-    // `{{ .Data.hotel }}` / `{{ .Data.rolle }}` / `{{ .Data.name }}` verfügbar.
-    // Damit liest sich die Einladung als konkrete Nachricht statt als
-    // Rundschreiben — was auch Gmails Einsortierung zugutekommt.
-    //
-    // ACHTUNG: `user_metadata` ist vom Nutzer selbst änderbar. Es ist hier
-    // reine Anzeige für die Mail und darf NIE für Berechtigungen herangezogen
-    // werden — die stehen in `hotel_members` bzw. `account_members`.
-    data: {
-      name: displayName,
-      hotel: hotelName,
-      rolle: role === 'manager' ? 'Manager' : 'Rezeption',
+  const { data: link, error: linkErr } = await admin.auth.admin.generateLink({
+    type: 'invite',
+    email,
+    options: {
+      // Landet in `user_metadata` — reine Anzeige (die Mail nennt Haus und
+      // Rolle aus denselben Werten). ACHTUNG: `user_metadata` ist vom Nutzer
+      // selbst änderbar und darf NIE für Berechtigungen herangezogen werden —
+      // die stehen in `hotel_members` bzw. `account_members`.
+      data: { name: displayName, hotel: hotelName, rolle: rolleLabel(role) },
     },
   })
-  if (inviteErr || !invited?.user) {
-    if (inviteErr?.message?.toLowerCase().includes('already')) {
+  const tokenHash = link?.properties?.hashed_token
+  if (linkErr || !link?.user || !tokenHash) {
+    if (linkErr?.message?.toLowerCase().includes('already')) {
       return {
         error: 'Für diese E-Mail-Adresse gibt es bereits einen Zugang. War die Person hier schon einmal tätig, steht sie unter „Beendete Zugänge" und lässt sich dort wieder aktivieren.',
       }
     }
-    console.error('[inviteUserByEmail]', {
-      status: inviteErr?.status, code: inviteErr?.code, message: inviteErr?.message,
+    console.error('[generateLink invite]', {
+      status: linkErr?.status, code: linkErr?.code, message: linkErr?.message,
     })
-    return { error: 'Die Einladung konnte nicht verschickt werden. Bitte die Adresse prüfen.' }
+    return { error: 'Die Einladung konnte nicht angelegt werden. Bitte die Adresse prüfen.' }
   }
-  const fehler = await legeMitgliedschaftAn(admin, invited.user.id, {
+  const fehler = await legeMitgliedschaftAn(admin, link.user.id, {
     displayName, hotelId, role,
   })
   if (fehler) return { error: fehler }
 
+  // Zugang steht — jetzt die Mail. Scheitert sie, bleibt der Zugang mit
+  // „Einladung offen" in der Liste, und „Erneut senden" ist der Ausweg.
+  const mail = await sendInviteMail({
+    to: email,
+    userId: link.user.id,
+    hotelId,
+    hotelName,
+    displayName,
+    rolle: rolleLabel(role),
+    url: confirmUrl(tokenHash, 'invite', '/passwort-neu'),
+    invitedBy,
+  })
+
   revalidatePath(`/h/${hotelSlug}/admin`, 'layout')
   revalidatePath('/admin')
-  return { einladung: { displayName, email } }
+  return { einladung: { displayName, email, logId: mail.logId, mailError: mail.error } }
 }
 
 /**
  * Einladung erneut schicken — für Zugänge, die noch nicht angenommen wurden.
  *
- * Bewusst über `resetPasswordForEmail` statt eines zweiten `invite`: der Nutzer
- * existiert bereits, eine erneute Einladung würde daran scheitern. Das Ergebnis
- * ist dasselbe — ein Link, über den sich ein Passwort setzen lässt.
+ * Bewusst ein `recovery`-Link statt einer zweiten Einladung: der Nutzer
+ * existiert bereits, `generateLink({ type: 'invite' })` würde daran scheitern.
+ * Das Ergebnis ist dasselbe — ein Link, über den sich ein Passwort setzen
+ * lässt; die Mail liest sich trotzdem als Einladung, und die Zielseite wird
+ * über `next` als Einladung begrüßt.
+ *
+ * Kein 60-Sekunden-Limit von Supabase mehr (der Link wird nur erzeugt, nicht
+ * verschickt) — die Drossel sitzt in `dispatch` je Konto und Minute und
+ * kommt als `wait` zurück, damit der Knopf herunterzählt.
  */
 export async function resendInvitationAction(
   slug: string,
   userId: string,
-): Promise<{ error?: string; email?: string }> {
+): Promise<{ error?: string; email?: string; logId?: string; wait?: number }> {
   const ctx = await getAdminContext(slug)
   if (!ctx) return { error: 'Keine Berechtigung.' }
 
@@ -697,16 +723,21 @@ export async function resendInvitationAction(
   const email = user?.user?.email
   if (!email) return { error: 'Zugang hat keine E-Mail-Adresse.' }
 
-  const supabase = await createClient()
-  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/+$/, '')
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${base}/auth/confirm?next=/passwort-neu`,
-  })
-  if (error) {
-    console.error('[resendInvitation]', { status: error.status, message: error.message })
-    return { error: 'Der Link konnte nicht verschickt werden.' }
+  const { data: link, error: linkErr } = await admin.auth.admin.generateLink({ type: 'recovery', email })
+  const tokenHash = link?.properties?.hashed_token
+  if (linkErr || !tokenHash) {
+    console.error('[generateLink recovery]', { status: linkErr?.status, message: linkErr?.message })
+    return { error: 'Der Link konnte nicht erzeugt werden.' }
   }
-  return { email }
+
+  const mail = await sendRecoveryMail({
+    to: email,
+    userId,
+    hotelId: ctx.hotelId,
+    url: confirmUrl(tokenHash, 'recovery', '/passwort-neu?einladung=1'),
+    einladung: true,
+  })
+  return { email, logId: mail.logId, error: mail.error, wait: mail.wait }
 }
 
 /**
@@ -736,6 +767,7 @@ export async function createReceptionAction(
     email, displayName,
     hotelId: ctx.hotelId, hotelSlug: ctx.hotelSlug, hotelName: ctx.hotelName,
     role: 'reception',
+    invitedBy: ctx.displayName,
     ohneMail: formData.get('ohneMail') === 'on',
   })
 }
@@ -779,6 +811,7 @@ export async function createManagerAction(
     email, displayName,
     hotelId: ctx.hotelId, hotelSlug: ctx.hotelSlug, hotelName: ctx.hotelName,
     role: 'manager',
+    invitedBy: ctx.displayName,
     ohneMail: formData.get('ohneMail') === 'on',
   })
   // Beim Manager gibt es für „schon vergeben" einen zweiten Weg — darauf
