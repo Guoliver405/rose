@@ -25,14 +25,19 @@ export default async function ServiceLoginPage({
   // aber nicht aufs Board — mit `if (session)` entstünde eine Redirect-
   // Schleife zwischen Login und Board. Weitergeleitet wird nur, wenn die
   // Sitzung zu DIESEM Haus gehört; sonst bleibt das Formular stehen.
+  // Ausnahme: Nach einem fehlgeschlagenen Versuch (`?error=…`) bleibt das
+  // Formular mit der Meldung stehen. Sonst schluckt eine Sitzung aus einem
+  // zweiten Fenster (Cookies gelten browserweit) die Ablehnung, und ein
+  // falscher Benutzername sieht aus wie eine gelungene Anmeldung.
   const svcClient = await createServicePortalClient()
   const { session } = await getServicePortalSession(svcClient)
   const maid = session ? await getMaidContext() : null
-  if (maid?.hotelId === hotel.id) redirect(`/h/${hotel.slug}/service`)
+  if (maid?.hotelId === hotel.id && !error) redirect(`/h/${hotel.slug}/service`)
   const deactivated = Boolean(session) && !maid
 
   const errorMessage =
-    error === 'invalid' ? 'Benutzername oder PIN ist falsch.' :
+    error === 'invalid'
+      ? 'Benutzername oder PIN ist falsch. Der Benutzername ist der kurze Anmeldename von der Zugangskarte (hinter dem @), nicht der angezeigte Name.' :
     error === 'missing' ? 'Bitte alle Felder ausfüllen.' :
     error === 'auto_login_failed'
       ? 'QR-Code ist nicht mehr gültig. Bitte mit Benutzername und PIN anmelden oder eine neue Karte beim Management anfordern.' :
@@ -85,10 +90,18 @@ export default async function ServiceLoginPage({
                 required
                 autoComplete="username"
                 autoCapitalize="none"
-                placeholder="benutzername"
+                placeholder="anmeldename"
+                aria-describedby="username-hint"
                 className="w-full rounded-xl border border-edge bg-surface-elevated py-4 pl-11 pr-4 text-lg font-bold text-ink placeholder:text-ink-muted focus:border-transparent focus:outline-none focus:ring-2 focus:ring-attention"
               />
             </div>
+            {/* „Benutzername" heißt für viele der eigene Name. Gemeint ist der
+                kurze Anmeldename, den das Management vergeben hat — er steht
+                auf der Zugangskarte hinter dem @. */}
+            <p id="username-hint" className="text-xs leading-relaxed text-ink-muted">
+              Der kurze Anmeldename von deiner Zugangskarte (steht dort hinter
+              dem&nbsp;@), nicht dein angezeigter Name.
+            </p>
           </div>
 
           <div className="space-y-1.5">

@@ -62,7 +62,7 @@ type Entry = {
   id: string
   kind: StaffKind
   displayName: string
-  /** Zweite Zeile: @benutzername oder E-Mail. */
+  /** Zweite Zeile: „Benutzername: …" (Reinigung) oder E-Mail. */
   sub: string
   deactivatedAt: string | null
   username?: string
@@ -149,7 +149,7 @@ export default function PersonalManager({
   }
 
   const maidEntries: Entry[] = maids.map(m => ({
-    id: m.id, kind: 'maid', displayName: m.displayName, sub: `@${m.username}`,
+    id: m.id, kind: 'maid', displayName: m.displayName, sub: `Benutzername: ${m.username}`,
     deactivatedAt: m.deactivatedAt, username: m.username, pin: m.pin, cleaningRoom: m.cleaningRoom,
   }))
   const recEntries: Entry[] = receptionists.map(r => ({
@@ -692,7 +692,9 @@ export default function PersonalManager({
             </button>
           </div>
           <p data-lotse="personal.karte" className="mt-2 text-xs text-ink-muted">
-            PIN (6 Ziffern) und QR-Login-Karte werden automatisch erzeugt — danach über
+            Mit dem <strong>Benutzernamen</strong> und der PIN meldet sich die Kraft an —
+            nicht mit dem Anzeigenamen, der steht nur auf Board und Karte. PIN (6 Ziffern)
+            und QR-Login-Karte werden automatisch erzeugt — danach über
             &bdquo;Karte drucken&ldquo; aushändigen.
           </p>
         </form>

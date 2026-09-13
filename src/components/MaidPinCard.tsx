@@ -70,28 +70,36 @@ export default function MaidPinCard({
             )}
           </div>
 
+          {/* Zugangsdaten für den Weg von Hand — beide Werte ausdrücklich
+              beschriftet. Der Anzeigename im Kopf ist KEIN Anmeldename; wer
+              ihn ins Feld „Benutzername" tippt, wird abgewiesen. Ohne den
+              Hotel-Slug in der Adresse ist der Benutzername nicht eindeutig
+              und die Anmeldung findet nicht statt. */}
           <div className="border-t-2 border-dashed border-attention-tint-edge pt-5">
-            <p className="mb-2 text-[10px] font-black uppercase tracking-[0.2em] text-attention-strong">
-              PIN (manuell)
+            <p className="mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-attention-strong">
+              Anmeldung von Hand → Zugangsdaten
             </p>
-            <p className="font-mono text-5xl font-black tracking-[0.3em] text-attention-deepest">{pin}</p>
+            <dl className="mx-auto grid w-fit grid-cols-[auto_auto] items-baseline gap-x-4 gap-y-2 text-left">
+              <dt className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">Benutzername</dt>
+              <dd className="font-mono text-2xl font-black text-attention-deepest">{username}</dd>
+              <dt className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">PIN</dt>
+              <dd className="font-mono text-4xl font-black tracking-[0.25em] text-attention-deepest">{pin}</dd>
+            </dl>
+            <p className="mt-3 break-all text-[10px] text-ink-muted">
+              Adresse: {manualUrl}
+            </p>
           </div>
 
           <p className="pt-1 text-[11px] leading-relaxed text-ink-muted">
-            QR mit dem Tablet scannen oder Benutzername + PIN eintippen.
-            Diese Karte vertraulich behandeln — sie öffnet das Reinigungsboard
-            ohne weitere Bestätigung.
+            QR mit dem Tablet scannen oder auf der Adresse oben Benutzername und
+            PIN eintippen — als Benutzername gilt <span className="font-mono font-bold">{username}</span>,
+            nicht der Name im Kopf der Karte. Diese Karte vertraulich behandeln — sie
+            öffnet das Reinigungsboard ohne weitere Bestätigung.
           </p>
 
           {/* Klartext-Link als Fallback, falls der QR-Scan nicht klappt */}
           <p className="break-all border-t border-dashed border-attention-tint-edge pt-2 text-[10px] text-ink-muted">
-            {loginUrl}
-          </p>
-
-          {/* Adresse für den Weg von Hand — ohne den Hotel-Slug ist der
-              Benutzername nicht eindeutig und die Anmeldung findet nicht statt. */}
-          <p className="break-all text-[10px] text-ink-muted">
-            Anmeldung von Hand: {manualUrl}
+            QR-Ziel: {loginUrl}
           </p>
         </div>
       </div>

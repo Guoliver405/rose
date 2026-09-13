@@ -254,7 +254,7 @@ const PERSONAL: Lotse = {
     {
       path: '/personal', anchor: 'personal.reinigung', kern: true,
       title: 'Reinigungskräfte brauchen keine E-Mail',
-      body: 'Eine Reinigungskraft bekommt Benutzernamen und PIN — mehr nicht. Beides gilt nur in diesem Haus; dieselbe Namensvetterin darf es in einem anderen Haus noch einmal geben.',
+      body: 'Eine Reinigungskraft bekommt Benutzernamen und PIN — mehr nicht. Der Anzeigename steht auf Board und Karte, angemeldet wird mit dem Benutzernamen: Wer den Anzeigenamen ins Login tippt, wird abgewiesen. Beides gilt nur in diesem Haus; dieselbe Namensvetterin darf es in einem anderen Haus noch einmal geben.',
     },
     {
       path: '/personal', anchor: 'personal.liste', kern: true,
