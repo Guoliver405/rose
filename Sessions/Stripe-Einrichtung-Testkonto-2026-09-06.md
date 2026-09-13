@@ -7,6 +7,21 @@ Dashboard-Oberfläche; die Links führen direkt auf die jeweilige Seite.
 Stripe baut das Dashboard laufend um — wenn ein Menüpunkt anders heißt, hilft
 das Suchfeld oben im Dashboard mit dem Begriff aus der Überschrift.
 
+## Stand 13.09.2026 — Sandbox liegt jetzt im I²D-Konto
+
+Bernd hat das Stripe-Konto der I²D UG angelegt (`acct_1UFBIp3kzuRmE571`).
+Seine Sandbox ist seit dem 13.09. die Testumgebung von RoSe; „GoodMood
+Studio" ist abgelöst, ihr Webhook deaktiviert. Abschnitte 3, 5, 6 und 9
+sind dort **per API** erledigt (Protokoll:
+[2026-09-13_Stripe-Umzug-I2D-Sandbox.md](2026-09-13_Stripe-Umzug-I2D-Sandbox.md)).
+Was für den **Live-Betrieb** bleibt, kann nur Bernd im Dashboard tun und
+hängt an der Verifizierung: Abschnitt 4 (öffentliche
+Unternehmensinformationen), 7 (Präfix `RS`), 8 (Kunden-Mails) sowie die
+Freischaltung von SEPA und Banküberweisung im Live-Modus. Die Liste in
+Mail-Form: [Mail-Bernd-Stripe-Live-2026-09-13.md](Mail-Bernd-Stripe-Live-2026-09-13.md).
+Der Text unten beschreibt den Stand vom 06.09. und bleibt als Anleitung
+gültig — nur das Konto ist ein anderes.
+
 ## Stand 06.09.2026 (Nachmittag)
 
 Es gibt bereits eine Sandbox: **„GoodMood Studio Sandbox"**, Konto-E-Mail

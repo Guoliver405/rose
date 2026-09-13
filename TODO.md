@@ -137,8 +137,14 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       Registrierung, Sandbox konfiguriert; Monatslauf mit Stripe-Rechnung
       (Stripe Tax), Webhook, Cron, Karte „Rechnungen", erste Testrechnung
       bezahlt. Rechtstexte angepasst (Datenschutz Abschnitt 6, AGB § 6 Abs. 4/4a).
-      **Offen:** Übergabe an das UG-Konto (Live-Schlüssel, Webhook, Steuer-
-      Registrierung, Präfix `RS`, Kunden-Mails, Verifizierung durch Bernd);
+      **13.09.: Sandbox auf das I²D-Konto umgezogen** (Tax, Registrierung,
+      Zahlungsmethoden, Webhook per API, Nachweis in Produktion; siehe
+      [2026-09-13_Stripe-Umzug-I2D-Sandbox.md](Sessions/2026-09-13_Stripe-Umzug-I2D-Sandbox.md)).
+      **Offen:** Live-Übergabe — Bernds fünf Punkte (Teamzugang, Verifizierung,
+      Rechtsperson, Dashboard-Einstellungen inkl. Präfix `RS` und Kunden-Mails,
+      Live-Schlüssel; Mail-Entwurf [Mail-Bernd-Stripe-Live-2026-09-13.md](Sessions/Mail-Bernd-Stripe-Live-2026-09-13.md)),
+      danach Webhook/Tax/Zahlungsmethoden per API wie in der Sandbox;
+      Zahlungswege der Testkonten neu hinterlegen (durch den Umzug verworfen);
       Sperre bei Nichtzahlung (E3); Einzug per Karte/Lastschrift am nächsten
       Monatslauf nachweisen; Erinnerungen für einmalige Rechnungen prüfen
       (Dashboard) oder über Resend selbst schicken. Anmeldung beim Provider als Teil der
