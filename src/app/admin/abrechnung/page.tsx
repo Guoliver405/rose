@@ -122,7 +122,7 @@ export default async function AbrechnungPage() {
     .toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })
 
   return (
-    <KontoShell who={account.displayName}>
+    <KontoShell who={account.displayName} istInhaber>
       <div className="flex items-center gap-3">
         <Link
           href="/admin"

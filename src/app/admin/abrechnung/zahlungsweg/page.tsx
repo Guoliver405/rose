@@ -62,7 +62,7 @@ export default async function ZahlungswegPage({
     .sort((a, b) => a.name.localeCompare(b.name, 'de'))
 
   return (
-    <KontoShell who={account.displayName}>
+    <KontoShell who={account.displayName} istInhaber>
       <div className="flex flex-wrap items-center gap-3">
         <Link
           href="/admin/abrechnung"

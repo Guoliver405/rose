@@ -109,7 +109,7 @@ export default async function HotelPickerPage() {
     : null
 
   return (
-    <KontoShell who={account?.displayName ?? hotels[0]?.name}>
+    <KontoShell who={account?.displayName ?? hotels[0]?.name} istInhaber={account !== null}>
       {/* ── Konto ─────────────────────────────────────────────────────
           Nur für den Inhaber. Ein Manager hat kein Konto, für ihn beginnt
           die Seite direkt bei den Häusern. */}

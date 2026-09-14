@@ -7,7 +7,8 @@ import {
 } from 'lucide-react'
 import { getAccountContext, getManagementContext } from '@/utils/auth'
 import { createAdminClient } from '@/utils/supabase/service'
-import { hilfeUrl, themenFuer } from '@/lib/hilfe'
+import ErklaerungLink from '@/components/hilfe/ErklaerungLink'
+import { hilfeZiel, themenFuer } from '@/lib/hilfe'
 import { einrichtungStart, lotseById, lotseStart, setupProgress, type SetupFacts } from '@/lib/lotsen'
 
 /**
@@ -105,8 +106,8 @@ export default async function HilfePage({
           Zu jedem Bereich gibt es eine Erklärung zum Nachschlagen — Zeichen, Fragen, Antworten —
           und einen Lotsen, der sich über die echte Seite legt und Schritt für Schritt zeigt, was
           dort womit passiert. Bedienen können Sie die Seite dabei ganz normal weiter — nichts ist
-          gesperrt, und mit Esc sind Sie wieder heraus. Das &bdquo;?&ldquo; oben rechts führt von jeder Seite
-          direkt zu ihrer Erklärung.
+          gesperrt, und mit Esc sind Sie wieder heraus. Das &bdquo;?&ldquo; oben rechts klappt auf jeder
+          Seite die Erklärung daneben auf.
         </p>
       </div>
 
@@ -170,8 +171,8 @@ export default async function HilfePage({
         <div>
           <h2 className="text-base font-black text-ink">Hilfe nach Thema</h2>
           <p className="text-sm text-ink-soft">
-            Die Erklärung ist zum Nachschlagen; der Lotse führt auf die Seite, um die es geht, und
-            lässt sich beliebig oft starten.
+            Beides führt auf die Seite, um die es geht: die Erklärung zum Nachschlagen in der Leiste
+            daneben, der Lotse Schritt für Schritt darüber — beliebig oft.
           </p>
         </div>
 
@@ -191,9 +192,7 @@ export default async function HilfePage({
                   <span className="block text-sm font-bold text-ink">{thema.title}</span>
                   <span className="mt-0.5 block text-xs text-ink-muted">{thema.subtitle}</span>
                   <span className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold">
-                    <Link href={hilfeUrl(thema, ctx.hotelSlug)} className="flex items-center gap-1 text-action hover:underline">
-                      <BookOpen className="h-3.5 w-3.5" /> Erklärung
-                    </Link>
+                    <ErklaerungLink href={hilfeZiel(thema, ctx.hotelSlug)} />
                     {lotse && (
                       <Link href={lotseStart(lotse, ctx.hotelSlug)} className="flex items-center gap-1 text-action hover:underline">
                         <Compass className="h-3.5 w-3.5" /> Lotse ({lotse.steps.length} Schritte)

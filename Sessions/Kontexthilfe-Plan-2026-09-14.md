@@ -62,7 +62,7 @@ fehlt nirgends still.
 Die Legende referenziert Zeichen über typisierte Schlüssel; ein Tippfehler
 fällt beim Type-Check, nicht erst im Browser.
 
-## 3. Route statt Overlay
+## 3. Route statt Overlay — **überholt, siehe Nachtrag unten**
 
 `…/admin/hilfe/<thema>` im Haus, `/admin/hilfe/<thema>` im Konto-Bereich
 (eigener Rahmen, wie beim zweiten Piloten). Gründe: verlinkbar (Rezeption
@@ -103,6 +103,24 @@ die Seiten selbst halten über ihre Guards dicht.
 - Reinigungsboard: Erklärungen liegen unter der Simulation im
   Rezeptions-Portal (wer das Board erklärt, ist die Rezeption). Ein „?" im
   Board selbst wäre ein zweiter Schritt, falls Kräfte danach fragen.
+
+## Nachtrag (gleicher Tag): Leiste statt Seite
+
+Nach dem ersten Blick in Produktion: „Wenn man die Hilfe-Seite öffnet, sieht
+man die Seite nicht mehr, zu der geholfen werden soll. Auf Quer-Monitoren ist
+seitlich so viel Platz — wäre eine Sidebar nicht besser, die mit dem ‚?'
+ein- und ausgeklappt wird?" Ja. Der Grund für Abschnitt 3 (Overlay-Kollision
+mit dem Lotsen) trifft eine **Leiste** nicht: Sie überlagert nichts, der
+Inhalt rückt nach links. Umgesetzt:
+
+- `HilfeLeiste` rechts neben `main` (400 px, sticky unter der Kopfzeile),
+  unter `lg` als Überlagerung von rechts. Thema folgt dem Pfad; ohne Thema die
+  Themenliste; Verweise wechseln in der Leiste; Esc schließt.
+- Zustand in `leiste.ts` (externer Store, `localStorage` für „offen",
+  Themenwahl pfadgebunden).
+- Hub-„Erklärung" führt auf die Seite, um die es geht, mit offener Leiste.
+- Die Routen bleiben für Drucken und Teilen („Als Seite öffnen").
+- Kopfzeile ab `lg` mit fester Höhe 52 px, damit die Leiste exakt andockt.
 
 ## 7. Reihenfolge
 

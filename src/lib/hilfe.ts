@@ -1025,9 +1025,17 @@ export function hilfeUrl(thema: HilfeThema, slug: string): string {
   return `${bereichBasis(themaBereich(thema), slug)}/hilfe/${thema.id}`
 }
 
-/** Der Hilfe-Hub des Hauses — Ziel des „?", wenn kein Thema passt. */
+/** Der Hilfe-Hub des Hauses. */
 export function hilfeHub(slug: string): string {
   return `/h/${slug}/admin/hilfe`
+}
+
+/**
+ * Die Seite, um die es in einem Thema geht — dorthin führt „Erklärung" im
+ * Hub, mit offener Leiste daneben. Der erste Pfad ist die Hauptseite.
+ */
+export function hilfeZiel(thema: HilfeThema, slug: string): string {
+  return `${bereichBasis(themaBereich(thema), slug)}${thema.pfade[0]}`
 }
 
 /**
@@ -1059,7 +1067,13 @@ export function themaFuerPfad(pfad: string, bereich: LotseBereich = 'haus'): Hil
   return bestes?.thema ?? null
 }
 
-/** Auf dem Hilfe-Bereich selbst zeigt das „?" nirgendwohin — dort steht es schon. */
-export function istHilfeSeite(pfad: string): boolean {
-  return pfad === '/hilfe' || pfad.startsWith('/hilfe/')
+/**
+ * Hub und Themenseiten: Dort gibt es weder Knopf noch Leiste — die Seite
+ * IST die Hilfe. Die Simulationsseiten sind ausgenommen, obwohl sie unter
+ * `/hilfe/` liegen: Sie tragen ein eigenes Thema (`pfade`), und die Leiste
+ * neben dem Nachbau ist genau das, was sie erklären soll.
+ */
+export function istHilfeSeite(pfad: string, bereich: LotseBereich = 'haus'): boolean {
+  if (pfad === '/hilfe') return true
+  return pfad.startsWith('/hilfe/') && themaFuerPfad(pfad, bereich) === null
 }

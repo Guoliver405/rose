@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { LogOut } from 'lucide-react'
 import { logoutAction } from '@/app/login/actions'
 import HilfeKnopf from '@/components/hilfe/HilfeKnopf'
+import HilfeLeiste from '@/components/hilfe/HilfeLeiste'
 import LotsePilot from '@/components/lotse/LotsePilot'
 
 /**
@@ -11,22 +12,26 @@ import LotsePilot from '@/components/lotse/LotsePilot'
  * ein Layout würde die Kopfzeile auch um diese Umleitung herum zeichnen.
  */
 export default function KontoShell({
-  who, children,
+  who, istInhaber, children,
 }: {
   who: string | undefined
+  /** Für den Themenfilter der Hilfe-Leiste; Manager sehen „Plan & Abrechnung" nicht. */
+  istInhaber: boolean
   children: React.ReactNode
 }) {
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-surface-sunken">
-      <header className="border-b border-edge bg-surface">
-        <div className="mx-auto flex max-w-[900px] items-center gap-4 px-4 py-3">
+      {/* Sticky wie im Haus-Layout, damit die Hilfe-Leiste darunter
+          andocken kann (sie hängt an derselben Kopfzeilen-Höhe). */}
+      <header className="sticky top-0 z-40 border-b border-edge bg-surface print:hidden">
+        {/* Feste Höhe ab `lg` wie im Haus-Layout — die Hilfe-Leiste hängt daran. */}
+        <div className="mx-auto flex max-w-[900px] items-center gap-4 px-4 py-3 lg:h-[52px] lg:py-0">
           <span className="text-lg font-black text-ink">
             Ro<span className="text-blocked">Se</span>
           </span>
           <div className="ml-auto flex items-center gap-3">
-            {/* Kontexthilfe wie im Haus-Layout; die Konto-Themen liegen unter
-                `/admin/hilfe/…`, ein Slug wird dafür nicht gebraucht. */}
-            <HilfeKnopf slug={null} />
+            {/* Kontexthilfe wie im Haus-Layout. */}
+            <HilfeKnopf />
             {who && <span className="hidden text-sm text-ink-muted sm:inline">{who}</span>}
             <form action={logoutAction}>
               <button
@@ -48,9 +53,13 @@ export default function KontoShell({
         <LotsePilot base="/admin" bereich="konto" />
       </Suspense>
 
-      <main className="mx-auto flex w-full max-w-[900px] flex-1 flex-col gap-6 p-4">
-        {children}
-      </main>
+      <div className="flex flex-1 justify-center">
+        <main className="flex w-full min-w-0 max-w-[900px] flex-1 flex-col gap-6 p-4">
+          {children}
+        </main>
+        {/* Kein Slug im Konto-Bereich — die Leiste verlinkt dann nicht ins Haus. */}
+        <HilfeLeiste slug={null} istVerwaltung istInhaber={istInhaber} />
+      </div>
     </div>
   )
 }

@@ -2,9 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ArrowLeft, Compass } from 'lucide-react'
 import { getManagementContext } from '@/utils/auth'
-import { HilfeBloecke } from '@/components/hilfe/HilfeThema'
 import SimReinigung from '@/components/lotse/SimReinigung'
-import { themaById } from '@/lib/hilfe'
 
 /**
  * Nachbau des Reinigungsboards.
@@ -56,10 +54,10 @@ export default async function SimReinigungPage({
         Reinigungs-Zugang an.
       </p>
 
-      {/* Die Hilfe zum Board steht unter dem Nachbau: Diese statische Route
-          gewinnt gegen `hilfe/[thema]`, und der Nachbau ist die beste
-          Legende — die Blöcke erklären, was man darüber gerade sieht. */}
-      <HilfeBloecke thema={themaById('reinigung')!} slug={ctx.hotelSlug} />
+      {/* Die Erklärung zum Board liegt in der Hilfe-Leiste („?" oben rechts):
+          Diese statische Route gewinnt gegen `hilfe/[thema]`, das Thema
+          `reinigung` ist auf sie gemappt, und der Nachbau ist die beste
+          Legende — die Leiste erklärt, was man daneben gerade sieht. */}
     </div>
   )
 }

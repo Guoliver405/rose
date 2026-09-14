@@ -1,43 +1,43 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { CircleHelp } from 'lucide-react'
-import { hilfeHub, hilfeUrl, istHilfeSeite, relativerPfad, themaFuerPfad } from '@/lib/hilfe'
+import { istHilfeSeite, relativerPfad, themaFuerPfad } from '@/lib/hilfe'
+import { schalteLeiste, useLeiste } from './leiste'
 
 /**
- * Das „?" in der Kopfzeile — führt zur Hilfe der Seite, auf der man steht.
+ * Das „?" in der Kopfzeile — klappt die Hilfe-Leiste (`HilfeLeiste`) ein und
+ * aus. Auf dem Hub und den Themenseiten verschwindet es: Dort ist die Seite
+ * selbst die Hilfe.
  *
- * Eine Client-Komponente, weil nur der Browser den aktuellen Pfad kennt, und
- * das Layout für alle Seiten dasselbe ist: So muss keine einzelne Seite
- * angefasst werden, und das „?" sitzt immer am selben Ort. Der Katalog
- * (`lib/hilfe.ts`) entscheidet, welches Thema zum Pfad gehört; passt keines,
- * geht es zum Hilfe-Hub des Hauses.
- *
- * Auf dem Hilfe-Bereich selbst verschwindet der Knopf — er zeigte auf sich
- * selbst. Im Konto-Bereich gibt es keinen Hub; ohne Thema bleibt der Knopf
- * dort weg.
+ * Eine Client-Komponente, weil nur der Browser den Pfad kennt und das Layout
+ * für alle Seiten dasselbe ist — so muss keine Seite es selbst setzen, und
+ * das „?" sitzt immer am selben Ort. Welches Thema die Leiste zeigt,
+ * entscheidet sie selbst aus dem Pfad; der Knopf nennt es nur im Tooltip.
  */
-export default function HilfeKnopf({ slug }: { slug: string | null }) {
+export default function HilfeKnopf() {
   const pathname = usePathname()
+  const { offen } = useLeiste()
   const rel = relativerPfad(pathname)
-  if (!rel || istHilfeSeite(rel.pfad)) return null
+  if (!rel || istHilfeSeite(rel.pfad, rel.bereich)) return null
 
   const thema = themaFuerPfad(rel.pfad, rel.bereich)
-  const slugFuerUrl = slug ?? rel.slug
-  let href: string
-  if (thema) href = hilfeUrl(thema, slugFuerUrl ?? '')
-  else if (rel.bereich === 'haus' && slugFuerUrl) href = hilfeHub(slugFuerUrl)
-  else return null
+  const titel = offen ? 'Hilfe schließen' : thema ? `Hilfe: ${thema.title}` : 'Hilfe'
 
   return (
-    <Link
-      href={href}
-      title={thema ? `Hilfe: ${thema.title}` : 'Hilfe'}
-      aria-label={thema ? `Hilfe zu ${thema.title}` : 'Hilfe'}
-      className="flex h-9 w-9 items-center justify-center rounded-full border border-edge text-ink-soft hover:border-edge-strong hover:text-ink"
+    <button
+      type="button"
+      onClick={schalteLeiste}
+      title={titel}
+      aria-label={titel}
+      aria-pressed={offen}
+      className={`flex h-9 w-9 items-center justify-center rounded-full border ${
+        offen
+          ? 'border-action bg-action text-action-foreground'
+          : 'border-edge text-ink-soft hover:border-edge-strong hover:text-ink'
+      }`}
     >
       <CircleHelp className="h-5 w-5" />
-    </Link>
+    </button>
   )
 }

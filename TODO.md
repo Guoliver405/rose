@@ -243,9 +243,11 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       passenden Lotsen startet~~ — 14.09. gebaut, **aber nicht als
       Lotsen-Start** (der soll kompakt bleiben und läuft beim ersten Mal),
       sondern als eigene **Nachschlage-Hilfe** je Seite: Legende mit den
-      echten Symbolen und Farben, Fragen und Antworten, Verweise; Route
-      `…/admin/hilfe/<thema>`, 14 Themen parallel zu den Lotsen, Hub mit
-      Erklärung und Lotse je Karte. Protokoll:
+      echten Symbolen und Farben, Fragen und Antworten, Verweise — als
+      **Leiste rechts neben dem Inhalt** (nach dem ersten Blick des Users:
+      die eigene Seite nahm die Seite weg, zu der geholfen werden sollte),
+      14 Themen parallel zu den Lotsen, Hub mit Erklärung und Lotse je Karte,
+      Routen `…/admin/hilfe/<thema>` bleiben zum Drucken und Teilen. Protokoll:
       [2026-09-14_Kontexthilfe.md](Sessions/2026-09-14_Kontexthilfe.md).
       **Der Erweiterungspunkt:** Tester-Rückmeldung „X war unverständlich"
       wird ein Eintrag in [hilfe.ts](src/lib/hilfe.ts). Offen bleibt ein „?"

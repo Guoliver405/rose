@@ -7,6 +7,7 @@ import { createClient } from '@/utils/supabase/server'
 import { logoutAction } from '@/app/login/actions'
 import RealtimeListener from '@/components/RealtimeListener'
 import HilfeKnopf from '@/components/hilfe/HilfeKnopf'
+import HilfeLeiste from '@/components/hilfe/HilfeLeiste'
 import LotsePilot from '@/components/lotse/LotsePilot'
 
 export default async function AdminLayout({
@@ -46,7 +47,11 @@ export default async function AdminLayout({
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-surface-sunken">
       <header className="sticky top-0 z-40 border-b border-edge bg-surface print:hidden">
-        <div className="mx-auto flex max-w-[1400px] items-center gap-6 px-4 py-3">
+        {/* Feste Höhe ab `lg`: Die Hilfe-Leiste dockt mit `top-[53px]` unter
+            der Kopfzeile an (52 px + 1 px Rand) — ohne feste Höhe hinge sie
+            am höchsten Knopf. Darunter darf die Nav umbrechen, die Leiste
+            liegt dort ohnehin frei über der Seite. */}
+        <div className="mx-auto flex max-w-[1400px] items-center gap-6 px-4 py-3 lg:h-[52px] lg:py-0">
           <Link href={base} className="text-lg font-black text-ink">
             Ro<span className="text-blocked">Se</span>
             <span className="ml-2 text-sm font-semibold text-ink-muted">{ctx.hotelName}</span>
@@ -88,12 +93,11 @@ export default async function AdminLayout({
           </nav>
 
           <div className="ml-auto flex items-center gap-3">
-            {/* Kontexthilfe: das „?" führt zur Hilfe der Seite, auf der man
-                steht (Katalog in lib/hilfe.ts). „Hilfe" in der Nav bleibt der
-                Katalog; das „?" ist der Kontext. Client-Komponente, weil nur
-                der Browser den Pfad kennt — so muss keine Seite es selbst
-                setzen. */}
-            <HilfeKnopf slug={ctx.hotelSlug} />
+            {/* Kontexthilfe: das „?" klappt die Hilfe-Leiste neben dem
+                Inhalt auf, mit dem Thema der Seite, auf der man steht
+                (Katalog in lib/hilfe.ts). „Hilfe" in der Nav bleibt der
+                Katalog; das „?" ist der Kontext. */}
+            <HilfeKnopf />
             {/* Der Weg aus dem Haus heraus — IMMER sichtbar, auch bei genau
                 einem Haus. `/admin` ist die Häuser-Seite samt Konto-Kasten und
                 „Haus anlegen"; wer sie ausblendet, sperrt Einzelhaus-Inhaber
@@ -132,7 +136,14 @@ export default async function AdminLayout({
         <LotsePilot base={base} />
       </Suspense>
 
-      <main className="mx-auto w-full max-w-[1400px] flex-1 p-4">{children}</main>
+      {/* Inhalt und Hilfe-Leiste nebeneinander: Ist die Leiste zu, liegt
+          der Inhalt wie bisher zentriert bei höchstens 1400 px; ist sie auf,
+          rückt er nach links und behält seine Breite, so weit der Bildschirm
+          reicht — nichts wird verdeckt. */}
+      <div className="flex flex-1 justify-center">
+        <main className="w-full min-w-0 max-w-[1400px] flex-1 p-4">{children}</main>
+        <HilfeLeiste slug={ctx.hotelSlug} istVerwaltung={ctx.role !== 'reception'} istInhaber={ctx.isOwner} />
+      </div>
     </div>
   )
 }

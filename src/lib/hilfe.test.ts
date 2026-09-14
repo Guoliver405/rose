@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  HILFE_THEMEN, hilfeHub, hilfeUrl, istHilfeSeite, relativerPfad, themaBereich, themaById,
+  HILFE_THEMEN, hilfeHub, hilfeUrl, hilfeZiel, istHilfeSeite, relativerPfad, themaBereich, themaById,
   themaFuerPfad, themenFuer,
   type HilfeThema, type LegendeEintrag, type Verweis,
 } from './hilfe'
@@ -126,6 +126,21 @@ describe('Adressen', () => {
     expect(hilfeHub('alpen')).toBe('/h/alpen/admin/hilfe')
   })
 
+  it('führt „Erklärung" auf die Seite, um die es geht', () => {
+    expect(hilfeZiel(haus, 'alpen')).toBe('/h/alpen/admin/zimmer')
+    expect(hilfeZiel(konto, 'alpen')).toBe('/admin/abrechnung')
+    expect(hilfeZiel(themaById('uebersicht')!, 'alpen')).toBe('/h/alpen/admin')
+    expect(hilfeZiel(themaById('reinigung')!, 'alpen')).toBe('/h/alpen/admin/hilfe/reinigung')
+  })
+
+  it('führt von jedem Ziel wieder auf sein Thema', () => {
+    // Sonst öffnet „Erklärung" die Leiste neben einer Seite, deren Thema ein
+    // anderes ist — der Hub verspräche etwas, das die Leiste nicht hält.
+    for (const t of HILFE_THEMEN) {
+      expect(themaFuerPfad(t.pfade[0], themaBereich(t))?.id, t.id).toBe(t.id)
+    }
+  })
+
   it('zerlegt einen vollständigen Pfad in Bereich, Slug und Rest', () => {
     expect(relativerPfad('/h/alpen/admin')).toEqual({ bereich: 'haus', slug: 'alpen', pfad: '' })
     expect(relativerPfad('/h/alpen/admin/zimmer/aushang')).toEqual({ bereich: 'haus', slug: 'alpen', pfad: '/zimmer/aushang' })
@@ -166,10 +181,13 @@ describe('Thema zur Seite', () => {
     expect(id(themaFuerPfad('/abrechnung', 'haus'))).toBeNull()
   })
 
-  it('erkennt den Hilfe-Bereich selbst', () => {
+  it('erkennt Hub und Themenseiten, nicht aber die Simulationen', () => {
     expect(istHilfeSeite('/hilfe')).toBe(true)
     expect(istHilfeSeite('/hilfe/zimmer')).toBe(true)
+    expect(istHilfeSeite('/hilfe/reinigung')).toBe(false)
+    expect(istHilfeSeite('/hilfe/gast')).toBe(false)
     expect(istHilfeSeite('/hilfen')).toBe(false)
     expect(istHilfeSeite('')).toBe(false)
+    expect(istHilfeSeite('/hilfe/konto', 'konto')).toBe(true)
   })
 })

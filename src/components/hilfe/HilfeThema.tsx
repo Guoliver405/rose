@@ -122,8 +122,26 @@ function ZeichenBild({ z }: { z: Zeichen }) {
   }
 }
 
-function VerweisLink({ v, slug, bereich }: { v: Verweis; slug: string; bereich: 'haus' | 'konto' }) {
+const VERWEIS_KLASSE = 'flex w-full items-center gap-3 rounded-lg border border-edge bg-surface px-3 py-2 text-left hover:border-edge-strong'
+
+function VerweisLink({
+  v, slug, bereich, onThema,
+}: {
+  v: Verweis; slug: string; bereich: 'haus' | 'konto'; onThema?: (id: string) => void
+}) {
   const z = v.ziel
+  // In der Leiste wechselt ein Themen-Verweis das Thema an Ort und Stelle —
+  // die Seite dahinter bleibt stehen, das ist der Sinn der Leiste.
+  if (z.art === 'thema' && onThema) {
+    return (
+      <button type="button" onClick={() => onThema(z.id)} className={VERWEIS_KLASSE}>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-bold text-ink">{v.label}</span>
+          {v.hinweis && <span className="block text-xs text-ink-muted">{v.hinweis}</span>}
+        </span>
+      </button>
+    )
+  }
   let href: string
   let extern = false
   if (z.art === 'thema') {
@@ -139,10 +157,7 @@ function VerweisLink({ v, slug, bereich }: { v: Verweis; slug: string; bereich: 
     extern = true
   }
   return (
-    <Link
-      href={href}
-      className="flex items-center gap-3 rounded-lg border border-edge bg-surface px-3 py-2 hover:border-edge-strong"
-    >
+    <Link href={href} className={VERWEIS_KLASSE}>
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-bold text-ink">{v.label}</span>
         {v.hinweis && <span className="block text-xs text-ink-muted">{v.hinweis}</span>}
@@ -152,14 +167,24 @@ function VerweisLink({ v, slug, bereich }: { v: Verweis; slug: string; bereich: 
   )
 }
 
-function Block({ b, slug, bereich }: { b: HilfeBlock; slug: string; bereich: 'haus' | 'konto' }) {
+type BlockProps = {
+  b: HilfeBlock
+  slug: string
+  bereich: 'haus' | 'konto'
+  /** Leisten-Fassung: eine Spalte, keine Breitengrenzen. */
+  kompakt?: boolean
+  onThema?: (id: string) => void
+}
+
+function Block({ b, slug, bereich, kompakt, onThema }: BlockProps) {
+  const breite = kompakt ? '' : 'max-w-2xl'
   switch (b.art) {
     case 'text':
       return (
         <section className="flex flex-col gap-2">
           {b.titel && <h2 className="text-base font-black text-ink">{b.titel}</h2>}
           {b.absaetze.map((a, i) => (
-            <p key={i} className="max-w-2xl text-sm leading-relaxed text-ink-soft">{a}</p>
+            <p key={i} className={`${breite} text-sm leading-relaxed text-ink-soft`}>{a}</p>
           ))}
         </section>
       )
@@ -194,7 +219,7 @@ function Block({ b, slug, bereich }: { b: HilfeBlock; slug: string; bereich: 'ha
             {b.eintraege.map((e, i) => (
               <div key={i} className="px-3 py-2.5">
                 <dt className="text-sm font-bold text-ink">{e.frage}</dt>
-                <dd className="mt-1 max-w-2xl text-sm leading-relaxed text-ink-soft">{e.antwort}</dd>
+                <dd className={`mt-1 ${breite} text-sm leading-relaxed text-ink-soft`}>{e.antwort}</dd>
               </div>
             ))}
           </dl>
@@ -204,20 +229,31 @@ function Block({ b, slug, bereich }: { b: HilfeBlock; slug: string; bereich: 'ha
       return (
         <section className="flex flex-col gap-2">
           <h2 className="text-base font-black text-ink">{b.titel ?? 'Siehe auch'}</h2>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {b.eintraege.map((v, i) => <VerweisLink key={i} v={v} slug={slug} bereich={bereich} />)}
+          <div className={`grid grid-cols-1 gap-2 ${kompakt ? '' : 'sm:grid-cols-2'}`}>
+            {b.eintraege.map((v, i) => (
+              <VerweisLink key={i} v={v} slug={slug} bereich={bereich} onThema={onThema} />
+            ))}
           </div>
         </section>
       )
   }
 }
 
-/** Nur die Blöcke — für Seiten, die ihren eigenen Kopf haben (die Simulationen). */
-export function HilfeBloecke({ thema, slug }: { thema: Thema; slug: string }) {
+/**
+ * Nur die Blöcke — für die Leiste (kompakt, Themenwechsel an Ort und Stelle)
+ * und für Seiten mit eigenem Kopf.
+ */
+export function HilfeBloecke({
+  thema, slug, kompakt, onThema,
+}: {
+  thema: Thema; slug: string; kompakt?: boolean; onThema?: (id: string) => void
+}) {
   const bereich = themaBereich(thema)
   return (
-    <div className="flex flex-col gap-6">
-      {thema.bloecke.map((b, i) => <Block key={i} b={b} slug={slug} bereich={bereich} />)}
+    <div className={`flex flex-col ${kompakt ? 'gap-5' : 'gap-6'}`}>
+      {thema.bloecke.map((b, i) => (
+        <Block key={i} b={b} slug={slug} bereich={bereich} kompakt={kompakt} onThema={onThema} />
+      ))}
     </div>
   )
 }

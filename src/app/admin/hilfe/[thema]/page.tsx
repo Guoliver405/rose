@@ -29,7 +29,7 @@ export default async function KontoHilfePage({
   if (thema.zugang === 'inhaber' && !account) redirect('/admin')
 
   return (
-    <KontoShell who={account?.displayName ?? hotels[0]?.name}>
+    <KontoShell who={account?.displayName ?? hotels[0]?.name} istInhaber={account !== null}>
       <HilfeThema
         thema={thema}
         // Konto-Themen brauchen keinen Slug; Verweise ins Haus gibt es dort nicht.

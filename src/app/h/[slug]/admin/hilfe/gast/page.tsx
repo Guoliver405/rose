@@ -2,9 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ArrowLeft, Compass } from 'lucide-react'
 import { getManagementContext } from '@/utils/auth'
-import { HilfeBloecke } from '@/components/hilfe/HilfeThema'
 import SimGast from '@/components/lotse/SimGast'
-import { themaById } from '@/lib/hilfe'
 
 /**
  * Nachbau des Gäste-Portals — siehe
@@ -53,8 +51,7 @@ export default async function SimGastPage({
         steht unter Hotel &amp; Regeln.
       </p>
 
-      {/* Hilfe-Blöcke unter dem Nachbau — siehe reinigung/page.tsx. */}
-      <HilfeBloecke thema={themaById('gast')!} slug={ctx.hotelSlug} />
+      {/* Erklärung in der Hilfe-Leiste — siehe reinigung/page.tsx. */}
     </div>
   )
 }

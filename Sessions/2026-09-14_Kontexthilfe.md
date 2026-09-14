@@ -82,15 +82,55 @@ gehört zu „Aushänge", `/handout/…` ebenso, `/aufstellung/…` zur Übersic
 - 404 für `hilfe/konto` im Haus, `hilfe/zimmer` im Konto, unbekannte Kennung.
 - Keine Konsolenfehler; `npm run verify` grün (338 Tests).
 
+## Nachtrag: Leiste statt Seite
+
+Erster Blick des Users in Produktion: „Wenn man die Hilfe-Seite öffnet, sieht
+man die Seite nicht mehr, zu der geholfen werden soll. Wir haben auf normalen
+Quer-Format-Monitoren seitlich so viel Platz." Richtig — und mein Einwand
+gegen ein Overlay (Kollision mit dem Lotsen) trifft eine Leiste nicht, weil
+sie nichts überlagert. Also umgebaut, gleicher Tag:
+
+- **[HilfeLeiste.tsx](../src/components/hilfe/HilfeLeiste.tsx):** 400 px
+  rechts neben dem Inhalt, sticky unter der Kopfzeile; der Inhalt rückt nach
+  links (Flex-Zeile `main` + `aside`, bei 1600 px: 1200 + 400). Unter `lg`
+  eine Überlagerung von rechts mit Schließen-Knopf. Kopf mit Titel,
+  „Lotse starten", „Als Seite öffnen" (Drucken/Teilen), Listen-Knopf; darunter
+  die Blöcke in kompakter Fassung (eine Spalte). Verweise auf andere Themen
+  sind Buttons und wechseln **in der Leiste**. Esc schließt.
+- **Das Thema folgt der Seite:** Übersicht → Anfragen → Einstellungen — die
+  Leiste bleibt offen, zeigt das jeweilige Thema, und auf einer Seite ohne
+  Thema die Liste mit Hinweis.
+- **[leiste.ts](../src/components/hilfe/leiste.ts):** externer Store nach dem
+  Muster von `schritt.ts`. „Offen" in `localStorage` (Neuladen schließt
+  nichts); die Themenwahl ist an den Pfad gebunden, auf dem sie getroffen
+  wurde — abgeleitet, kein Effekt setzt sie zurück. Der Store überlebt den
+  Wechsel zwischen Haus-Layout und `KontoShell`.
+- **Hub:** „Erklärung" führt jetzt auf die Seite, um die es geht, mit offener
+  Leiste daneben ([ErklaerungLink.tsx](../src/components/hilfe/ErklaerungLink.tsx),
+  `hilfeZiel`); neuer Test: jedes Ziel bildet wieder auf sein Thema ab.
+- **Kopfzeile ab `lg` mit fester Höhe 52 px** (Haus und Konto): Vorher hing
+  die Höhe am höchsten Knopf — mit dem 36-px-„?" wurde sie 61 px, und die
+  Leiste dockte 8 px daneben an. Nachgemessen: Kopf 53, Leiste ab 53.
+- Die Simulationsseiten tragen ihre Blöcke nicht mehr inline — die Leiste
+  neben dem Nachbau ist genau das, was sie zeigen sollen; `istHilfeSeite`
+  nimmt sie deshalb aus (Thema auf den Pfad gemappt).
+- Die Routen `…/hilfe/<thema>` bleiben für Drucken und Teilen.
+
+Nachgewiesen (lokal, 1600 × 900 und Tablet): Klappen, Thema folgt der
+Navigation, Verweis-Wechsel in der Leiste, Liste, Esc, Hub-„Erklärung" mit
+offener Leiste, Konto-Bereich (`/admin`, `/admin/abrechnung`), Überlagerung
+unter `lg`. `npm run verify` grün (340 Tests).
+
 ## Entscheidungen, die es festzuhalten lohnt
 
 - **Lotse und Hilfe sind zwei Dinge.** Der Lotse zeigt („die Zahlen oben …"),
   die Hilfe erklärt. Lotsen-Texte als Hilfe wiederzuverwenden hätte
   Coach-Mark-Prosa auf eine Nachschlageseite gestellt. Beide Kataloge sind
   parallel geschnitten und verweisen aufeinander.
-- **Route statt Overlay.** Verlinkbar, druckbar, Zurück-Taste — und der
-  Overlay-Platz gehört dem Lotsen. Ein offener Zimmer-Dialog geht beim
-  Wechsel verloren; bewusst in Kauf genommen.
+- **Leiste statt Seite** (Nachtrag). Die erste Fassung als eigene Seite
+  nahm dem Nutzer die Seite weg, zu der er Hilfe wollte. Eine Leiste
+  überlagert nichts — mein Einwand gegen Overlays galt ihr nicht. Die Routen
+  bleiben als Druck- und Teil-Fassung.
 - **Die Legende kann nicht lügen**, weil sie aus derselben Tabelle zeichnet
   wie die Boards. Das war der Grund für den Umbau in Schritt 1 — nicht
   Ordnungsliebe.
@@ -126,7 +166,7 @@ Geändert: `RoomGrid.tsx`, `ServiceBoard.tsx` (Symbole aus der Quelle),
   Legende).
 - Offen aus dem TODO: ein „?" im Reinigungsboard selbst, falls Kräfte danach
   fragen; heute liegt die Erklärung unter der Simulation im Rezeptions-Portal.
-- Die Vorschau-Browser-Screenshots waren in dieser Sitzung unzuverlässig
-  (Timeouts, veraltete Bilder); Nachweise liefen über DOM- und
-  Computed-Style-Abfragen. Für einen Blick auf die Legende im Hellmodus:
-  `…/admin/hilfe/uebersicht` in Produktion öffnen.
+- Die Leiste merkt sich „offen" je Browser (`localStorage`). Falls das
+  stört (Rezeptions-PC mit vielen Nutzern): Schlüssel `rose.hilfe.leiste`.
+- Für einen Blick im Hellmodus: in Produktion das „?" auf der Übersicht
+  drücken.
