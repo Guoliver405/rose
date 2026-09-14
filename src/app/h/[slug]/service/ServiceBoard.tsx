@@ -4,10 +4,11 @@ import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  Ban, BedDouble, ChevronRight, Clock, DoorOpen, Flag, Loader2, Luggage,
-  RefreshCw, Siren, SlidersHorizontal, Sparkles, Target, Users, X,
+  ChevronRight, Flag, Loader2, Siren, SlidersHorizontal, Target, Users, X,
 } from 'lucide-react'
+import RoomSymbol from '@/components/RoomSymbol'
 import SlideAction from '@/components/SlideAction'
+import { ROOM_BARS, ROOM_RINGS } from '@/lib/room-symbols'
 import {
   abortCleaningAction, enterFloorAction, finishCleaningAction,
   leaveFloorAction, startCleaningAction,
@@ -76,11 +77,11 @@ function statusLabel(r: BoardRoom): string {
 /** Farb-Vorrang wie im Admin: priorisiert > in Arbeit > ausgecheckt > Wunsch/Routine.
     Violett = priorisiert (Rot bleibt DND/dringend vorbehalten). */
 function tileBar(r: BoardRoom): string {
-  if (r.priority) return 'bg-accent'
-  if (r.cleaningFresh) return 'bg-positive-soft'
-  if (r.checkoutPending) return 'bg-caution'
-  if ((r.guestSignal === 'please_clean' && !r.cleanDeferredUntil) || r.stayoverDue) return 'bg-attention'
-  return 'bg-edge'
+  if (r.priority) return ROOM_BARS.priority.className
+  if (r.cleaningFresh) return ROOM_BARS.working.className
+  if (r.checkoutPending) return ROOM_BARS.checkout.className
+  if ((r.guestSignal === 'please_clean' && !r.cleanDeferredUntil) || r.stayoverDue) return ROOM_BARS.wanted.className
+  return ROOM_BARS.neutral.className
 }
 
 /** Offenes Prio-Zimmer (nicht gerade in frischer Reinigung) auf der Etage? */
@@ -388,7 +389,7 @@ function RoomTile({ room, onClick }: { room: BoardRoom; onClick: () => void }) {
       onClick={onClick}
       title={statusLabel(room)}
       className={`flex flex-col overflow-hidden rounded-lg border bg-surface-elevated text-left shadow-sm hover:border-edge-strong ${
-        room.priority && !room.cleaningFresh ? 'border-accent blink-ring-priority' : 'border-edge'
+        room.priority && !room.cleaningFresh ? ROOM_RINGS.priority.className : 'border-edge'
       } ${grayed ? 'opacity-50' : ''}`}
     >
       <span className={`h-2 w-full ${tileBar(room)}`} />
@@ -397,15 +398,15 @@ function RoomTile({ room, onClick }: { room: BoardRoom; onClick: () => void }) {
           <span className={`text-lg font-black ${grayed ? 'text-ink-muted' : 'text-ink'}`}>
             {room.number}
           </span>
-          {room.occupied && <BedDouble className="h-4 w-4 text-active-strong" />}
-          {room.departureToday && <Luggage className="h-4 w-4 text-ink-soft" aria-label="Abreise heute" />}
-          {room.guestSignal === 'dnd' && <Ban className="h-4 w-4 text-blocked-strong" />}
-          {room.guestSignal === 'please_clean' && !room.cleanDeferredUntil && <Sparkles className="h-4 w-4 text-attention-strong" />}
-          {room.guestSignal === 'please_clean' && room.cleanDeferredUntil && <Clock className="h-4 w-4 text-ink-soft" />}
-          {room.stayoverDue && <RefreshCw className="h-4 w-4 text-attention-strong" />}
-          {room.checkoutPending && <DoorOpen className="h-4 w-4 text-caution-strong" />}
-          {room.priority && <Flag className="h-4 w-4 text-accent-strong" />}
-          {room.cleaningFresh && <Loader2 className="h-4 w-4 animate-spin text-positive-strong" />}
+          {room.occupied && <RoomSymbol id="occupied" size="md" />}
+          {room.departureToday && <RoomSymbol id="departure" size="md" aria-label="Abreise heute" />}
+          {room.guestSignal === 'dnd' && <RoomSymbol id="dnd" size="md" />}
+          {room.guestSignal === 'please_clean' && !room.cleanDeferredUntil && <RoomSymbol id="clean" size="md" />}
+          {room.guestSignal === 'please_clean' && room.cleanDeferredUntil && <RoomSymbol id="deferred" size="md" />}
+          {room.stayoverDue && <RoomSymbol id="routine" size="md" />}
+          {room.checkoutPending && <RoomSymbol id="checkout" size="md" />}
+          {room.priority && <RoomSymbol id="priority" size="md" />}
+          {room.cleaningFresh && <RoomSymbol id="cleaning" size="md" />}
         </span>
         <span className="h-4 truncate text-xs font-semibold text-ink-muted">
           {room.cleaningFresh

@@ -1,19 +1,25 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import {
-  BedDouble, Check, ChevronRight, Circle, Compass, ConciergeBell, DoorOpen,
-  BarChart3, ClipboardList, CreditCard, LayoutGrid, Printer, SlidersHorizontal,
+  BedDouble, BookOpen, Building2, Check, ChevronRight, Circle, Compass, ConciergeBell, DoorOpen,
+  BarChart3, ClipboardList, CreditCard, KeyRound, LayoutGrid, Printer, SlidersHorizontal,
   Smartphone, Sparkles, Users, type LucideIcon,
 } from 'lucide-react'
 import { getAccountContext, getManagementContext } from '@/utils/auth'
 import { createAdminClient } from '@/utils/supabase/service'
-import { einrichtungStart, lotseStart, lotsenFuer, setupProgress, type SetupFacts } from '@/lib/lotsen'
+import { hilfeUrl, themenFuer } from '@/lib/hilfe'
+import { einrichtungStart, lotseById, lotseStart, setupProgress, type SetupFacts } from '@/lib/lotsen'
 
 /**
- * Hilfe & Lotsen — der Tutorial-Bereich des Hauses.
+ * Hilfe & Lotsen — der Hilfe-Bereich des Hauses.
  *
  * Zwei Teile: oben, was zur Einrichtung noch fehlt, unten der Katalog der
- * Lotsen. Der Fortschritt wird **abgeleitet**, nicht gespeichert — dieselbe
+ * Themen — je Thema die Erklärung zum Nachschlagen (`lib/hilfe.ts`) und, wo
+ * es einen gibt, der Lotse über der echten Seite (`lib/lotsen.ts`). Beide
+ * Kataloge sind parallel geschnitten und tragen dieselben Kennungen; das „?"
+ * in der Kopfzeile führt von jeder Seite direkt zu ihrer Erklärung.
+ *
+ * Der Fortschritt wird **abgeleitet**, nicht gespeichert — dieselbe
  * Haltung wie bei `isBillable` oder `isStayoverDue`. Ein gespeichertes Häkchen
  * bliebe stehen, wenn jemand das letzte Zimmer wieder löscht oder die letzte
  * Reinigungskraft ausscheidet; die abgeleitete Liste zeigt die Lücke.
@@ -36,6 +42,8 @@ const ICONS: Record<string, LucideIcon> = {
   aushang: Printer,
   auswertung: BarChart3,
   konto: CreditCard,
+  zugang: KeyRound,
+  haeuser: Building2,
 }
 
 export default async function HilfePage({
@@ -86,7 +94,7 @@ export default async function HilfePage({
     fortschritt = setupProgress(facts)
   }
 
-  const lotsen = lotsenFuer(istVerwaltung, ctx.isOwner)
+  const themen = themenFuer(istVerwaltung, ctx.isOwner)
   const start = einrichtungStart(ctx.hotelSlug)
 
   return (
@@ -94,9 +102,11 @@ export default async function HilfePage({
       <div>
         <h1 className="text-xl font-black text-ink">Hilfe &amp; Lotsen</h1>
         <p className="mt-1 text-sm text-ink-soft">
-          Ein Lotse legt sich über die echte Seite und erklärt Schritt für Schritt, was dort
-          womit passiert. Bedienen können Sie die Seite dabei ganz normal weiter — nichts ist
-          gesperrt, und mit Esc sind Sie wieder heraus.
+          Zu jedem Bereich gibt es eine Erklärung zum Nachschlagen — Zeichen, Fragen, Antworten —
+          und einen Lotsen, der sich über die echte Seite legt und Schritt für Schritt zeigt, was
+          dort womit passiert. Bedienen können Sie die Seite dabei ganz normal weiter — nichts ist
+          gesperrt, und mit Esc sind Sie wieder heraus. Das &bdquo;?&ldquo; oben rechts führt von jeder Seite
+          direkt zu ihrer Erklärung.
         </p>
       </div>
 
@@ -158,32 +168,40 @@ export default async function HilfePage({
 
       <section data-lotse="hilfe.katalog" className="flex flex-col gap-3">
         <div>
-          <h2 className="text-base font-black text-ink">Lotsen nach Thema</h2>
+          <h2 className="text-base font-black text-ink">Hilfe nach Thema</h2>
           <p className="text-sm text-ink-soft">
-            Jeder Lotse führt auf die Seite, um die es geht, und lässt sich beliebig oft starten.
+            Die Erklärung ist zum Nachschlagen; der Lotse führt auf die Seite, um die es geht, und
+            lässt sich beliebig oft starten.
           </p>
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {lotsen.map(lotse => {
-            const Icon = ICONS[lotse.id] ?? Compass
+          {themen.map(thema => {
+            const Icon = ICONS[thema.id] ?? BookOpen
+            const lotse = thema.lotse ? lotseById(thema.lotse) : null
             return (
-              <Link
-                key={lotse.id}
-                href={lotseStart(lotse, ctx.hotelSlug)}
-                className="flex items-start gap-3 rounded-xl border border-edge bg-surface p-4 hover:border-edge-strong"
+              <div
+                key={thema.id}
+                className="flex items-start gap-3 rounded-xl border border-edge bg-surface p-4"
               >
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-muted text-ink-soft">
                   <Icon className="h-5 w-5" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-bold text-ink">{lotse.title}</span>
-                  <span className="mt-0.5 block text-xs text-ink-muted">{lotse.subtitle}</span>
-                  <span className="mt-1.5 block text-xs font-semibold text-action">
-                    {lotse.steps.length} Schritte
+                  <span className="block text-sm font-bold text-ink">{thema.title}</span>
+                  <span className="mt-0.5 block text-xs text-ink-muted">{thema.subtitle}</span>
+                  <span className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold">
+                    <Link href={hilfeUrl(thema, ctx.hotelSlug)} className="flex items-center gap-1 text-action hover:underline">
+                      <BookOpen className="h-3.5 w-3.5" /> Erklärung
+                    </Link>
+                    {lotse && (
+                      <Link href={lotseStart(lotse, ctx.hotelSlug)} className="flex items-center gap-1 text-action hover:underline">
+                        <Compass className="h-3.5 w-3.5" /> Lotse ({lotse.steps.length} Schritte)
+                      </Link>
+                    )}
                   </span>
                 </span>
-              </Link>
+              </div>
             )
           })}
         </div>

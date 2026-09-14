@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { LogOut } from 'lucide-react'
 import { logoutAction } from '@/app/login/actions'
+import HilfeKnopf from '@/components/hilfe/HilfeKnopf'
 import LotsePilot from '@/components/lotse/LotsePilot'
 
 /**
@@ -23,6 +24,9 @@ export default function KontoShell({
             Ro<span className="text-blocked">Se</span>
           </span>
           <div className="ml-auto flex items-center gap-3">
+            {/* Kontexthilfe wie im Haus-Layout; die Konto-Themen liegen unter
+                `/admin/hilfe/…`, ein Slug wird dafür nicht gebraucht. */}
+            <HilfeKnopf slug={null} />
             {who && <span className="hidden text-sm text-ink-muted sm:inline">{who}</span>}
             <form action={logoutAction}>
               <button

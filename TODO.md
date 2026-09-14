@@ -1,6 +1,6 @@
 # Offene Punkte
 
-Stand 12.09.2026. Herkunft in Klammern; Erledigtes wird gestrichen, nicht
+Stand 14.09.2026. Herkunft in Klammern; Erledigtes wird gestrichen, nicht
 gelöscht, damit erkennbar bleibt, was einmal offen war.
 
 ## Vor den ersten echten Kunden
@@ -239,9 +239,18 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       läuft über Aushang-Seite, Übersicht (Handout) und Personal
       (Login-Karte). **Damit ist der Tutorial-Bereich vollständig** — zwölf
       Fach-Lotsen plus Einrichtung.
-- [ ] **Kontextuelles „?" auf den Seiten selbst**, das den zur Seite
-      passenden Lotsen startet — dort wird so etwas tatsächlich benutzt, der
-      Hub ist nur der Katalog. (Lotsen 08.09.)
+- [x] ~~**Kontextuelles „?" auf den Seiten selbst**, das den zur Seite
+      passenden Lotsen startet~~ — 14.09. gebaut, **aber nicht als
+      Lotsen-Start** (der soll kompakt bleiben und läuft beim ersten Mal),
+      sondern als eigene **Nachschlage-Hilfe** je Seite: Legende mit den
+      echten Symbolen und Farben, Fragen und Antworten, Verweise; Route
+      `…/admin/hilfe/<thema>`, 14 Themen parallel zu den Lotsen, Hub mit
+      Erklärung und Lotse je Karte. Protokoll:
+      [2026-09-14_Kontexthilfe.md](Sessions/2026-09-14_Kontexthilfe.md).
+      **Der Erweiterungspunkt:** Tester-Rückmeldung „X war unverständlich"
+      wird ein Eintrag in [hilfe.ts](src/lib/hilfe.ts). Offen bleibt ein „?"
+      im Reinigungsboard selbst, falls Kräfte danach fragen — die Erklärung
+      liegt heute unter der Simulation im Rezeptions-Portal. (Lotsen 08.09.)
 
 ## Komfort für Mehrhaus-Kunden (Ketten)
 

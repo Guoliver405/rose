@@ -3,10 +3,11 @@
 import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import {
-  AlertTriangle, Ban, BedDouble, Check, Clock, ConciergeBell, DoorOpen, Flag, History, Loader2, Luggage,
-  PowerOff, Printer, ReceiptText, RefreshCw, Sparkles, Users, X,
+  AlertTriangle, Check, History, Loader2, Luggage, Printer, ReceiptText, Users, X,
 } from 'lucide-react'
+import RoomSymbol from '@/components/RoomSymbol'
 import { dateKeyAfterNights } from '@/lib/board'
+import { ROOM_BARS, ROOM_RINGS } from '@/lib/room-symbols'
 import { formatCents } from '@/lib/money'
 import type { StayBill } from '@/lib/stay-bill'
 import {
@@ -57,15 +58,15 @@ export type FloorGroup = {
     Eine LAUFENDE Reinigung ändert den Balken bewusst NICHT (nur Spinner-Icon):
     die Grundfarbe bleibt stehen, bis der Abschluss den Status wirklich ändert. */
 function tileBar(t: RoomTileData): string {
-  if (t.deactivated) return 'bg-edge-strong'
-  if (t.priority) return 'bg-accent'
-  if (t.checkoutPending) return 'bg-caution'
-  if ((t.guestSignal === 'please_clean' && !t.cleanDeferredUntil) || t.stayoverDue) return 'bg-attention'
-  if (t.guestSignal === 'dnd') return 'bg-blocked'
-  if (t.occupied) return 'bg-fresh'
+  if (t.deactivated) return ROOM_BARS.deactivated.className
+  if (t.priority) return ROOM_BARS.priority.className
+  if (t.checkoutPending) return ROOM_BARS.checkout.className
+  if ((t.guestSignal === 'please_clean' && !t.cleanDeferredUntil) || t.stayoverDue) return ROOM_BARS.wanted.className
+  if (t.guestSignal === 'dnd') return ROOM_BARS.dnd.className
+  if (t.occupied) return ROOM_BARS.occupied.className
   // Alle Nicht-bereit-Fälle sind oben abgefangen: ein freies Zimmer ohne
   // checkout_pending/priority ist im event-getriebenen Modell gereinigt.
-  return 'bg-positive'
+  return ROOM_BARS.ready.className
 }
 
 /** Punkt-Farbe der Verlaufs-Zeitleiste (eigene Sprache, nicht die der Kacheln). */
@@ -282,9 +283,9 @@ function RoomTile({ room, onClick, anchor }: { room: RoomTileData; onClick: () =
         room.deactivated
           ? 'border-dashed border-edge-strong bg-surface-muted opacity-60'
           : room.urgentOrders
-            ? 'border-critical bg-surface-elevated blink-ring-overdue'
+            ? `${ROOM_RINGS.urgent.className} bg-surface-elevated`
             : room.priority
-              ? 'border-accent bg-surface-elevated blink-ring-priority'
+              ? `${ROOM_RINGS.priority.className} bg-surface-elevated`
               : 'border-edge bg-surface-elevated'
       }`}
     >
@@ -296,25 +297,19 @@ function RoomTile({ room, onClick, anchor }: { room: RoomTileData; onClick: () =
           <span className={`text-sm font-black ${room.occupied || room.checkoutPending || room.priority ? 'text-ink' : 'text-ink-muted'}`}>
             {room.number}
           </span>
-          {room.openOrders > 0 && (
-            <ConciergeBell
-              className={`h-3.5 w-3.5 ${
-                room.urgentOrders ? 'blink-icon text-critical-strong' : 'text-action'
-              }`}
-            />
-          )}
+          {room.openOrders > 0 && <RoomSymbol id={room.urgentOrders ? 'urgent' : 'orders'} />}
         </span>
         <span className="flex h-4 items-center gap-0.5">
-          {room.deactivated && <PowerOff className="h-3.5 w-3.5 text-ink-muted" />}
-          {room.occupied && <BedDouble className="h-3.5 w-3.5 text-active-strong" />}
-          {room.occupied && room.departureToday && <Luggage className="h-3.5 w-3.5 text-ink-soft" />}
-          {room.guestSignal === 'dnd' && <Ban className="h-3.5 w-3.5 text-blocked-strong" />}
-          {room.guestSignal === 'please_clean' && !room.cleanDeferredUntil && <Sparkles className="h-3.5 w-3.5 text-attention-strong" />}
-          {room.guestSignal === 'please_clean' && room.cleanDeferredUntil && <Clock className="h-3.5 w-3.5 text-ink-soft" />}
-          {room.stayoverDue && <RefreshCw className="h-3.5 w-3.5 text-attention-strong" />}
-          {room.checkoutPending && <DoorOpen className="h-3.5 w-3.5 text-caution-strong" />}
-          {room.priority && <Flag className="h-3.5 w-3.5 text-accent-strong" />}
-          {room.cleaningActive && <Loader2 className="h-3.5 w-3.5 animate-spin text-positive-strong" />}
+          {room.deactivated && <RoomSymbol id="deactivated" />}
+          {room.occupied && <RoomSymbol id="occupied" />}
+          {room.occupied && room.departureToday && <RoomSymbol id="departure" />}
+          {room.guestSignal === 'dnd' && <RoomSymbol id="dnd" />}
+          {room.guestSignal === 'please_clean' && !room.cleanDeferredUntil && <RoomSymbol id="clean" />}
+          {room.guestSignal === 'please_clean' && room.cleanDeferredUntil && <RoomSymbol id="deferred" />}
+          {room.stayoverDue && <RoomSymbol id="routine" />}
+          {room.checkoutPending && <RoomSymbol id="checkout" />}
+          {room.priority && <RoomSymbol id="priority" />}
+          {room.cleaningActive && <RoomSymbol id="cleaning" />}
         </span>
       </span>
     </button>

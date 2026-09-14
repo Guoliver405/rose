@@ -6,6 +6,7 @@ import { getManagementContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import { logoutAction } from '@/app/login/actions'
 import RealtimeListener from '@/components/RealtimeListener'
+import HilfeKnopf from '@/components/hilfe/HilfeKnopf'
 import LotsePilot from '@/components/lotse/LotsePilot'
 
 export default async function AdminLayout({
@@ -87,6 +88,12 @@ export default async function AdminLayout({
           </nav>
 
           <div className="ml-auto flex items-center gap-3">
+            {/* Kontexthilfe: das „?" führt zur Hilfe der Seite, auf der man
+                steht (Katalog in lib/hilfe.ts). „Hilfe" in der Nav bleibt der
+                Katalog; das „?" ist der Kontext. Client-Komponente, weil nur
+                der Browser den Pfad kennt — so muss keine Seite es selbst
+                setzen. */}
+            <HilfeKnopf slug={ctx.hotelSlug} />
             {/* Der Weg aus dem Haus heraus — IMMER sichtbar, auch bei genau
                 einem Haus. `/admin` ist die Häuser-Seite samt Konto-Kasten und
                 „Haus anlegen"; wer sie ausblendet, sperrt Einzelhaus-Inhaber
