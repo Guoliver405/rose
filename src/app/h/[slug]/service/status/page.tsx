@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getMaidContext } from '@/utils/maid-auth'
 import { requireHotelBySlug } from '@/utils/hotel'
 import { createAdminClient } from '@/utils/supabase/service'
+import { parseStaffTracking } from '@/lib/staff-tracking'
 import { deriveShiftState } from '@/lib/shift'
 import { clampStaleMinutes, isCleaningFresh } from '@/lib/board'
 import { computeWorkStats, type StaffLogRow } from '@/lib/worklog'
@@ -64,7 +65,10 @@ export default async function ServiceStatusPage({
     ? { roomNumber: room?.number ?? '?', startedAt: state.cleaning_started_at }
     : null
 
+  const team = parseStaffTracking(ctx.policies) === 'team'
+
   return (
+    <>
     <StatusPanel
       hotelSlug={ctx.hotelSlug}
       displayName={ctx.displayName}
@@ -85,5 +89,15 @@ export default async function ServiceStatusPage({
         otherCleaningMs: stats.otherCleaningMs,
       }}
     />
+    {/* Team-Modus: Die Tagesbilanz liest die eigenen Stiche — nach dem
+        Schichtende gehören sie niemandem mehr. Das soll niemand für einen
+        Fehler halten. */}
+    {team && (
+      <p className="mt-3 rounded-xl border border-edge bg-surface-sunken px-4 py-3 text-xs text-ink-muted">
+        Dieses Haus wertet die Reinigung nur als Team aus. Deine Tagesbilanz siehst du während der
+        Schicht; mit dem Schichtende werden deine Stiche ohne deinen Namen gespeichert.
+      </p>
+    )}
+    </>
   )
 }

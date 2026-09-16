@@ -12,6 +12,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { createAdminClient } from '@/utils/supabase/service'
+import { parseStaffTracking } from '@/lib/staff-tracking'
 import { getManagementContext } from '@/utils/auth'
 
 const HISTORY_DAYS = 30
@@ -113,9 +114,13 @@ export async function getRoomHistoryAction(slug: string, roomId: string): Promis
   // oder Manager mit mehreren Häusern erschien in allen anderen als
   // „Rezeption", obwohl die ID korrekt gespeichert war. Die IDs stammen
   // ausschließlich aus Zeilen dieses Zimmers, die Mandantengrenze bleibt.
+  // Team-Modus (16.09.2026): Reinigungskräfte erscheinen nie mit Namen —
+  // auch nicht für Stiche der laufenden Schicht, die ihre Person erst beim
+  // Schichtende verlieren. Deshalb werden ihre IDs gar nicht erst aufgelöst.
+  const team = parseStaffTracking(ctx.policies) === 'team'
   const actorIds = new Set<string>()
-  for (const t of transitions ?? []) if (t.actor_id) actorIds.add(t.actor_id)
-  for (const s of stitches ?? []) actorIds.add(s.profile_id)
+  for (const t of transitions ?? []) if (t.actor_id && !(team && t.source === 'maid')) actorIds.add(t.actor_id)
+  for (const s of stitches ?? []) if (s.profile_id && !team) actorIds.add(s.profile_id)
   for (const s of stayRows ?? []) {
     if (s.created_by) actorIds.add(s.created_by)
     if (s.checked_out_by) actorIds.add(s.checked_out_by)
@@ -131,6 +136,7 @@ export async function getRoomHistoryAction(slug: string, roomId: string): Promis
   function actorLabel(source: string | null, actorId: string | null): string {
     if (source === 'guest') return 'Gast'
     if (source === 'system') return 'System'
+    if (source === 'maid' && team) return 'Reinigungsteam'
     const name = actorId ? nameById.get(actorId) : null
     if (name) return name
     return source === 'maid' ? 'Reinigung' : 'Rezeption'
@@ -155,11 +161,12 @@ export async function getRoomHistoryAction(slug: string, roomId: string): Promis
     // clean_aborted schreibt ausschließlich der Stale-Timeout
     // (reapStaleCleanings): Akteur ist das System, die Kraft steht im Label.
     const isAbort = s.kind === 'clean_aborted'
-    const name = nameById.get(s.profile_id)
+    // profile_id ist seit dem Team-Modus nullable (anonymisierte Stiche).
+    const name = !team && s.profile_id ? nameById.get(s.profile_id) : undefined
     events.push({
       at: s.at,
       label: isAbort ? `${label} (Zeitlimit${name ? `, ${name}` : ''})` : label,
-      actor: isAbort ? 'System' : (name ?? 'Reinigung'),
+      actor: isAbort ? 'System' : (name ?? (team ? 'Reinigungsteam' : 'Reinigung')),
       tone: 'clean',
     })
   }

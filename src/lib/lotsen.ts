@@ -193,6 +193,11 @@ const REGELN: Lotse = {
       body: 'Der Gast wünscht Reinigung, aber nicht vor einer Uhrzeit, weil er ausschlafen will. Bis dahin gilt das Zimmer auf dem Board als nicht offen. Wählen Sie die Grenze so, dass die Reinigung danach noch in die Schicht fällt: Housekeeping bis 15:00 heißt 13:00.',
     },
     {
+      path: '/einstellungen/hotel', anchor: 'regeln.personenbezug',
+      title: 'Je Kraft oder nur als Team',
+      body: 'Darf oder soll die Arbeit einzelner Kräfte bei Ihnen nicht gemessen werden, wählen Sie „Nur als Team": Die Auswertung zeigt dann nur die Hausbilanz, im Zimmer-Verlauf steht „Reinigungsteam", und die Stiche verlieren beim Schichtende ihre Person. Das ist nicht umkehrbar — und bei einer einzigen Kraft im Dienst ohnehin nur formal.',
+    },
+    {
       path: '/einstellungen/hotel', anchor: 'regeln.fenster',
       title: 'Reinigungswunsch nur zu festen Zeiten',
       body: 'Außerhalb des Fensters kann der Gast keinen Wunsch mehr absetzen und sieht stattdessen Ihre Reinigungszeiten. „Nicht stören" und das Zurücknehmen eines Wunsches bleiben immer möglich — sonst säße jemand mit einem Wunsch fest, den er nicht mehr los wird.',

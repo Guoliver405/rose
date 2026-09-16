@@ -7,7 +7,7 @@
  * Zeiträume innerhalb der Schicht.
  */
 
-export type StaffLogEntry = { kind: string; at: string }
+export type StaffLogEntry = { kind: string; at: string; session_id?: string | null }
 
 export type ShiftState = {
   onShift: boolean
@@ -17,6 +17,13 @@ export type ShiftState = {
   /** Sonstige Reinigung (Flur, Lobby, …) läuft gerade. */
   onOther: boolean
   otherStartedAt: string | null
+  /**
+   * Zufallsschlüssel der laufenden Schicht (aus dem `shift_start`-Stich) —
+   * jeder weitere Stich der Schicht trägt ihn, damit die Auswertung im
+   * Team-Modus auch ohne Person Zeiträume paaren kann. Null vor der
+   * Migration 2026-09-16 oder außerhalb einer Schicht.
+   */
+  sessionId: string | null
 }
 
 /** Erwartet Einträge absteigend nach `at` sortiert (jüngster zuerst). */
@@ -27,7 +34,7 @@ export function deriveShiftState(entries: StaffLogEntry[]): ShiftState {
   if (!onShift) {
     return {
       onShift: false, onBreak: false, shiftStartedAt: null, breakStartedAt: null,
-      onOther: false, otherStartedAt: null,
+      onOther: false, otherStartedAt: null, sessionId: null,
     }
   }
 
@@ -49,5 +56,6 @@ export function deriveShiftState(entries: StaffLogEntry[]): ShiftState {
     breakStartedAt: onBreak ? lastBreak!.at : null,
     onOther,
     otherStartedAt: onOther ? lastOther!.at : null,
+    sessionId: lastShift!.session_id ?? null,
   }
 }

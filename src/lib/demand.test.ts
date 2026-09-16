@@ -24,9 +24,9 @@ describe('daysInRange', () => {
 describe('shiftIntervals', () => {
   it('paart Beginn und Ende je Kraft und klammert an den Zeitraum', () => {
     const rows = [
-      { profileId: 'a', kind: 'shift_start', at: '2026-09-01T06:00:00Z' },
-      { profileId: 'a', kind: 'shift_end', at: '2026-09-01T12:00:00Z' },
-      { profileId: 'b', kind: 'shift_end', at: '2026-09-01T02:00:00Z' }, // Ende ohne Beginn → ab Zeitraumbeginn
+      { key: 'a', kind: 'shift_start', at: '2026-09-01T06:00:00Z' },
+      { key: 'a', kind: 'shift_end', at: '2026-09-01T12:00:00Z' },
+      { key: 'b', kind: 'shift_end', at: '2026-09-01T02:00:00Z' }, // Ende ohne Beginn → ab Zeitraumbeginn
     ]
     const out = shiftIntervals(rows, range, now)
     expect(out).toHaveLength(2)
@@ -35,12 +35,12 @@ describe('shiftIntervals', () => {
   })
 
   it('lässt eine vergessene Schicht (über 16 h) aus — wie worklog.ts', () => {
-    const rows = [{ profileId: 'a', kind: 'shift_start', at: '2026-09-01T06:00:00Z' }]
+    const rows = [{ key: 'a', kind: 'shift_start', at: '2026-09-01T06:00:00Z' }]
     expect(shiftIntervals(rows, range, now)).toHaveLength(0)
   })
 
   it('beendet eine offene Schicht bei „jetzt", wenn das vor dem Zeitraumende liegt', () => {
-    const rows = [{ profileId: 'a', kind: 'shift_start', at: '2026-09-07T06:00:00Z' }]
+    const rows = [{ key: 'a', kind: 'shift_start', at: '2026-09-07T06:00:00Z' }]
     const out = shiftIntervals(rows, range, new Date('2026-09-07T10:00:00Z'))
     expect(out[0].end).toEqual(new Date('2026-09-07T10:00:00Z'))
   })
@@ -56,8 +56,8 @@ describe('computeDemand', () => {
   const checkouts = ['2026-09-02T08:40:00Z'] // Mi 10:40
   const dnd = ['2026-09-05T06:30:00Z'] // Sa 08:30
   const shiftRows = [
-    { profileId: 'a', kind: 'shift_start', at: '2026-09-01T06:00:00Z' }, // Di 08:00–12:00 lokal
-    { profileId: 'a', kind: 'shift_end', at: '2026-09-01T10:00:00Z' },
+    { key: 'a', kind: 'shift_start', at: '2026-09-01T06:00:00Z' }, // Di 08:00–12:00 lokal
+    { key: 'a', kind: 'shift_end', at: '2026-09-01T10:00:00Z' },
   ]
 
   it('bündelt Wünsche, DND und Abreisen nach lokaler Stunde und Wochentag', () => {

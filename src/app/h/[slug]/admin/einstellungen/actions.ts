@@ -5,6 +5,8 @@ import { isValidTimeZone } from '@/lib/tz'
 import { redirect } from 'next/navigation'
 import { createClient as createPlainClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/utils/supabase/service'
+import { parseStaffTracking } from '@/lib/staff-tracking'
+import { anonymizeStale } from '@/utils/staff-tracking'
 import { createClient } from '@/utils/supabase/server'
 import { getAdminContext, getManagementContext } from '@/utils/auth'
 import { clampPinLength } from '@/lib/ids'
@@ -52,6 +54,8 @@ export async function updateSettingsAction(slug: string, formData: FormData): Pr
   }
   const timeZone = ((formData.get('timeZone') as string) ?? '').trim()
   if (!isValidTimeZone(timeZone)) return { error: 'Zeitzone ist ungültig.' }
+  // Team-Modus: nur die beiden Werte, alles andere fällt auf die Vorgabe zurück.
+  const staffTracking = formData.get('staffTracking') === 'team' ? 'team' : 'person'
 
   const cleaningWindowEnabled = formData.get('cleaningWindowEnabled') === 'on'
   const windowStartRaw = ((formData.get('cleaningWindowStart') as string) ?? '').trim()
@@ -89,6 +93,7 @@ export async function updateSettingsAction(slug: string, formData: FormData): Pr
     cleaningWindowEnabled,
     ...(windowStartRaw ? { cleaningWindowStart: windowStartRaw } : {}),
     ...(windowEndRaw ? { cleaningWindowEnd: windowEndRaw } : {}),
+    staffTracking,
   }
 
   const { error } = await admin
@@ -96,6 +101,12 @@ export async function updateSettingsAction(slug: string, formData: FormData): Pr
     .update({ name, slug: newSlug, policies: merged })
     .eq('id', ctx.hotelId)
   if (error) return { error: error.message }
+
+  // Umschalten auf den Team-Modus wirkt sofort auf den Bestand — nicht erst
+  // mit dem nächsten Schichtbeginn. Sonst stünde die Tabelle je Kraft nach
+  // dem Speichern noch einen Tag lang da.
+  const before = parseStaffTracking((hotel?.policies ?? {}) as Record<string, unknown>)
+  if (staffTracking === 'team' && before !== 'team') await anonymizeStale(admin, ctx.hotelId)
 
   // Die Portalseiten unter /h/<slug> sind durchweg dynamisch (Cookie-Zugriff),
   // haben also keinen Full-Route-Cache, der nach einer Umbenennung veralten

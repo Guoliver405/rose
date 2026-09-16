@@ -6,6 +6,9 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/utils/supabase/service'
 import { getMaidContext, type MaidContext } from '@/utils/maid-auth'
 import { reapStaleCleanings } from '@/utils/stale-cleaning'
+import { anonymizeSession, anonymizeStale } from '@/utils/staff-tracking'
+import { parseStaffTracking } from '@/lib/staff-tracking'
+import { randomUUID } from 'node:crypto'
 import { deriveShiftState, type ShiftState } from '@/lib/shift'
 import {
   clampStaleMinutes, isCleanDeferred, isCleaningFresh, isRoomActive, isStayoverDue,
@@ -34,7 +37,7 @@ function auditFields(profileId: string) {
 async function loadShiftState(admin: SupabaseClient, profileId: string): Promise<ShiftState> {
   const { data } = await admin
     .from('staff_log')
-    .select('kind, at')
+    .select('kind, at, session_id')
     .eq('profile_id', profileId)
     .in('kind', ['shift_start', 'shift_end', 'break_start', 'break_end', 'other_start', 'other_end'])
     .order('at', { ascending: false })
@@ -42,17 +45,24 @@ async function loadShiftState(admin: SupabaseClient, profileId: string): Promise
   return deriveShiftState(data ?? [])
 }
 
+/**
+ * Stich schreiben. `sessionId` ist der Zufallsschlüssel der laufenden
+ * Schicht (aus dem shift_start-Stich): Im Team-Modus verliert der Stich
+ * später seine Person, die Auswertung paart dann über die Session.
+ */
 async function logStitch(
   admin: SupabaseClient,
   ctx: MaidContext,
   kind: string,
-  roomId: string | null = null,
+  roomId: string | null,
+  sessionId: string | null,
 ): Promise<ActionResult> {
   const { error } = await admin.from('staff_log').insert({
     hotel_id: ctx.hotelId,
     profile_id: ctx.profileId,
     room_id: roomId,
     kind,
+    session_id: sessionId,
   })
   if (error) return { error: `Logging fehlgeschlagen: ${error.message}` }
   return {}
@@ -84,7 +94,12 @@ export async function shiftStartAction(): Promise<ActionResult> {
   const shift = await loadShiftState(admin, ctx.profileId)
   if (shift.onShift) return { error: 'Schicht läuft bereits.' }
 
-  const res = await logStitch(admin, ctx, 'shift_start')
+  // Team-Modus: Alles, was älter als 24 h ist, verliert jetzt seine Person
+  // (Stale-Reaper, vergessene Schichtenden, Rezeptions-Stiche). Kein Cron —
+  // der Schichtbeginn ist der Moment, in dem ohnehin geschrieben wird.
+  if (parseStaffTracking(ctx.policies) === 'team') await anonymizeStale(admin, ctx.hotelId)
+
+  const res = await logStitch(admin, ctx, 'shift_start', null, randomUUID())
   if (res.error) return res
   revalidatePath(boardPath(ctx))
   return {}
@@ -108,19 +123,26 @@ export async function shiftEndAction(): Promise<ActionResult> {
   // vergessener Stich soll das Schichtende nicht blockieren, die Zeiträume
   // müssen aber sauber enden, damit die Auswertung stimmt.
   if (shift.onBreak) {
-    const res = await logStitch(admin, ctx, 'break_end')
+    const res = await logStitch(admin, ctx, 'break_end', null, shift.sessionId)
     if (res.error) return res
   }
   if (shift.onOther) {
-    const res = await logStitch(admin, ctx, 'other_end')
+    const res = await logStitch(admin, ctx, 'other_end', null, shift.sessionId)
     if (res.error) return res
   }
 
-  const res = await logStitch(admin, ctx, 'shift_end')
+  const res = await logStitch(admin, ctx, 'shift_end', null, shift.sessionId)
   if (res.error) return res
 
   // Etagen-Verortung endet mit der Schicht.
   await admin.from('maid_presence').delete().eq('profile_id', ctx.profileId)
+
+  // Team-Modus: Die Stiche dieser Schicht verlieren ihre Person — jetzt, wo
+  // die Zustandsmaschine sie nicht mehr braucht. Der Session-Schlüssel
+  // bleibt, damit die Auswertung Schicht, Pause und Zimmer paaren kann.
+  if (parseStaffTracking(ctx.policies) === 'team' && shift.sessionId) {
+    await anonymizeSession(admin, ctx.hotelId, shift.sessionId)
+  }
 
   revalidatePath(boardPath(ctx))
   revalidatePath('/admin', 'layout')
@@ -183,11 +205,11 @@ export async function breakToggleAction(): Promise<ActionResult> {
   // Tätigkeiten dürfen sich nicht überlappen, sonst zählt die Auswertung
   // dieselbe Minute doppelt: Pausenbeginn beendet die sonstige Reinigung.
   if (!shift.onBreak && shift.onOther) {
-    const res = await logStitch(admin, ctx, 'other_end')
+    const res = await logStitch(admin, ctx, 'other_end', null, shift.sessionId)
     if (res.error) return res
   }
 
-  const res = await logStitch(admin, ctx, shift.onBreak ? 'break_end' : 'break_start')
+  const res = await logStitch(admin, ctx, shift.onBreak ? 'break_end' : 'break_start', null, shift.sessionId)
   if (res.error) return res
   revalidatePath(boardPath(ctx))
   return {}
@@ -208,7 +230,7 @@ export async function otherCleaningToggleAction(): Promise<ActionResult> {
     return { error: 'Erst die Pause beenden.' }
   }
 
-  const res = await logStitch(admin, ctx, shift.onOther ? 'other_end' : 'other_start')
+  const res = await logStitch(admin, ctx, shift.onOther ? 'other_end' : 'other_start', null, shift.sessionId)
   if (res.error) return res
   revalidatePath(boardPath(ctx))
   return {}
@@ -307,11 +329,11 @@ export async function startCleaningAction(roomId: string): Promise<ActionResult>
   // Zimmerreinigung beendet eine laufende sonstige Reinigung (keine
   // Überlappung — siehe breakToggleAction).
   if (shift.onOther) {
-    const endRes = await logStitch(admin, ctx, 'other_end')
+    const endRes = await logStitch(admin, ctx, 'other_end', null, shift.sessionId)
     if (endRes.error) return endRes
   }
 
-  const res = await logStitch(admin, ctx, 'clean_start', roomId)
+  const res = await logStitch(admin, ctx, 'clean_start', roomId, shift.sessionId)
   if (res.error) return res
 
   revalidatePath(boardPath(ctx))
@@ -324,11 +346,14 @@ export async function finishCleaningAction(roomId: string): Promise<ActionResult
   if (!ctx) return { error: 'Nicht angemeldet.' }
   const admin = createAdminClient()
 
-  const { data: state } = await admin
-    .from('room_states')
-    .select('room_id, hotel_id, guest_signal, cleaning_by')
-    .eq('room_id', roomId)
-    .maybeSingle()
+  const [{ data: state }, shift] = await Promise.all([
+    admin
+      .from('room_states')
+      .select('room_id, hotel_id, guest_signal, cleaning_by')
+      .eq('room_id', roomId)
+      .maybeSingle(),
+    loadShiftState(admin, ctx.profileId),
+  ])
   if (!state || state.hotel_id !== ctx.hotelId) return { error: 'Zimmer nicht gefunden.' }
   // Auch stale Reinigungen dürfen von der Besitzerin regulär abgeschlossen werden.
   if (state.cleaning_by !== ctx.profileId) {
@@ -349,7 +374,7 @@ export async function finishCleaningAction(roomId: string): Promise<ActionResult
     .eq('room_id', roomId)
   if (error) return { error: error.message }
 
-  const res = await logStitch(admin, ctx, 'clean_done', roomId)
+  const res = await logStitch(admin, ctx, 'clean_done', roomId, shift.sessionId)
   if (res.error) return res
 
   revalidatePath(boardPath(ctx))
@@ -363,11 +388,14 @@ export async function abortCleaningAction(roomId: string): Promise<ActionResult>
   if (!ctx) return { error: 'Nicht angemeldet.' }
   const admin = createAdminClient()
 
-  const { data: state } = await admin
-    .from('room_states')
-    .select('room_id, hotel_id, cleaning_by')
-    .eq('room_id', roomId)
-    .maybeSingle()
+  const [{ data: state }, shift] = await Promise.all([
+    admin
+      .from('room_states')
+      .select('room_id, hotel_id, cleaning_by')
+      .eq('room_id', roomId)
+      .maybeSingle(),
+    loadShiftState(admin, ctx.profileId),
+  ])
   if (!state || state.hotel_id !== ctx.hotelId) return { error: 'Zimmer nicht gefunden.' }
   if (state.cleaning_by !== ctx.profileId) {
     return { error: 'Diese Reinigung läuft nicht auf deinen Namen.' }
@@ -383,7 +411,7 @@ export async function abortCleaningAction(roomId: string): Promise<ActionResult>
     .eq('room_id', roomId)
   if (error) return { error: error.message }
 
-  const res = await logStitch(admin, ctx, 'clean_aborted', roomId)
+  const res = await logStitch(admin, ctx, 'clean_aborted', roomId, shift.sessionId)
   if (res.error) return res
 
   revalidatePath(boardPath(ctx))

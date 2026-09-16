@@ -12,6 +12,7 @@ import {
   MAX_BREAK_HOURS, MAX_SHIFT_HOURS, type StaffLogRow, type WorkStats,
 } from '@/lib/worklog'
 import { addDaysKey, parseTimeZone, zonedDateKey, zonedDayRange } from '@/lib/tz'
+import { groupForPairing, pairingKey, parseStaffTracking } from '@/lib/staff-tracking'
 
 const KIND_LABEL: Record<string, string> = {
   shift_start: 'Schichtbeginn',
@@ -58,6 +59,7 @@ export default async function AuswertungPage({
   const now = new Date()
   // Kalendertage in der Zeitzone des Hauses — nicht in Server-Zeit (UTC).
   const tz = parseTimeZone(ctx.policies)
+  const tracking = parseStaffTracking(ctx.policies)
   const today = zonedDateKey(now, tz)
   // Default: laufende Woche = die letzten 7 Kalendertage inkl. heute.
   const defaultFrom = addDaysKey(today, -6)
@@ -84,7 +86,7 @@ export default async function AuswertungPage({
       .order('display_name'),
     supabase
       .from('staff_log')
-      .select('profile_id, kind, at, room_id')
+      .select('profile_id, session_id, kind, at, room_id')
       .eq('hotel_id', ctx.hotelId)
       .gte('at', range.start.toISOString())
       .lt('at', range.end.toISOString())
@@ -116,7 +118,12 @@ export default async function AuswertungPage({
     wishes: (signals ?? []).filter(t => t.new_value === 'please_clean').map(t => t.occurred_at as string),
     dnd: (signals ?? []).filter(t => t.new_value === 'dnd').map(t => t.occurred_at as string),
     checkouts: (checkouts ?? []).map(c => c.checked_out_at as string),
-    shiftRows: (logs ?? []).map(l => ({ profileId: l.profile_id as string, kind: l.kind as string, at: l.at as string })),
+    // Paarung je Kraft (Person-Modus) oder je Schicht (Team-Modus) — Zeilen
+    // ohne Schlüssel lassen sich nicht paaren und fallen hier heraus.
+    shiftRows: (logs ?? []).flatMap(l => {
+      const key = pairingKey(l, tracking)
+      return key ? [{ key, kind: l.kind as string, at: l.at as string }] : []
+    }),
     range,
     now,
     timeZone: tz,
@@ -127,26 +134,37 @@ export default async function AuswertungPage({
   )
   const roomNumber = new Map((rooms ?? []).map(r => [r.id, r.number]))
 
-  const rowsByMaid = new Map<string, StaffLogRow[]>()
-  for (const l of logs ?? []) {
-    const list = rowsByMaid.get(l.profile_id) ?? []
-    list.push({ kind: l.kind, at: l.at, room_id: l.room_id })
-    rowsByMaid.set(l.profile_id, list)
-  }
+  // Team-Modus (16.09.2026): gruppiert wird je Schicht (session_id), nicht je
+  // Kraft — die Hausbilanz bleibt vollständig, eine Zuordnung zur Person
+  // gibt es nicht mehr. Anonymisierte Bestandszeilen ohne Session lassen
+  // sich nicht paaren; sie werden gezählt und ausgewiesen, nicht gerechnet.
+  const { groups, unpaired } = groupForPairing(
+    (logs ?? []).map(l => ({ profile_id: l.profile_id, session_id: l.session_id, kind: l.kind, at: l.at, room_id: l.room_id })),
+    tracking,
+  )
+  const asRows = (list: { kind: string; at: string; room_id: string | null }[]): StaffLogRow[] =>
+    list.map(l => ({ kind: l.kind, at: l.at, room_id: l.room_id }))
 
   // Kräfte mit Aktivität im Zeitraum — deaktivierte gehören dazu, genau
-  // dafür werden sie nicht mehr gelöscht.
-  const maids = (profiles ?? [])
+  // dafür werden sie nicht mehr gelöscht. Im Team-Modus bleibt die Liste
+  // leer: Es gibt keine Tabelle je Kraft.
+  const maids = tracking === 'team' ? [] : (profiles ?? [])
     .map(p => ({
       id: p.id,
       name: p.display_name,
       deactivated: Boolean(p.deactivated_at),
-      rows: rowsByMaid.get(p.id) ?? [],
+      rows: asRows(groups.get(p.id) ?? []),
     }))
     .filter(m => m.rows.length > 0)
     .map(m => ({ ...m, stats: computeWorkStats(m.rows, range, staleMinutes, now) }))
 
-  const total = sumStats(maids.map(m => m.stats))
+  // Hausbilanz: im Person-Modus die Summe der Kräfte (Stiche von Management-
+  // Zugängen — „Als gereinigt markieren" — zählen wie bisher nicht), im
+  // Team-Modus die Summe aller paarbaren Gruppen.
+  const total = tracking === 'team'
+    ? sumStats([...groups.values()].map(list => computeWorkStats(asRows(list), range, staleMinutes, now)))
+    : sumStats(maids.map(m => m.stats))
+  const hasActivity = tracking === 'team' ? groups.size > 0 || unpaired > 0 : maids.length > 0
   const selected = params.maid ? maids.find(m => m.id === params.maid) ?? null : null
 
   // Detail-Protokoll: Kalendertage der gewählten Kraft, neueste zuerst.
@@ -223,7 +241,7 @@ export default async function AuswertungPage({
         checkoutLabel={hhmm(stayover.checkoutHour, stayover.checkoutMinute)}
       />
 
-      {maids.length === 0 ? (
+      {!hasActivity ? (
         <div data-lotse="auswertung.kennzahlen" className="rounded-xl border border-edge bg-surface p-8 text-center">
           <p className="font-semibold text-ink">Keine Tätigkeiten in diesem Zeitraum.</p>
           <p className="mt-1 text-sm text-ink-muted">
@@ -262,6 +280,23 @@ export default async function AuswertungPage({
             />
           </section>
 
+          {tracking === 'team' && (
+            <p data-lotse="auswertung.tabelle" className="flex items-start gap-2 rounded-xl border border-edge bg-surface-sunken px-4 py-3 text-xs text-ink-muted">
+              <Info className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                Dieses Haus wertet die Reinigung <strong className="font-semibold text-ink-soft">nur als Team</strong> aus
+                (Einstellung unter Hotel &amp; Regeln): Die Kennzahlen oben sind die Summe über {groups.size}{' '}
+                {groups.size === 1 ? 'Schicht' : 'Schichten'} im Zeitraum, eine Tabelle je Kraft und ein Tagesprotokoll
+                gibt es nicht. Wer wann welches Zimmer gereinigt hat, steht im Zimmer-Verlauf als „Reinigungsteam&quot;.
+                {unpaired > 0 && (
+                  <> {unpaired} Stiche aus der Zeit vor dem Team-Modus tragen keinen Schicht-Schlüssel mehr und sind in den Summen nicht enthalten.</>
+                )}
+              </span>
+            </p>
+          )}
+
+          {tracking === 'person' && (
+          <>
           {/* Je Reinigungskraft */}
           <section data-lotse="auswertung.tabelle" className="overflow-x-auto rounded-xl border border-edge bg-surface">
             <table className="w-full min-w-[720px] text-left text-sm">
@@ -385,6 +420,8 @@ export default async function AuswertungPage({
                 </div>
               ))}
             </section>
+          )}
+          </>
           )}
         </>
       )}

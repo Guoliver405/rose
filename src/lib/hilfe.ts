@@ -394,6 +394,10 @@ const REGELN: HilfeThema = {
           antwort: 'Ja, der Kurzname in der Adresse ist änderbar. Gedruckte QR-Codes bleiben gültig, weil sie einen eigenen Schlüssel tragen. Nur wer die Adresse abgetippt hat oder ein älteres Handout mit ausgeschriebener Adresse besitzt, kommt nicht mehr an — die Anmeldeseiten von Gästen und Reinigung liegen unter dem neuen Namen.',
         },
         {
+          frage: 'Was ändert „Tätigkeiten der Reinigung: nur als Team"?',
+          antwort: 'Die Auswertung zeigt nur noch die Hausbilanz (Summe über die Schichten), keine Tabelle je Kraft und kein Tagesprotokoll; im Zimmer-Verlauf steht „Reinigungsteam" statt eines Namens. Die Stiche verlieren ihre Person beim Schichtende, spätestens nach 24 Stunden — auch der Bestand, nicht umkehrbar. Was bleibt: wann welches Zimmer gereinigt wurde, wie viele Schichten liefen, und die Live-Anzeigen zur Koordination (wer gerade auf welcher Etage ist). Ist nur eine Kraft im Dienst, ist die Zuordnung trotzdem offensichtlich — das kann keine Einstellung ändern.',
+        },
+        {
           frage: 'Welche Anforderungen hat das Logo?',
           antwort: 'PNG, JPG oder SVG bis 1 MB. Es steht auf Aushang und Handout in höchstens 55 × 16 mm; unter etwa 400 px Breite wird es dort unscharf. Die Vorschau steht auf weißem Grund — ein helles Logo für dunkle Hintergründe ist auf Papier sonst unsichtbar. Ohne Logo tragen die Blätter den Hausnamen.',
         },
@@ -831,6 +835,10 @@ const AUSWERTUNG: HilfeThema = {
         {
           frage: 'Zählt „Als gereinigt markieren" der Rezeption mit?',
           antwort: 'Es schreibt einen Reinigungs-Stich, damit die Routine-Reinigung befriedigt ist — aber die Tabelle je Kraft zeigt nur Reinigungskräfte. Wer regelmäßig am Tresen „als gereinigt" markiert, sollte wissen, dass die Auswertung diese Reinigungen keiner Kraft zurechnet.',
+        },
+        {
+          frage: 'Warum fehlt die Tabelle je Kraft?',
+          antwort: 'Das Haus hat unter Hotel & Regeln „Tätigkeiten der Reinigung: nur als Team" gewählt. Dann gibt es nur die Hausbilanz als Summe über die Schichten; die Stiche tragen nach dem Schichtende keine Person mehr. Zurückschalten wirkt nur nach vorn — was anonymisiert ist, bleibt es.',
         },
         {
           frage: 'Wozu der Abschnitt „Nachfrage"?',

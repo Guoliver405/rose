@@ -26,6 +26,8 @@ export type HotelSettingsInitial = {
   cleaningWindowEnabled: boolean
   cleaningWindowStart: string
   cleaningWindowEnd: string
+  /** Personenbezug der Tätigkeiten: je Kraft oder nur als Team (siehe lib/staff-tracking.ts). */
+  staffTracking: 'person' | 'team'
 }
 
 export default function HotelSettingsForm({ hotelSlug, initial }: { hotelSlug: string; initial: HotelSettingsInitial }) {
@@ -198,6 +200,41 @@ export default function HotelSettingsForm({ hotelSlug, initial }: { hotelSlug: s
           Alle Uhrzeiten dieser Seite — Routine, Check-out-Frist, Zeitfenster, Aufschieb-Grenze —
           und die Tagesgrenzen der Auswertung gelten in dieser Zeitzone. Die Server laufen in
           UTC; ohne diese Angabe lägen die Regeln um ein bis zwei Stunden daneben.
+        </p>
+      </div>
+
+      {/* Team-Modus (16.09.2026): Tätigkeiten ohne Personenbezug. */}
+      <div data-lotse="regeln.personenbezug" className="rounded-lg border border-edge bg-surface-sunken p-3">
+        <p className="text-xs font-semibold text-ink-muted">Tätigkeiten der Reinigung</p>
+        <div className="mt-2 flex flex-col gap-2">
+          <label className="flex items-start gap-2 text-sm text-ink">
+            <input type="radio" name="staffTracking" value="person" defaultChecked={initial.staffTracking === 'person'} className="mt-1 h-4 w-4 accent-current" />
+            <span>
+              <span className="font-semibold">Je Kraft</span>
+              <span className="block text-xs text-ink-muted">
+                Auswertung mit Tabelle und Tagesprotokoll je Reinigungskraft, Namen im Zimmer-Verlauf. Vorgabe.
+              </span>
+            </span>
+          </label>
+          <label className="flex items-start gap-2 text-sm text-ink">
+            <input type="radio" name="staffTracking" value="team" defaultChecked={initial.staffTracking === 'team'} className="mt-1 h-4 w-4 accent-current" />
+            <span>
+              <span className="font-semibold">Nur als Team</span>
+              <span className="block text-xs text-ink-muted">
+                Das Haus sieht weiterhin, wann welches Zimmer gereinigt wurde und wie viel das Team leistet —
+                aber nicht, wer. Keine Tabelle je Kraft, kein Tagesprotokoll, im Zimmer-Verlauf steht „Reinigungsteam&quot;.
+                Die Stiche verlieren ihre Person beim Schichtende, spätestens nach 24 Stunden; das gilt auch für den
+                Bestand und ist nicht umkehrbar. Für Länder und Betriebe, in denen die Arbeit einzelner Kräfte nicht
+                gemessen werden darf oder soll.
+              </span>
+            </span>
+          </label>
+        </div>
+        <p className="mt-2 text-xs text-ink-muted">
+          Unverändert bleiben die Live-Anzeigen zur Koordination (wer gerade auf welcher Etage ist, wer gerade ein
+          Zimmer reinigt) — sie sind mit der Schicht weg. Ehrlich gesagt: Ist nur eine Kraft im Dienst, lässt sich
+          „Zimmer 204 um 10:30 gereinigt&quot; ihr zuordnen wie ein Dienstplan auf Papier. Das kann keine Einstellung
+          verstecken, ohne den Betriebswert zu zerstören.
         </p>
       </div>
 

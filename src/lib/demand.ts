@@ -33,8 +33,8 @@ export type DemandInput = {
   dnd: string[]
   /** Check-out-Zeitpunkte (ISO). */
   checkouts: string[]
-  /** Schicht-Stiche je Kraft, chronologisch: nur `shift_start`/`shift_end` werden gelesen. */
-  shiftRows: { profileId: string; kind: string; at: string }[]
+  /** Schicht-Stiche mit Paarungsschlüssel (Kraft oder Schicht, siehe lib/staff-tracking.ts), chronologisch: nur `shift_start`/`shift_end` werden gelesen. */
+  shiftRows: { key: string; kind: string; at: string }[]
   range: { start: Date; end: Date }
   now?: Date
   timeZone?: string
@@ -95,16 +95,16 @@ export function shiftIntervals(
   range: { start: Date; end: Date },
   now: Date = new Date(),
 ): Interval[] {
-  const byProfile = new Map<string, { kind: string; at: Date }[]>()
+  const byKey = new Map<string, { kind: string; at: Date }[]>()
   for (const r of rows) {
     if (r.kind !== 'shift_start' && r.kind !== 'shift_end') continue
-    const list = byProfile.get(r.profileId) ?? []
+    const list = byKey.get(r.key) ?? []
     list.push({ kind: r.kind, at: new Date(r.at) })
-    byProfile.set(r.profileId, list)
+    byKey.set(r.key, list)
   }
   const cap = new Date(Math.min(range.end.getTime(), now.getTime()))
   const out: Interval[] = []
-  for (const list of byProfile.values()) {
+  for (const list of byKey.values()) {
     list.sort((a, b) => a.at.getTime() - b.at.getTime())
     let open: Date | null = null
     for (const r of list) {

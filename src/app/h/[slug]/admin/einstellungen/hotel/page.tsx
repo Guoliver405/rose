@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/server'
 import { clampPinLength } from '@/lib/ids'
 import { clampStaleMinutes, parseCleanDefer, parseCleaningWindow, parseStayoverPolicy } from '@/lib/board'
 import { listTimeZones, parseTimeZone } from '@/lib/tz'
+import { parseStaffTracking } from '@/lib/staff-tracking'
 import { logoUrlFor } from '@/utils/logo'
 import HotelSettingsForm from '../HotelSettingsForm'
 import LogoForm from '../LogoForm'
@@ -72,6 +73,7 @@ export default async function HotelSettingsPage({
           cleanDeferUntil: hhmm(defer.hour, defer.minute),
           timeZone: parseTimeZone(policies),
           timeZones: listTimeZones(),
+          staffTracking: parseStaffTracking(policies),
           cleaningWindowEnabled: cleaningWindow.enabled,
           cleaningWindowStart: cleaningWindow.start,
           cleaningWindowEnd: cleaningWindow.end,
