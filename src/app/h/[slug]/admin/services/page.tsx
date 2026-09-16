@@ -17,7 +17,7 @@ export default async function ServicesPage({
   const [{ data: services }, { data: items }] = await Promise.all([
     supabase
       .from('service_definitions')
-      .select('id, name, description, urgent, maintenance')
+      .select('id, name, description, urgent, maintenance, link_url')
       .eq('hotel_id', ctx.hotelId)
       .is('archived_at', null)
       .order('name'),
@@ -43,6 +43,7 @@ export default async function ServicesPage({
     id: s.id,
     name: s.name,
     maintenance: s.maintenance ?? false,
+    linkUrl: s.link_url ?? null,
     description: s.description,
     urgent: s.urgent,
     items: itemsByService.get(s.id) ?? [],

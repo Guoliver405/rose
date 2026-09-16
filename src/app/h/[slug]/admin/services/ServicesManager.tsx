@@ -1,11 +1,13 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { Archive, Hammer, Loader2, Plus, Siren, Sparkles, Wrench } from 'lucide-react'
+import { useRef, useState, useTransition } from 'react'
+import { Archive, ExternalLink, Hammer, Link2, Loader2, Plus, Siren, Sparkles, Wrench } from 'lucide-react'
 import { formatCents } from '@/lib/money'
+import { SERVICE_LINK_TEMPLATES, type ServiceLinkTemplate } from '@/lib/service-link-templates'
 import {
   archiveServiceAction, archiveServiceItemAction, createExampleServicesAction,
   createServiceAction, createServiceItemAction, setServiceMaintenanceAction, setServiceUrgentAction,
+  updateServiceLinkAction,
 } from './actions'
 
 export type ServiceRow = {
@@ -15,13 +17,37 @@ export type ServiceRow = {
   urgent: boolean
   /** Meldung ans Haus (Defekt): gehört zum Zimmer, nicht zum Aufenthalt. */
   maintenance: boolean
+  /** Verweis: Kachel mit Link nach außen, keine Bestellung. Nicht null = Verweis. */
+  linkUrl: string | null
   items: { id: string; label: string; priceCents: number | null }[]
 }
+
+type Kind = 'order' | 'link'
 
 export default function ServicesManager({ hotelSlug, services }: { hotelSlug: string; services: ServiceRow[] }) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [confirmArchiveId, setConfirmArchiveId] = useState<string | null>(null)
+  const [kind, setKind] = useState<Kind>('order')
+  const [templateHint, setTemplateHint] = useState<string | null>(null)
+  const formRef = useRef<HTMLFormElement>(null)
+
+  /** Vorlage füllt nur das Formular vor — angelegt wird erst mit „Anlegen". */
+  function applyTemplate(t: ServiceLinkTemplate) {
+    setKind('link')
+    setTemplateHint(t.hinweis)
+    const form = formRef.current
+    if (!form) return
+    const set = (name: string, value: string) => {
+      const el = form.elements.namedItem(name)
+      if (el instanceof HTMLInputElement) el.value = value
+    }
+    set('name', t.name)
+    set('description', t.description)
+    set('link_url', t.url)
+    const urlField = form.elements.namedItem('link_url')
+    if (urlField instanceof HTMLInputElement) urlField.focus()
+  }
 
   function run(action: () => Promise<{ error?: string }>, onDone?: () => void) {
     setError(null)
@@ -43,16 +69,53 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
 
       {/* Anlegen */}
       <form
+        ref={formRef}
         data-lotse="services.anlegen"
         onSubmit={e => {
           e.preventDefault()
           const form = e.currentTarget
           const formData = new FormData(form)
-          run(() => createServiceAction(hotelSlug, formData), () => form.reset())
+          run(() => createServiceAction(hotelSlug, formData), () => { form.reset(); setTemplateHint(null) })
         }}
         className="rounded-xl border border-edge bg-surface p-4"
       >
         <h2 className="mb-3 text-sm font-bold text-ink-soft">Neuen Service anlegen</h2>
+        {/* Art: bestellbar (Anfrage an die Rezeption) oder Verweis (Link nach außen). */}
+        <input type="hidden" name="kind" value={kind} />
+        <div className="mb-3 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Art des Services">
+          {([['order', 'Bestellbar'], ['link', 'Verweis (Link)']] as [Kind, string][]).map(([k, label]) => (
+            <button
+              key={k}
+              type="button"
+              role="radio"
+              aria-checked={kind === k}
+              onClick={() => { setKind(k); if (k === 'order') setTemplateHint(null) }}
+              className={`rounded-lg border px-3 py-1.5 text-sm font-bold transition-colors ${
+                kind === k
+                  ? 'border-action bg-action text-action-foreground'
+                  : 'border-edge bg-surface-elevated text-ink-soft hover:border-edge-strong'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {kind === 'link' && (
+          <div className="mb-3 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
+            <span className="font-semibold text-ink-soft">Vorlagen:</span>
+            {SERVICE_LINK_TEMPLATES.map(t => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => applyTemplate(t)}
+                title={t.region}
+                className="rounded-full border border-edge bg-surface-elevated px-2.5 py-1 font-semibold text-ink-soft hover:border-edge-strong hover:text-ink"
+              >
+                {t.name}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
             Name
@@ -72,14 +135,30 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
               className="w-64 rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink placeholder:text-ink-muted focus:border-action focus:outline-none"
             />
           </label>
-          <label className="flex items-center gap-2 pb-2 text-sm font-semibold text-ink-soft">
-            <input type="checkbox" name="urgent" className="h-4 w-4 accent-current" />
-            Dringend
-          </label>
-          <label className="flex items-center gap-2 pb-2 text-sm font-semibold text-ink-soft">
-            <input type="checkbox" name="maintenance" className="h-4 w-4 accent-current" />
-            Meldung ans Haus
-          </label>
+          {kind === 'link' ? (
+            <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+              Adresse (Link)
+              <input
+                name="link_url"
+                type="url"
+                required
+                inputMode="url"
+                placeholder="https://…"
+                className="w-80 rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink placeholder:text-ink-muted focus:border-action focus:outline-none"
+              />
+            </label>
+          ) : (
+            <>
+              <label className="flex items-center gap-2 pb-2 text-sm font-semibold text-ink-soft">
+                <input type="checkbox" name="urgent" className="h-4 w-4 accent-current" />
+                Dringend
+              </label>
+              <label className="flex items-center gap-2 pb-2 text-sm font-semibold text-ink-soft">
+                <input type="checkbox" name="maintenance" className="h-4 w-4 accent-current" />
+                Meldung ans Haus
+              </label>
+            </>
+          )}
           <button
             type="submit"
             disabled={pending}
@@ -90,17 +169,36 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
           </button>
         </div>
         <div className="mt-2 flex flex-col gap-1 text-xs text-ink-muted">
-          <p>
-            Dringende Bestellungen werden der Rezeption hervorgehoben. Auswahl-Optionen
-            (mit optionalem Preis) kommen pro Service dazu.
-          </p>
-          <p>
-            <span className="font-semibold text-ink-soft">Meldung ans Haus</span> ist für
-            Defekte und Instandhaltung gedacht — etwas am Zimmer, nicht am Aufenthalt.
-            Solche Anfragen bleiben beim Check-out offen (ein Defekt verschwindet nicht
-            mit dem Gast), erscheinen auf keiner Check-out-Aufstellung und warnen beim
-            nächsten Check-in.
-          </p>
+          {kind === 'link' ? (
+            <>
+              {templateHint && (
+                <p className="rounded-lg border border-attention-tint-edge bg-attention-tint px-3 py-2 font-semibold text-attention-deepest">
+                  {templateHint}
+                </p>
+              )}
+              <p>
+                Ein <span className="font-semibold text-ink-soft">Verweis</span> ist eine Kachel im
+                Gastportal, die einen Link nach außen öffnet — Trinkgeld-App für das Housekeeping-Team,
+                Lieferdienst, Taxi. Er erzeugt keine Anfrage und erscheint weder auf dem Board der
+                Rezeption noch auf der Check-out-Aufstellung. Für Inhalt und Datenschutz des Ziels ist
+                der Anbieter verantwortlich; das Portal bettet nichts ein, es verlinkt nur.
+              </p>
+            </>
+          ) : (
+            <>
+              <p>
+                Dringende Bestellungen werden der Rezeption hervorgehoben. Auswahl-Optionen
+                (mit optionalem Preis) kommen pro Service dazu.
+              </p>
+              <p>
+                <span className="font-semibold text-ink-soft">Meldung ans Haus</span> ist für
+                Defekte und Instandhaltung gedacht — etwas am Zimmer, nicht am Aufenthalt.
+                Solche Anfragen bleiben beim Check-out offen (ein Defekt verschwindet nicht
+                mit dem Gast), erscheinen auf keiner Check-out-Aufstellung und warnen beim
+                nächsten Check-in.
+              </p>
+            </>
+          )}
         </div>
       </form>
 
@@ -146,23 +244,32 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
                   <Hammer className="h-3.5 w-3.5" /> Meldung ans Haus
                 </span>
               )}
+              {s.linkUrl && (
+                <span className="flex items-center gap-1 rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-bold text-ink-soft">
+                  <Link2 className="h-3.5 w-3.5" /> Verweis
+                </span>
+              )}
               <div className="ml-auto flex items-center gap-2">
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={() => run(() => setServiceUrgentAction(hotelSlug, s.id, !s.urgent))}
-                  className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
-                >
-                  {s.urgent ? 'Dringend aus' : 'Dringend an'}
-                </button>
-                <button
-                  type="button"
-                  disabled={pending}
-                  onClick={() => run(() => setServiceMaintenanceAction(hotelSlug, s.id, !s.maintenance))}
-                  className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
-                >
-                  {s.maintenance ? 'Keine Meldung' : 'Als Meldung'}
-                </button>
+                {!s.linkUrl && (
+                  <>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => run(() => setServiceUrgentAction(hotelSlug, s.id, !s.urgent))}
+                      className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
+                    >
+                      {s.urgent ? 'Dringend aus' : 'Dringend an'}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => run(() => setServiceMaintenanceAction(hotelSlug, s.id, !s.maintenance))}
+                      className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
+                    >
+                      {s.maintenance ? 'Keine Meldung' : 'Als Meldung'}
+                    </button>
+                  </>
+                )}
                 <button
                   type="button"
                   disabled={pending}
@@ -201,6 +308,44 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
               </div>
             )}
 
+            {s.linkUrl ? (
+              /* Verweis: keine Optionen — nur die Adresse, änderbar. */
+              <form
+                onSubmit={e => {
+                  e.preventDefault()
+                  const url = (new FormData(e.currentTarget).get('link_url') as string) ?? ''
+                  run(() => updateServiceLinkAction(hotelSlug, s.id, url))
+                }}
+                className="mt-3 flex flex-wrap items-end gap-2"
+              >
+                <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs font-semibold text-ink-muted">
+                  Adresse
+                  <input
+                    name="link_url"
+                    type="url"
+                    required
+                    defaultValue={s.linkUrl}
+                    className="w-full rounded-lg border border-edge bg-surface-elevated px-3 py-1.5 text-sm font-semibold text-ink focus:border-action focus:outline-none"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  disabled={pending}
+                  className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
+                >
+                  Adresse speichern
+                </button>
+                <a
+                  href={s.linkUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink"
+                >
+                  <ExternalLink className="h-4 w-4" /> Testen
+                </a>
+              </form>
+            ) : (
+            <>
             {/* Items */}
             <div className="mt-3 flex flex-wrap gap-2">
               {s.items.map(item => (
@@ -267,6 +412,8 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
                 <Plus className="h-4 w-4" /> Hinzufügen
               </button>
             </form>
+            </>
+            )}
           </section>
         ))
       )}

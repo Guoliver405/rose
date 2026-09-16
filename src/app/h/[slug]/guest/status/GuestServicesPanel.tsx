@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Check, CheckCircle2, ChevronDown, Clock, XCircle } from 'lucide-react'
+import { Check, CheckCircle2, ChevronDown, Clock, ExternalLink, XCircle } from 'lucide-react'
 import { formatCents } from '@/lib/money'
 import { placeOrderAction } from '@/app/guest/actions'
 
@@ -10,6 +10,14 @@ export type GuestService = {
   name: string
   description: string | null
   items: { id: string; label: string; priceCents: number | null }[]
+}
+
+/** Verweis: Kachel, die einen Link nach außen öffnet — Trinkgeld-App, Lieferdienst. Keine Bestellung. */
+export type GuestLink = {
+  id: string
+  name: string
+  description: string | null
+  url: string
 }
 
 export type GuestOrder = {
@@ -22,14 +30,16 @@ export type GuestOrder = {
 
 export default function GuestServicesPanel({
   services,
+  links,
   orders,
 }: {
   services: GuestService[]
+  links: GuestLink[]
   orders: GuestOrder[]
 }) {
   const [openId, setOpenId] = useState<string | null>(null)
 
-  if (services.length === 0 && orders.length === 0) return null
+  if (services.length === 0 && links.length === 0 && orders.length === 0) return null
 
   return (
     <div className="flex flex-col gap-3">
@@ -46,6 +56,33 @@ export default function GuestServicesPanel({
           onToggle={() => setOpenId(openId === s.id ? null : s.id)}
         />
       ))}
+
+      {/* Verweise: öffnen nach außen, in einem neuen Tab. Bewusst verlinkt statt
+          eingebettet — ein fremdes Widget brächte fremde Skripte und Cookies
+          ins Portal. */}
+      {links.length > 0 && (
+        <>
+          <h2 className="mt-2 text-sm font-bold uppercase tracking-wider text-ink-muted">
+            Angebote
+          </h2>
+          {links.map(l => (
+            <a
+              key={l.id}
+              href={l.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-2xl border-2 border-edge bg-surface-elevated px-5 py-4 text-left hover:border-edge-strong"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block text-lg font-bold text-ink">{l.name}</span>
+                {l.description && <span className="block text-sm text-ink-muted">{l.description}</span>}
+                <span className="mt-0.5 block truncate text-xs text-ink-muted">{hostOf(l.url)} · öffnet in einem neuen Fenster</span>
+              </span>
+              <ExternalLink className="h-5 w-5 shrink-0 text-ink-muted" />
+            </a>
+          ))}
+        </>
+      )}
 
       {orders.length > 0 && (
         <>
@@ -85,6 +122,15 @@ export default function GuestServicesPanel({
       )}
     </div>
   )
+}
+
+/** Nur der Host des Ziels — der Gast soll sehen, wohin es geht, nicht eine Zeile Parameter. */
+function hostOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return url
+  }
 }
 
 function ServiceCard({

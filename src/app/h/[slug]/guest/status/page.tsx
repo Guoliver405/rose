@@ -10,7 +10,7 @@ import { formatHHMM, parseTimeZone } from '@/lib/tz'
 import { guestLogoutAction } from '@/app/guest/actions'
 import GuestSignalPanel from './GuestSignalPanel'
 import GuestCleaningStatusCard from './GuestCleaningStatusCard'
-import GuestServicesPanel, { type GuestOrder, type GuestService } from './GuestServicesPanel'
+import GuestServicesPanel, { type GuestLink, type GuestOrder, type GuestService } from './GuestServicesPanel'
 
 export default async function GuestStatusPage({
   params,
@@ -44,7 +44,7 @@ export default async function GuestStatusPage({
   const [{ data: services }, { data: items }, { data: orders }, { data: lastDone }] = await Promise.all([
     admin
       .from('service_definitions')
-      .select('id, name, description, archived_at')
+      .select('id, name, description, archived_at, link_url')
       .eq('hotel_id', ctx.hotelId)
       .order('name'),
     admin
@@ -98,14 +98,20 @@ export default async function GuestStatusPage({
 
   // Bestellbar sind nur aktive Services; die Namens-Map bleibt ungefiltert,
   // damit alte Bestellungen auf archivierte Services lesbar bleiben.
-  const guestServices: GuestService[] = (services ?? [])
-    .filter(s => !s.archived_at)
+  const active = (services ?? []).filter(s => !s.archived_at)
+  const guestServices: GuestService[] = active
+    .filter(s => !s.link_url)
     .map(s => ({
       id: s.id,
       name: s.name,
       description: s.description,
       items: itemsByService.get(s.id) ?? [],
     }))
+  // Verweise: Kacheln, die nach außen öffnen (Trinkgeld-App, Lieferdienst) —
+  // keine Bestellung, deshalb eigener Abschnitt unter den Services.
+  const guestLinks: GuestLink[] = active
+    .filter(s => Boolean(s.link_url))
+    .map(s => ({ id: s.id, name: s.name, description: s.description, url: s.link_url as string }))
 
   const serviceNameById = new Map((services ?? []).map(s => [s.id, s.name]))
   const guestOrders: GuestOrder[] = (orders ?? []).map(o => ({
@@ -142,7 +148,7 @@ export default async function GuestStatusPage({
         }
       />
 
-      <GuestServicesPanel services={guestServices} orders={guestOrders} />
+      <GuestServicesPanel services={guestServices} links={guestLinks} orders={guestOrders} />
 
       <div className="mt-auto pt-6 text-center">
         <form action={guestLogoutAction}>

@@ -5,8 +5,41 @@ import { createAdminClient } from '@/utils/supabase/service'
 import { getAdminContext } from '@/utils/auth'
 import { parseEuroToCents } from '@/lib/money'
 import serviceTemplates from '@/lib/service-templates.json'
+import { normalizeLinkUrl } from '@/lib/service-link-templates'
 
 type ActionResult = { error?: string }
+
+/**
+ * Adresse eines Verweises ändern — z. B. wenn die Trinkgeld-App ein neues
+ * Konto bekommt. Nur für Verweise; ein bestellbarer Service wird nicht
+ * nachträglich zum Link (dazu neu anlegen und den alten archivieren).
+ */
+export async function updateServiceLinkAction(slug: string, serviceId: string, rawUrl: string): Promise<ActionResult> {
+  const ctx = await getAdminContext(slug)
+  if (!ctx) return { error: 'Keine Berechtigung.' }
+
+  const linkUrl = normalizeLinkUrl(rawUrl)
+  if (!linkUrl) return { error: 'Adresse nicht lesbar — sie muss mit „https://" beginnen.' }
+
+  const admin = createAdminClient()
+  const { data: service } = await admin
+    .from('service_definitions')
+    .select('id, hotel_id, link_url')
+    .eq('id', serviceId)
+    .maybeSingle()
+  if (!service || service.hotel_id !== ctx.hotelId) return { error: 'Service nicht gefunden.' }
+  if (!service.link_url) return { error: 'Dieser Service ist kein Verweis.' }
+
+  const { error } = await admin
+    .from('service_definitions')
+    .update({ link_url: linkUrl })
+    .eq('id', serviceId)
+    .eq('hotel_id', ctx.hotelId)
+  if (error) return { error: error.message }
+
+  revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
+  return {}
+}
 
 /**
  * Beispiel-Services aus den Vorlagen anlegen (gleiche Quelle wie das
@@ -70,10 +103,20 @@ export async function createServiceAction(slug: string, formData: FormData): Pro
 
   const name = ((formData.get('name') as string) ?? '').trim()
   const description = ((formData.get('description') as string) ?? '').trim()
-  const urgent = formData.get('urgent') === 'on'
-  const maintenance = formData.get('maintenance') === 'on'
+  const isLink = formData.get('kind') === 'link'
+  const urgent = !isLink && formData.get('urgent') === 'on'
+  const maintenance = !isLink && formData.get('maintenance') === 'on'
 
   if (name.length < 2) return { error: 'Name muss mindestens 2 Zeichen haben.' }
+
+  // Verweis (16.09.2026): Kachel, die einen Link nach außen öffnet — keine
+  // Anfrage, keine Optionen, keine Kennzeichen. Nur http(s), sonst könnte im
+  // Gastportal ein `javascript:`-Ziel landen (die DB prüft das Schema mit).
+  let linkUrl: string | null = null
+  if (isLink) {
+    linkUrl = normalizeLinkUrl((formData.get('link_url') as string) ?? '')
+    if (!linkUrl) return { error: 'Adresse nicht lesbar — sie muss mit „https://" beginnen.' }
+  }
 
   const admin = createAdminClient()
   const { error } = await admin.from('service_definitions').insert({
@@ -82,6 +125,7 @@ export async function createServiceAction(slug: string, formData: FormData): Pro
     description: description || null,
     urgent,
     maintenance,
+    link_url: linkUrl,
   })
   if (error) return { error: error.message }
 

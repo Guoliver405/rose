@@ -641,6 +641,14 @@ const SERVICES: HilfeThema = {
           frage: 'Sieht der Gast auch Services ohne Optionen?',
           antwort: 'Ja, dann bestellt er den Service als Ganzes. Der technische Dienst braucht keine Optionen, ein Wäscheservice schon.',
         },
+        {
+          frage: 'Was ist ein „Verweis"?',
+          antwort: 'Eine Kachel im Gastportal, die einen Link nach außen öffnet — etwa die Trinkgeld-App fürs Housekeeping-Team, ein Lieferdienst oder ein Taxi. Ein Verweis erzeugt keine Anfrage: nichts auf dem Board, nichts auf der Aufstellung. Vorlagen füllen das Formular vor; die Adresse passen Sie auf Ihr Konto oder Ihre Stadt an. Das Portal bettet nichts ein, es verlinkt nur — für das Ziel ist der Anbieter verantwortlich.',
+        },
+        {
+          frage: 'Kann der Gast dem Zimmermädchen persönlich Trinkgeld geben?',
+          antwort: 'Nicht über RoSe. Das Gastportal nennt keine Namen, und ein Verweis gilt für das ganze Haus — die Trinkgeld-Apps verteilen im Team. Ob Trinkgeld über eine App steuerfrei bleibt, hängt vom Zahlungsweg der App ab, nicht von RoSe.',
+        },
       ],
     },
     {

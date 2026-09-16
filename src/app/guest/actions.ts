@@ -217,12 +217,16 @@ export async function placeOrderAction(
 
   const { data: service } = await admin
     .from('service_definitions')
-    .select('id, hotel_id, archived_at, name')
+    .select('id, hotel_id, archived_at, name, link_url')
     .eq('id', serviceId)
     .maybeSingle()
   if (!service || service.hotel_id !== ctx.hotelId || service.archived_at) {
     return { error: 'Dieser Service ist nicht mehr verfügbar.' }
   }
+  // Ein Verweis ist eine Kachel mit Link, keine Leistung des Hauses — er
+  // erzeugt nie eine Anfrage (die Oberfläche bietet es nicht an, aber die
+  // Service-ID kommt aus dem Browser).
+  if (service.link_url) return { error: 'Dieser Eintrag ist ein Link und kann nicht bestellt werden.' }
 
   const { data: activeItems } = await admin
     .from('service_items')
