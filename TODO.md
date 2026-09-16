@@ -3,17 +3,11 @@
 Stand 16.09.2026. Herkunft in Klammern; Erledigtes wird gestrichen, nicht
 gelöscht, damit erkennbar bleibt, was einmal offen war.
 
-## Sofort
-
-- [ ] **Zwei Migrationen einspielen, dann pushen** (16.09.):
-      `Supabase_sql/2026-09-16_service_definitions_link.sql` und
-      `Supabase_sql/2026-09-16_staff_log_team_modus.sql` im SQL-Editor, nach
-      `archive/` verschieben, `git push`. Die Commits für Verweise und
-      Team-Modus liegen lokal; ohne die Spalten blieben Services-Seite und
-      Gastportal leer und Stiche schlügen fehl. Danach Browser-Nachweis nach
-      [Sessions/2026-09-16_Gaststatus-Verweise-Teammodus.md](Sessions/2026-09-16_Gaststatus-Verweise-Teammodus.md).
-
 ## Vor den ersten echten Kunden
+
+- [x] ~~**Zwei Migrationen einspielen, dann pushen** (16.09.)~~ — am selben
+      Abend erledigt, Browser-Nachweis in
+      [Sessions/2026-09-16_Gaststatus-Verweise-Teammodus.md](Sessions/2026-09-16_Gaststatus-Verweise-Teammodus.md).
 
 - [ ] **Lizenzvertrag mit I²D** — 06.09. durchgesprochen und **Entwurf 2 an
       Bernd geschickt** (in `Verträge/`, nicht im Repo): 50/50 als

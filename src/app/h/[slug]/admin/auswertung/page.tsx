@@ -284,9 +284,9 @@ export default async function AuswertungPage({
             <p data-lotse="auswertung.tabelle" className="flex items-start gap-2 rounded-xl border border-edge bg-surface-sunken px-4 py-3 text-xs text-ink-muted">
               <Info className="mt-0.5 h-4 w-4 shrink-0" />
               <span>
-                Dieses Haus wertet die Reinigung <strong className="font-semibold text-ink-soft">nur als Team</strong> aus
+                Dieses Haus wertet die Reinigung <strong className="font-semibold text-ink-soft">nur als Team</strong>{' '}aus
                 (Einstellung unter Hotel &amp; Regeln): Die Kennzahlen oben sind die Summe über {groups.size}{' '}
-                {groups.size === 1 ? 'Schicht' : 'Schichten'} im Zeitraum, eine Tabelle je Kraft und ein Tagesprotokoll
+                {groups.size === 1 ? 'Schicht' : 'Schichten'}{' '}im Zeitraum, eine Tabelle je Kraft und ein Tagesprotokoll
                 gibt es nicht. Wer wann welches Zimmer gereinigt hat, steht im Zimmer-Verlauf als „Reinigungsteam&quot;.
                 {unpaired > 0 && (
                   <> {unpaired} Stiche aus der Zeit vor dem Team-Modus tragen keinen Schicht-Schlüssel mehr und sind in den Summen nicht enthalten.</>

@@ -55,26 +55,43 @@ Migration `Supabase_sql/2026-09-16_staff_log_team_modus.sql`:
   ehrlichen Satz zum Randfall mit einer Kraft. Lotsen-Schritt
   `regeln.personenbezug`, Hilfe-Einträge in Regeln und Auswertung.
 
-## Offen — vor dem Push
+## Nachweis im Browser (16.09., nach dem Einspielen der Migrationen)
 
-1. **Beide Migrationen im Supabase-SQL-Editor einspielen** (additiv, in
-   beliebiger Reihenfolge): `2026-09-16_service_definitions_link.sql`,
-   `2026-09-16_staff_log_team_modus.sql`. Danach per `git mv` nach
-   `Supabase_sql/archive/`.
-2. Dann `git push` — bis dahin würde der Live-Code `link_url` und
-   `session_id` selektieren, die es noch nicht gibt (Services-Seite und
-   Gast-Portal blieben leer, Stiche schlügen fehl).
-3. Browser-Nachweis für 2 und 3 (lokal oder Produktion): Verweis anlegen
-   und im Gastportal öffnen; Team-Modus einschalten, Schicht stechen, Zimmer
-   reinigen, Schicht beenden, Auswertung und Verlauf ansehen, in der DB
-   `profile_id IS NULL` und `session_id` gesetzt nachmessen.
-4. `npm run test:integration` einmal laufen lassen (die Testwelt schreibt
-   `staff_log` ohne `session_id` — das bleibt erlaubt).
+Migrationen vom User eingespielt, archiviert, alles gepusht. Lokaler
+Dev-Server gegen die Produktions-DB, Testhaus „Stripe-Testhaus Karte":
+
+- **Verweis:** Vorlage „Lieferando" füllt Name, Beschreibung, Adresse und
+  Hinweis vor; nach „Anlegen" steht der Eintrag mit Pille „Verweis", ohne
+  Dringend/Meldung-Knöpfe, mit Adressfeld und „Testen". Im Gastportal
+  (Zimmer 101) eigener Abschnitt „Angebote", `href` = Vorlagen-URL,
+  `target=_blank`, `rel="noopener noreferrer"`, Host und „öffnet in einem
+  neuen Fenster" sichtbar.
+- **Statuskarte:** „keine Reinigung vorgesehen" (Haus ohne Routine) →
+  „vorgesehen" nach dem Tipp → „wird gerade gereinigt" → „heute um 21:48
+  Uhr gereinigt". Damit sind alle Zustände außer „ab HH:MM" und Abreisetag
+  im Browser gesehen (die im Unit-Test).
+- **Team-Modus:** Einstellung gespeichert (`policies.staffTracking = team`),
+  Kraft „teamtest" angelegt, Schicht → Reinigung 101 → Abschluss →
+  Schichtende über die Slider. DB vor dem Schichtende: vier Stiche mit
+  `profile_id` und derselben `session_id`; nach dem Schichtende alle vier
+  `profile_id IS NULL`, Session unverändert. Zimmer-Verlauf zeigt
+  „Reinigungsteam" für Start, Abschluss und den aufgehobenen Wunsch.
+  Auswertung: Hausbilanz 1 Schicht, 1 Zimmer, Team-Hinweis, keine Tabelle.
+  Statusseite der Kraft: Hinweis vorhanden, Tagesbilanz nach dem Schichtende
+  leer (so gewollt). Zwei fehlende Leerzeichen im Hinweistext behoben.
+- `room_state_transitions.actor_id` der Kraft steht noch (jünger als 24 h) —
+  der Verlauf löst ihn im Team-Modus ohnehin nicht auf; `anonymizeStale`
+  räumt ihn mit dem nächsten Schichtbeginn.
+
+Nebenprodukt: Das Testhaus steht jetzt im Team-Modus, mit Verweis
+„Lieferando", Kraft „teamtest" (PIN 224158) und offenem Aufenthalt in 101.
+
+Offen: `npm run test:integration` einmal laufen lassen (die Testwelt
+schreibt `staff_log` ohne `session_id` — das bleibt erlaubt).
 
 ## 🔖 Wiederaufnahme
 
-Stand: drei Commits lokal auf `main`, der erste (`24e7a60`) ist gepusht und
-in Produktion, die beiden anderen warten auf die Migrationen (siehe oben).
-Dev-Server-Konfiguration `rose-dev` in `.claude/launch.json`; DB-Sonde
-`scripts/.probe/db.mjs` (in `.gitignore`) listet Häuser und aktive
-Aufenthalte mit PIN.
+Stand: alles auf `main` und in Produktion. Dev-Server-Konfiguration
+`rose-dev` in `.claude/launch.json`; DB-Sonden `scripts/.probe/db.mjs`
+(Häuser, Aufenthalte mit PIN) und `scripts/.probe/log.mjs` (staff_log des
+Testhauses), beide in `.gitignore`.
