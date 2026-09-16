@@ -307,3 +307,69 @@ export const PRESENCE_STALE_HOURS = 16
 export function isPresenceFresh(enteredAt: string, now: Date = new Date()): boolean {
   return now.getTime() - new Date(enteredAt).getTime() < PRESENCE_STALE_HOURS * 60 * 60_000
 }
+
+// ── Reinigungsstatus fürs Gastportal (16.09.2026) ───────────────────────────
+//
+// Der Gast soll sehen, woran er ist: keine Reinigung vorgesehen, vorgesehen
+// (ab einer Uhrzeit oder „das Team kommt"), gerade in Arbeit, heute erledigt.
+// Reine Ableitung aus denselben Quellen wie die Boards — kein eigener
+// Zustand, der auseinanderlaufen könnte. „Heute" ist der Ortstag des Hauses.
+//
+// Rangfolge: laufende Reinigung → Wunsch/Priorität (auch NACH einer
+// Reinigung: der Abschluss setzt den Wunsch zurück, ein neuer Wunsch ist also
+// ein neuer Wunsch) → Nicht stören → heute erledigt → Routine → nichts.
+// „Erledigt" zählt nur ab Check-in: der `clean_done` von gestern Abend gehört
+// zum Vorgänger-Check-out, nicht zu diesem Gast.
+
+export type GuestCleaningStatus =
+  | { kind: 'in_progress' }
+  /** Vorgesehen, das Team kommt — Wunsch, Priorität oder fällige Routine. */
+  | { kind: 'scheduled' }
+  /** Vorgesehen ab einer Uhrzeit: „frühestens ab" des Gastes oder Routine vor der Fälligkeit. */
+  | { kind: 'scheduled_from'; at: Date; reason: 'guest' | 'routine' }
+  | { kind: 'dnd' }
+  | { kind: 'done'; at: Date }
+  /** Heute nichts vorgesehen — mit dem Grund, damit der Text ehrlich bleibt. */
+  | { kind: 'none'; reason: 'first_day' | 'departure' | 'no_routine' }
+
+export function guestCleaningStatus(args: {
+  state: Pick<RoomStateLike, 'guest_signal' | 'priority' | 'cleaning_by' | 'cleaning_started_at' | 'clean_not_before'>
+  staleMinutes: number
+  policy: StayoverPolicy
+  checkedInAt: string
+  expectedCheckout?: string | null
+  /** Letzter `clean_done` des Zimmers seit Check-in (ISO), sonst null. */
+  lastCleanDoneAt: string | null
+  now?: Date
+  timeZone?: string
+}): GuestCleaningStatus {
+  const { state, policy } = args
+  const now = args.now ?? new Date()
+  const tz = args.timeZone ?? DEFAULT_TIME_ZONE
+
+  if (isCleaningFresh(state, args.staleMinutes, now)) return { kind: 'in_progress' }
+
+  if (state.guest_signal === 'please_clean') {
+    const notBefore = state.clean_not_before ? new Date(state.clean_not_before) : null
+    if (notBefore && notBefore > now) return { kind: 'scheduled_from', at: notBefore, reason: 'guest' }
+    return { kind: 'scheduled' }
+  }
+  if (state.priority) return { kind: 'scheduled' }
+  if (state.guest_signal === 'dnd') return { kind: 'dnd' }
+
+  const todayStart = zonedTodayStart(now, tz)
+  const checkedIn = new Date(args.checkedInAt)
+  if (args.lastCleanDoneAt) {
+    const doneAt = new Date(args.lastCleanDoneAt)
+    if (doneAt >= todayStart && doneAt >= checkedIn && doneAt <= now) return { kind: 'done', at: doneAt }
+  }
+
+  if (!policy.enabled) return { kind: 'none', reason: 'no_routine' }
+  if (checkedIn >= todayStart) return { kind: 'none', reason: 'first_day' }
+  if (isDepartureToday(args.expectedCheckout, now, tz)) return { kind: 'none', reason: 'departure' }
+
+  const due = stayoverDueTime(policy)
+  const dueAt = zonedTimeToday(now, tz, due.hour, due.minute)
+  if (now < dueAt) return { kind: 'scheduled_from', at: dueAt, reason: 'routine' }
+  return { kind: 'scheduled' }
+}

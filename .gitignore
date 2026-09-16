@@ -42,3 +42,4 @@ next-env.d.ts
 
 # Vertragsunterlagen liegen neben dem Repo, nicht auf GitHub
 Verträge/
+scripts/.probe/

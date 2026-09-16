@@ -2,10 +2,14 @@ import { redirect } from 'next/navigation'
 import { getGuestContext } from '@/utils/guest'
 import { requireHotelBySlug } from '@/utils/hotel'
 import { createAdminClient } from '@/utils/supabase/service'
-import { cleanDeferOptions, isWithinCleaningWindow, parseCleanDefer, parseCleaningWindow } from '@/lib/board'
+import {
+  clampStaleMinutes, cleanDeferOptions, guestCleaningStatus, isWithinCleaningWindow, parseCleanDefer,
+  parseCleaningWindow, parseStayoverPolicy, stayoverDueTime, todayStartIso,
+} from '@/lib/board'
 import { formatHHMM, parseTimeZone } from '@/lib/tz'
 import { guestLogoutAction } from '@/app/guest/actions'
 import GuestSignalPanel from './GuestSignalPanel'
+import GuestCleaningStatusCard from './GuestCleaningStatusCard'
 import GuestServicesPanel, { type GuestOrder, type GuestService } from './GuestServicesPanel'
 
 export default async function GuestStatusPage({
@@ -30,7 +34,14 @@ export default async function GuestStatusPage({
 
   // Baukasten + eigene Bestellungen (Gast ist anonym → Admin-Client).
   const admin = createAdminClient()
-  const [{ data: services }, { data: items }, { data: orders }] = await Promise.all([
+  // Letzter Reinigungsabschluss dieses Zimmers seit Check-in und Ortstag —
+  // die Statuskarte fragt „heute erledigt?", und ein clean_done von gestern
+  // Abend gehört zum Vorgänger-Check-out. Die Untergrenze ist das Spätere
+  // aus beidem, damit die Abfrage höchstens einen Tag zurückschaut.
+  const todayStart = todayStartIso(now, tz)
+  const checkedIn = new Date(ctx.checkedInAt)
+  const doneSince = checkedIn > new Date(todayStart) ? checkedIn.toISOString() : todayStart
+  const [{ data: services }, { data: items }, { data: orders }, { data: lastDone }] = await Promise.all([
     admin
       .from('service_definitions')
       .select('id, name, description, archived_at')
@@ -48,7 +59,32 @@ export default async function GuestStatusPage({
       .eq('stay_id', ctx.stayId)
       .order('created_at', { ascending: false })
       .limit(20),
+    admin
+      .from('staff_log')
+      .select('at')
+      .eq('room_id', ctx.roomId)
+      .eq('kind', 'clean_done')
+      .gte('at', doneSince)
+      .order('at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ])
+
+  const stayover = parseStayoverPolicy(ctx.policies)
+  const status = guestCleaningStatus({
+    state: {
+      guest_signal: ctx.guestSignal, priority: ctx.priority, clean_not_before: ctx.cleanNotBefore,
+      cleaning_by: ctx.cleaningActive ? 'x' : null, cleaning_started_at: ctx.cleaningStartedAt,
+    },
+    staleMinutes: clampStaleMinutes(ctx.policies.cleaningStaleMinutes),
+    policy: stayover,
+    checkedInAt: ctx.checkedInAt,
+    expectedCheckout: ctx.expectedCheckout,
+    lastCleanDoneAt: lastDone?.at ?? null,
+    now,
+    timeZone: tz,
+  })
+  const due = stayoverDueTime(stayover)
 
   const itemsByService = new Map<string, GuestService['items']>()
   for (const item of items ?? []) {
@@ -87,9 +123,14 @@ export default async function GuestStatusPage({
         <h1 className="text-2xl font-black text-ink">Zimmer {ctx.roomNumber}</h1>
       </header>
 
+      <GuestCleaningStatusCard
+        status={status}
+        routineTime={stayover.enabled ? hhmm(due.hour, due.minute) : null}
+        timeZone={tz}
+      />
+
       <GuestSignalPanel
         signal={ctx.guestSignal}
-        cleaningActive={ctx.cleaningActive}
         cleaningWindow={cleaningWindow.enabled ? cleaningWindow : null}
         windowOpen={isWithinCleaningWindow(cleaningWindow, now, tz)}
         deferOptions={cleanDeferOptions(defer, now, tz)}

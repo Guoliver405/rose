@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Clock, Moon, Sparkles, CheckCircle2 } from 'lucide-react'
+import { Clock, Moon, Sparkles } from 'lucide-react'
 import { setGuestSignalAction } from '@/app/guest/actions'
 
 type Signal = 'none' | 'please_clean' | 'dnd'
@@ -11,7 +11,6 @@ export type DeferOption = { label: string; iso: string }
 
 export default function GuestSignalPanel({
   signal,
-  cleaningActive,
   cleaningWindow,
   windowOpen,
   deferOptions,
@@ -19,7 +18,6 @@ export default function GuestSignalPanel({
   cleanNotBefore,
 }: {
   signal: Signal
-  cleaningActive: boolean
   /** Reinigungs-Zeitfenster der Hotel-Policy — null, wenn die Regel aus ist. */
   cleaningWindow: { start: string; end: string } | null
   windowOpen: boolean
@@ -71,13 +69,6 @@ export default function GuestSignalPanel({
 
   return (
     <div className="flex flex-col gap-3">
-      {cleaningActive && (
-        <p className="flex items-center gap-2 rounded-xl border border-positive-pill-edge bg-positive-pill px-4 py-3 text-sm font-bold text-positive-deepest">
-          <CheckCircle2 className="h-5 w-5 shrink-0" />
-          Dein Zimmer wird gerade gereinigt.
-        </p>
-      )}
-
       <button
         type="button"
         disabled={pending || cleanBlocked}

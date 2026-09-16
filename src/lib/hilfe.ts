@@ -756,6 +756,10 @@ const GAST: HilfeThema = {
           antwort: 'Das Zimmer erscheint sofort als offen auf dem Reinigungsboard und in Ihrer Übersicht. Kein Termin — das Housekeeping kommt, wenn es in die Runde passt. Erneut tippen nimmt den Wunsch zurück. Mit „frühestens ab" wählt der Gast eine volle Stunde; bis dahin ist das Zimmer nicht offen.',
         },
         {
+          frage: 'Was sagt die Statuskarte über den Knöpfen?',
+          antwort: 'Woran der Gast mit der Reinigung ist, aus denselben Daten wie Ihre Boards: „vorgesehen" (Wunsch, Priorität oder fällige Routine), „ab HH:MM" (Aufschub des Gastes oder Routine vor der Fälligkeit), „wird gerade gereinigt", „heute um HH:MM gereinigt" oder „heute nichts vorgesehen" — mit dem Grund (Anreisetag, Abreisetag, Haus reinigt nur auf Wunsch). „Gereinigt" zählt nur ab dem Check-in dieses Gastes; ein Name der Reinigungskraft erscheint nie. Die Karte aktualisiert sich alle 15 Sekunden.',
+        },
+        {
           frage: 'Warum kann der Gast gerade keine Reinigung wünschen?',
           antwort: 'Das Haus hat ein Zeitfenster gesetzt; außerhalb sieht der Gast die Reinigungszeiten statt des Knopfes. „Nicht stören" und das Zurücknehmen bleiben immer möglich.',
         },

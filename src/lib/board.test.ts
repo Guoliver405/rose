@@ -3,7 +3,7 @@ import {
   CLEANING_STALE_MINUTES_DEFAULT, clampStaleMinutes, isCleaningFresh, isPresenceFresh,
   cleanDeferOptions, dateKeyAfterNights, isCleanDeferred, isDepartureToday, isRoomActive, isStayoverDue,
   isWithinCleaningWindow, localDateKey, parseCleanDefer, parseCleaningWindow, stayoverDueTime,
-  parseStayoverPolicy, PRESENCE_STALE_HOURS, roomScore, staleCleaningCutoff,
+  parseStayoverPolicy, PRESENCE_STALE_HOURS, roomScore, staleCleaningCutoff, guestCleaningStatus,
 } from './board'
 import { zonedInstant } from './tz'
 
@@ -306,5 +306,71 @@ describe('isPresenceFresh', () => {
   it('altert nach dem Stale-Fenster heraus — vergessenes Schichtende', () => {
     const alt = new Date(now.getTime() - (PRESENCE_STALE_HOURS + 1) * 3_600_000).toISOString()
     expect(isPresenceFresh(alt, now)).toBe(false)
+  })
+})
+
+describe('guestCleaningStatus', () => {
+  const policyOn = parseStayoverPolicy({ stayoverAutoClean: true, stayoverAutoCleanTime: '10:00', checkoutUntil: '11:00' })
+  const policyOff = parseStayoverPolicy({})
+  const idle = { guest_signal: 'none' as const, priority: false, cleaning_by: null, cleaning_started_at: null, clean_not_before: null }
+  const base = {
+    state: idle, staleMinutes: 90, policy: policyOn, timeZone: B,
+    checkedInAt: berlin(2026, 9, 14, 15).toISOString(), expectedCheckout: null, lastCleanDoneAt: null,
+  }
+
+  it('laufende Reinigung schlägt alles — aber nur, solange sie frisch ist', () => {
+    const now = berlin(2026, 9, 16, 12)
+    const running = { ...idle, cleaning_by: 'm', cleaning_started_at: berlin(2026, 9, 16, 11, 30).toISOString() }
+    expect(guestCleaningStatus({ ...base, state: running, now }).kind).toBe('in_progress')
+    const stale = { ...idle, cleaning_by: 'm', cleaning_started_at: berlin(2026, 9, 16, 8).toISOString() }
+    expect(guestCleaningStatus({ ...base, state: stale, now }).kind).toBe('scheduled') // Routine fällig
+  })
+
+  it('Wunsch ist vorgesehen, „frühestens ab" nennt die Uhrzeit, danach nicht mehr', () => {
+    const notBefore = berlin(2026, 9, 16, 14)
+    const wish = { ...idle, guest_signal: 'please_clean' as const, clean_not_before: notBefore.toISOString() }
+    const before = guestCleaningStatus({ ...base, state: wish, now: berlin(2026, 9, 16, 9) })
+    expect(before).toEqual({ kind: 'scheduled_from', at: notBefore, reason: 'guest' })
+    expect(guestCleaningStatus({ ...base, state: wish, now: berlin(2026, 9, 16, 14, 30) }).kind).toBe('scheduled')
+  })
+
+  it('ein neuer Wunsch nach der Reinigung ist wieder „vorgesehen", nicht „erledigt"', () => {
+    const now = berlin(2026, 9, 16, 15)
+    const done = berlin(2026, 9, 16, 10, 40).toISOString()
+    expect(guestCleaningStatus({ ...base, now, lastCleanDoneAt: done })).toEqual({ kind: 'done', at: new Date(done) })
+    const wish = { ...idle, guest_signal: 'please_clean' as const }
+    expect(guestCleaningStatus({ ...base, state: wish, now, lastCleanDoneAt: done }).kind).toBe('scheduled')
+    expect(guestCleaningStatus({ ...base, state: { ...idle, priority: true }, now, lastCleanDoneAt: done }).kind).toBe('scheduled')
+  })
+
+  it('Nicht stören geht vor Routine und Erledigt', () => {
+    const dnd = { ...idle, guest_signal: 'dnd' as const }
+    const done = berlin(2026, 9, 16, 9).toISOString()
+    expect(guestCleaningStatus({ ...base, state: dnd, now: berlin(2026, 9, 16, 12), lastCleanDoneAt: done }).kind).toBe('dnd')
+  })
+
+  it('„erledigt" zählt nur am Ortstag und nur ab Check-in', () => {
+    const now = berlin(2026, 9, 16, 12)
+    // Gestern gereinigt (Vorgänger-Check-out oder gestrige Routine): heute nicht „erledigt".
+    const yesterday = berlin(2026, 9, 15, 18).toISOString()
+    expect(guestCleaningStatus({ ...base, now, lastCleanDoneAt: yesterday }).kind).toBe('scheduled')
+    // Anreisetag: um 00:30 Ortszeit gereinigt, Check-in um 14:00 → gehört dem Vorgänger.
+    const arrival = berlin(2026, 9, 16, 14).toISOString()
+    const earlyToday = berlin(2026, 9, 16, 0, 30).toISOString()
+    const s = guestCleaningStatus({ ...base, checkedInAt: arrival, now: berlin(2026, 9, 16, 16), lastCleanDoneAt: earlyToday })
+    expect(s).toEqual({ kind: 'none', reason: 'first_day' })
+  })
+
+  it('Routine: vor der Fälligkeit „ab HH:MM" (Check-out-Frist als Untergrenze), danach vorgesehen', () => {
+    const early = guestCleaningStatus({ ...base, now: berlin(2026, 9, 16, 8) })
+    expect(early).toEqual({ kind: 'scheduled_from', at: berlin(2026, 9, 16, 11), reason: 'routine' })
+    expect(guestCleaningStatus({ ...base, now: berlin(2026, 9, 16, 11, 5) }).kind).toBe('scheduled')
+  })
+
+  it('Routine setzt am Anreisetag und am Abreisetag aus, ohne Routine gibt es nichts', () => {
+    const now = berlin(2026, 9, 16, 12)
+    expect(guestCleaningStatus({ ...base, now, checkedInAt: berlin(2026, 9, 16, 9).toISOString() })).toEqual({ kind: 'none', reason: 'first_day' })
+    expect(guestCleaningStatus({ ...base, now, expectedCheckout: '2026-09-16' })).toEqual({ kind: 'none', reason: 'departure' })
+    expect(guestCleaningStatus({ ...base, now, policy: policyOff })).toEqual({ kind: 'none', reason: 'no_routine' })
   })
 })
