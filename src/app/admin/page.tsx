@@ -13,6 +13,7 @@ import { billingLine } from '@/lib/pricing'
 import HausAnlegen from './HausAnlegen'
 import DatenLoeschen from './DatenLoeschen'
 import KontoShell from './KontoShell'
+import KontoName from './KontoName'
 
 /**
  * Häuser — der Einstieg ins Management-Portal und zugleich der Konto-Bereich.
@@ -109,7 +110,7 @@ export default async function HotelPickerPage() {
     : null
 
   return (
-    <KontoShell who={account?.displayName ?? hotels[0]?.name} istInhaber={account !== null}>
+    <KontoShell who={account?.displayName ?? hotels[0]?.displayName} istInhaber={account !== null}>
       {/* ── Konto ─────────────────────────────────────────────────────
           Nur für den Inhaber. Ein Manager hat kein Konto, für ihn beginnt
           die Seite direkt bei den Häusern. */}
@@ -118,7 +119,7 @@ export default async function HotelPickerPage() {
           <div className="flex flex-wrap items-start gap-3">
             <div className="min-w-0 flex-1">
               <h2 className="text-sm font-bold text-ink-soft">Konto</h2>
-              <p className="mt-1 text-lg font-black text-ink">{account.accountName}</p>
+              <KontoName name={account.accountName} />
             </div>
             <Link
               href="/admin/abrechnung"

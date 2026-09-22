@@ -155,6 +155,13 @@ export type HotelAccess = {
   name: string
   accountId: string
   role: ManagementRole
+  /**
+   * Anzeigename der angemeldeten Person in diesem Haus (`account_members`
+   * bzw. `hotel_members`). Die Kopfzeile von `/admin` nennt darüber auch
+   * Manager beim Namen — vorher stand dort ersatzweise der Name des ersten
+   * Hauses, was wie ein falsch zugeordnetes Haus aussah.
+   */
+  displayName: string
 }
 
 /**
@@ -171,15 +178,20 @@ export const listAccessibleHotels = cache(async (): Promise<HotelAccess[]> => {
   const admin = createAdminClient()
 
   const [{ data: ownerships }, { data: memberships }] = await Promise.all([
-    admin.from('account_members').select('account_id').eq('user_id', userId),
-    admin.from('hotel_members').select('hotel_id, role').eq('user_id', userId).is('deactivated_at', null),
+    admin.from('account_members').select('account_id, display_name').eq('user_id', userId),
+    admin.from('hotel_members').select('hotel_id, role, display_name').eq('user_id', userId).is('deactivated_at', null),
   ])
 
   const accountIds = (ownerships ?? []).map(o => o.account_id)
-  const memberRoleByHotel = new Map(
-    (memberships ?? []).map(m => [m.hotel_id, m.role as ManagementRole]),
+  const ownerNameByAccount = new Map(
+    (ownerships ?? []).map(o => [o.account_id, o.display_name as string]),
   )
-  const hotelIds = [...memberRoleByHotel.keys()]
+  const memberByHotel = new Map(
+    (memberships ?? []).map(m => [
+      m.hotel_id, { role: m.role as ManagementRole, displayName: m.display_name as string },
+    ]),
+  )
+  const hotelIds = [...memberByHotel.keys()]
 
   const [{ data: ownedHotels }, { data: memberHotels }] = await Promise.all([
     accountIds.length > 0
@@ -192,12 +204,14 @@ export const listAccessibleHotels = cache(async (): Promise<HotelAccess[]> => {
 
   const byId = new Map<string, HotelAccess>()
   for (const h of memberHotels ?? []) {
+    const m = memberByHotel.get(h.id)
     byId.set(h.id, {
       id: h.id,
       slug: h.slug,
       name: h.name,
       accountId: h.account_id,
-      role: memberRoleByHotel.get(h.id) ?? 'reception',
+      role: m?.role ?? 'reception',
+      displayName: m?.displayName ?? '',
     })
   }
   // Nach den Mitgliedschaften eingetragen — Inhaberschaft überschreibt sie.
@@ -208,6 +222,7 @@ export const listAccessibleHotels = cache(async (): Promise<HotelAccess[]> => {
       name: h.name,
       accountId: h.account_id,
       role: 'admin',
+      displayName: ownerNameByAccount.get(h.account_id) ?? '',
     })
   }
 

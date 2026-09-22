@@ -25,6 +25,33 @@ import {
 
 type Result = { error?: string }
 
+/**
+ * Konto umbenennen.
+ *
+ * `accounts.name` wird bei der Registrierung aus dem Namen des ersten Hauses
+ * kopiert und war danach an keiner Stelle änderbar — der Konto-Kasten auf
+ * `/admin` zeigte nach einer Umbenennung des Hauses weiter den alten Namen
+ * (Rückmeldung 22.09.2026). Der Name dient nur der Anzeige und als
+ * Bestätigungsphrase beim Löschen des Kontos; Rechnungsempfänger ist
+ * `billing_name`, der bleibt hiervon unberührt.
+ */
+export async function renameAccountAction(formData: FormData): Promise<Result> {
+  const ctx = await getAccountContext()
+  if (!ctx) return { error: 'Keine Berechtigung.' }
+
+  const name = ((formData.get('name') as string) ?? '').trim()
+  if (name.length < 2) return { error: 'Der Kontoname muss mindestens 2 Zeichen haben.' }
+  if (name.length > 80) return { error: 'Der Kontoname darf höchstens 80 Zeichen haben.' }
+
+  const { error } = await createAdminClient()
+    .from('accounts').update({ name }).eq('id', ctx.accountId)
+  if (error) return { error: error.message }
+
+  revalidatePath('/admin')
+  revalidatePath('/admin/abrechnung', 'layout')
+  return {}
+}
+
 /** Neues Haus im eigenen Konto. Slug wird aus dem Namen erzeugt. */
 export async function createHotelAction(formData: FormData): Promise<Result & { slug?: string }> {
   const ctx = await getAccountContext()

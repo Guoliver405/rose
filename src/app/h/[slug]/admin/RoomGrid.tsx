@@ -252,8 +252,12 @@ export default function RoomGrid({
       {hasNamedBuilding
         ? byBuilding.map(b => (
             <div key={b.name ?? ''} className="flex flex-col gap-2">
+              {/* „Gebäudeteil" steht dabei, weil ein Gebäudeteil wie „Haus am
+                  See" neben dem Hotelnamen in der Kopfzeile sonst wie ein
+                  falsch zugeordnetes Haus gelesen wird (Rückmeldung 22.09.2026). */}
               <h2 className="mt-1 flex items-center gap-2 text-base font-black text-ink">
-                {b.name ?? 'Ohne Gebäudeteil'}
+                <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Gebäudeteil</span>
+                {b.name ?? 'ohne Namen'}
                 <span className="text-xs font-semibold text-ink-muted">
                   {b.groups.reduce((n, g) => n + g.rooms.length, 0)} Zimmer
                 </span>
