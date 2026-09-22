@@ -81,10 +81,18 @@ const KARTEN: Karte[] = [
 ]
 
 export default function GastzugangForm({
-  hotelSlug, initial,
+  hotelSlug, initial, bestaetigt,
 }: {
   hotelSlug: string
   initial: GuestAccessMode
+  /**
+   * `policies.guestAccessMode` ist ausdrücklich gesetzt. Solange nicht, gilt
+   * die Vorgabe (PIN) — und der Knopf muss auch ohne Änderung bedienbar sein:
+   * Vorher stand er auf „Bereits eingestellt", wer mit der Vorgabe zufrieden
+   * war, konnte sie nie festhalten, und die Einrichtungs-Checkliste (die den
+   * gesetzten Schlüssel liest) forderte den Punkt endlos ein (22.09.2026).
+   */
+  bestaetigt: boolean
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -93,6 +101,7 @@ export default function GastzugangForm({
   const [notice, setNotice] = useState<string | null>(null)
 
   const geaendert = gewaehlt !== initial
+  const speicherbar = geaendert || !bestaetigt
 
   function speichern() {
     setError(null)
@@ -101,7 +110,9 @@ export default function GastzugangForm({
       const res = await updateGuestAccessModeAction(hotelSlug, gewaehlt)
       if (res.error) { setError(res.error); return }
       setNotice(
-        gewaehlt === 'link'
+        !geaendert
+          ? 'Verfahren bestätigt — es gilt weiter wie bisher. Der Punkt „Gäste-Zugang" in der Einrichtung ist damit erledigt.'
+          : gewaehlt === 'link'
           ? 'Umgestellt auf individuelle Zugänge. Ab dem nächsten Check-in bekommt jeder Gast seinen eigenen QR-Code — bitte die Aushänge aus den Zimmern nehmen.'
           : 'Umgestellt auf feste Zimmer-QR-Codes. Ab dem nächsten Check-in gilt wieder QR im Zimmer plus PIN — die Aushänge finden Sie jetzt unten auf dieser Seite.',
       )
@@ -148,7 +159,7 @@ export default function GastzugangForm({
                     <span className="text-sm font-black text-ink">{k.titel}</span>
                     {istAktuell && (
                       <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs font-semibold text-ink-muted">
-                        derzeit aktiv
+                        {bestaetigt ? 'derzeit aktiv' : 'Vorgabe'}
                       </span>
                     )}
                   </span>
@@ -233,15 +244,23 @@ export default function GastzugangForm({
         </p>
       )}
 
+      {!bestaetigt && !notice && (
+        <p className="text-sm text-ink-soft">
+          Bisher gilt die Vorgabe (fester QR-Code je Zimmer). Bestätigen Sie die Wahl
+          einmal — auch wenn Sie dabei bleiben. Erst dann hält das Haus das Verfahren
+          fest, und der Punkt gilt in der Einrichtung als erledigt.
+        </p>
+      )}
+
       <button
         data-lotse="gastzugang.speichern"
         type="button"
         onClick={speichern}
-        disabled={pending || !geaendert}
+        disabled={pending || !speicherbar}
         className="flex w-fit items-center gap-1.5 rounded-lg bg-action px-4 py-2.5 font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-        {geaendert ? 'Verfahren umstellen' : 'Bereits eingestellt'}
+        {geaendert ? 'Verfahren umstellen' : bestaetigt ? 'Bereits eingestellt' : 'Verfahren bestätigen'}
       </button>
     </div>
   )

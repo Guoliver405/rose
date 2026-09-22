@@ -216,6 +216,7 @@ const REGELN: Lotse = {
       path: '/einstellungen/hotel', anchor: 'regeln.speichern', kern: true,
       title: 'Speichern nicht vergessen',
       body: 'Die Regeln gelten ab dem Speichern für alles Weitere. Laufende Aufenthalte und bereits gesetzte Wünsche laufen unverändert weiter.',
+      tun: 'Auch wenn Sie nichts ändern: einmal speichern. Erst damit hält das Haus die Zeitzone fest, und der Punkt gilt in der Einrichtung als geprüft.',
     },
   ],
 }
@@ -235,6 +236,7 @@ const GASTZUGANG: Lotse = {
       path: '/einstellungen/gastzugang', anchor: 'gastzugang.speichern', kern: true,
       title: 'Ein Wechsel ist folgenlos für laufende Aufenthalte',
       body: 'Das Verfahren wird beim Check-in am Aufenthalt festgehalten, nicht bei jedem Zugriff neu gelesen. Ausgegebene Zugänge funktionieren deshalb bis zum Check-out weiter; erst der nächste Check-in folgt dem neuen Verfahren. Kein Stichtag, keine Umstellung von Bestandsdaten.',
+      tun: 'Bestätigen Sie Ihre Wahl mit diesem Knopf — auch wenn Sie bei der Vorgabe bleiben. Erst dann gilt der Punkt in der Einrichtung als erledigt.',
     },
     {
       path: '/einstellungen/gastzugang', anchor: 'gastzugang.sprachen',
@@ -773,7 +775,7 @@ function konfigItems(f: SetupKonfig): SetupItem[] {
       todo: 'Regeln des Hauses prüfen',
       hint: f.timeZoneChosen
         ? 'Zeitzone gesetzt — Routine, Check-out-Frist und Auswertung rechnen richtig'
-        : 'Vor allem die Zeitzone: ohne sie liegen alle Uhrzeiten um Stunden daneben',
+        : 'Vor allem die Zeitzone — einmal prüfen und speichern, auch ohne Änderung',
       done: f.timeZoneChosen,
       path: '/einstellungen/hotel', lotse: 'regeln',
     },
@@ -783,7 +785,7 @@ function konfigItems(f: SetupKonfig): SetupItem[] {
       todo: 'Gäste-Zugang wählen',
       hint: f.guestAccessChosen
         ? 'Das Verfahren steht — jeder Check-in hält es am Aufenthalt fest'
-        : 'Fester Zimmer-QR mit PIN oder individueller Zugang je Aufenthalt',
+        : 'Fester Zimmer-QR mit PIN oder individueller Zugang je Aufenthalt — die Wahl einmal bestätigen, auch die Vorgabe',
       done: f.guestAccessChosen,
       path: '/einstellungen/gastzugang', lotse: 'gastzugang',
     },

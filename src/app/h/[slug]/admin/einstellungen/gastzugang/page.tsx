@@ -49,7 +49,11 @@ export default async function GastzugangPage({
         <h1 className="text-xl font-black text-ink">Gäste-Zugang</h1>
       </div>
 
-      <GastzugangForm hotelSlug={ctx.hotelSlug} initial={mode} />
+      <GastzugangForm
+        hotelSlug={ctx.hotelSlug}
+        initial={mode}
+        bestaetigt={policies.guestAccessMode !== undefined}
+      />
 
       {/* Gilt für BEIDE Verfahren: Ein Handout entsteht so oder so, und die
           Mail folgt derselben ersten Sprache. */}
