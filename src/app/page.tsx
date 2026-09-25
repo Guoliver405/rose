@@ -10,6 +10,7 @@ import { MIN_COVERS_ROOMS, MIN_MONTHLY_CENTS, PRICE_PER_ROOM_CENTS } from '@/lib
 import { PROVIDER } from '@/lib/provider'
 import LiveDemo from '@/components/landing/LiveDemo'
 import RoiCalculator from '@/components/landing/RoiCalculator'
+import CleaningSimulation from '@/components/landing/CleaningSimulation'
 
 export const metadata: Metadata = {
   title: 'RoSe — RoomService für Hotels jeder Größe',
@@ -34,7 +35,9 @@ export const metadata: Metadata = {
  * Bildergeschichte beim ersten Sichtbarwerden. Keine Screenshots — sie
  * veralten mit jedem UI-Feinschliff. Der Preis-Abschnitt trägt neben der
  * Preiskarte den Nutzenrechner (`RoiCalculator`, Rechnung in `roi.ts` mit
- * ausgewiesenen Annahmen und Quellen). Preise kommen aus `pricing.ts`,
+ * ausgewiesenen Annahmen und Quellen). Hinter dem Ablauf zeigt
+ * `CleaningSimulation` denselben Tag dreimal — ohne Steuerung, mit RoSe, mit
+ * RoSe und Reinigung auf Wunsch (Rechnung in `cleaning-sim.ts`). Preise kommen aus `pricing.ts`,
  * damit Landing Page, AGB und Konto dieselben Zahlen zeigen.
  */
 export default function LandingPage() {
@@ -47,6 +50,7 @@ export default function LandingPage() {
         <Sustainability />
         <ProductPreview />
         <Flow />
+        <DayComparison />
         <FeatureGrid />
         <UseCases />
         <Pricing />
@@ -374,6 +378,23 @@ function Flow() {
           Check-out ist wieder ein Klick: der Zugang erlischt sofort, das Zimmer
           wandert als „ausgecheckt“ aufs Board.
         </p>
+      </div>
+    </section>
+  )
+}
+
+/* ── Derselbe Tag, dreimal ───────────────────────────────────────── */
+
+function DayComparison() {
+  return (
+    <section id="vergleich" className="mx-auto w-full max-w-6xl scroll-mt-20 px-4 py-16">
+      <h2 className="text-center text-3xl font-black text-ink">Derselbe Tag, dreimal</h2>
+      <p className="mx-auto mt-3 max-w-2xl text-center text-ink-soft">
+        Gleiche Zimmer, gleiche Gäste, gleiche Reinigungskräfte. Der Unterschied ist allein, was sie
+        wissen und wonach sie das nächste Zimmer wählen.
+      </p>
+      <div className="mt-10">
+        <CleaningSimulation />
       </div>
     </section>
   )

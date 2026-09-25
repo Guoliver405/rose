@@ -41,6 +41,20 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
       [pricing.ts](src/lib/pricing.ts), veröffentlicht auf `/` und in den AGB.
       Die Rechnungsseite selbst (Zahlungsprovider, Rechnungen) bleibt offen,
       siehe „Konto-Seite" und „Zahlungsprovider" unten.
+- [ ] **Reinigungsboard: „Gast an der Tür — in 30 min / in 1 h / heute nicht"**
+      (26.09., aus dem Landing-Vergleich): Lehnt ein Gast ohne Türschild an der
+      Tür ab, kann die Kraft das nicht erfassen; ein routine-fälliges Zimmer
+      bleibt aktiv, zählt in den Etagenscore, und die Kollegin klopft erneut.
+      Nur „abbrechen (Zimmer bleibt offen)" existiert. Vorschlag des Users: drei
+      Knöpfe, bis zur Zeit nicht aktiv (Mechanismus wie `clean_not_before`),
+      „heute nicht" erledigt die Routine ohne als Reinigung zu zählen. Erst
+      danach darf die Landing Page „RoSe merkt es sich" sagen. Aufgabe liegt als
+      Chip in der Sitzung vom 26.09.; Details im
+      [Protokoll](Sessions/2026-09-26_Landing-Tagesvergleich.md).
+- [ ] **Routine früher bei bekanntem Abreisedatum?** (26.09.) Die Routine wird
+      frühestens zur Check-out-Frist fällig, weil RoSe nicht weiß, wer abreist.
+      Ist `stays.expected_checkout` gesetzt und nicht heute, könnte sie schon
+      zur Routine-Zeit fällig werden — weniger Leerlauf am Vormittag.
 - [ ] **Zwei Zimmer-Zustände?** Aktuell gibt es einen (`deactivated_at`). Ob
       „Renovierung" von „abbestellt" getrennt gehört, ist eine reine
       Preisfrage — am Datenmodell ändert sie nichts. (6d-Plan, Abschnitt 14)
