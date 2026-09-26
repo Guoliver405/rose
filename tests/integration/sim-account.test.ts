@@ -173,10 +173,16 @@ describe('Simulator-Konto', () => {
     expect(ownAcc).toEqual([{ user_id: sim.id }])
   })
 
-  it('Hotelzugang: Simulator ja, Anmeldung landet weiter im Haus', async () => {
+  it('Hotelzugang: Inhaber und Manager ja, Rezeption und Reinigung nicht; Anmeldung landet weiter im Haus', async () => {
     cookieState.store = await signedInStore(world.alpha.owner)
     expect(await getSimContext()).toMatchObject({ kind: 'hotel' })
     expect(await landingRoute()).toBe('/admin')
+    cookieState.store = await signedInStore(world.alpha.manager)
+    expect(await getSimContext()).toMatchObject({ kind: 'hotel' })
+    cookieState.store = await signedInStore(world.alpha.reception)
+    expect(await getSimContext()).toBeNull()
+    cookieState.store = await signedInStore(world.alpha.maid)
+    expect(await getSimContext()).toBeNull()
   })
 
   it('Drossel: ab dem sechsten Versuch je IP und Stunde abgewiesen', async () => {

@@ -136,7 +136,8 @@ export function simConfirmMail(m: { url: string; marketing: boolean; toolName: s
  * kommt per Mail an die Person, der die Adresse gehört.
  */
 export function simExistsMail(m: { loginUrl: string; resetUrl: string; toolName: string }): MailContent {
-  const satz = `Für diese E-Mail-Adresse gibt es bereits einen Zugang zu RoSe. Melden Sie sich einfach an — der ${m.toolName} steht Ihnen danach zur Verfügung.`
+  // Nicht „steht Ihnen zur Verfügung": Rezeptionszugänge bekommen den Simulator nicht (26.09.2026).
+  const satz = `Für diese E-Mail-Adresse gibt es bereits einen Zugang zu RoSe. Ein zweites Konto lässt sich mit derselben Adresse nicht anlegen. Melden Sie sich mit Ihrem bestehenden Zugang an — als Inhaber oder Manager eines Hauses finden Sie den ${m.toolName} dann unter ${m.loginUrl.replace(/\/login$/, '/simulator')}.`
   const vergessen = 'Passwort vergessen? Dann setzen Sie es hier neu:'
   const schluss = 'Haben Sie sich nicht erneut registriert, können Sie diese Mail ignorieren — an Ihrem Zugang hat sich nichts geändert.'
 

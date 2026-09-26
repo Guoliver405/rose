@@ -300,8 +300,9 @@ export const getAccountContext = cache(async (): Promise<AccountContext | null> 
  * Wer darf den Housekeeping-Simulator nutzen (Phase 2, 26.09.2026)?
  *
  *   sim   — eigenes Simulator-Konto (`sim_accounts`), **nur bestätigt**.
- *   hotel — jeder mit Zugang zu einem Haus; der Simulator ist für Kunden ein
- *           Werkzeug mehr, kein anderes Produkt.
+ *   hotel — Inhaber und Manager eines Hauses; der Simulator ist für Kunden
+ *           ein Werkzeug mehr, kein anderes Produkt. Die Rezeption nicht
+ *           (Entscheidung des Users, 26.09.2026) — Planung ist Sache der Verwaltung.
  *
  * Die Gegenrichtung ist die eigentliche Grenze: Ein Simulator-Konto hat weder
  * `profiles` noch `account_members`/`hotel_members` und bekommt deshalb in
@@ -325,7 +326,7 @@ export const getSimContext = cache(async (): Promise<SimContext | null> => {
     .maybeSingle()
   const marketingOptInAt = sim?.marketing_opt_in ? (sim.marketing_opt_in_at as string | null) : null
   const hotels = await listAccessibleHotels()
-  if (hotels.length > 0) return { userId, kind: 'hotel', marketingOptInAt }
+  if (hotels.some(h => h.role !== 'reception')) return { userId, kind: 'hotel', marketingOptInAt }
   if (sim?.confirmed_at) return { userId, kind: 'sim', marketingOptInAt }
   return null
 })
