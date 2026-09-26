@@ -1,10 +1,10 @@
 # Bauplan: Reinigungs-Simulator als eigenes Werkzeug hinter einer Anmeldung
 
-Stand 26.09.2026 · Entscheidungen des Users in dieser Session · **noch nichts gebaut**
+Stand 26.09.2026 · Entscheidungen des Users in dieser Session · **Phase 1 gebaut (26.09. abends), siehe Abschnitt 11**
 
 > **Wiederaufnahme in einer neuen Session:** Erst `AGENTS.md` lesen (Abschnitte
 > „Landing Page", „Check-out-Druck", „Mail-Versand mit Rückmeldung"), dann diesen
-> Plan. Mit Phase 1 beginnen. Antworten durchgehend auf **Deutsch** – auch
+> Plan. Phase 1 ist gebaut (Abschnitt 11) — weiter mit den offenen Punkten dort, dann Phase 2. Antworten durchgehend auf **Deutsch** – auch
 > Zwischensätze zwischen Werkzeugaufrufen (Rückmeldung des Users).
 
 ---
@@ -200,3 +200,59 @@ Vorschlag für den Text am Häkchen:
 2. Name des Werkzeugs auf der Seite („Simulator", „Housekeeping-Rechner", …).
 3. Sollen Häuser außerhalb Deutschlands den Simulator schon nutzen können
    (Sprache bleibt vorerst Deutsch)?
+
+## 11. Stand nach Phase 1 (26.09.2026, abends)
+
+**Gebaut** (lokal, `/simulator` in Produktion 404 — `SIMULATOR_PREVIEW=1` öffnet ihn):
+
+- **Rechenkern** [cleaning-sim.ts](../src/lib/cleaning-sim.ts): Alle Konstanten
+  stecken in `ScenarioConfig` (`times` als Minuten des Tages, `duration` inkl.
+  `complaintReach`), Vorgabe `DEFAULT_CONFIG`. Das Szenario trägt die daraus
+  gerechneten `params` (Schichtminuten); `simulate`, `highlights`, `tilesAt`
+  lesen nur noch dort. Neu: `assignFloors` (Rest reihum, mehr Kräfte als
+  Etagen teilen sich Etagen — vorher ergab 20 ÷ 30 leere Etagenlisten),
+  `mixFromShares` (größter Rest), `validateConfig` + `LIMITS` (inkl.
+  Rechenbudget 75 000 Zimmertage), `maidLabel` (A–Z, dann Nummern — vorher
+  „Kraft undefined" ab der 7. Kraft), `clockLabel(min, shiftStart)`,
+  `middleSeed`, **spätestes Arbeitsende** `times.shiftEnd` (Vorgabe 18:00 = der
+  bisherige feste Rechenhorizont). Metriken zusätzlich `cleanMinutes`,
+  `walkMinutes`, `doorMinutes`, `departuresOpenAtCheckin`, `leftUndone`.
+- **Abnahme „Landing unverändert"** nicht nur über die Tests: Fingerabdruck
+  (SHA-256 über Szenario, alle vier Abläufe, Hinweise und Kacheln zu sieben
+  Zeitpunkten) für 40 Tage Landing-Haus und 6 Tage 600-Zimmer-Haus vor und nach
+  dem Umbau **bitgleich** — auch nach der Beschleunigung.
+- **Beschleunigung ohne Regeländerung:** Kolleginnen je Etage einmal je
+  Entscheidung statt bei jedem Sortiervergleich, Mengen statt `includes`,
+  Aufträge je Etage. 3 000 Zimmer: Board-Ablauf 2,4 s → 0,9 s.
+- **Auswertung** [sim-batch.ts](../src/lib/sim-batch.ts): `runDay`, `summarize`
+  (Median, 10./90. Perzentil, Check-in verpasst, offene Abreisen zum Check-in,
+  liegen geblieben, Wege, Tür, Warten, Anteil Reinigen, Sonderfall, Vorsprung,
+  eingesparte Minuten, mittlerer Tag), `workload` (Überlast-Vorprüfung),
+  Worker-Protokoll `runBatch` als Generator (Abbruch = `terminate()`).
+- **Formular** [sim-form.ts](../src/lib/sim-form.ts): Prozent/Uhrzeit ↔
+  Konfiguration; Belegung muss 100 % ergeben (keine stille Normierung);
+  unveränderte Vorgaben bleiben exakt (⅓ ist nicht 33,3 %).
+- **Oberfläche** [/simulator](../src/app/simulator/SimulatorApp.tsx): vier
+  Gruppen mit „Vorgabe wiederherstellen", Worker mit Fortschritt und Abbruch,
+  Hinweis bei geänderten Einstellungen, Kennzahlen-Kacheln und Tabelle,
+  der mittlere Tag im Tagesvergleich ([CleaningSimulation](../src/components/landing/CleaningSimulation.tsx)
+  nimmt jetzt `scenario` und `caption`; ab 13 Zimmern je Etage Kacheln ohne Nummer).
+- **Nebenbefund behoben:** `highlights` stürzte an manchen Tagen ab („nochmal
+  geklopft" nach einem Nicht-stören-Schild statt nach einem Klopfen). Der Tag
+  der Landing Page war nicht betroffen.
+
+**Offen, vor Phase 2 zu entscheiden:**
+
+1. **Modell ohne Software bei vielen Kräften unglaubwürdig.** Eine aushelfende
+   Kraft weiß nur, was sie selbst gehört hat — bei 30 Kräften klopft deshalb
+   fast jede einmal bei jedem ablehnenden Gast (3 000 Zimmer, 200 Kräfte: 9 589
+   Ablehnungen bei 150 ablehnenden Gästen). Ergebnis im 600-Zimmer-Haus: „92,9 h
+   je Tag eingespart, ≈ 47 000 € im Monat" — das glaubt niemand, und es ist
+   genau der Pappkamerad, den Phase 5 vermeiden soll. Vorschlag: Aushelfen nur
+   auf den Etagen **einer** Kollegin und deren Wissen mitnehmen (sie sagt, was
+   sie weiß), oder Ablehnungen etagenweise teilen. Ändert die Landing-Zahlen
+   leicht — also gemeinsam entscheiden.
+2. **Rechenzeit großer Häuser:** 3 000 Zimmer ≈ 7 s je Tag (davon ~3 s nur für
+   die Wahl des Sonderfall-Zimmers, vier Vorläufe). Budget 75 000 Zimmertage;
+   weiter beschleunigen erst, wenn Nutzer große Häuser rechnen.
+3. Offene Fragen aus Abschnitt 10 unverändert.

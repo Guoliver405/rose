@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
-  ALL_RUNS, CHECKIN_AT, CHECKOUT_AT, COMPLAINT, MAIDS, MIX, SCENARIO, SCENARIO_SEED,
-  buildScenario, floorOf, highlights, maidsAt, simulate, tilesAt, turnedAwayAt, typicalSeed,
+  ALL_RUNS, CHECKIN_AT, CHECKOUT_AT, COMPLAINT, DEFAULT_CONFIG, MAIDS, MIX, SCENARIO, SCENARIO_SEED,
+  assignFloors, buildScenario, clockLabel, floorOf, highlights, maidLabel, maidsAt, mixFromShares, simulate, tilesAt,
+  turnedAwayAt, typicalSeed, validateConfig, type ScenarioConfig,
   type Coordination, type Policy, type SimResult,
 } from './cleaning-sim'
 
@@ -211,5 +212,69 @@ describe('Reinigungs-Simulation', () => {
     }
     const od = run['rose-onDemand']
     expect(tilesAt(od, od.metrics.finishedAt).filter(x => decliners.includes(x.nr)).every(x => x.state === 'skipped')).toBe(true)
+  })
+})
+
+describe('Simulator-Konfiguration', () => {
+  it('die Vorgabe ist das Haus der Landing Page', () => {
+    expect(buildScenario(SCENARIO_SEED, DEFAULT_CONFIG)).toEqual(SCENARIO)
+    expect(validateConfig(DEFAULT_CONFIG)).toEqual([])
+  })
+
+  it('eine um eine Stunde verschobene Schicht mit verschobenen Zeiten rechnet denselben Tag', () => {
+    const t = DEFAULT_CONFIG.times
+    const early: ScenarioConfig = { ...DEFAULT_CONFIG, times: Object.fromEntries(Object.entries(t).map(([k, v]) => [k, v - 60])) as typeof t }
+    const scn = buildScenario(7, early)
+    const ref = buildScenario(7)
+    expect(scn.rooms).toEqual(ref.rooms)
+    for (const [c, p] of ALL_RUNS) expect(simulate(c, p, scn).metrics).toEqual(simulate(c, p, ref).metrics)
+    const r = simulate('rose', 'routine', scn)
+    expect(highlights(r, scn).map(h => h.text)).toEqual(
+      highlights(simulate('rose', 'routine', ref), ref).map(h => h.text.replace(/\b(\d{1,2}):(\d\d)\b/g, (_, h, m) => `${Number(h) - 1}:${m}`)))
+    expect(clockLabel(0, early.times.shiftStart)).toBe('7:00')
+  })
+
+  it('Etagen ohne Software: Rest reihum, mehr Kräfte als Etagen teilen sich Etagen', () => {
+    expect(assignFloors(10, 5)).toEqual([[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]])
+    expect(assignFloors(7, 3)).toEqual([[1, 2, 3], [4, 5], [6, 7]])
+    expect(assignFloors(2, 5)).toEqual([[1], [2], [1], [2], [1]])
+    for (const [f, m] of [[13, 4], [60, 7], [3, 3]]) {
+      expect(assignFloors(f, m).flat().sort((a, b) => a - b)).toEqual(Array.from({ length: f }, (_, i) => i + 1))
+    }
+  })
+
+  it('ungleiche Aufteilung: jede Kraft arbeitet zuerst ihre eigenen Etagen', () => {
+    const cfg: ScenarioConfig = { ...DEFAULT_CONFIG, floors: 7, roomsPerFloor: 12, maids: 3, mix: mixFromShares(84, MIX) }
+    const scn = buildScenario(3, cfg)
+    expect(scn.maidFloors).toEqual([[1, 2, 3], [4, 5], [6, 7]])
+    const r = simulate('paper', 'routine', scn)
+    for (let i = 0; i < 3; i++) {
+      const first = r.segments.find(g => g.maid === i && g.kind === 'clean')!
+      expect(scn.maidFloors[i]).toContain(floorOf(first.nr))
+    }
+  })
+
+  it('Anteile auf Zimmer: Summe stimmt immer, 100 Zimmer ergeben genau MIX', () => {
+    expect(mixFromShares(100, MIX)).toEqual(MIX)
+    for (const n of [1, 7, 33, 999, 3000]) {
+      const m = mixFromShares(n, MIX)
+      expect(Object.values(m).reduce((a, b) => a + b, 0)).toBe(n)
+    }
+    expect(mixFromShares(10, { departure: 1, empty: 0, declines: 0, outWants: 0, outNoRequest: 0 }).departure).toBe(10)
+  })
+
+  it('Gültigkeitsgrenzen mit Meldungen', () => {
+    const bad = (patch: Partial<ScenarioConfig>) => validateConfig({ ...DEFAULT_CONFIG, ...patch })
+    expect(bad({ floors: 61 })).not.toEqual([])
+    expect(bad({ roomsPerFloor: 51 })).not.toEqual([])
+    expect(bad({ maids: 0 })).not.toEqual([])
+    expect(bad({ floors: 11 }).join(' ')).toMatch(/110 Zimmer/)
+    expect(bad({ guest: { ...DEFAULT_CONFIG.guest, signals: 1.2 } })).not.toEqual([])
+    expect(bad({ times: { ...DEFAULT_CONFIG.times, checkinFrom: DEFAULT_CONFIG.times.checkoutUntil } })).not.toEqual([])
+    expect(bad({ duration: { ...DEFAULT_CONFIG.duration, stay: 0 } })).not.toEqual([])
+  })
+
+  it('Kräfte über Z hinaus bekommen Nummern', () => {
+    expect([maidLabel(0), maidLabel(25), maidLabel(26)]).toEqual(['A', 'Z', '27'])
   })
 })

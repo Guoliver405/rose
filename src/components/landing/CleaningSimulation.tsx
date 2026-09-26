@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { AlertTriangle, Ban, Check, Clock, DoorClosed, Flag, Hand, Leaf, Loader2, Pause, Play, RotateCcw } from 'lucide-react'
 import {
-  ALL_RUNS, GUEST, MAID_LABELS, MAIDS, SCENARIO, clockLabel, highlights, maidsAt, simulate, tilesAt, turnedAwayAt,
-  type Coordination, type Highlight, type Policy, type SimResult, type Tile, type TileState,
+  ALL_RUNS, GUEST, SCENARIO, clockLabel, highlights, maidLabel, maidsAt, simulate, tilesAt, turnedAwayAt,
+  type Coordination, type Highlight, type Policy, type Scenario, type SimResult, type Tile, type TileState,
 } from '@/lib/cleaning-sim'
 
 /**
@@ -16,7 +16,8 @@ import {
  * Zustand zum Zeitpunkt t gezeichnet, deshalb laufen beide Bilder an einer
  * Uhr. Unter jedem Bild steht ein Protokoll, dessen Einträge an festen Plätzen
  * eingeblendet werden, wenn sie passieren.
- * Auf der Landing Page im Abschnitt #vergleich.
+ * Auf der Landing Page im Abschnitt #vergleich; im Simulator mit dem eigenen
+ * Szenario (`scenario`) und eigenem Kleingedruckten (`caption`).
  */
 
 const LEAD: Record<Coordination, Record<Policy, string>> = {
@@ -79,16 +80,29 @@ function reducedMotion(): boolean {
 }
 const noSubscribe = () => () => {}
 
-export default function CleaningSimulation() {
+export default function CleaningSimulation({ scenario = SCENARIO, caption }: {
+  scenario?: Scenario
+  /** Kleingedrucktes unter dem Vergleich; Vorgabe ist das der Landing Page. */
+  caption?: ReactNode
+}) {
+  const scn = scenario
+  const clock = (min: number) => clockLabel(min, scn.params.shiftStart)
+  const maids = scn.maidFloors.length
   const runs = useMemo(() => ALL_RUNS.map(([c, p]) => {
-    const res = simulate(c, p)
-    return { key: `${c}-${p}`, res, notes: highlights(res) }
-  }), [])
+    const res = simulate(c, p, scn)
+    return { key: `${c}-${p}`, res, notes: highlights(res, scn) }
+  }), [scn])
   const [policy, setPolicy] = useState<Policy>('routine')
   const shown = (c: Coordination) => runs.find(r => r.key === `${c}-${policy}`)!
   // Eine Uhr für alle Abläufe — der Umschalter verschiebt nichts.
   const end = useMemo(() => Math.max(...runs.map(r => r.res.metrics.finishedAt)) + 5, [runs])
   const [time, setT] = useState(0)
+  // Neues Szenario: Uhr zurück auf Schichtbeginn (State neben den Props, ohne Effekt).
+  const [shownScn, setShownScn] = useState(scn)
+  if (shownScn !== scn) {
+    setShownScn(scn)
+    setT(0)
+  }
   const [playing, setPlaying] = useState(false)
   const [touched, setTouched] = useState(false)
   /** Endlosschleife — an, bis jemand Pause, Regler oder „Zurück" bedient. */
@@ -183,7 +197,7 @@ export default function CleaningSimulation() {
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <div className="min-w-20 text-3xl font-black tabular-nums text-ink">{clockLabel(t)}</div>
+        <div className="min-w-20 text-3xl font-black tabular-nums text-ink">{clock(t)}</div>
         <button type="button" onClick={togglePlay}
           className="flex items-center gap-1.5 rounded-lg bg-action px-3 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong">
           {running ? <Pause className="h-4 w-4" aria-hidden /> : <Play className="h-4 w-4" aria-hidden />}
@@ -191,7 +205,7 @@ export default function CleaningSimulation() {
         </button>
         <button type="button" onClick={() => { stop(); setT(0) }}
           className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-2 text-sm font-medium text-ink-soft hover:bg-surface-sunken">
-          <RotateCcw className="h-4 w-4" aria-hidden /> Zurück auf {clockLabel(0)}
+          <RotateCcw className="h-4 w-4" aria-hidden /> Zurück auf {clock(0)}
         </button>
         <input type="range" min={0} max={end} step={1} value={Math.round(t)} aria-label="Uhrzeit"
           onChange={ev => { stop(); setT(Number(ev.target.value)) }}
@@ -203,9 +217,9 @@ export default function CleaningSimulation() {
           const run = shown(c)
           return (
             <div key={c} className="flex min-w-0 flex-col gap-4">
-              <Panel title={TITLE[c]} lead={LEAD[c][policy]} res={run.res} t={t} />
+              <Panel title={TITLE[c]} lead={LEAD[c][policy]} res={run.res} t={t} scn={scn} />
               {/* key: beim Umschalten neue Einträge, keine überblendeten alten */}
-              <Log key={run.key} notes={run.notes} t={t} />
+              <Log key={run.key} notes={run.notes} t={t} clock={clock} />
             </div>
           )
         })}
@@ -225,13 +239,13 @@ export default function CleaningSimulation() {
         </li>
         <li className="flex items-center gap-1.5">
           <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-edge bg-surface-elevated text-[8px] font-black text-ink" aria-hidden>A</span>
-          Reinigungskraft A–{MAID_LABELS[MAIDS - 1]}
+          Reinigungskraft {maids === 1 ? 'A' : `A–${maidLabel(maids - 1)}`}
         </li>
       </ul>
 
-      <p className="mt-4 text-xs text-ink-muted">
+      {caption !== undefined ? <div className="mt-4 text-xs text-ink-muted">{caption}</div> : <p className="mt-4 text-xs text-ink-muted">
         Ein gewöhnlicher Tag: der mittlere aus 101 durchgerechneten, gemessen am Vorsprung bei den Abreisen in beiden
-        Stellungen des Umschalters. {SCENARIO.rooms.length} Zimmer auf {SCENARIO.floors} Etagen, {MAIDS} Reinigungskräfte
+        Stellungen des Umschalters. {SCENARIO.rooms.length} Zimmer auf {SCENARIO.floors} Etagen, {SCENARIO.maidFloors.length} Reinigungskräfte
         ab 8:00 (ohne Software je zwei feste Etagen), Check-out bis 11:00, Check-in ab 15:00. Dieselben Gäste in beiden Bildern: Sie reisen zwischen 7:00 und 11:00 ab
         bzw. verlassen das Zimmer, gleichverteilt – je später, desto eher lohnt das Klopfen. Täglich: Bleibezimmer in
         beiden Bildern ab 8:00, ohne Software laut Liste, mit RoSe über das beim Check-in eingetragene Abreisedatum.
@@ -242,14 +256,17 @@ export default function CleaningSimulation() {
         weiß nur sie; mit RoSe steht all das sofort für alle auf dem Board.
         Etagenwechsel mit Wagen 5 min. Reinigungsdauer als Annahme, eher knapp: Abreise 30 min, Bleibe 18 min — gemessen
         wurden 35–43 bzw. 20–25 min (Quellen Q4 und Q7 im Nutzenrechner).
-      </p>
+      </p>}
     </div>
   )
 }
 
-function Panel({ title, lead, res, t }: { title: string; lead: string; res: SimResult; t: number }) {
-  const tiles = tilesAt(res, t)
+function Panel({ title, lead, res, t, scn }: { title: string; lead: string; res: SimResult; t: number; scn: Scenario }) {
+  const clock = (min: number) => clockLabel(min, scn.params.shiftStart)
+  const tiles = tilesAt(res, t, scn)
   const maids = maidsAt(res, t)
+  /** Große Häuser: Kacheln ohne Nummer, damit eine Etage in eine Zeile passt. */
+  const compact = scn.roomsPerFloor > 12
   const floors = [...new Set(tiles.map(x => x.floor))].sort((a, b) => b - a)
   const done = t >= res.metrics.finishedAt
   const deps = res.metrics.departuresReadyAt
@@ -269,7 +286,7 @@ function Panel({ title, lead, res, t }: { title: string; lead: string; res: SimR
               {f}<span className="hidden lg:inline">. OG</span>
             </span>
             {tiles.filter(x => x.floor === f).map(x => (
-              <RoomTile key={x.nr} tile={x} maidsHere={maids.flatMap((nr, i) => (nr === x.nr ? [i] : []))} />
+              <RoomTile key={x.nr} tile={x} compact={compact} maidsHere={maids.flatMap((nr, i) => (nr === x.nr ? [i] : []))} />
             ))}
           </div>
         ))}
@@ -286,13 +303,13 @@ function Panel({ title, lead, res, t }: { title: string; lead: string; res: SimR
           <div className="text-xs">
             Alles fertig{' '}
             <span className="font-semibold tabular-nums text-ink">
-              {done ? clockLabel(res.metrics.finishedAt) : '…'}
+              {done ? clock(res.metrics.finishedAt) : '…'}
             </span>
             {' · '}vergeblich an der Tür{' '}
             <span className="font-semibold tabular-nums text-ink">{away}×</span>
           </div>
         </div>
-        {depsDone && <span className="text-2xl font-black tabular-nums text-ink">{clockLabel(deps!)}</span>}
+        {depsDone && <span className="text-2xl font-black tabular-nums text-ink">{clock(deps!)}</span>}
       </div>
     </div>
   )
@@ -302,7 +319,7 @@ function Panel({ title, lead, res, t }: { title: string; lead: string; res: SimR
  * Protokoll: jeder Eintrag hat von Anfang an seinen festen Platz und wird
  * nur eingeblendet — nichts rutscht nach, nichts springt.
  */
-function Log({ notes, t }: { notes: Highlight[]; t: number }) {
+function Log({ notes, t, clock }: { notes: Highlight[]; t: number; clock: (min: number) => string }) {
   return (
     <ol className="space-y-1" aria-live="polite">
       {notes.map(n => {
@@ -319,7 +336,7 @@ function Log({ notes, t }: { notes: Highlight[]; t: number }) {
                     : 'border-edge-strong bg-surface-sunken'
                 : 'border-transparent'
             }`}>
-            <span className="w-9 shrink-0 pt-px text-xs font-semibold tabular-nums text-ink-muted">{clockLabel(n.at)}</span>
+            <span className="w-9 shrink-0 pt-px text-xs font-semibold tabular-nums text-ink-muted">{clock(n.at)}</span>
             {n.tone === 'good' && <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-positive-strong" aria-hidden />}
             {n.tone === 'bad' && <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-caution-strong" aria-hidden />}
             {n.tone === 'neutral' && <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden />}
@@ -331,13 +348,15 @@ function Log({ notes, t }: { notes: Highlight[]; t: number }) {
   )
 }
 
-function RoomTile({ tile, maidsHere }: { tile: Tile; maidsHere: number[] }) {
+function RoomTile({ tile, maidsHere, compact }: { tile: Tile; maidsHere: number[]; compact: boolean }) {
   const ring = tile.knock ? 'ring-2 ring-critical' : tile.priority ? 'ring-2 ring-accent' : ''
   // Bei 10 Kacheln je Zeile ist für Symbole erst ab `lg` Platz; die Farbe trägt den Zustand.
   const icon = 'hidden h-2.5 w-2.5 shrink-0 lg:inline'
   return (
-    <div className={`relative flex h-7 min-w-0 flex-1 items-center justify-center gap-px rounded border text-[9px] font-bold tabular-nums sm:text-[10px] ${TILE[tile.state]} ${ring}`}>
-      {BAR[tile.state] && <span className={`absolute inset-x-0 bottom-0 h-1 rounded-b-[3px] ${BAR[tile.state]}`} aria-hidden />}
+    <div title={compact ? tile.nr : undefined}
+      className={`relative flex min-w-0 flex-1 items-center justify-center gap-px rounded border text-[9px] font-bold tabular-nums sm:text-[10px] ${compact ? 'h-4' : 'h-7'} ${TILE[tile.state]} ${ring}`}>
+      {BAR[tile.state] && <span className={`absolute inset-x-0 bottom-0 ${compact ? 'h-0.5' : 'h-1'} rounded-b-[3px] ${BAR[tile.state]}`} aria-hidden />}
+      {!compact && <>
       <span className="lg:hidden">{tile.nr.slice(-2)}</span>
       <span className="hidden lg:inline">{tile.nr}</span>
       {(tile.state === 'dnd' || tile.state === 'declined') && <Ban className={icon} aria-hidden />}
@@ -345,12 +364,13 @@ function RoomTile({ tile, maidsHere }: { tile: Tile; maidsHere: number[] }) {
       {tile.state === 'skipped' && <Leaf className={icon} aria-hidden />}
       {tile.state === 'cleaning' && <Loader2 className={`${icon} animate-spin`} aria-hidden />}
       {tile.priority && tile.state !== 'cleaning' && <Flag className={`${icon} text-accent`} aria-hidden />}
+      </>}
       {maidsHere.length > 0 && (
         <span className="absolute -right-1 -top-1.5 z-10 flex h-4 min-w-4 items-center justify-center rounded-full border border-edge bg-surface-elevated px-0.5 shadow">
           {tile.knock === 'present' && <DoorClosed className="h-2.5 w-2.5 text-critical-strong" aria-hidden />}
           {tile.knock === 'declined' && <Hand className="h-2.5 w-2.5 text-critical-strong" aria-hidden />}
           {tile.knock === 'dnd' && <Ban className="h-2.5 w-2.5 text-critical-strong" aria-hidden />}
-          {!tile.knock && <span className="text-[8px] font-black text-ink">{maidsHere.map(i => MAID_LABELS[i]).join('')}</span>}
+          {!tile.knock && <span className="text-[8px] font-black text-ink">{maidsHere.map(maidLabel).join('')}</span>}
         </span>
       )}
     </div>
