@@ -60,7 +60,7 @@ function SettingsForm({ hotelSlug, initial, onDiscard }: {
 
   // Nach dem Rendern vergleichen: ein Häkchen blendet Felder erst im nächsten Commit ein.
   function checkDirty() {
-    requestAnimationFrame(() => {
+    setTimeout(() => {
       if (formRef.current) setDirty(snapshot(formRef.current) !== baseline.current)
     })
   }
