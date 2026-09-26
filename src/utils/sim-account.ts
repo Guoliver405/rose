@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/utils/supabase/service'
+import { createHotelAccount } from '@/utils/hotel-account'
 import { confirmUrl, mailReady, sendSimConfirmMail, sendSimExistsMail, type MailResult } from '@/utils/mail'
 import {
   MARKETING_TEXT_VERSION, SIGNUP_WINDOW_MS, UNCONFIRMED_DAYS, isExpiredUnconfirmed, signupThrottled, type SimSignupInput,
@@ -294,4 +295,31 @@ export async function deleteSimAccount(userId: string): Promise<{ error?: string
     return { error: 'Das Konto konnte nicht gelöscht werden. Bitte später erneut versuchen.' }
   }
   return {}
+}
+
+// ── Umwandlung in ein Hotelkonto (Phase 4) ──────────────────────────────────
+
+export type ConvertInput = {
+  hotelName: string
+  displayName: string
+  rooms?: { floor: number; number: string }[]
+  policies?: Record<string, unknown>
+}
+
+/**
+ * Derselbe Auth-Nutzer wird Inhaber eines neuen Hotelkontos — keine neue
+ * Anmeldung, Szenarien bleiben. Nur bestätigte, noch nicht umgewandelte
+ * Simulator-Konten ohne jede Rolle im Hotelprodukt.
+ */
+export async function convertSimAccount(userId: string, input: ConvertInput): Promise<{ slug?: string; stripe?: boolean; error?: string }> {
+  const admin = createAdminClient()
+  const { data: sim } = await admin.from('sim_accounts').select('confirmed_at, converted_account_id').eq('user_id', userId).maybeSingle()
+  if (!sim?.confirmed_at) return { error: 'Nur für bestätigte Simulator-Konten.' }
+  if (sim.converted_account_id || (await hasProductRole(admin, userId))) {
+    return { error: 'Zu diesem Zugang gibt es bereits ein Hotelkonto.' }
+  }
+  const created = await createHotelAccount({ userId, ...input })
+  if (created.error || !created.accountId) return { error: created.error ?? 'Das Hotelkonto konnte nicht angelegt werden.' }
+  await admin.from('sim_accounts').update({ converted_account_id: created.accountId }).eq('user_id', userId)
+  return { slug: created.slug, stripe: created.stripe }
 }

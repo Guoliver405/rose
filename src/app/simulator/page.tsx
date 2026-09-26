@@ -5,6 +5,7 @@ import LegalFooter from '@/components/LegalFooter'
 import { getSimContext } from '@/utils/auth'
 import { SIMULATOR_NAME } from '@/lib/sim-account'
 import { listScenarios } from '@/utils/sim-scenarios'
+import { hotelSignupOpen } from '@/utils/hotel-account'
 import SimHeader from './SimHeader'
 import SimulatorApp from './SimulatorApp'
 
@@ -45,7 +46,7 @@ export default async function SimulatorPage({ searchParams }: { searchParams: Pr
             Die Regeln für „mit RoSe“ sind die des echten Reinigungsboards. Derzeit nur auf Deutsch.
           </p>
         </div>
-        {ctx ? <SimulatorApp initialScenarios={scenarios} /> : <Intro />}
+        {ctx ? <SimulatorApp initialScenarios={scenarios} convert={ctx.kind === 'sim' ? { open: hotelSignupOpen() } : undefined} /> : <Intro />}
       </main>
       <LegalFooter />
     </>

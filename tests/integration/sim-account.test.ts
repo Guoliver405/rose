@@ -29,8 +29,9 @@ import {
 } from '@/utils/auth'
 import { deleteScenario, listScenarios, renameScenario, saveScenario } from '@/utils/sim-scenarios'
 import { DEFAULT_FORM } from '@/lib/sim-form'
+import { policiesFromForm, roomsFromForm } from '@/lib/sim-convert'
 import {
-  deleteSimAccount, markSimConfirmed, registerSimAccount, resendSimConfirmation, type SimSenders,
+  convertSimAccount, deleteSimAccount, markSimConfirmed, registerSimAccount, resendSimConfirmation, type SimSenders,
 } from '@/utils/sim-account'
 
 let world: World
@@ -239,4 +240,53 @@ describe('Simulator-Konto', () => {
     const { data: gone } = await admin.from('sim_accounts').select('user_id').eq('user_id', world.alpha.manager.id)
     expect(gone).toEqual([])
   })
+
+  it('Umwandlung: derselbe Nutzer wird Inhaber, Zimmer und Regeln kommen mit, nur einmal, nur bestätigt', async () => {
+    const admin = serviceClient()
+    const email = `${world.token}-umwandlung@rose-itest.local`
+    const { data: created } = await admin.auth.admin.createUser({ email, password: PW, email_confirm: true })
+    const userId = created.user!.id
+    world.createdUserIds.push(userId)
+    await admin.from('sim_accounts').insert({ user_id: userId })
+
+    const form = { ...DEFAULT_FORM, floors: 2, roomsPerFloor: 3 }
+    const input = {
+      hotelName: `${world.token} Umwandlung`, displayName: 'Uma Wandel',
+      rooms: roomsFromForm(form), policies: policiesFromForm(form, 'onDemand'),
+    }
+    // Unbestätigt: nicht erlaubt.
+    expect((await convertSimAccount(userId, input)).error).toMatch(/bestätigte/)
+    await admin.from('sim_accounts').update({ confirmed_at: new Date().toISOString() }).eq('user_id', userId)
+
+    const res = await convertSimAccount(userId, input)
+    expect(res.error).toBeUndefined()
+    const { data: sim } = await admin.from('sim_accounts').select('converted_account_id').eq('user_id', userId).single()
+    const accountId = sim!.converted_account_id as string
+    expect(accountId).toBeTruthy()
+    world.createdAccountIds.push(accountId)
+
+    const { data: owner } = await admin.from('account_members').select('user_id, role').eq('account_id', accountId).single()
+    expect(owner).toEqual({ user_id: userId, role: 'owner' })
+    const { data: hotel } = await admin.from('hotels').select('id, slug, policies').eq('account_id', accountId).single()
+    expect(hotel!.slug).toBe(res.slug)
+    expect(hotel!.policies).toMatchObject({ stayoverAutoClean: false, checkoutUntil: '11:00', checkinFrom: '15:00' })
+    expect(hotel!.policies).not.toHaveProperty('timeZone')
+    const { data: rooms } = await admin.from('rooms').select('id, number').eq('hotel_id', hotel!.id).order('number')
+    expect(rooms!.map(r => r.number)).toEqual(['101', '102', '103', '201', '202', '203'])
+    const { count } = await admin.from('room_states').select('room_id', { count: 'exact', head: true }).eq('hotel_id', hotel!.id)
+    expect(count).toBe(6)
+
+    // Im Produkt jetzt Inhaber, im Simulator als Hotelzugang.
+    cookieState.store = await signedInStore({ id: userId, email, password: PW })
+    expect(await getAccountContext()).toMatchObject({ accountId })
+    expect(await getSimContext()).toMatchObject({ kind: 'hotel' })
+    expect(await getManagementContext(hotel!.slug)).toMatchObject({ role: 'admin', isOwner: true })
+
+    // Nur einmal — und nie für einen Hotelzugang.
+    expect((await convertSimAccount(userId, input)).error).toMatch(/bereits/)
+    await admin.from('sim_accounts').insert({ user_id: world.alpha.manager.id, confirmed_at: new Date().toISOString() })
+    expect((await convertSimAccount(world.alpha.manager.id, input)).error).toMatch(/bereits/)
+    await admin.from('sim_accounts').delete().eq('user_id', world.alpha.manager.id)
+  })
 })
+

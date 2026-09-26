@@ -4,7 +4,11 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { getSimContext } from '@/utils/auth'
 import { currentIpHash } from '@/utils/login-throttle'
-import { deleteSimAccount, registerSimAccount, resendSimConfirmation, setSimMarketing } from '@/utils/sim-account'
+import { convertSimAccount, deleteSimAccount, registerSimAccount, resendSimConfirmation, setSimMarketing } from '@/utils/sim-account'
+import { MAX_ROOMS_AT_SIGNUP, checkInviteCode } from '@/utils/hotel-account'
+import { policiesFromForm, roomsFromForm } from '@/lib/sim-convert'
+import { einrichtungStart } from '@/lib/lotsen'
+import type { Policy } from '@/lib/cleaning-sim'
 import { parseSignup } from '@/lib/sim-account'
 import { formFromSaved, toSaved, type SimForm } from '@/lib/sim-form'
 import { deleteScenario, listScenarios, renameScenario, saveScenario, type ScenarioItem } from '@/utils/sim-scenarios'
@@ -76,4 +80,39 @@ export async function deleteScenarioAction(id: string): Promise<{ error?: string
   const ctx = await getSimContext()
   if (!ctx) return { error: 'Bitte erneut anmelden.' }
   return deleteScenario(ctx.userId, id)
+}
+
+// ── Umwandlung in ein Hotelkonto (Phase 4) ──────────────────────────────────
+
+export async function convertToHotelAction(input: {
+  code: string
+  hotelName: string
+  displayName: string
+  form: SimForm
+  policy: Policy
+  takeRooms: boolean
+  takeRules: boolean
+}): Promise<{ error?: string }> {
+  const ctx = await getSimContext()
+  if (!ctx) return { error: 'Bitte erneut anmelden.' }
+  if (ctx.kind !== 'sim') return { error: 'Zu diesem Zugang gibt es bereits ein Hotelkonto.' }
+  const codeError = checkInviteCode(input.code)
+  if (codeError) return { error: codeError }
+  const hotelName = input.hotelName.trim()
+  const displayName = input.displayName.trim()
+  if (hotelName.length < 2) return { error: 'Bitte den Namen des Hauses angeben.' }
+  if (displayName.length < 2) return { error: 'Bitte Ihren Namen angeben.' }
+
+  // Das Formular kommt aus dem Browser — durch dieselbe Prüfung wie gespeicherte Szenarien.
+  const form = formFromSaved(toSaved(input.form))
+  const rooms = input.takeRooms ? roomsFromForm(form) : undefined
+  if (rooms && rooms.length > MAX_ROOMS_AT_SIGNUP) {
+    return { error: `Höchstens ${MAX_ROOMS_AT_SIGNUP} Zimmer lassen sich direkt übernehmen — bitte ohne Zimmer umwandeln und sie im Zimmer-Setup anlegen.` }
+  }
+  const policies = input.takeRules ? policiesFromForm(form, input.policy === 'onDemand' ? 'onDemand' : 'routine') : undefined
+
+  const res = await convertSimAccount(ctx.userId, { hotelName, displayName, rooms, policies })
+  if (res.error || !res.slug) return { error: res.error ?? 'Das Hotelkonto konnte nicht angelegt werden.' }
+  // Wie nach der Registrierung: mit Stripe erst der Zahlungsweg, sonst der Einrichtungs-Lotse.
+  redirect(res.stripe ? `/admin/abrechnung/zahlungsweg?neu=${res.slug}` : einrichtungStart(res.slug))
 }

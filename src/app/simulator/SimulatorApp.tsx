@@ -6,6 +6,7 @@ import CleaningSimulation from '@/components/landing/CleaningSimulation'
 import DistributionChart from '@/components/simulator/DistributionChart'
 import type { ScenarioItem } from '@/utils/sim-scenarios'
 import ScenarioPanel from './ScenarioPanel'
+import ConvertCard from './ConvertCard'
 import { LIMITS, buildScenario, clockLabel, paramsFor, type MixKey, type Policy, type ScenarioConfig, type SimDurations, type SimTimes } from '@/lib/cleaning-sim'
 import { ROI_DEFAULTS, DAYS_PER_MONTH } from '@/lib/roi'
 import { validateRun, workload, type DayRun, type Dist, type SideSummary, type SimMessage, type SimRequest, type Summary } from '@/lib/sim-batch'
@@ -80,7 +81,11 @@ type Running = { done: number; total: number; label?: string }
 type Result = { summary: Summary; runs: DayRun[]; config: ScenarioConfig; days: number }
 type Compared = { name: string; summary: Summary; config: ScenarioConfig; days: number }
 
-export default function SimulatorApp({ initialScenarios = [] }: { initialScenarios?: ScenarioItem[] }) {
+export default function SimulatorApp({ initialScenarios = [], convert }: {
+  initialScenarios?: ScenarioItem[]
+  /** Nur eigene Simulator-Konten: „Als Hotel bei RoSe starten“ (Phase 4); `open` = Registrierung freigeschaltet. */
+  convert?: { open: boolean }
+}) {
   const [form, setForm] = useState<SimForm>(DEFAULT_FORM)
   const [running, setRunning] = useState<Running | null>(null)
   const [result, setResult] = useState<Result | null>(null)
@@ -335,6 +340,7 @@ export default function SimulatorApp({ initialScenarios = [] }: { initialScenari
 
       {compared && <Comparison items={compared} policy={policy} onPolicy={setPolicy} onClose={() => setCompared(null)} />}
       {result && <Results result={result} policy={policy} onPolicy={setPolicy} />}
+      {convert && <ConvertCard form={form} policy={policy} signupOpen={convert.open} />}
     </div>
   )
 }

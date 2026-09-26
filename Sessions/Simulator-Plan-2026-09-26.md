@@ -1,10 +1,10 @@
 # Bauplan: Reinigungs-Simulator als eigenes Werkzeug hinter einer Anmeldung
 
-Stand 26.09.2026 · Entscheidungen des Users in dieser Session · **Phasen 1 bis 3 gebaut (26.09. abends), siehe Abschnitte 11 bis 13**
+Stand 26.09.2026 · Entscheidungen des Users in dieser Session · **Phasen 1 bis 4 gebaut (26.09. abends), siehe Abschnitte 11 bis 14**
 
 > **Wiederaufnahme in einer neuen Session:** Erst `AGENTS.md` lesen (Abschnitte
 > „Landing Page", „Check-out-Druck", „Mail-Versand mit Rückmeldung"), dann diesen
-> Plan. Phasen 1 bis 3 sind gebaut (Abschnitte 11–13) — als Nächstes Phase 4 (Umwandlung in ein Hotelkonto). Antworten durchgehend auf **Deutsch** – auch
+> Plan. Phasen 1 bis 4 sind gebaut (Abschnitte 11–14) — als Nächstes das Ereignis-Protokoll (Abschnitt 14, „Nächster Schritt"), dann Phase 5. Antworten durchgehend auf **Deutsch** – auch
 > Zwischensätze zwischen Werkzeugaufrufen (Rückmeldung des Users).
 
 ---
@@ -350,3 +350,35 @@ Phase 3:
   Sitemap und robots, `/simulator/konto` gesperrt, `noindex` entfernt.
 
 **Offen:** GUI-Fälle L11–L14 (Szenarien, Vergleich, Diagramm, Druck) in Produktion.
+
+## 14. Stand nach Phase 4 (26.09.2026, abends)
+
+- **Gemeinsame Kontoanlage** [utils/hotel-account.ts](../src/utils/hotel-account.ts):
+  `createHotelAccount({ userId, hotelName, displayName, policies?, rooms? })` legt Konto,
+  Haus, Profil, Inhaberschaft, Beispiel-Services und Stripe-Kunden für einen
+  **bestehenden** Auth-Nutzer an; `/registrieren` benutzt sie seither auch (dort legt die
+  Registrierung vorher den Auth-Nutzer an und räumt ihn bei einem Fehler selbst ab).
+  `checkInviteCode` ist die eine Stelle für den Einladungscode (fehlt die Variable, ist
+  die Anlage zu).
+- **Umwandlung** „Als Hotel bei RoSe starten" ([ConvertCard](../src/app/simulator/ConvertCard.tsx),
+  `convertSimAccount` in [utils/sim-account.ts](../src/utils/sim-account.ts)): nur für
+  bestätigte, noch nicht umgewandelte Simulator-Konten ohne Rolle im Hotelprodukt.
+  **Einladungscode wie `/registrieren`** (Entscheidung des Users). Übernommen, beides
+  abwählbar: Zimmer aus dem aktuellen Formular (nummeriert wie im Simulator, höchstens
+  1 000 direkt) und Regeln — tägliche Reinigung an/aus nach dem Umschalter samt Uhrzeit,
+  Check-out bis, Check-in ab ([sim-convert.ts](../src/lib/sim-convert.ts), getestet). Die
+  **Zeitzone bewusst nicht**: an ihr hängt „Regeln geprüft" in der Einrichtungs-Checkliste,
+  das soll das Haus selbst bestätigen. `sim_accounts.converted_account_id` wird gesetzt,
+  derselbe Zugang ist danach Inhaber und nutzt den Simulator als Hotelzugang weiter
+  (Szenarien bleiben). Danach wie nach der Registrierung: Zahlungsweg, sonst Einrichtungs-Lotse.
+- **Integrationstest:** gleicher Nutzer wird Inhaber, sechs Zimmer samt `room_states`,
+  Regeln ohne Zeitzone, Guards geben Inhaber-Rechte, zweite Umwandlung und Umwandlung eines
+  Hotelzugangs abgewiesen, unbestätigte Konten ebenso.
+
+**Nächster Schritt (User, 26.09.): Ereignis-Protokoll statt Hinweise im Simulator.** Die
+hervorgehobenen Hinweise bleiben auf der Landing Page; im Simulator ein vollständiges,
+chronologisches Protokoll je Bild — jede Zeile mit Uhrzeit, Kraft und Zimmer (Check-out,
+Gast geht, Schild ab, Wunsch, Etagenwechsel, Etagenliste, Klopfen, Reinigung von–bis,
+Warten, Sonderfall), abgeleitet aus dem Ablauf. Zugeklappt wenige Zeilen, aufgeklappt
+ein scrollbarer Kasten, der mit der Uhr mitläuft; Klick auf eine Zeile setzt die Uhr.
+Später ein Filter nach Kraft oder Zimmer (große Häuser: tausende Zeilen).

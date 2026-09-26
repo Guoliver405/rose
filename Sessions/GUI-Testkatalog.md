@@ -229,6 +229,8 @@ formuliert, dass ein Abweichen ein Befund ist.
 | L12 | Vergleich | zwei oder drei Szenarien ankreuzen, „Ausgewählte vergleichen" | Fortschritt je Szenario; Tabelle nebeneinander, Umschalter täglich/auf Wunsch wirkt | M |
 | L13 | Diagramm | nach dem Rechnen, beide Kennzahlen umschalten, über Säulen fahren und mit Tab durchgehen | Tooltip „n Tage · Reihe · Uhrzeit"; Check-in-Linie nur bei Abreisen; am Handy seitlich scrollbar | C |
 | L14 | Drucken | „Drucken" im Ergebnis | eingeklappte Teile im Druck offen, keine Knöpfe; danach wieder eingeklappt | **M** |
+| L15 | Als Hotel starten | als Simulator-Konto: Karte „Als Hotel bei RoSe starten", Name, Einladungscode, Zimmer und Regeln übernehmen | landet auf Zahlungsweg bzw. im Einrichtungs-Lotsen, ohne neue Anmeldung; Zimmer-Setup zeigt die Zimmer, Hotel & Regeln die Zeiten; `/simulator` weiter erreichbar, Szenarien da, Karte weg | **M** (Einladungscode) |
+| L16 | Falscher Code | Umwandlung mit falschem Einladungscode | „Einladungscode stimmt nicht", nichts angelegt | C |
 
 ### K — Theme und Robustheit
 
