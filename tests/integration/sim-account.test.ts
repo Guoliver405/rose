@@ -28,13 +28,13 @@ import {
   getAccountContext, getAdminContext, getManagementContext, getSimContext, landingRoute, listAccessibleHotels,
 } from '@/utils/auth'
 import {
-  deleteSimAccount, markSimConfirmed, registerSimAccount, type SimSenders,
+  deleteSimAccount, markSimConfirmed, registerSimAccount, resendSimConfirmation, type SimSenders,
 } from '@/utils/sim-account'
 
 let world: World
 const PW = 'SimulatorTest!2026'
 
-type Sent = { kind: 'confirm' | 'exists'; to: string; userId: string; url?: string; marketing?: boolean }
+type Sent = { kind: 'confirm' | 'exists'; to: string; userId: string | null; url?: string; marketing?: boolean }
 function capture(): { senders: SimSenders; sent: Sent[] } {
   const sent: Sent[] = []
   return {
@@ -65,6 +65,7 @@ afterAll(async () => {
 
 describe('Simulator-Konto', () => {
   let sim: { id: string; email: string; password: string }
+  let capturedFirst: string | null = null
 
   it('Registrierung legt einen unbestätigten Nutzer an und schickt den Bestätigungslink', async () => {
     const email = `${world.token}-sim@rose-itest.local`
@@ -73,8 +74,8 @@ describe('Simulator-Konto', () => {
     expect(res).toEqual({ sent: true })
     expect(sent).toHaveLength(1)
     expect(sent[0]).toMatchObject({ kind: 'confirm', to: email, marketing: true })
-    world.createdUserIds.push(sent[0].userId)
-    sim = { id: sent[0].userId, email, password: PW }
+    world.createdUserIds.push(sent[0].userId!)
+    sim = { id: sent[0].userId!, email, password: PW }
 
     const admin = serviceClient()
     const { data: row } = await admin.from('sim_accounts').select('*').eq('user_id', sim.id).single()
@@ -83,6 +84,7 @@ describe('Simulator-Konto', () => {
     // Die Einwilligung ist erst mit der Bestätigung wirksam.
     expect(row.marketing_opt_in_at).toBeNull()
     expect(linkParts(sent[0].url!).next).toBe('/simulator?willkommen=1')
+    capturedFirst = sent[0].url!
 
     // Vor der Bestätigung keine Anmeldung.
     const { error } = await anonClient().auth.signInWithPassword({ email, password: PW })
@@ -98,13 +100,19 @@ describe('Simulator-Konto', () => {
     const hotel = capture()
     expect(await registerSimAccount({ email: world.alpha.reception.email, password: PW, marketing: false }, ip(), hotel.senders, { purge: false }))
       .toEqual({ sent: true })
-    expect(hotel.sent).toEqual([expect.objectContaining({ kind: 'exists', userId: world.alpha.reception.id })])
+    expect(hotel.sent).toEqual([expect.objectContaining({ kind: 'exists', to: world.alpha.reception.email })])
     const { data } = await serviceClient().from('sim_accounts').select('user_id').eq('user_id', world.alpha.reception.id)
     expect(data).toEqual([])
 
-    // Eingelöst wird der zuletzt verschickte Link (Magic-Link bestätigt die Adresse ebenso).
+    // Der Nutzer von eben besteht weiter (die erste Fassung löschte ihn hier beim Zurückrollen).
+    const { data: stillThere } = await serviceClient().auth.admin.getUserById(sim.id)
+    expect(stillThere.user?.id).toBe(sim.id)
+
+    // Der alte Link ist durch den neuen ungültig; eingelöst wird der neue.
+    const old = linkParts(capturedFirst!)
+    expect((await anonClient().auth.verifyOtp({ token_hash: old.tokenHash, type: old.type as 'signup' })).error).not.toBeNull()
     const { tokenHash, type } = linkParts(again.sent[0].url!)
-    const { data: verified, error } = await anonClient().auth.verifyOtp({ token_hash: tokenHash, type: type as 'magiclink' })
+    const { data: verified, error } = await anonClient().auth.verifyOtp({ token_hash: tokenHash, type: type as 'signup' })
     expect(error).toBeNull()
     expect(verified.user?.id).toBe(sim.id)
     await markSimConfirmed(sim.id)
@@ -112,6 +120,24 @@ describe('Simulator-Konto', () => {
     const { data: row } = await serviceClient().from('sim_accounts').select('confirmed_at, marketing_opt_in_at').eq('user_id', sim.id).single()
     expect(row!.confirmed_at).not.toBeNull()
     expect(row!.marketing_opt_in_at).toBe(row!.confirmed_at)
+
+    // Das Passwort der zweiten Registrierung hat nichts geändert.
+    expect((await anonClient().auth.signInWithPassword({ email: sim.email, password: 'anderes-Passwort' })).error).not.toBeNull()
+  })
+
+  it('erneut senden: unbekannte Adresse legt nichts an und verschickt nichts; bestätigte bekommt den Hinweis', async () => {
+    const unknown = `${world.token}-unbekannt@rose-itest.local`
+    const a = capture()
+    expect(await resendSimConfirmation(unknown, ip(), a.senders)).toEqual({ sent: true })
+    expect(a.sent).toEqual([])
+    const { data: probe } = await serviceClient().auth.admin.generateLink({ type: 'signup', email: unknown, password: 'Probe!12345' })
+    // generateLink legt ihn jetzt an — frisch, also gab es ihn vorher nicht. Wieder weg damit.
+    expect(Date.parse(probe.user!.created_at)).toBeGreaterThan(Date.now() - 15_000)
+    await serviceClient().auth.admin.deleteUser(probe.user!.id)
+
+    const b = capture()
+    expect(await resendSimConfirmation(sim.email, ip(), b.senders)).toEqual({ sent: true })
+    expect(b.sent).toEqual([expect.objectContaining({ kind: 'exists', to: sim.email })])
   })
 
   it('bestätigt: Anmeldung geht, Simulator ja — im Hotelprodukt nirgends Rechte', async () => {

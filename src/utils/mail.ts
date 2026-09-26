@@ -577,13 +577,13 @@ export function sendSimConfirmMail(m: { to: string; userId: string; url: string;
 }
 
 /** Hinweis an eine schon bekannte Adresse — statt einer Fehlermeldung auf der öffentlichen Seite. */
-export function sendSimExistsMail(m: { to: string; userId: string }): Promise<MailResult> {
+export function sendSimExistsMail(m: { to: string; userId: string | null }): Promise<MailResult> {
   return dispatch({
     purpose: 'sim_confirm',
     to: m.to,
     fromName: 'RoSe',
     ...simExistsMail({ loginUrl: `${siteBase()}/login`, resetUrl: `${siteBase()}/passwort-vergessen`, toolName: SIMULATOR_NAME }),
-    userId: m.userId,
+    userId: m.userId ?? undefined,
   })
 }
 
