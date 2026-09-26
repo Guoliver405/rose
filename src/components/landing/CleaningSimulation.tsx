@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
-import { AlertTriangle, Ban, Check, Clock, DoorClosed, Flag, Hand, Leaf, Loader2, Pause, Play, RotateCcw } from 'lucide-react'
+import { AlertTriangle, Ban, Check, Clock, DoorClosed, Flag, Hand, Leaf, Loader2, Pause, Play, RotateCcw, Timer } from 'lucide-react'
 import {
   ALL_RUNS, GUEST, SCENARIO, clockLabel, highlights, maidLabel, maidsAt, simulate, tilesAt, turnedAwayAt,
   type Coordination, type Highlight, type Policy, type Scenario, type SimResult, type Tile, type TileState,
@@ -38,12 +38,15 @@ const SPEED = 18
 const HOLD_MS = 8000
 /** So lange (Simulationsminuten) gilt ein Hinweis als neu und leuchtet. */
 const FRESH = 25
+/** Die Uhr beginnt um 7:59 — die Ausgangslage beider Bilder, bevor sich die Kräfte verteilen (User, 26.09.2026). */
+const START = -1
 
 const TILE: Record<TileState, string> = {
   empty: 'border-edge bg-surface-sunken text-ink-muted',
   occupied: 'border-fresh-tint-edge bg-fresh-tint text-ink',
   dnd: 'border-blocked-tint-edge bg-blocked-tint text-ink',
-  deferred: 'border-edge bg-surface-muted text-ink-soft',
+  // Derselbe Gast wie links mit „Nicht stören“ bis zur Uhrzeit — gleiche Farbe, nur weiß RoSe die Uhrzeit (User, 26.09.2026).
+  deferred: 'border-blocked-tint-edge bg-blocked-tint text-ink',
   skipped: 'border-edge bg-surface-muted text-ink-muted',
   declined: 'border-blocked-tint-edge bg-blocked-tint text-ink',
   departed: 'border-caution-tint-edge bg-caution-tint text-ink',
@@ -56,6 +59,7 @@ const TILE: Record<TileState, string> = {
 const BAR: Partial<Record<TileState, string>> = {
   occupied: 'bg-fresh',
   dnd: 'bg-blocked',
+  deferred: 'bg-blocked',
   declined: 'bg-blocked',
   departed: 'bg-caution',
   wants: 'bg-attention',
@@ -67,7 +71,7 @@ const LEGEND: { state: TileState; label: string }[] = [
   { state: 'departed', label: 'ausgecheckt' },
   { state: 'wants', label: 'Gast weg, Reinigung offen' },
   { state: 'dnd', label: 'Bitte nicht stören / abgelehnt' },
-  { state: 'deferred', label: '„frühestens ab“ – nur mit RoSe bekannt' },
+  { state: 'deferred', label: '„frühestens ab“ – mit RoSe als Uhrzeit bekannt' },
   { state: 'skipped', label: 'keine Reinigung gewünscht' },
   { state: 'empty', label: 'leer' },
   { state: 'cleaning', label: 'wird gereinigt' },
@@ -99,12 +103,12 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption, polic
   const shown = (c: Coordination) => runs.find(r => r.key === `${c}-${policy}`)!
   // Eine Uhr für alle Abläufe — der Umschalter verschiebt nichts.
   const end = useMemo(() => Math.max(...runs.map(r => r.res.metrics.finishedAt)) + 5, [runs])
-  const [time, setT] = useState(0)
+  const [time, setT] = useState(START)
   // Neues Szenario: Uhr zurück auf Schichtbeginn (State neben den Props, ohne Effekt).
   const [shownScn, setShownScn] = useState(scn)
   if (shownScn !== scn) {
     setShownScn(scn)
-    setT(0)
+    setT(START)
   }
   const [playing, setPlaying] = useState(false)
   const [touched, setTouched] = useState(false)
@@ -139,7 +143,7 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption, polic
   // Schleife: Endstand stehen lassen, dann von vorn.
   useEffect(() => {
     if (playing || !loop || reduced || !started || time < end) return
-    const id = setTimeout(() => { setT(0); setPlaying(true) }, HOLD_MS)
+    const id = setTimeout(() => { setT(START); setPlaying(true) }, HOLD_MS)
     return () => clearTimeout(id)
   }, [playing, loop, reduced, started, time, end])
 
@@ -174,7 +178,7 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption, polic
       setLoop(false)
       return
     }
-    if (t >= end) setT(0)
+    if (t >= end) setT(START)
     setStarted(true)
     setLoop(true)
     setPlaying(true)
@@ -206,11 +210,11 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption, polic
           {running ? <Pause className="h-4 w-4" aria-hidden /> : <Play className="h-4 w-4" aria-hidden />}
           {running ? 'Pause' : t >= end ? 'Noch einmal' : 'Abspielen'}
         </button>
-        <button type="button" onClick={() => { stop(); setT(0) }}
+        <button type="button" onClick={() => { stop(); setT(START) }}
           className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-2 text-sm font-medium text-ink-soft hover:bg-surface-sunken">
-          <RotateCcw className="h-4 w-4" aria-hidden /> Zurück auf {clock(0)}
+          <RotateCcw className="h-4 w-4" aria-hidden /> Zurück auf {clock(START)}
         </button>
-        <input type="range" min={0} max={end} step={1} value={Math.round(t)} aria-label="Uhrzeit"
+        <input type="range" min={START} max={end} step={1} value={Math.round(t)} aria-label="Uhrzeit"
           onChange={ev => { stop(); setT(Number(ev.target.value)) }}
           className="min-w-40 flex-1 accent-[var(--color-action)]" />
       </div>
@@ -364,7 +368,7 @@ function RoomTile({ tile, maidsHere, compact }: { tile: Tile; maidsHere: number[
       <span className="lg:hidden">{tile.nr.slice(-2)}</span>
       <span className="hidden lg:inline">{tile.nr}</span>
       {(tile.state === 'dnd' || tile.state === 'declined') && <Ban className={icon} aria-hidden />}
-      {tile.state === 'deferred' && <Clock className={icon} aria-hidden />}
+      {tile.state === 'deferred' && <Timer className={icon} aria-hidden />}
       {tile.state === 'skipped' && <Leaf className={icon} aria-hidden />}
       {tile.state === 'cleaning' && <Loader2 className={`${icon} animate-spin`} aria-hidden />}
       {tile.priority && tile.state !== 'cleaning' && <Flag className={`${icon} text-accent`} aria-hidden />}
