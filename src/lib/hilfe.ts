@@ -194,7 +194,7 @@ const UEBERSICHT: HilfeThema = {
         },
         {
           frage: 'Warum zeigt die Kachel „Reinigung ab 11:00" und erscheint nicht auf dem Board?',
-          antwort: 'Der Gast hat „frühestens ab" gewählt. Bis zur Uhrzeit ist das Zimmer auf beiden Boards nicht offen; zur Uhrzeit wechselt es von selbst in „Reinigung gewünscht". Bis wann aufgeschoben werden darf, legen Sie unter Hotel & Regeln fest.',
+          antwort: 'Die Reinigung gilt erst ab dieser Uhrzeit — entweder hat der Gast im Portal „frühestens ab" gewählt, oder er hat der Reinigungskraft an der Tür „bitte später" gesagt. Was es war, steht im Zimmer-Verlauf. Bis zur Uhrzeit ist das Zimmer auf beiden Boards nicht offen; danach von selbst wieder. Bis wann Gäste im Portal aufschieben dürfen, legen Sie unter Hotel & Regeln fest.',
         },
       ],
     },
@@ -356,6 +356,7 @@ const REGELN: HilfeThema = {
       art: 'text',
       absaetze: [
         'Die Regeln gelten ab dem Speichern für alles Weitere. Laufende Aufenthalte, gesetzte Wünsche und ausgegebene PINs laufen unverändert weiter — nichts wird rückwirkend umgestellt.',
+        'Gespeichert wird nicht von selbst. Sobald etwas geändert ist, steht unten am Bildschirm eine Leiste „Ungespeicherte Änderungen" mit Speichern und Verwerfen — wer die Seite vorher verlässt, wird gefragt.',
       ],
     },
     {
@@ -425,6 +426,7 @@ const GASTZUGANG: HilfeThema = {
       art: 'text',
       absaetze: [
         'Zwei Wege ins Gäste-Portal, Wahl je Haus. Beim festen Zimmer-QR klebt ein einmal gedruckter Code im Zimmer, und jeder Aufenthalt bekommt seine PIN. Beim individuellen Zugang entsteht je Aufenthalt ein eigener Code bzw. Link ohne PIN, der mit dem Check-out erlischt.',
+        'Verfahren und Sprachen werden erst mit Speichern wirksam. Ist etwas geändert, steht unten am Bildschirm eine Leiste „Ungespeicherte Änderungen", die beide Abschnitte zusammen speichert oder verwirft. Nur das Bestätigen der Vorgabe geht über den Knopf unter den beiden Karten.',
       ],
     },
     {

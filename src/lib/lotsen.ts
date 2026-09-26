@@ -215,7 +215,7 @@ const REGELN: Lotse = {
     {
       path: '/einstellungen/hotel', anchor: 'regeln.speichern', kern: true,
       title: 'Speichern nicht vergessen',
-      body: 'Die Regeln gelten ab dem Speichern für alles Weitere. Laufende Aufenthalte und bereits gesetzte Wünsche laufen unverändert weiter.',
+      body: 'Die Regeln gelten ab dem Speichern für alles Weitere. Laufende Aufenthalte und bereits gesetzte Wünsche laufen unverändert weiter. Sobald Sie etwas ändern, erscheint unten am Bildschirm zusätzlich eine Leiste mit Speichern und Verwerfen — Sie müssen dafür nicht bis hierher scrollen.',
       tun: 'Auch wenn Sie nichts ändern: einmal speichern. Erst damit hält das Haus die Zeitzone fest, und der Punkt gilt in der Einrichtung als geprüft.',
     },
   ],
