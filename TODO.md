@@ -70,7 +70,17 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
       Bleibezimmer ab 9:00 und klopft umsonst, wo der Gast noch da ist; Bild 2
       bekommt dasselbe Wissen über das Abreisedatum (Punkt davor). Danach
       Startwert neu suchen, Fertig-Zeiten und Protokolle prüfen.
-- [ ] **In Produktion ansehen — geht nur mit Management-Anmeldung** (26.09.):
+- [ ] **In Produktion ansehen — offen nur noch (a) und (b)** (26.09.). Stand
+      nach der Prüfung am 26.09. vormittags: (c) bestanden (Tür-Knöpfe und
+      Verzicht in beiden Nachbauten; Lotsen-Text „einzige Rückmeldung" an die
+      Statuskarte angepasst), (d) bestanden (15:18 · 13:59 · 13:45; Knopf hieß
+      noch „Zurück auf 9:00", behoben; Schleife nur im Code geprüft, Chrome
+      drosselt die Animation im Hintergrund-Tab), (e) bestanden (Lotsen-Haus
+      203 mit Abreise 28.09. um 9:36 „Routine-Reinigung fällig", Zustand danach
+      zurückgesetzt). (a)/(b) brauchen einen echten Verzicht im Gastportal und
+      einen Tür-Knopf im Reinigungsboard — das Lotsen-Haus hat keine
+      Reinigungskraft, und ein nachgestellter Gast-Eintrag per Skript in
+      Produktion wurde nicht zugelassen. Ursprünglich:
       (a) Rezeptions-Übersicht in einem Haus mit Routine: Kachel mit Blatt
       („Heute keine Reinigung") bzw. Uhr („Reinigung ab … an der Tür
       vereinbart"); (b) Zimmer-Verlauf: „Heute keine Reinigung gewünscht —
@@ -81,7 +91,11 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
       Hauptzahl: 15:18 · 13:59 · 13:45) ansehen und ob die Schleife nach 8 s
       Endstand wieder ab 8:00 läuft; (e) eine Routine-Kachel mit eingetragenem
       Abreisedatum: schon zur Routine-Zeit offen statt erst zur Frist?
-- [ ] **Reinigungsdauer einer Abreise belegen** (26.09.): Landing-Vergleich
+- [x] ~~**Reinigungsdauer einer Abreise belegen**~~ — 26.09. erledigt: im
+      Kleingedruckten als Annahme gekennzeichnet („eher knapp", gemessen 35–43
+      bzw. 20–25 min), Quellen Q4 (Heath & Co. via Hotel Business 2018), Q7
+      (Reinigung Aktuell 2015), Q8 (CCOHS) im Nutzenrechner. Die alte Q4
+      (Cellypso) nannte die zitierten Werte nicht mehr. Ursprünglich (26.09.): Landing-Vergleich
       rechnet 30 min als Planwert, nicht recherchiert (üblich 25–45 min). Eine
       Quelle suchen oder die Zahl im Kleingedruckten als Annahme kennzeichnen.
 - [ ] **Zwei Zimmer-Zustände?** Aktuell gibt es einen (`deactivated_at`). Ob

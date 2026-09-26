@@ -178,7 +178,7 @@ export default function CleaningSimulation() {
         </button>
         <button type="button" onClick={() => { stop(); setT(0) }}
           className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-2 text-sm font-medium text-ink-soft hover:bg-surface-sunken">
-          <RotateCcw className="h-4 w-4" aria-hidden /> Zurück auf 9:00
+          <RotateCcw className="h-4 w-4" aria-hidden /> Zurück auf {clockLabel(0)}
         </button>
         <input type="range" min={0} max={end} step={1} value={Math.round(t)} aria-label="Uhrzeit"
           onChange={ev => { stop(); setT(Number(ev.target.value)) }}
@@ -215,8 +215,9 @@ export default function CleaningSimulation() {
       <p className="mt-4 text-xs text-ink-muted">
         Derselbe Tag in allen drei Bildern: {SCENARIO.rooms.length} Zimmer auf {SCENARIO.floors} Etagen,
         zwei Reinigungskräfte ab 8:00, Check-out bis 11:00. Bleibezimmer ohne Software ab 8:00 laut Abreiseliste; mit RoSe
-        Routine ab 9:00, der Verbleib über das beim Check-in eingetragene Abreisedatum. Abreise 30 min, Bleibe 18 min,
-        Etagenwechsel mit Wagen 5 min.
+        Routine ab 9:00, der Verbleib über das beim Check-in eingetragene Abreisedatum. Etagenwechsel mit Wagen 5 min.
+        Reinigungsdauer als Annahme, eher knapp: Abreise 30 min, Bleibe 18 min — gemessen wurden 35–43 bzw. 20–25 min
+        (Quellen Q4 und Q7 im Nutzenrechner).
       </p>
     </div>
   )

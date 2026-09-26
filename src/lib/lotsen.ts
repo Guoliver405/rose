@@ -580,7 +580,7 @@ const GAST: Lotse = {
     {
       path: '/hilfe/gast', anchor: 'gast.aktiv', sim: 'gewuenscht',
       title: 'Der Gast sieht, was er ausgelöst hat',
-      body: 'Ein aktiver Wunsch bleibt sichtbar, samt der gewählten Uhrzeit. Das ist die einzige Rückmeldung, die das Portal gibt — bewusst: Ein Versprechen, wann jemand kommt, könnte RoSe ohne Zuweisungslogik nicht halten.',
+      body: 'Ein aktiver Wunsch bleibt sichtbar, samt der gewählten Uhrzeit, und die Statuskarte darüber sagt, woran der Gast ist — vorgesehen, ab einer Uhrzeit, gerade in Arbeit, heute schon gereinigt. Wann genau jemand kommt, sagt das Portal bewusst nicht: Dieses Versprechen könnte RoSe ohne Zuweisungslogik nicht halten.',
     },
     {
       path: '/hilfe/gast', anchor: 'gast.verzicht', sim: 'verzicht',

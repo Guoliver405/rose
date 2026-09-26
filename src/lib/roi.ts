@@ -144,8 +144,8 @@ export const ROI_SOURCES: { id: string; text: string; url: string }[] = [
   },
   {
     id: 'Q4',
-    text: 'Branchen-Richtwerte Reinigungsdauer — Stayover 12–20 Minuten, Abreise 20–35 Minuten (Cellypso; Workprocedures SOP 2026).',
-    url: 'https://cellypso.com/en/knowledge-base/hospitality/hotel-room-cleaning-time/',
+    text: 'Zeitstudie Heath & Company, berichtet in Hotel Business, 2018 — Abreisezimmer im Schnitt 43 Minuten, Bleibezimmer knapp 20 Minuten weniger (USA).',
+    url: 'https://hotelbusiness.com/are-you-delivering-the-cleanliness-guests-expect-2/',
   },
   {
     id: 'Q5',
@@ -156,5 +156,15 @@ export const ROI_SOURCES: { id: string; text: string; url: string }[] = [
     id: 'Q6',
     text: 'Herstellerangaben zu Housekeeping-Software: 25–67 % Produktivitätsgewinn (Stayntouch, Flexkeeping via Lodging Magazine) — wir rechnen bewusst mit einem Bruchteil davon.',
     url: 'https://www.stayntouch.com/articles/hotel-housekeeping-software-real-time',
+  },
+  {
+    id: 'Q7',
+    text: 'Reinigung Aktuell, 2015 — Abreisezimmer rund 35, Bleibezimmer rund 25 Minuten, etwa 14 Zimmer je Kraft (Vier-Sterne-Haus, Wien).',
+    url: 'https://www.reinigung-aktuell.at/thema/perfekte-hygiene-ein-absolutes-muss/',
+  },
+  {
+    id: 'Q8',
+    text: 'CCOHS (kanadische Arbeitsschutzbehörde), „Hotel Housekeeping" — 15 bis 30 Minuten je Zimmer, rund 16 Zimmer je Schicht.',
+    url: 'https://www.ccohs.ca/oshanswers/occup_workplace/hotel_housekeeping.html',
   },
 ]

@@ -115,7 +115,7 @@ export default function RoiCalculator() {
           <div className="mt-4 grid gap-4 sm:grid-cols-3">
             <Slider label="A1 · Dauer einer Stayover-Reinigung" value={input.stayoverMinutes} min={10} max={30} step={1}
               display={`${input.stayoverMinutes} min`} onChange={v => set('stayoverMinutes', v)}
-              hint="Richtwerte 12–25 min [Q3, Q4]" />
+              hint="Gemessen 20–25 min, je Zimmer allgemein 15–30 min — 18 min rechnet vorsichtig [Q3, Q4, Q7, Q8]" />
             <Slider label="A2 · Gäste, die auf die tägliche Reinigung verzichten" value={input.optOutRate * 100} min={0} max={50} step={5}
               display={pct(input.optOutRate)} onChange={v => set('optOutRate', v / 100)}
               hint="20 % Planungswert, 34 % in einer Fallstudie, 70 % wünschen es [Q1–Q3]" />
