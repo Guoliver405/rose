@@ -440,9 +440,14 @@ herkömmliche Verfahren (User: „ich bezweifle, dass Funk der internationale St
   kennt bei freier Wahl nur die angefunkte Kraft. Folge: Etagen mit einer Ablehnung oder einem
   „Nicht stören" werden nie fertig und reihum vergeblich angesteuert — das ist der ehrliche
   Preis minimalen Wissens.
-- **Kennzahlen „Funk"** (Minuten aller Kräfte, zählt zur eingesparten Zeit) und
-  **„Funksprüche der Rezeption"** (je Abreise einer plus Sonderfall — im Landing-Haus rund 26 am
-  Tag, gedrängt 7–11 Uhr, bei 600 Zimmern rund 150); Protokoll-Zeilen „Rezeption meldet per Funk:
+- **Funk ist EIN Kanal für alle** (User, 27.09.: „Wenn gefunkt wird, hören es alle — die
+  Rezeption wird zur Leitstelle"): Jede Durchsage (Rezeption: Abreise, Sonderfall; Kräfte:
+  „Etage fertig") hören alle; die Gemeinte nimmt an (1 min), alle anderen hören mit
+  (`radioListen`, Vorgabe 15 s je Durchsage). Kennzahl **„Funkdurchsagen"** zählt alle
+  Durchsagen im Kanal, egal von wem — genau den Informationsfluss, den RoSe zustellt statt
+  ausruft (Landing-Haus, feste Etagen: 26 am Tag, gedrängt 7–11 Uhr; Funk kostet alle Kräfte
+  zusammen rund 51 min). Kennzahl **„Funk"** (Minuten: annehmen, durchsagen, mithören) zählt
+  zur eingesparten Zeit; Protokoll-Zeilen „Rezeption meldet per Funk:
   403 abgereist", „Kraft B nimmt Funkspruch … an", „meldet per Funk: 5. OG fertig"; die
   Beschreibung des Bildes folgt der Einstellung.
 - **Zahlen** (Landing-Haus, 101 Tage, täglich, Median; ohne Steuerung gegen RoSe 12:37):
@@ -450,12 +455,12 @@ herkömmliche Verfahren (User: „ich bezweifle, dass Funk der internationale St
   | Ohne Software | Abreisen fertig | Check-in verpasst | Ersparnis mit RoSe |
   |---|---|---|---|
   | Papierliste, feste Etagen | 14:52 | 32 | 2,9 h |
-  | Funk, feste Etagen (Vorgabe Simulator) | 12:59 | 0 | 2,1 h |
-  | Funk, freie Etagen | 13:56 | 12 | 6,6 h |
+  | Funk, feste Etagen (Vorgabe Simulator) | 13:01 | 0 | 2,5 h |
+  | Funk, freie Etagen | 13:58 | 15 | 7,1 h |
 
   Mit Funk und festen Etagen holt die Seite ohne Software bei den Abreisen fast auf; der
   Vorsprung von RoSe liegt dann bei „alles fertig" (≈ 35 min), weniger Gängen an die Tür, dem
-  Wegfall der Funk-Unterbrechungen und rund 26 Funksprüchen, die der Rezeption erspart bleiben.
+  Wegfall von rund 26 Durchsagen am Tag, die alle mithören müssen.
 - **Landing Page (Entscheidung des Users, 27.09.):** zeigt das typische herkömmliche Verfahren
   (Papierliste, feste Etagen, Abreisen zuerst) und sagt im Kleingedruckten, dass der Simulator
   andere Verfahren wie Funk gegenüberstellt — Link auf `/simulator`. Marketing darf nicht

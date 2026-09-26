@@ -112,7 +112,11 @@ export function eventLog(res: SimResult, scn: Scenario): LogEntry[] {
       }
       case 'patrol': maid(`geht die ${floorName(floor!)} ab (Anhänger prüfen)`); break
       case 'overview': maid(`liest die Etagenliste der ${floorName(floor!)}`); break
-      case 'radio': maid(g.jobId ? `nimmt Funkspruch der Rezeption an: ${g.jobId} abgereist` : `meldet per Funk: ${floorName(floor!)} fertig`, g.start, g.jobId ?? (g.nr || undefined)); break
+      case 'radio':
+        if (g.radio === 'receive') maid(`nimmt Funkspruch der Rezeption an: ${g.jobId} abgereist`, g.start, g.jobId)
+        else if (g.radio === 'announce') maid(`meldet per Funk: ${floorName(floor!)} fertig`)
+        else maid(`hört Funk mit – ${g.count === 1 ? 'eine Durchsage' : `${g.count} Durchsagen`}, nicht für sie`, g.start, undefined)
+        break
       case 'knock': maid(`klopft bei ${g.nr} – Gast noch im Zimmer, später erneut`); break
       case 'declined': maid(`klopft bei ${g.nr} – Gast lehnt Reinigung für heute ab`); break
       case 'skip': maid(`an ${g.nr}: „Nicht stören“, später erneut`); break

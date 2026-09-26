@@ -338,12 +338,18 @@ describe('Arbeitsweise ohne Software (Phase 5)', () => {
     const scn = at({ departures: 'radio', floors: 'fixed' })
     const r = simulate('paper', 'routine', scn)
     expect(firstDep(r, scn)).toBeLessThan(CHECKOUT_AT)
-    const radio = r.segments.filter(g => g.kind === 'radio')
+    const radio = r.segments.filter(g => g.kind === 'radio' && g.radio === 'receive')
     const deps = scn.rooms.filter(x => x.kind === 'departure').length
     expect(radio.length).toBeLessThanOrEqual(deps)
     expect(radio.length).toBeGreaterThan(deps * 0.8)
     expect(new Set(radio.map(g => g.jobId)).size).toBe(radio.length)
-    expect(r.metrics.radioMinutes).toBe(radio.length * DEFAULT_CONFIG.duration.radioInterrupt)
+    // Ein Kanal für alle: Wer nicht gemeint ist, hört mit — und das kostet.
+    const listen = r.segments.filter(g => g.radio === 'listen')
+    expect(listen.length).toBeGreaterThan(0)
+    const d = DEFAULT_CONFIG.duration
+    const heardTotal = listen.reduce((n, g) => n + (g.count ?? 0), 0)
+    expect(r.metrics.radioMinutes).toBeCloseTo(radio.length * d.radioInterrupt + heardTotal * d.radioListen, 6)
+    expect(r.metrics.radioMessages).toBe(deps + (scn.complaint ? 1 : 0))
     expect(scn.params.complaint.reachDelay).toBe(DEFAULT_CONFIG.duration.radioComplaintReach)
     // Mit RoSe gibt es keinen Funk.
     expect(simulate('rose', 'routine', scn).segments.some(g => g.kind === 'radio')).toBe(false)
@@ -375,7 +381,7 @@ describe('Arbeitsweise ohne Software (Phase 5)', () => {
       if (segs.slice(0, move).some(g => g.kind === 'radio')) continue
       expect(floorOf(segs[move].nr)).toBe(scn.maidFloors[m][0])
     }
-    const announced = r.segments.filter(g => g.kind === 'radio' && !g.jobId)
+    const announced = r.segments.filter(g => g.radio === 'announce')
     // Jede Etage höchstens einmal, und zum Zeitpunkt der Durchsage ist dort alles vergeben.
     expect(new Set(announced.map(g => floorOf(g.nr))).size).toBe(announced.length)
     for (const g of announced) {
@@ -384,7 +390,7 @@ describe('Arbeitsweise ohne Software (Phase 5)', () => {
       for (const x of open) expect(r.segments.some(c => c.kind === 'clean' && c.jobId === x.nr && c.start <= g.start)).toBe(true)
     }
     // Abreisen kennt nur die angefunkte Kraft: Wer eine Abreise reinigt, hat sie gefunkt bekommen oder stand auf der Etage.
-    expect(r.metrics.radioCalls).toBe(scn.rooms.filter(x => x.kind === 'departure').length + (scn.complaint ? 1 : 0))
+    expect(r.metrics.radioMessages).toBe(scn.rooms.filter(x => x.kind === 'departure').length + (scn.complaint ? 1 : 0) + announced.length)
     const cleaned = r.segments.filter(g => g.kind === 'clean')
     expect(new Set(cleaned.map(g => g.jobId)).size).toBe(cleaned.length)
     expect(r.metrics.cleaned).toBe(simulate('rose', 'routine', scn).metrics.cleaned)

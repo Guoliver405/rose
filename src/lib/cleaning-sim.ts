@@ -118,8 +118,13 @@ export type SimDurations = { [K in keyof typeof DURATION]: number } & {
   radioInterrupt: number
   /** Funk: Sonderfall — so lange, bis die Rezeption die Kraft erreicht. */
   radioComplaintReach: number
-  /** Funk bei freier Etagenwahl: Durchsage „ich gehe in die 5." je Etagenwechsel. */
+  /** Funk bei freier Etagenwahl: Durchsage „Etage 5 fertig". */
   radioAnnounce: number
+  /**
+   * Funk ist EIN Kanal für alle (User, 27.09.2026): Jede Durchsage hören alle,
+   * und wer nicht gemeint ist, muss trotzdem kurz hinhören, ob sie gemeint ist.
+   */
+  radioListen: number
 }
 
 /**
@@ -185,7 +190,7 @@ export const TIMES: SimTimes = {
 }
 
 export const DURATIONS: SimDurations = {
-  ...DURATION, complaintReach: COMPLAINT.reachDelay, radioDelay: 5, radioInterrupt: 1, radioComplaintReach: 5, radioAnnounce: 0.5,
+  ...DURATION, complaintReach: COMPLAINT.reachDelay, radioDelay: 5, radioInterrupt: 1, radioComplaintReach: 5, radioAnnounce: 0.5, radioListen: 0.25,
 }
 
 /** Was die Rechnung braucht, in Minuten nach Schichtbeginn — steht am Szenario. */
@@ -565,8 +570,12 @@ export type Segment = {
   kind: 'walk' | 'patrol' | 'overview' | 'radio' | 'knock' | 'declined' | 'skip' | 'clean' | 'idle'
   /** Zimmer, an dem die Kraft am Ende des Abschnitts steht. */
   nr: string
-  /** Auftrag (bei clean/knock/declined/skip). */
+  /** Auftrag (bei clean/knock/declined/skip; bei radio/receive die gemeldete Abreise). */
   jobId?: string
+  /** Funk: annehmen (gemeint), durchsagen (Etage fertig) oder mithören (nicht gemeint). */
+  radio?: 'receive' | 'announce' | 'listen'
+  /** radio/listen: so viele Durchsagen seit der letzten Entscheidung. */
+  count?: number
   /** declined/knock: eine andere Kraft hatte hier schon eine Ablehnung bzw. ein „später" gehört. */
   again?: boolean
   /** walk: Das Board holt die Kraft mitten aus ihrer Etage (Check-out-Druck); von dieser Etage. */
@@ -608,8 +617,12 @@ export type SimResult = {
     walkMinutes: number
     doorMinutes: number
     radioMinutes: number
-    /** Funksprüche der Rezeption (Abreisen, Sonderfall) — ohne Software mit Funk. */
-    radioCalls: number
+    /**
+     * Durchsagen im Funkkanal, alle zusammen: Rezeption (Abreisen, Sonderfall)
+     * und Kräfte („Etage fertig"). Jede davon hören alle — das ist der
+     * Informationsfluss, den RoSe zustellt statt ausruft.
+     */
+    radioMessages: number
     /** Abreisezimmer, die zum Check-in noch nicht fertig sind. */
     departuresOpenAtCheckin: number
     /** Aufträge, die frei gewesen wären und bis zum Arbeitsende liegen geblieben sind. */
@@ -720,6 +733,19 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
   const radio = coord === 'paper' && P.baseline.departures === 'radio'
     ? jobs.filter(j => j.kind === 'departure').map(j => ({ job: j, at: j.readyAt + D.radioDelay, done: false }))
     : []
+  /**
+   * Der Funkkanal: jede Durchsage mit Zeitpunkt, Sprecherin (Rezeption = -1)
+   * und — bei Abreise und Sonderfall — der gemeinten Kraft. Jede Kraft
+   * verarbeitet jede Durchsage einmal (`heard`): gemeint → annehmen, sonst
+   * mithören.
+   */
+  type Broadcast = { id: number; at: number; speaker: number; job?: Job; complaint?: boolean; target?: number }
+  const broadcasts: Broadcast[] = []
+  const heard = maids.map(() => new Set<number>())
+  if (radioOn) {
+    for (const msg of radio) broadcasts.push({ id: broadcasts.length, at: msg.at, speaker: -1, job: msg.job })
+    if (scn.complaint) broadcasts.push({ id: broadcasts.length, at: scn.complaint.at + P.complaint.reachDelay, speaker: -1, complaint: true })
+  }
   const radioTarget = (j: Job): number | undefined => {
     const live = maids.filter(o => !o.finished)
     if (live.length === 0) return undefined
@@ -740,16 +766,31 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
   for (;;) {
     const m = maids.filter(x => !x.finished).sort((a, b) => a.t - b.t || a.i - b.i)[0]
     if (!m || m.t >= P.horizon) break
-    // Funksprüche, die an diese Kraft gehen, nimmt sie jetzt an.
-    if (radio.length > 0) {
+    // Funk: Durchsagen seit der letzten Entscheidung — gemeint annehmen, sonst mithören.
+    if (broadcasts.length > 0) {
       let tt = m.t
-      for (const msg of radio) {
-        if (msg.done || msg.at > m.t) continue
-        if (radioTarget(msg.job) !== m.i) continue
-        msg.done = true
-        radioKnown[m.i].add(msg.job.id)
-        segments.push({ maid: m.i, kind: 'radio', nr: m.pos?.nr ?? '', jobId: msg.job.id, start: tt, end: tt + D.radioInterrupt })
-        tt += D.radioInterrupt
+      let listened = 0
+      for (const b of broadcasts) {
+        if (b.at > m.t || heard[m.i].has(b.id)) continue
+        heard[m.i].add(b.id)
+        if (b.speaker === m.i) continue
+        const target = b.job || b.complaint
+          ? (b.target !== undefined && !maids[b.target].finished ? b.target : (b.target = radioTarget(b.job ?? jobs.find(j => j.kind === 'complaint')!)))
+          : undefined
+        if (b.job && target === m.i) {
+          const msg = radio.find(x => x.job === b.job)!
+          msg.done = true
+          radioKnown[m.i].add(b.job.id)
+          segments.push({ maid: m.i, kind: 'radio', radio: 'receive', nr: m.pos?.nr ?? '', jobId: b.job.id, start: tt, end: tt + D.radioInterrupt })
+          tt += D.radioInterrupt
+          continue
+        }
+        if (b.complaint && target === m.i) continue // die Rezeption hat sie erreicht — der Auftrag zählt, nicht der Funk
+        listened++
+      }
+      if (listened > 0 && D.radioListen > 0) {
+        segments.push({ maid: m.i, kind: 'radio', radio: 'listen', count: listened, nr: m.pos?.nr ?? '', start: tt, end: tt + listened * D.radioListen })
+        tt += listened * D.radioListen
       }
       if (tt > m.t) {
         m.t = tt
@@ -840,7 +881,8 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
             // „Etage fertig" — gemerkt, und mit Funk für alle durchgesagt.
             doneFloors[m.i].add(cur)
             if (radioOn) {
-              if (D.radioAnnounce > 0) segments.push({ maid: m.i, kind: 'radio', nr: `${cur}01`, start: t, end: t + D.radioAnnounce })
+              if (D.radioAnnounce > 0) segments.push({ maid: m.i, kind: 'radio', radio: 'announce', nr: `${cur}01`, start: t, end: t + D.radioAnnounce })
+              broadcasts.push({ id: broadcasts.length, at: t, speaker: m.i })
               for (const o of maids) doneFloors[o.i].add(cur)
               m.t = t + D.radioAnnounce
               continue
@@ -943,7 +985,7 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
         if (coord === 'rose') at = Math.max(at, Math.min(j.dndUntil, P.horizon), j.notBefore)
         return at
       }
-      const pendingRadio = radio.filter(x => !x.done && x.at > t).map(x => x.at)
+      const pendingRadio = broadcasts.filter(b => b.at > t && !heard[m.i].has(b.id)).map(b => b.at)
       const next = Math.min(...openNow.filter(mine).map(wake).filter(v => v > t), ...pendingRadio, P.dndGiveUp > t ? P.dndGiveUp : Infinity)
       if (!Number.isFinite(next) || next >= P.horizon || !openNow.some(mine)) {
         m.finished = true
@@ -1035,7 +1077,7 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
       walkMinutes: minutesOf('walk', 'patrol', 'overview'),
       doorMinutes: minutesOf('knock', 'declined', 'skip'),
       radioMinutes: minutesOf('radio'),
-      radioCalls: radio.length + (radioOn && scn.complaint ? 1 : 0),
+      radioMessages: broadcasts.length,
       departuresOpenAtCheckin: deps.filter(j => !(doneAt[j.id] <= P.checkinAt)).length,
       leftUndone: jobs.filter(j => doneAt[j.id] === undefined && j.readyAt < P.horizon && !j.declines && !(j.dndUntil >= P.horizon)).length,
     },
