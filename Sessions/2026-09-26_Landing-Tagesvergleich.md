@@ -173,3 +173,32 @@ Schicht beginnt eher um 8:00, und dann werden viele Kräfte weggeschickt.
 - Hauptzahl im Kasten ist jetzt „Abreisen bezugsfertig", darunter „Alles fertig".
 - Mittel über 300 Tage: Abreisen 15:15 / 14:14 / 13:55, fertig 15:23 / 15:00 /
   14:24. Gezeigter Tag Startwert 48: 15:18/15:18 · 13:59/14:56 · 13:45/14:27.
+
+---
+
+# Nachmittag 26.09.: Umbau, Board-Änderungen, Simulator-Plan
+
+Kurzfassung; die Begründungen stehen in `AGENTS.md` (Landing Page,
+Check-out-Druck, Leiste „Ungespeicherte Änderungen").
+
+- **Landing-Vergleich umgebaut:** zwei Bilder (ohne Steuerung / mit RoSe),
+  100 Zimmer, fünf Kräfte, Umschalter täglich/auf Wunsch für beide Bilder,
+  gerechneter mittlerer Tag (`typicalSeed`), gleiche Rahmenbedingungen
+  (Routine in beiden ab 8:00). Gästemodell mit linear steigendem Klopferfolg,
+  Wunsch-Anzeige, „frühestens ab" (ohne Software als Schild bis zur Uhrzeit),
+  wechselndem „Nicht stören", „später" an der Tür.
+- **Reinigungsboard:** Wunsch wiegt doppelt so viel wie Routine; Check-out-Druck
+  mit Wechselhinweis nach jedem Zimmer, Priorität bleibt vorrangig;
+  Einstellung „Check-in ab"; „Nicht stören aufgehoben" als Hinweis auf der
+  Kachel und mit Gewicht eines Wunsches (Zeitfenster-Argument des Users).
+- **Sonst:** Leiste „Ungespeicherte Änderungen" auf Hotel & Regeln und
+  Gäste-Zugang; Aufschub an der Tür neutral angezeigt; Quellen der
+  Reinigungsdauer; Produktionsprüfung der Tür-Knöpfe bestanden.
+
+## 🔖 Wiederaufnahme
+
+Nächstes Vorhaben: **Simulator als eigenes Werkzeug hinter einer Anmeldung** –
+Bauplan in [Simulator-Plan-2026-09-26.md](Simulator-Plan-2026-09-26.md), mit
+Phase 1 beginnen. Nicht live gesehen: der Hinweis „Nicht stören aufgehoben" im
+Board (im Lotsen-Haus gab es keinen solchen Wechsel). Tägliche Routine im
+Lotsen-Haus ist absichtlich an.

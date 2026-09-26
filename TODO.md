@@ -106,6 +106,14 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
       (Cellypso) nannte die zitierten Werte nicht mehr. Ursprünglich (26.09.): Landing-Vergleich
       rechnet 30 min als Planwert, nicht recherchiert (üblich 25–45 min). Eine
       Quelle suchen oder die Zahl im Kleingedruckten als Annahme kennzeichnen.
+- [ ] **Simulator als eigenes Werkzeug hinter einer Anmeldung** (26.09., Vision
+      des Users, Bernd einverstanden): volle Konfiguration, Auswertung über
+      viele Tage, Szenarien, komfortable Umwandlung in ein Hotelkonto,
+      Werbe-Einwilligung nur für RoSe. Bauplan mit Phasen und offenen Fragen:
+      [Simulator-Plan-2026-09-26.md](Sessions/Simulator-Plan-2026-09-26.md).
+- [ ] **„Nicht stören aufgehoben" live ansehen** (26.09.): Kachel-Hinweis und
+      Gewicht im Reinigungsboard — braucht einen Gast, der DND setzt und wieder
+      zurücknimmt, bei täglicher Routine.
 - [ ] **Zwei Zimmer-Zustände?** Aktuell gibt es einen (`deactivated_at`). Ob
       „Renovierung" von „abbestellt" getrennt gehört, ist eine reine
       Preisfrage — am Datenmodell ändert sie nichts. (6d-Plan, Abschnitt 14)
