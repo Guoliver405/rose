@@ -398,6 +398,9 @@ Später ein Filter nach Kraft oder Zimmer (große Häuser: tausende Zeilen).
   Uhr, aufgeklappt ein scrollbarer Kasten, der mitläuft, bis jemand selbst scrollt;
   Klick setzt die Uhr; Filter nach Kraft („A"), Etage („3") oder Zimmer („305").
   Die Landing Page behält die ausgewählten Hinweise (`CleaningSimulation` ohne `detailLog`).
+  **Sachlich, ohne Wertung** (User): keine Einordnungen wie „auf der Papierliste steht das
+  nicht" — gleiches Geschehen hat in beiden Bildern denselben Wortlaut; ein Test hält die
+  Wertungswörter der Landing Page aus dem Protokoll heraus.
 - **Wege:** `/admin` trägt für Inhaber und Manager die Karte „Housekeeping-Simulator";
   im Simulator führt „Häuser" zurück, wenn der Zugang ein Hotelkonto hat.
 - **Hilfe-Leiste je Person:** „offen" liegt in `localStorage` unter einem Schlüssel mit

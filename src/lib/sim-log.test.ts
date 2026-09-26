@@ -25,12 +25,13 @@ describe('Ereignis-Protokoll', () => {
     expect(log.filter(e => e.text.startsWith('Check-in beginnt'))).toHaveLength(1)
   })
 
-  it('ohne Software: Etagenliste, Check-out-Frist, Anhänger; mit RoSe: Portal und Board', () => {
+  it('ohne Software: Etagenliste und Anhänger; mit RoSe: Portal — beide mit Check-out-Frist', () => {
     const paper = eventLog(runs.find(r => r.c === 'paper' && r.p === 'routine')!.res, SCENARIO)
     const rose = eventLog(runs.find(r => r.c === 'rose' && r.p === 'routine')!.res, SCENARIO)
     expect(paper.some(e => e.text.includes('liest die Etagenliste'))).toBe(true)
-    expect(paper.some(e => e.text.startsWith('Check-out-Frist'))).toBe(true)
-    expect(rose.some(e => e.text.includes('Etagenliste') || e.text.startsWith('Check-out-Frist'))).toBe(false)
+    for (const log of [paper, rose]) expect(log.filter(e => e.text === 'Check-out-Frist')).toHaveLength(1)
+    expect(rose.some(e => e.text.includes('Etagenliste') || e.text.includes('Anhänger'))).toBe(false)
+    expect(paper.some(e => e.text.includes('Portal'))).toBe(false)
     expect(rose.some(e => e.text.includes('frühestens ab'))).toBe(true)
   })
 
@@ -47,4 +48,13 @@ describe('Ereignis-Protokoll', () => {
     expect(third.every(e => e.nr !== undefined && Number(e.nr) >= 300 && Number(e.nr) < 400)).toBe(true)
     expect(filterLog(log, '  ')).toBe(log)
   })
+
+  it('sachlich: keine Wertungen der Landing Page im Protokoll', () => {
+    for (const { res } of runs) {
+      for (const e of eventLog(res, SCENARIO)) {
+        expect(e.text).not.toMatch(/Papierliste|sofort|nur die Rezeption|mit einem Klick|drängen|wusste nur|niemand/)
+      }
+    }
+  })
 })
+

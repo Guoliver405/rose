@@ -5,8 +5,11 @@
  * nachvollziehen wollen, warum eine Zahl so herauskommt.
  *
  * Abgeleitet aus dem Szenario und den Abschnitten des Ablaufs, nichts von
- * Hand gesetzt — dieselbe Regel wie für die Hinweise der Landing Page, die
- * dort bleiben. Reine Rechnung ohne I/O.
+ * Hand gesetzt. **Sachlich, ohne Wertung** (User, 26.09.2026): Das
+ * Protokoll beschreibt, was geschieht; Einordnungen wie „auf der Papierliste
+ * steht das nicht" bleiben den Hinweisen der Landing Page vorbehalten.
+ * Gleiches Geschehen hat in beiden Bildern denselben Wortlaut. Reine
+ * Rechnung ohne I/O.
  */
 
 import { clockLabel, floorOf, maidLabel, type Scenario, type SimResult } from './cleaning-sim'
@@ -39,44 +42,45 @@ export function eventLog(res: SimResult, scn: Scenario): LogEntry[] {
   // ── Gäste ────────────────────────────────────────────────────────────────
   for (const r of scn.rooms) {
     if (r.kind === 'departure') {
-      guest(r.checkoutAt, r.nr, rose ? 'Gast checkt aus – sofort auf dem Board' : 'Gast checkt aus – auf der Papierliste steht das nicht')
+      guest(r.checkoutAt, r.nr, 'Gast checkt aus')
       continue
     }
     if (r.kind !== 'stay') continue
     if (r.presence === 'dnd') {
-      guest(P.notBeforeSetAt, r.nr, rose ? '„Nicht stören“ den ganzen Tag – im Portal, für alle sichtbar' : '„Nicht stören“ hängt an der Tür (den ganzen Tag)')
+      guest(P.notBeforeSetAt, r.nr, rose ? '„Nicht stören“ im Portal, den ganzen Tag' : '„Nicht stören“ an der Tür, den ganzen Tag')
       continue
     }
     if (r.presence === 'declines') continue // zeigt sich erst beim Klopfen
     const shows = onDemand ? r.wants : r.signals
     if (r.dndUntil !== null) {
-      guest(P.notBeforeSetAt, r.nr, rose ? '„Nicht stören“ im Portal' : '„Nicht stören“ hängt an der Tür')
-      guest(r.dndUntil, r.nr, `Gast geht und nimmt „Nicht stören“ ab${shows ? ' – wünscht Reinigung' : ''}`)
+      guest(P.notBeforeSetAt, r.nr, rose ? '„Nicht stören“ im Portal' : '„Nicht stören“ an der Tür')
+      guest(r.dndUntil, r.nr, `Gast geht, „Nicht stören“ aufgehoben${shows ? ', Reinigung gewünscht' : ''}`)
       continue
     }
     if (r.notBefore !== null) {
       if (rose) {
-        guest(P.notBeforeSetAt, r.nr, `Gast nennt im Portal „Reinigung frühestens ab ${clock(r.notBefore)}“`)
+        guest(P.notBeforeSetAt, r.nr, `Gast gibt im Portal „Reinigung frühestens ab ${clock(r.notBefore)}“ an`)
         guest(r.outAt, r.nr, 'Gast verlässt das Zimmer')
       } else {
-        guest(P.notBeforeSetAt, r.nr, `Gast hängt „Nicht stören“ (bis ${clock(r.notBefore)})`)
+        guest(P.notBeforeSetAt, r.nr, `„Nicht stören“ an der Tür bis ${clock(r.notBefore)}`)
         guest(r.outAt, r.nr, 'Gast verlässt das Zimmer')
-        guest(r.notBefore, r.nr, 'Schild auf „Bitte reinigen“ gedreht')
+        guest(r.notBefore, r.nr, 'Schild auf „Bitte reinigen“ gewendet')
       }
       continue
     }
     guest(r.outAt, r.nr, shows
-      ? (rose ? 'Gast geht und tippt „Zimmer reinigen“' : 'Gast geht und hängt „Bitte reinigen“ an die Tür')
+      ? (rose ? 'Gast geht, Reinigungswunsch im Portal' : 'Gast geht, Anhänger „Bitte reinigen“ an der Tür')
       : 'Gast verlässt das Zimmer')
   }
   const c = scn.complaint
   if (c) {
-    guest(c.at, c.nr, rose ? 'Sonderfall gemeldet – die Rezeption priorisiert mit einem Klick' : 'Sonderfall gemeldet – die Rezeption sucht die zuständige Kraft')
-    if (!rose) house(c.at + P.complaint.reachDelay, `Rezeption hat die Kraft für ${c.nr} erreicht`)
+    guest(c.at, c.nr, 'Sonderfall gemeldet')
+    if (rose) house(c.at, `Rezeption priorisiert ${c.nr} auf dem Board`)
+    else house(c.at + P.complaint.reachDelay, `Rezeption erreicht die zuständige Kraft für ${c.nr}`)
   }
 
   // ── Haus ─────────────────────────────────────────────────────────────────
-  if (!rose) house(P.checkoutAt, 'Check-out-Frist – Abreisezimmer gelten jetzt als frei')
+  house(P.checkoutAt, 'Check-out-Frist')
   const ready = res.metrics.departuresReadyAt
   if (ready !== null) house(ready, 'Alle Abreisezimmer bezugsfertig')
   const late = scn.rooms.filter(r => r.kind === 'departure' && !((res.doneAt[r.nr] ?? Infinity) <= P.checkinAt)).length
@@ -97,21 +101,21 @@ export function eventLog(res: SimResult, scn: Scenario): LogEntry[] {
         if (floor !== undefined && prev !== floor) {
           maid(prev === undefined
             ? `beginnt auf der ${floorName(floor)}`
-            : `wechselt in die ${floorName(floor)}${g.pulledFrom !== undefined ? ` – Abreisen drängen, das Board holt sie von der ${floorName(g.pulledFrom)}` : ''}`)
+            : `wechselt in die ${floorName(floor)}${g.pulledFrom !== undefined ? ` (Board empfiehlt die Etage wegen offener Abreisen)` : ''}`)
         }
         break
       }
-      case 'patrol': maid(`geht die ${floorName(floor!)} ab – sucht Anhänger`); break
+      case 'patrol': maid(`geht die ${floorName(floor!)} ab (Anhänger prüfen)`); break
       case 'overview': maid(`liest die Etagenliste der ${floorName(floor!)}`); break
-      case 'knock': maid(`klopft bei ${g.nr} – Gast noch da, später wieder${g.again ? ' (eine Kollegin hatte das eben schon gehört)' : ''}`); break
-      case 'declined': maid(`klopft bei ${g.nr} – Gast möchte heute keine Reinigung${g.again ? ' (eine Kollegin wusste das schon)' : ''}`); break
-      case 'skip': maid(`steht vor ${g.nr}: „Nicht stören“ – später wieder`); break
+      case 'knock': maid(`klopft bei ${g.nr} – Gast noch im Zimmer, später erneut`); break
+      case 'declined': maid(`klopft bei ${g.nr} – Gast lehnt Reinigung für heute ab`); break
+      case 'skip': maid(`an ${g.nr}: „Nicht stören“, später erneut`); break
       case 'clean': {
         const what = g.jobId?.endsWith('!') ? 'Sonderfall' : kindOf.get(g.nr) === 'departure' ? 'Abreise' : 'Bleibe'
         maid(`reinigt ${g.nr} (${what}), fertig ${clock(g.end)}`)
         break
       }
-      case 'idle': if (g.end - g.start >= 5) maid(`wartet – nichts frei bis ${clock(g.end)}`); break
+      case 'idle': if (g.end - g.start >= 5) maid(`wartet bis ${clock(g.end)}`); break
     }
     if (floor !== undefined && g.kind !== 'idle') lastFloor.set(g.maid, floor)
   }
