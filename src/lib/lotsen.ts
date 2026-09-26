@@ -643,7 +643,7 @@ export const EINRICHTUNG: Lotse = {
       path: '/zimmer',
       title: 'Willkommen bei RoSe',
       body: 'In den nächsten Minuten richten wir Ihr Haus ein: Zimmer, die Regeln des Hauses, der Weg Ihrer Gäste ins Portal, das Personal und die Zusatzleistungen. Sie können jederzeit abbrechen und später weitermachen — der Fortschritt ergibt sich aus dem, was tatsächlich angelegt ist, nicht aus Häkchen.',
-      tun: 'Weiter mit der Eingabetaste oder dem Pfeil nach rechts, beenden mit Esc.',
+      tun: 'Weiter geht es mit dem Knopf „Weiter“ unten rechts. Unterbrechen können Sie jederzeit — auf der Übersicht zeigt ein Band, was noch fehlt, und führt zurück in die Einrichtung.',
     },
     ...EINRICHTUNG_ORDER.flatMap(id => {
       const lotse = LOTSEN.find(l => l.id === id)

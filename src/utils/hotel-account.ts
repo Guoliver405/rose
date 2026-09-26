@@ -29,15 +29,30 @@ export type HotelAccountInput = {
 
 export type HotelAccountResult = { accountId?: string; hotelId?: string; slug?: string; stripe?: boolean; error?: string }
 
-/** Einladungscode: fehlt die Variable, ist die Anlage ZU — ein vergessenes Env-Var darf das Tor nicht öffnen. */
+/**
+ * Einladungscode: fehlt die Variable, ist die Anlage ZU — ein vergessenes
+ * Env-Var darf das Tor nicht öffnen. Verglichen wird ohne Leer- und
+ * unsichtbare Zeichen und ohne Groß-/Kleinschreibung: ein aus Chat oder Mail
+ * kopierter Code trägt gern ein Zeichen mit, das niemand sieht (26.09.2026,
+ * Umwandlung in Produktion abgewiesen).
+ */
 export function checkInviteCode(code: string): string | null {
-  const erwartet = (process.env.SIGNUP_INVITE_CODE ?? '').trim()
+  const erwartet = normalizeCode(process.env.SIGNUP_INVITE_CODE ?? '')
   if (!erwartet) return 'Die Anmeldung als Hotel ist derzeit nicht freigeschaltet.'
-  if (code.trim() !== erwartet) return 'Einladungscode stimmt nicht.'
+  const got = normalizeCode(code)
+  if (got !== erwartet) {
+    // Nur Längen ins Log, nie der Code.
+    console.error('[einladungscode] abgewiesen', { laenge: got.length, erwartet: erwartet.length, roh: code.length })
+    return 'Einladungscode stimmt nicht.'
+  }
   return null
 }
 
-export const hotelSignupOpen = () => Boolean((process.env.SIGNUP_INVITE_CODE ?? '').trim())
+export function normalizeCode(v: string): string {
+  return v.replace(/[\s\u200B-\u200D\u2060\uFEFF`"'\u201E\u201C]/g, '').toLowerCase()
+}
+
+export const hotelSignupOpen = () => Boolean(normalizeCode(process.env.SIGNUP_INVITE_CODE ?? ''))
 
 /** Höchstens so viele Zimmer in einem Zug — mehr legt das Zimmer-Setup an. */
 export const MAX_ROOMS_AT_SIGNUP = 1000

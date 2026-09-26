@@ -192,6 +192,9 @@ export default function LotsePilot({
 
   // Tastatur — aber nur, wenn gerade nicht getippt wird. Sonst würde die
   // Eingabetaste im Zimmernummern-Feld den Lotsen weiterschalten.
+  // Esc beendet den Lotsen bewusst NICHT mehr (Rückmeldung des Users,
+  // 26.09.2026): Wer die Taste aus Versehen drückte, stand ohne Lotsen da und
+  // wusste nicht weiter. Beenden geht über „Beenden" und das ×.
   useEffect(() => {
     if (!lotse || versteckt) return
     const tippt = (t: EventTarget | null) => {
@@ -200,7 +203,6 @@ export default function LotsePilot({
       return ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName) || el.isContentEditable
     }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { beenden(); return }
       if (tippt(e.target)) return
       if (e.key === 'ArrowRight' || e.key === 'Enter') {
         e.preventDefault()

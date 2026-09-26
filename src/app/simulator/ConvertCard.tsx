@@ -3,8 +3,6 @@
 import { useState, useTransition } from 'react'
 import { Building2 } from 'lucide-react'
 import type { Policy } from '@/lib/cleaning-sim'
-import { formatCents } from '@/lib/money'
-import { MIN_MONTHLY_CENTS, PRICE_PER_ROOM_CENTS, monthlyPriceCents } from '@/lib/pricing'
 import type { SimForm } from '@/lib/sim-form'
 import { convertToHotelAction } from './actions'
 
@@ -32,8 +30,10 @@ export default function ConvertCard({ form, policy, signupOpen }: { form: SimFor
         <div className="min-w-0 flex-1">
           <h2 id="hotel-starten" className="text-lg font-bold text-ink">Als Hotel bei RoSe starten</h2>
           <p className="text-sm text-ink-soft">
-            Ihr Zugang wird Inhaber eines neuen Hotelkontos – ohne neue Anmeldung, Ihre Szenarien bleiben.{' '}
-            {formatCents(PRICE_PER_ROOM_CENTS)} je Zimmer und Monat, mindestens {formatCents(MIN_MONTHLY_CENTS)}, der erste Monat ist frei.
+            Testen Sie RoSe mindestens einen Monat lang kostenlos – ohne Zahlungsdaten. Überzeugt es Sie nicht, löschen Sie das
+            Konto einfach vorher; es entstehen keine Kosten. Ihr Zugang und Ihre Szenarien bleiben dabei, wie sie sind.{' '}
+            {/* Beträge bewusst nur hinter dem Link (User, 26.09.2026): Zahlen an dieser Stelle hemmen den Klick. */}
+            <a href="/#preise" target="_blank" rel="noopener" className="font-semibold text-action-strong hover:underline">Preise</a>
           </p>
         </div>
         {!open && (
@@ -77,7 +77,7 @@ export default function ConvertCard({ form, policy, signupOpen }: { form: SimFor
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-sm font-semibold text-ink-soft">Einladungscode</span>
-              <input name="code" required autoComplete="off" className={field} />
+              <input name="code" required autoComplete="off" spellCheck={false} autoCapitalize="none" className={field} />
             </label>
           </div>
 
@@ -87,9 +87,6 @@ export default function ConvertCard({ form, policy, signupOpen }: { form: SimFor
               <input type="checkbox" checked={takeRooms} onChange={e => setTakeRooms(e.target.checked)} className="mt-1 h-4 w-4 accent-[var(--color-action)]" />
               <span className="text-sm text-ink">
                 {rooms} Zimmer auf {form.floors} Etagen, nummeriert 101, 102 … – im Zimmer-Setup jederzeit änderbar
-                <span className="block text-xs text-ink-muted">
-                  Voraussichtlich {formatCents(monthlyPriceCents(takeRooms ? rooms : 0))} im Monat, sobald der freie Monat vorbei ist.
-                </span>
               </span>
             </label>
             <label className="flex items-start gap-2.5">
