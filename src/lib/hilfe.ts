@@ -726,6 +726,10 @@ const REINIGUNG: HilfeThema = {
           antwort: 'Nach dem vom Haus eingestellten Zeitlimit (Vorgabe 90 Minuten) geht das Zimmer von selbst wieder auf offen; im Verlauf steht „Reinigung nicht abgeschlossen (Zeitlimit, Name)". Die Reinigung zählt in der Auswertung dann nicht als geleistet — deshalb lohnt der Abschluss-Slider immer.',
         },
         {
+          frage: 'Was heißt „Nicht stören aufgehoben 9:40"?',
+          antwort: 'Der Gast hat heute um 9:40 sein „Nicht stören" zurückgenommen, und seitdem wurde das Zimmer nicht gereinigt. Meist heißt das: Er ist gerade gegangen — ein guter Moment zu klopfen, wenn man ohnehin auf der Etage ist. Sicher ist es nicht, deshalb ändert der Hinweis nichts an der Empfehlung des Boards.',
+        },
+        {
           frage: 'Das Board schlägt vor, die Etage zu wechseln — warum?',
           antwort: 'Nach jedem Zimmer rechnet das Board neu. Es schlägt einen Wechsel vor, wenn anderswo ein priorisiertes Zimmer offen ist, oder wenn eine andere Etage deutlich mehr wiegt als der Rest der eigenen — meist, weil dort Abreisen warten und der Check-in näher rückt. An ruhigen Tagen kommt das selten vor. Entscheiden tut die Kraft: Der Wechsel ist ein Slider, wer bleibt, macht einfach weiter.',
         },

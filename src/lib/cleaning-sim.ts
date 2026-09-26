@@ -29,7 +29,9 @@
  *  - Ein Teil zeigt beim Gehen an, dass er Reinigung will — ohne Software per
  *    Türanhänger, mit RoSe per Tipp. Auf Wunsch tut das jeder, der Reinigung will.
  *  - Ein Teil nennt in RoSe morgens „frühestens ab" (volle Stunde): Bis dahin
- *    klopft niemand. Ohne Software gibt es diese Angabe nicht.
+ *    klopft niemand. Ohne Software hängt derselbe Gast „Nicht stören" raus und
+ *    dreht es zur selben Uhrzeit auf „Bitte reinigen" (User, 26.09.2026: fair
+ *    vergleichen) — der Unterschied ist nur, wer davon weiß.
  *  - Morgens hängt an manchen Türen „Nicht stören"; beim Gehen nimmt der Gast
  *    es ab (und wünscht teils Reinigung), ein Rest bleibt den ganzen Tag.
  * Alle Anteile sind Annahmen und stehen im Kleingedruckten; Feinabstimmung
@@ -275,15 +277,16 @@ function jobsFor(scn: Scenario, coord: Coordination, policy: Policy): Job[] {
       if (policy === 'routine') jobs.push({ ...stayBase, ...none, readyAt: Infinity, knownAt: STAY_ROUTINE_AT, declines: true })
       continue
     }
-    // Unterwegs. Der Wunsch: mit RoSe per Tipp — bei „frühestens ab" zu dieser
-    // Uhrzeit —, ohne Software als Anhänger beim Gehen.
+    // Unterwegs. Der Wunsch: mit RoSe per Tipp, ohne Software als Anhänger beim
+    // Gehen. „Frühestens ab": mit RoSe auf dem Board; ohne Software hängt bis zu
+    // dieser Uhrzeit „Nicht stören", dann „Bitte reinigen".
     const shows = policy === 'onDemand' ? r.wants : (r.signals || r.notBefore !== null)
-    const signalAt = !shows ? Infinity : coord === 'rose' && r.notBefore !== null ? r.notBefore : r.outAt
+    const signalAt = !shows ? Infinity : r.notBefore !== null ? r.notBefore : r.outAt
     if (policy === 'onDemand' && !r.wants) continue
     jobs.push({ ...stayBase, readyAt: r.outAt, declines: false,
       knownAt: policy === 'routine' ? STAY_ROUTINE_AT : Infinity,
       signalAt,
-      dndUntil: r.dndUntil ?? 0,
+      dndUntil: r.dndUntil ?? (coord === 'paper' && r.notBefore !== null ? r.notBefore : 0),
       notBefore: coord === 'rose' && r.notBefore !== null ? r.notBefore : 0 })
   }
   const c = scn.complaint
@@ -600,7 +603,7 @@ export function typicalSeed(days = TYPICAL_DAYS): number {
 }
 
 /** Ergebnis von `typicalSeed()` — der Test hält fest, dass beides übereinstimmt. */
-export const SCENARIO_SEED = 10
+export const SCENARIO_SEED = 22
 export const SCENARIO: Scenario = buildScenario(SCENARIO_SEED)
 
 // ── Zustand zu einem Zeitpunkt (für die Anzeige) ──────────────────────────
@@ -638,7 +641,7 @@ export function tilesAt(res: SimResult, t: number, scn: Scenario = SCENARIO): Ti
     else if (r.presence === 'out' && r.dndUntil !== null && t < r.dndUntil) state = 'dnd'
     else if (res.policy === 'onDemand' && (r.presence === 'declines' || !r.wants)) state = 'skipped'
     else if (r.presence === 'declines') state = 'occupied'
-    else if (res.coord === 'rose' && r.notBefore !== null && t >= NOT_BEFORE_SET_AT && t < r.notBefore) state = 'deferred'
+    else if (r.notBefore !== null && t >= NOT_BEFORE_SET_AT && t < r.notBefore) state = res.coord === 'rose' ? 'deferred' : 'dnd'
     else state = t >= r.outAt ? 'wants' : 'occupied'
     return { nr: r.nr, floor: r.floor, state, knock, priority: complaintOpen && c!.nr === r.nr }
   })
@@ -720,17 +723,10 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
       out.push({ at: CHECKOUT_AT - 30, tone: 'bad', text: `${early} Zimmer sind ausgecheckt – doch nur die Rezeption weiß es.` })
     }
     out.push({ at: CHECKOUT_AT, tone: 'neutral', text: 'Check-out-Frist: erst jetzt können diese Zimmer sicher gereinigt werden.' })
-    // Geklopft, wo der Gast in RoSe „frühestens ab" gesagt hätte.
-    const nb = res.segments.filter(g => g.kind === 'knock' && guests.some(x => x.nr === g.nr && x.notBefore !== null))
-      .sort((a, b) => a.start - b.start)[0]
-    if (nb) {
-      const gst = guests.find(x => x.nr === nb.nr)!
-      out.push({ at: nb.start, tone: 'bad',
-        text: `Geklopft bei ${nb.nr} – der Gast will erst ab ${clockLabel(gst.notBefore!)} Reinigung, aber davon weiß niemand.` })
-    }
-    // „Nicht stören" abgenommen — gesehen erst, wenn jemand vorbeikommt.
-    const lifted = guests.filter(x => x.dndUntil !== null && x.dndUntil >= 0 && firstClean(x.nr) !== undefined)
-      .map(x => ({ nr: x.nr, at: x.dndUntil!, seen: firstClean(x.nr)! }))
+    // „Nicht stören" abgenommen bzw. umgedreht — gesehen erst, wenn jemand vorbeikommt.
+    const liftAt = (x: OutGuest) => x.dndUntil ?? x.notBefore
+    const lifted = guests.filter(x => liftAt(x) !== null && liftAt(x)! >= 0 && firstClean(x.nr) !== undefined)
+      .map(x => ({ nr: x.nr, at: liftAt(x)!, seen: firstClean(x.nr)! }))
       .sort((a, b) => (b.seen - b.at) - (a.seen - a.at))[0]
     if (lifted && lifted.seen - lifted.at >= 30) {
       out.push({ at: lifted.seen, tone: 'bad',

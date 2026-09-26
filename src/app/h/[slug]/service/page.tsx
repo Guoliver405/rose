@@ -33,7 +33,7 @@ export default async function ServiceBoardPage({
   // nicht („Kollegin in Zimmer X" braucht aber deren Namen) und stays gar
   // nicht. Auth ist über getMaidContext() bereits geprüft.
   const admin = createAdminClient()
-  const [{ data: rooms }, { data: states }, { data: stays }, { data: maids }, { data: myLog }, { data: cleanedToday }, { data: presence }, { data: shiftsToday }] =
+  const [{ data: rooms }, { data: states }, { data: stays }, { data: maids }, { data: myLog }, { data: cleanedToday }, { data: presence }, { data: shiftsToday }, { data: signalChanges }] =
     await Promise.all([
       // Zimmer außer Betrieb gehören nicht aufs Reinigungsboard.
       admin.from('rooms').select('id, number, floor, building').eq('hotel_id', ctx.hotelId).is('deactivated_at', null),
@@ -52,7 +52,7 @@ export default async function ServiceBoardPage({
         .limit(50),
       admin
         .from('staff_log')
-        .select('room_id')
+        .select('room_id, at')
         .eq('hotel_id', ctx.hotelId)
         .eq('kind', 'clean_done')
         .gte('at', todayStartIso(new Date(), parseTimeZone(ctx.policies))),
@@ -65,6 +65,14 @@ export default async function ServiceBoardPage({
         .eq('hotel_id', ctx.hotelId)
         .in('kind', ['shift_start', 'shift_end'])
         .gte('at', todayStartIso(new Date(), parseTimeZone(ctx.policies))),
+      // „Nicht stören aufgehoben" (26.09.2026): heutige Wechsel des Gast-Signals.
+      admin
+        .from('room_state_transitions')
+        .select('room_id, old_value, new_value, occurred_at')
+        .eq('hotel_id', ctx.hotelId)
+        .eq('field', 'guest_signal')
+        .gte('occurred_at', todayStartIso(new Date(), parseTimeZone(ctx.policies)))
+        .order('occurred_at', { ascending: true }),
     ])
 
   const staleMinutes = clampStaleMinutes(ctx.policies.cleaningStaleMinutes)
@@ -81,6 +89,24 @@ export default async function ServiceBoardPage({
   const stateByRoom = new Map((states ?? []).map(s => [s.room_id, s]))
   const stayByRoom = new Map((stays ?? []).map(s => [s.room_id, s]))
   const nameByProfile = new Map((maids ?? []).map(p => [p.id, p.display_name]))
+
+  // „Nicht stören aufgehoben": letzter heutiger Wechsel des Signals war DND →
+  // keine Angabe, und seitdem wurde nicht gereinigt. Nur ein Hinweis für die
+  // Kraft (meist ist der Gast gerade gegangen) — ohne Einfluss auf das Gewicht:
+  // nachgerechnet bringt es der Effizienz nichts und verzögert die Abreisen.
+  const lastSignal = new Map<string, { old_value: string | null; new_value: string | null; occurred_at: string }>()
+  for (const c of signalChanges ?? []) lastSignal.set(c.room_id, c)
+  const lastCleanAt = new Map<string, string>()
+  for (const c of cleanedToday ?? []) {
+    if (c.room_id && (!lastCleanAt.has(c.room_id) || c.at > lastCleanAt.get(c.room_id)!)) lastCleanAt.set(c.room_id, c.at)
+  }
+  const dndLiftedAt = (roomId: string): string | null => {
+    const c = lastSignal.get(roomId)
+    if (!c || c.old_value !== 'dnd' || c.new_value !== 'none') return null
+    const cleaned = lastCleanAt.get(roomId)
+    if (cleaned && new Date(cleaned) >= new Date(c.occurred_at)) return null
+    return formatHHMM(new Date(c.occurred_at), tz)
+  }
 
   // Check-out-Druck (26.09.2026): offene Abreisen gegen Kräfte × Zeit bis zum
   // Check-in. Kräfte = heute begonnene Schichten ohne Ende; mindestens die
@@ -143,6 +169,7 @@ export default async function ServiceBoardPage({
       departureToday: isDepartureToday(stay?.expected_checkout, now, tz),
       guestSignal: signal,
       cleanDeferredUntil: deferred ? formatHHMM(new Date(state!.clean_not_before as string), tz) : null,
+      dndLiftedAt: stay && signal === 'none' ? dndLiftedAt(r.id) : null,
       checkoutPending,
       priority,
       stayoverDue,

@@ -28,6 +28,8 @@ export type BoardRoom = {
   cleanDeferredUntil: string | null
   /** An der Tür „heute nicht" — Routine für heute erledigt. */
   declinedToday: boolean
+  /** „HH:MM" — heute „Nicht stören" aufgehoben, seitdem nicht gereinigt. Nur Hinweis, kein Gewicht. */
+  dndLiftedAt: string | null
   /** Die Kraft darf hier „Gast an der Tür" wählen (siehe `canAnswerAtDoor`). */
   canAnswerAtDoor: boolean
   checkoutPending: boolean
@@ -73,6 +75,7 @@ function statusLabel(r: BoardRoom): string {
   if (r.checkoutPending) parts.push('Ausgecheckt')
   if (r.guestSignal === 'please_clean') parts.push(r.cleanDeferredUntil ? `Reinigung ab ${r.cleanDeferredUntil}` : 'Reinigung gewünscht')
   else if (r.cleanDeferredUntil) parts.push(`Reinigung ab ${r.cleanDeferredUntil}`)
+  if (r.dndLiftedAt) parts.push(`Nicht stören aufgehoben ${r.dndLiftedAt}`)
   if (r.stayoverDue) parts.push('Routine fällig')
   if (r.declinedToday) parts.push('Heute keine Reinigung')
   if (r.guestSignal === 'dnd') parts.push('Nicht stören')
