@@ -61,6 +61,8 @@ export type SideSummary = {
   walkMinutes: Dist
   /** Funk ohne Software: Sprüche annehmen, Durchsagen. */
   radioMinutes: Dist
+  /** Funksprüche, die die Rezeption führen muss (Abreisen, Sonderfall). */
+  radioCalls: Dist
   doorMinutes: Dist
   idleMinutes: Dist
   /** Anteil der Dienstzeit bis Feierabend, der aufs Reinigen fällt. */
@@ -104,6 +106,7 @@ export function summarize(runs: DayRun[], config: ScenarioConfig): Summary {
       turnedAway: dist(ms.map(m => m.knocks + m.declined + m.skips)),
       walkMinutes: dist(ms.map(m => m.walkMinutes)),
       radioMinutes: dist(ms.map(m => m.radioMinutes)),
+      radioCalls: dist(ms.map(m => m.radioCalls)),
       doorMinutes: dist(ms.map(m => m.doorMinutes)),
       idleMinutes: dist(ms.map(m => m.idleMinutes)),
       cleaningShare: dist(ms.map(m => {

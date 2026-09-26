@@ -38,7 +38,7 @@ const TITLE: Record<Coordination, string> = { paper: 'Ohne Steuerung', rose: 'Mi
 function leadDetail(c: Coordination, b: Baseline): string {
   if (c === 'rose') return 'Gemeinsames Board: Check-out, Wünsche, „frühestens ab“, „Nicht stören“ und Rückmeldungen an der Tür für alle Kräfte.'
   const dep = b.departures === 'radio' ? 'Abreisen meldet die Rezeption per Funk' : 'Abreisen laut Papierliste ab der Check-out-Frist'
-  const fl = b.floors === 'free' ? 'Etagen frei gewählt, Wechsel per Funk angesagt' : 'feste Etagen je Kraft'
+  const fl = b.floors === 'free' ? 'Etagen frei gewählt, fertige Etagen per Funk gemeldet' : 'feste Etagen je Kraft'
   return `${dep}; ${fl}; Abreisen zuerst. Was an der Tür gesagt wird, steht auf der Etagenliste.`
 }
 
@@ -277,6 +277,11 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption, polic
       </ul>
 
       {caption !== undefined ? <div className="mt-4 text-xs text-ink-muted">{caption}</div> : <p className="mt-4 text-xs text-ink-muted">
+        Ohne Steuerung zeigt ein typisches herkömmliches Verfahren: Papierliste vom Morgen, feste Etagen je Kraft,
+        Abreisen zuerst, sobald sie laut Liste frei sind. Andere Verfahren – etwa Check-outs per Funk von der Rezeption
+        oder frei gewählte Etagen – stellt der{' '}
+        <a href="/simulator" className="font-semibold text-action-strong hover:underline">Housekeeping-Simulator</a>{' '}
+        gegenüber, mit den Zahlen Ihres Hauses.{' '}
         Ein gewöhnlicher Tag: der mittlere aus 101 durchgerechneten, gemessen am Vorsprung bei den Abreisen in beiden
         Stellungen des Umschalters. {SCENARIO.rooms.length} Zimmer auf {SCENARIO.floors} Etagen, {SCENARIO.maidFloors.length} Reinigungskräfte
         ab 8:00 (ohne Software je zwei feste Etagen), Check-out bis 11:00, Check-in ab 15:00. Dieselben Gäste in beiden Bildern: Sie reisen zwischen 7:00 und 11:00 ab

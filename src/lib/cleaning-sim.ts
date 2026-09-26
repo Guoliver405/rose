@@ -130,14 +130,17 @@ export type SimDurations = { [K in keyof typeof DURATION]: number } & {
  *               Funk oder Telefon der zuständigen Kraft (Verzug, Unterbrechung).
  *               Was an der Tür gesagt wird, steht in beiden Fällen nur auf der
  *               Etagenliste; Gästewünsche weiter per Türanhänger.
- *  floors     — `fixed`: jede Kraft hat feste Etagen; `free`: Die Hausdame
- *               verteilt morgens die Startetagen, danach wählt jede Kraft die
- *               Etage, auf der NACH IHREM WISSEN am meisten offen ist (eigene
- *               Arbeit, die Etage, auf der sie steht, gelesene Etagenlisten).
- *               Wo Kolleginnen sind und was anderswo erledigt ist, weiß sie
- *               ohne Funk nicht — sie merkt es erst beim Ankommen. Mit Funk
- *               sagt jede ihren Etagenwechsel durch (`radioAnnounce`), belegte
- *               Etagen sind dann bekannt (User, 26./27.09.2026).
+ *  floors     — `fixed`: jede Kraft hat feste Etagen; `free` (in der
+ *               Oberfläche nur mit Funk): Die Hausdame verteilt morgens die
+ *               Startetagen. Ist die eigene Etage leer, geht die Kraft zu einer
+ *               Abreise, die IHR gefunkt wurde, sonst zur nächsten Etage nach
+ *               oben, die nicht als fertig bekannt ist, liest dort die Liste und
+ *               arbeitet oder geht weiter; findet sie reihum nichts, wartet sie.
+ *               Gemerkt wird nur „Etage fertig" — eigene und, mit Funk,
+ *               durchgesagte (`radioAnnounce`), und das nur, wenn dort wirklich
+ *               alles erledigt ist (keine Ablehnung, kein „Nicht stören", kein
+ *               ausstehender Check-out). Kein Etagenscore im Kopf, keine
+ *               Positionen der Kolleginnen (User, 27.09.2026).
  * In allen Varianten ohne Software gilt „Abreisen zuerst": Eine bekannte
  * Abreise geht vor dem nächsten Bleibezimmer — so weist jede Hausdame an.
  */
@@ -509,7 +512,8 @@ function jobsFor(scn: Scenario, coord: Coordination, policy: Policy): Job[] {
       jobs.push({ ...base, ...none, kind: 'departure', readyAt: r.checkoutAt,
         // Ohne Software: sicher frei erst zur Frist. Mit RoSe: erscheint beim Check-out.
         knownAt: coord === 'rose' ? r.checkoutAt
-          : P.baseline.departures === 'radio' ? r.checkoutAt + D.radioDelay
+          // Freie Wahl mit Funk: bekannt nur der angefunkten Kraft (`radioKnown`).
+          : P.baseline.departures === 'radio' ? (P.baseline.floors === 'free' ? Infinity : r.checkoutAt + D.radioDelay)
           : Math.max(P.checkoutAt, r.checkoutAt),
         duration: D.departure, weight: SCORE_WEIGHTS.checkoutPending })
       continue
@@ -604,6 +608,8 @@ export type SimResult = {
     walkMinutes: number
     doorMinutes: number
     radioMinutes: number
+    /** Funksprüche der Rezeption (Abreisen, Sonderfall) — ohne Software mit Funk. */
+    radioCalls: number
     /** Abreisezimmer, die zum Check-in noch nicht fertig sind. */
     departuresOpenAtCheckin: number
     /** Aufträge, die frei gewesen wären und bis zum Arbeitsende liegen geblieben sind. */
@@ -692,26 +698,27 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
   let knocks = 0
   let declined = 0
   let skips = 0
-  /** Wann ein Auftrag übernommen wurde — ab dann steht es auf der Etagenliste. */
-  const takenAt: Record<string, number> = {}
-  /**
-   * Freie Wahl ohne Software: Weiß die Kraft, dass ein Auftrag vergeben ist?
-   * Auf der eigenen Etage sieht sie es, sonst nur über die gelesene Etagenliste.
-   */
-  const knowsTaken = (j: Job, mi: number, pos: Pos) =>
-    doneAt[j.id] !== undefined && (pos?.floor === j.floor || hasRead(mi, j.floor, takenAt[j.id]))
   const radioOn = coord === 'paper' && P.baseline.departures === 'radio'
+  /** Freie Wahl: Abreisen, die die Rezeption dieser Kraft gefunkt hat — nur sie weiß davon. */
+  const radioKnown = maids.map(() => new Set<string>())
+  /** Freie Wahl: als fertig bekannte Etagen — selbst fertig gemacht oder (mit Funk) durchgesagt. */
+  const doneFloors = maids.map(() => new Set<number>())
+  /** Freie Wahl: seit der letzten Arbeit angesteuerte Etagen ohne Arbeit — reihum, nicht im Kreis. */
+  const emptyVisits = maids.map(() => new Set<number>())
+  /** Wirklich alles auf der Etage erledigt oder vergeben? Erst dann gibt es „Etage fertig". */
+  const floorComplete = (f: number) => (jobsOnFloor.get(f) ?? []).every(j => doneAt[j.id] !== undefined)
 
   /**
    * Funk (ohne Software, Phase 5): Jede Abreise meldet die Rezeption der
    * zuständigen Kraft — bei festen Etagen der Kraft dieser Etage, bei freier
    * Wahl der, die ihr am nächsten ist. Die Kraft nimmt den Spruch bei ihrer
    * nächsten Entscheidung an (so lange dauert eine laufende Reinigung eben),
-   * das kostet `radioInterrupt` Minuten. Bekannt ist die Abreise allen ab dem
-   * Funkspruch (`knownAt`).
+   * das kostet `radioInterrupt` Minuten. Bei festen Etagen ist die Abreise ab
+   * dem Funkspruch bekannt (`knownAt` — dort arbeitet ohnehin nur die
+   * Zuständige, wer aushilft, fragt sie); bei freier Wahl nur der Angefunkten.
    */
   const radio = coord === 'paper' && P.baseline.departures === 'radio'
-    ? jobs.filter(j => j.kind === 'departure').map(j => ({ job: j, at: j.knownAt, done: false }))
+    ? jobs.filter(j => j.kind === 'departure').map(j => ({ job: j, at: j.readyAt + D.radioDelay, done: false }))
     : []
   const radioTarget = (j: Job): number | undefined => {
     const live = maids.filter(o => !o.finished)
@@ -740,6 +747,7 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
         if (msg.done || msg.at > m.t) continue
         if (radioTarget(msg.job) !== m.i) continue
         msg.done = true
+        radioKnown[m.i].add(msg.job.id)
         segments.push({ maid: m.i, kind: 'radio', nr: m.pos?.nr ?? '', jobId: msg.job.id, start: tt, end: tt + D.radioInterrupt })
         tt += D.radioInterrupt
       }
@@ -785,7 +793,7 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
     const mine = (j: Job) => !m.floors || (helping ? (!helpFloors || helpFloors.has(j.floor)) : m.floors.has(j.floor))
     const visible = (j: Job) => {
       if (!mine(j) || retryFor(j, m.i) > t) return false
-      if (!(j.knownAt <= t || signalKnown(j, m.i, t))) return false
+      if (!(j.knownAt <= t || signalKnown(j, m.i, t) || radioKnown[m.i].has(j.id))) return false
       // RoSe weiß von „Nicht stören" und „frühestens ab" — solche Zimmer sind nicht offen.
       if (coord === 'rose' && (j.dndUntil > t || j.notBefore > t)) return false
       return true
@@ -803,35 +811,54 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
 
     let pick: Job | undefined
     let pulledFrom: number | undefined
+    /** Freie Wahl: zu dieser Etage gehen und dort nachsehen. */
+    let moveTo: number | undefined
     const urgent = openNow.filter(j => j.kind === 'complaint' && visible(j))
     if (urgent.length > 0) {
       // Sonderfall geht vor — sobald die Kraft davon weiß.
       pick = urgent[0]
     } else if (free) {
-      // Freie Etagenwahl ohne Software. Auf der eigenen Etage sieht sie, was
-      // offen ist; für die Wahl der nächsten Etage zählt nur ihr Wissen.
+      // Freie Etagenwahl: Auf ihrer Etage sieht sie, was offen ist.
       const cur = m.pos?.floor
-      let here = cur !== undefined ? openNow.filter(j => j.floor === cur && visible(j)) : []
-      if (here.length === 0) {
-        const believed = jobs.filter(j => !knowsTaken(j, m.i, m.pos) && !knowsDeclined(j, m.i)
-          && !(j.dndUntil > t && t >= P.dndGiveUp) && visible(j) && j.floor !== cur)
-        let target: number | undefined
-        // Morgenbesprechung: Die Hausdame hat die Startetage verteilt.
-        if (cur === undefined && believed.some(j => j.floor === m.own[0])) target = m.own[0]
-        if (target === undefined && believed.length > 0) {
-          // Mit Funk sind belegte Etagen bekannt (Durchsagen), ohne nicht.
-          const taken = radioOn ? new Set(maids.filter(o => o !== m && !o.finished && o.pos).map(o => o.pos!.floor)) : new Set<number>()
-          const deps = (f: number) => believed.filter(j => j.floor === f && j.kind === 'departure').length
-          const work = (f: number) => believed.filter(j => j.floor === f).length
-          target = [...new Set(believed.map(j => j.floor))]
-            .sort((a, b) => Number(taken.has(a)) - Number(taken.has(b)) || deps(b) - deps(a) || work(b) - work(a)
-              || Math.abs(a - (cur ?? 0)) - Math.abs(b - (cur ?? 0)) || a - b)[0]
+      const here = cur !== undefined ? openNow.filter(j => j.floor === cur && visible(j)) : []
+      const byOrder = (a: Job, b: Job) => Number(b.kind === 'departure') - Number(a.kind === 'departure')
+        || signaled(a) - signaled(b) || a.nr.localeCompare(b.nr)
+      // Abreisen zuerst: eine Abreise auf ihrer Etage, sonst eine, die ihr gefunkt wurde — vor jedem Bleibezimmer.
+      const radioed = openNow.filter(j => radioKnown[m.i].has(j.id) && j.floor !== cur && visible(j))
+        .sort((a, b) => Math.abs(a.floor - (cur ?? 0)) - Math.abs(b.floor - (cur ?? 0)) || a.nr.localeCompare(b.nr))
+      const hereFirst = [...here].sort(byOrder)[0]
+      if (hereFirst && (hereFirst.kind === 'departure' || radioed.length === 0)) {
+        pick = hereFirst
+        emptyVisits[m.i].clear()
+      } else if (radioed.length > 0 && here.length > 0) {
+        pick = radioed[0]
+        emptyVisits[m.i].clear()
+      } else {
+        if (cur !== undefined) {
+          emptyVisits[m.i].add(cur)
+          if (floorComplete(cur) && !doneFloors[m.i].has(cur)) {
+            // „Etage fertig" — gemerkt, und mit Funk für alle durchgesagt.
+            doneFloors[m.i].add(cur)
+            if (radioOn) {
+              if (D.radioAnnounce > 0) segments.push({ maid: m.i, kind: 'radio', nr: `${cur}01`, start: t, end: t + D.radioAnnounce })
+              for (const o of maids) doneFloors[o.i].add(cur)
+              m.t = t + D.radioAnnounce
+              continue
+            }
+          }
         }
-        if (target !== undefined) here = believed.filter(j => j.floor === target)
+        // 1) Eine Abreise, die ihr gefunkt wurde (Abreisen zuerst).
+        const mine2 = openNow.filter(j => radioKnown[m.i].has(j.id) && visible(j))
+          .sort((a, b) => Math.abs(a.floor - (cur ?? 0)) - Math.abs(b.floor - (cur ?? 0)) || a.nr.localeCompare(b.nr))
+        if (mine2.length > 0) pick = mine2[0]
+        else {
+          // 2) Morgens die Startetage, sonst die nächste Etage nach oben, die nicht als fertig bekannt ist.
+          const floors = Array.from({ length: scn.floors }, (_, k) => k + 1)
+          const from = cur ?? 0
+          const order = cur === undefined ? [m.own[0], ...floors] : [...floors.filter(f => f > from), ...floors.filter(f => f <= from)]
+          moveTo = order.find(f => f !== cur && !doneFloors[m.i].has(f) && !emptyVisits[m.i].has(f))
+        }
       }
-      // Abreisen zuerst, dann ein angezeigter Wunsch.
-      pick = [...here].sort((a, b) => Number(b.kind === 'departure') - Number(a.kind === 'departure')
-        || signaled(a) - signaled(b) || a.nr.localeCompare(b.nr))[0]
     } else if (coord === 'paper') {
       const openSet = new Set(openNow)
       m.queue = m.queue.filter(j => openSet.has(j) && visible(j))
@@ -880,25 +907,29 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
       }
     }
 
+    if (!pick && moveTo !== undefined) {
+      const nr = `${moveTo}01`
+      const w = walkTime(D, m.pos, moveTo, nr)
+      segments.push({ maid: m.i, kind: 'patrol', nr, start: t, end: t + w })
+      m.t = arrive(m.i, m.pos, moveTo, nr, t + w)
+      m.pos = { floor: moveTo, nr }
+      continue
+    }
+
     if (!pick) {
+      // Freie Wahl: reihum nichts gefunden — warten, danach wieder reihum.
+      if (free) emptyVisits[m.i].clear()
       // Ohne Software und auf Wunsch: Hängt irgendwo schon ein Anhänger, den
       // diese Kraft noch nicht gesehen hat, geht sie ihre Etagen ab — sie weiß
       // nicht, wo er hängt, also der Reihe nach.
-      const unseen = coord === 'paper'
+      const unseen = coord === 'paper' && !free
         ? openNow.filter(j => j.knownAt === Infinity && mine(j) && j.signalAt <= t && !seenBy[j.id]?.has(m.i))
         : []
       if (unseen.length > 0) {
         const all = Array.from({ length: scn.floors }, (_, k) => k + 1)
-        // Freie Wahl mit Funk: Etagen, auf denen laut Durchsage eine Kollegin steht, sieht diese schon.
-        const taken = free && radioOn ? new Set(maids.filter(o => o !== m && !o.finished && o.pos).map(o => o.pos!.floor)) : new Set<number>()
-        const pool = free ? (all.filter(f => !taken.has(f)).length ? all.filter(f => !taken.has(f)) : all) : null
-        const range = pool ?? (helping ? (helpFloors ? [...helpFloors] : all) : m.own)
+        const range = helping ? (helpFloors ? [...helpFloors] : all) : m.own
         const cur = m.pos?.floor ?? 0
-        // Freie Wahl mit Funk: dort suchen, wo laut Durchsagen am längsten niemand war; sonst der Reihe nach.
-        const seen = (f: number) => readAt[m.i].get(f) ?? -Infinity
-        const nextFloor = free && radioOn
-          ? [...range].filter(f => f !== cur).sort((a, b) => seen(a) - seen(b) || Math.abs(a - cur) - Math.abs(b - cur) || a - b)[0] ?? range[0]
-          : range.find(f => f > cur) ?? range[0]
+        const nextFloor = range.find(f => f > cur) ?? range[0]
         const nr = `${nextFloor}01`
         const w = walkTime(D, m.pos, nextFloor, nr)
         segments.push({ maid: m.i, kind: 'patrol', nr, start: t, end: t + w })
@@ -912,7 +943,8 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
         if (coord === 'rose') at = Math.max(at, Math.min(j.dndUntil, P.horizon), j.notBefore)
         return at
       }
-      const next = Math.min(...openNow.filter(mine).map(wake).filter(v => v > t), P.dndGiveUp > t ? P.dndGiveUp : Infinity)
+      const pendingRadio = radio.filter(x => !x.done && x.at > t).map(x => x.at)
+      const next = Math.min(...openNow.filter(mine).map(wake).filter(v => v > t), ...pendingRadio, P.dndGiveUp > t ? P.dndGiveUp : Infinity)
       if (!Number.isFinite(next) || next >= P.horizon || !openNow.some(mine)) {
         m.finished = true
         continue
@@ -924,15 +956,6 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
 
     // Hingehen — Schild, Klopfen, Ablehnung oder Reinigung.
     let now = t
-    if (free && radioOn && m.pos && m.pos.floor !== pick.floor) {
-      // Durchsage „bin mit der 5 fertig, gehe in die 7": Die anderen kennen
-      // damit den Stand der verlassenen Etage — wie nach dem Lesen ihrer Liste.
-      if (D.radioAnnounce > 0) segments.push({ maid: m.i, kind: 'radio', nr: m.pos.nr, start: now, end: now + D.radioAnnounce })
-      now += D.radioAnnounce
-      for (const o of maids) {
-        if (o !== m) readAt[o.i].set(m.pos.floor, Math.max(readAt[o.i].get(m.pos.floor) ?? -Infinity, now))
-      }
-    }
     const w = walkTime(D, m.pos, pick.floor, pick.nr)
     if (w > 0) segments.push({ maid: m.i, kind: 'walk', nr: pick.nr, start: now, end: now + w, pulledFrom })
     now += w
@@ -977,7 +1000,6 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
       knocks++
     } else {
       segments.push({ maid: m.i, kind: 'clean', nr: pick.nr, jobId: pick.id, start: now, end: now + pick.duration })
-      takenAt[pick.id] = now
       now += pick.duration
       doneAt[pick.id] = now
     }
@@ -1013,6 +1035,7 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
       walkMinutes: minutesOf('walk', 'patrol', 'overview'),
       doorMinutes: minutesOf('knock', 'declined', 'skip'),
       radioMinutes: minutesOf('radio'),
+      radioCalls: radio.length + (radioOn && scn.complaint ? 1 : 0),
       departuresOpenAtCheckin: deps.filter(j => !(doneAt[j.id] <= P.checkinAt)).length,
       leftUndone: jobs.filter(j => doneAt[j.id] === undefined && j.readyAt < P.horizon && !j.declines && !(j.dndUntil >= P.horizon)).length,
     },

@@ -72,7 +72,7 @@ const DURATION_LABEL: Record<keyof SimDurations, [string, string]> = {
   radioDelay: ['Funk: Meldeverzug', 'Bis die Rezeption einen Check-out durchgibt.'],
   radioInterrupt: ['Funk: Unterbrechung', 'Je Meldung bei der angefunkten Kraft.'],
   radioComplaintReach: ['Funk: Sonderfall', 'Bis die Rezeption die Kraft erreicht.'],
-  radioAnnounce: ['Funk: Durchsage', 'Freie Wahl: „bin mit der 5 fertig, gehe in die 7“.'],
+  radioAnnounce: ['Funk: Durchsage', 'Freie Wahl: „Etage 5 fertig“ — nur, wenn dort wirklich alles erledigt ist.'],
 }
 
 const GROUP_TIMES: TimeKey[] = ['shiftEnd', 'stayRoutineFrom', 'dndGiveUp', 'complaintAt']
@@ -476,7 +476,8 @@ function Results({ result, policy, onPolicy }: { result: Result; policy: Policy;
     { label: `Um ${clockLabel(P.horizon, P.shiftStart)} liegen geblieben`, hint: 'Zimmer, die frei gewesen wären', value: x => <DistCell d={x.leftUndone} fmt={v => String(v)} /> },
     { label: 'Wege und Überblick', hint: 'alle Kräfte; Etagen abgehen, Etagenliste lesen', value: x => <DistCell d={x.walkMinutes} fmt={hours} /> },
     { label: 'An der Tür ohne Reinigung', hint: 'alle Kräfte', value: x => <DistCell d={x.doorMinutes} fmt={hours} /> },
-    { label: 'Funk', hint: 'alle Kräfte; Sprüche annehmen, Durchsagen', value: x => <DistCell d={x.radioMinutes} fmt={hours} /> },
+    { label: 'Funk', hint: 'alle Kräfte; Sprüche annehmen, „Etage fertig“ durchsagen', value: x => <DistCell d={x.radioMinutes} fmt={hours} /> },
+    { label: 'Funksprüche der Rezeption', hint: 'je Abreise einer, dazu der Sonderfall — gedrängt am Vormittag', value: x => <DistCell d={x.radioCalls} fmt={v => String(v)} /> },
     { label: 'Warten ohne Arbeit', hint: 'alle Kräfte', value: x => <DistCell d={x.idleMinutes} fmt={hours} /> },
     { label: 'Anteil Reinigen', hint: 'an der Zeit bis Feierabend', value: x => <DistCell d={x.cleaningShare} fmt={percent} /> },
     { label: 'Sonderfall erledigt nach', value: x => (x.complaintMinutes ? <DistCell d={x.complaintMinutes} fmt={v => `${Math.round(v)} min`} /> : '–') },
@@ -586,7 +587,7 @@ function Results({ result, policy, onPolicy }: { result: Result; policy: Policy;
               {rooms} Zimmer auf {config.floors} Etagen, {config.maids} Reinigungskräfte, {days} Tage mit jeweils anderen Gästen.
               Beide Spalten rechnen dieselben Gäste und dieselbe Reinigungspolitik; verglichen wird nur die Koordination. Ohne
               Software: {config.baseline.departures === 'radio' ? 'Abreisen meldet die Rezeption per Funk' : 'Abreisen laut Papierliste ab der Check-out-Frist'},{' '}
-              {config.baseline.floors === 'free' ? 'Etagen frei gewählt mit Funk-Durchsagen' : 'feste Etagen je Kraft'}, Abreisen zuerst; Anhänger und
+              {config.baseline.floors === 'free' ? 'Etagen frei gewählt, fertige Etagen per Funk gemeldet' : 'feste Etagen je Kraft'}, Abreisen zuerst; Anhänger und
               Schilder sieht eine Kraft erst auf der Etage, was andere an der Tür erfahren haben, steht auf einer Liste je Etage,
               die sie beim Ankommen liest. Mit RoSe wählt sie wie das echte Board. Die Euro-Angabe rechnet die eingesparten Stunden mit den Vollkosten aus dem Nutzenrechner hoch –
               Geld wird daraus nur, wenn die Einsatzplanung angepasst wird.

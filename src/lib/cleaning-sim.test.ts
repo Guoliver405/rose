@@ -364,14 +364,27 @@ describe('Arbeitsweise ohne Software (Phase 5)', () => {
     }
   })
 
-  it('freie Wahl mit Funk: Startetage aus der Morgenbesprechung, Durchsagen beim Wechsel, kein Auftrag doppelt', () => {
+  it('freie Wahl mit Funk: Startetage aus der Morgenbesprechung, „Etage fertig“ nur bei wirklich fertiger Etage, kein Auftrag doppelt', () => {
     const scn = at({ departures: 'radio', floors: 'free' })
     const r = simulate('paper', 'routine', scn)
+    // Startetage aus der Morgenbesprechung — außer, die Rezeption hat schon eine Abreise gefunkt (Abreisen zuerst).
     for (let m = 0; m < scn.maidFloors.length; m++) {
-      const first = r.segments.find(g => g.maid === m && g.kind === 'clean')
-      if (first) expect(floorOf(first.nr)).toBe(scn.maidFloors[m][0])
+      const segs = r.segments.filter(g => g.maid === m)
+      const move = segs.findIndex(g => g.kind === 'walk' || g.kind === 'patrol')
+      if (move < 0) continue
+      if (segs.slice(0, move).some(g => g.kind === 'radio')) continue
+      expect(floorOf(segs[move].nr)).toBe(scn.maidFloors[m][0])
     }
-    expect(r.segments.some(g => g.kind === 'radio' && !g.jobId)).toBe(true)
+    const announced = r.segments.filter(g => g.kind === 'radio' && !g.jobId)
+    // Jede Etage höchstens einmal, und zum Zeitpunkt der Durchsage ist dort alles vergeben.
+    expect(new Set(announced.map(g => floorOf(g.nr))).size).toBe(announced.length)
+    for (const g of announced) {
+      const f = floorOf(g.nr)
+      const open = scn.rooms.filter(x => x.floor === f && (x.kind === 'departure' || (x.kind === 'stay' && x.presence === 'out')))
+      for (const x of open) expect(r.segments.some(c => c.kind === 'clean' && c.jobId === x.nr && c.start <= g.start)).toBe(true)
+    }
+    // Abreisen kennt nur die angefunkte Kraft: Wer eine Abreise reinigt, hat sie gefunkt bekommen oder stand auf der Etage.
+    expect(r.metrics.radioCalls).toBe(scn.rooms.filter(x => x.kind === 'departure').length + (scn.complaint ? 1 : 0))
     const cleaned = r.segments.filter(g => g.kind === 'clean')
     expect(new Set(cleaned.map(g => g.jobId)).size).toBe(cleaned.length)
     expect(r.metrics.cleaned).toBe(simulate('rose', 'routine', scn).metrics.cleaned)
