@@ -1,6 +1,6 @@
 # Offene Punkte
 
-Stand 26.09.2026. Herkunft in Klammern; Erledigtes wird gestrichen, nicht
+Stand 27.09.2026. Herkunft in Klammern; Erledigtes wird gestrichen, nicht
 gelöscht, damit erkennbar bleibt, was einmal offen war.
 
 ## Vor den ersten echten Kunden
@@ -32,6 +32,16 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
       [GUI-Testkatalogs](Sessions/GUI-Testkatalog.md), die den Menschen
       brauchen (**M** und **C+M**: zweite Management-Sitzung, Manager in zwei
       Häusern, Konto löschen, Druck) — bewusst zurückgestellt (05.09.).
+
+## Housekeeping-Simulator (26./27.09.2026)
+
+- [ ] **Phase 5 im Detail prüfen** (User, 27.09.) — Arbeitsweise ohne Software:
+      Funk als ein Kanal für alle, freie Etagen, „Abreisen zuerst", Vorgabewerte.
+      Stand und Regeln: [Simulator-Plan-2026-09-26.md](Sessions/Simulator-Plan-2026-09-26.md), Abschnitte 16–17.
+- [ ] **Ergänzungen nach ausgiebigem Testen** — vom User angekündigt.
+- [ ] **GUI-Fall L17** in Produktion ([GUI-Testkatalog](Sessions/GUI-Testkatalog.md)).
+- [ ] **Werbe-Mails mit Abmeldelink**, falls sie gebaut werden (Datenschutz Abschnitt 7).
+- [ ] **Rechtstexte des Simulators** anwaltlich prüfen lassen (mit den AGB).
 
 ## Produktentscheidungen
 

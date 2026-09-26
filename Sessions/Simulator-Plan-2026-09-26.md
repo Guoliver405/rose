@@ -4,7 +4,8 @@ Stand 26.09.2026 · Entscheidungen des Users in dieser Session · **Phasen 1 bis
 
 > **Wiederaufnahme in einer neuen Session:** Erst `AGENTS.md` lesen (Abschnitte
 > „Landing Page", „Check-out-Druck", „Mail-Versand mit Rückmeldung"), dann diesen
-> Plan. Phasen 1 bis 4 sind gebaut und in Produktion getestet (Abschnitte 11–14), das Ereignis-Protokoll ebenso (Abschnitt 15). Phase 5 gebaut (Abschnitt 16); die Landing Page bleibt beim typischen herkömmlichen Verfahren. Antworten durchgehend auf **Deutsch** – auch
+> Plan. Alle fünf Phasen sind gebaut und in Produktion (Abschnitte 11–16). **Stand
+> und nächste Schritte: Abschnitt 17 „Wiederaufnahme".** Antworten durchgehend auf **Deutsch** – auch
 > Zwischensätze zwischen Werkzeugaufrufen (Rückmeldung des Users).
 
 ---
@@ -469,3 +470,48 @@ herkömmliche Verfahren (User: „ich bezweifle, dass Funk der internationale St
   Funk), Papierliste (erst ab Frist, dann Abreisen zuerst), freie Wahl (Startetage,
   Durchsagen, kein Auftrag doppelt), ungültige Arbeitsweise. Mit der alten Vorgabe
   (ohne „Abreisen zuerst") war der Umbau bitgleich — Fingerabdruck vorher/nachher.
+
+## 17. Wiederaufnahme (Stand 27.09.2026, nachts)
+
+**Wo wir stehen:** Der Housekeeping-Simulator ist vollständig in Produktion
+(`/simulator`, verlinkt unter `#vergleich` der Landing Page und auf `/admin`).
+Der User hat Registrierung, Bestätigung, Anmeldung, Szenarien, Druck und die
+Umwandlung („Hotel Pattaya", 81 Zimmer) in Produktion getestet. **Phase 5 (Abschnitt
+16) schaut er sich am 27.09. im Detail an** — das Modell „ohne Software" ist frisch
+und nach mehreren Einwänden des Users entstanden; mit Rückfragen zu Einzelregeln
+rechnen.
+
+**Leitlinien des Users (gelten weiter):**
+- **Landing Page = Marketing, aber ehrlich:** zeigt ein typisches herkömmliches
+  Verfahren (Papierliste, feste Etagen, Abreisen zuerst), bleibt einfach, gaukelt
+  nichts vor und muss sich nicht schlecht rechnen; für andere Verfahren verweist sie
+  auf den Simulator. Ziel: Besucher neugierig machen, damit sie im Simulator selbst
+  rechnen.
+- **Simulator = alle Hebel, sachlich:** keine Wertungen im Protokoll, Details
+  eingeklappt, das Wesentliche vorn.
+- **Realismus vor Eleganz:** Personal rechnet keine Scores im Kopf und merkt sich
+  wenig („Etage fertig"); Funk ist ein Kanal, den alle hören.
+
+**Offene Punkte:**
+1. Rückmeldung des Users zu Phase 5 (Regeln, Vorgabewerte: Meldeverzug 5 min,
+   Annehmen 1 min, Mithören 15 s, Durchsage ½ min, Sonderfall 5 min).
+2. Ergänzungen, die der User nach ausgiebigem Testen nennt (angekündigt).
+3. GUI-Fall L17 (Arbeitsweise ohne Software) in Produktion; L11–L16 sind vom User
+   bestätigt.
+4. Die Last der Rezeption als „Leitstelle" ist nur als Zahl der Durchsagen
+   sichtbar — ihre Arbeitszeit bildet das Modell nicht ab (die Rezeption ist keine
+   Figur der Simulation).
+5. Werbe-Mails gibt es nicht; wer sie baut, liefert den Abmeldelink mit
+   (Datenschutz Abschnitt 7 verspricht ihn).
+6. Rechtstexte des Simulators (Datenschutz Abschnitt 7, `/simulator-nutzung`) sind
+   Entwürfe — anwaltliche Prüfung zusammen mit den AGB.
+7. Rechenzeit großer Häuser (3 000 Zimmer ≈ 7 s je Tag, Budget 75 000 Zimmertage).
+
+**Arbeitsweise dieser Sitzung, bewährt:** Vor jedem Umbau des Rechenkerns ein
+Fingerabdruck (SHA-256 über Szenario, Abläufe, Hinweise, Kacheln; Skript im
+Scratchpad der Sitzung, Muster in Abschnitt 11) — mit unveränderter Vorgabe muss
+alles bitgleich bleiben; absichtliche Änderungen der Landing-Zahlen nur mit dem
+User. Varianten über 101 Tage vergleichen, bevor man sie dem User vorlegt.
+Sichtprüfung der angemeldeten Seiten lokal über eine vorübergehende Freischaltung
+von `/simulator` (vor dem Commit entfernen) — der Testzugang aus den Protokollen hat
+ein veraltetes Passwort.
