@@ -54,7 +54,9 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
       danach darf die Landing Page „RoSe merkt es sich" sagen. Aufgabe liegt als
       Chip in der Sitzung vom 26.09.; Details im
       [Protokoll](Sessions/2026-09-26_Landing-Tagesvergleich.md).
-- [ ] **Routine früher bei bekanntem Abreisedatum** (26.09., **als Nächstes**):
+- [x] ~~**Routine früher bei bekanntem Abreisedatum**~~ — 26.09. erledigt
+      (`isKnownStayover` in board.ts, Texte in Einstellung, Hilfe, Lotse).
+      Das Handout nennt weiter die Zeit ohne Abreisedatum. Ursprünglich (26.09.):
       Die Routine wird frühestens zur Check-out-Frist fällig, weil RoSe nicht
       weiß, wer abreist. Ist `stays.expected_checkout` gesetzt und nicht heute,
       ist das Zimmer sicher ein Bleibezimmer — dann schon zur Routine-Zeit

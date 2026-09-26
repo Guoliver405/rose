@@ -185,7 +185,7 @@ const REGELN: Lotse = {
     {
       path: '/einstellungen/hotel', anchor: 'regeln.checkout', kern: true,
       title: '„Check-out bis" ist die Untergrenze der Routine',
-      body: 'RoSe kennt kein Buchungssystem und weiß nicht, wer heute abreist. Deshalb wird die Routine nie vor dieser Zeit fällig: Wer danach noch im Zimmer ist, bleibt. Sonst würde ein Abreisezimmer vor dem Check-out gereinigt — und danach gleich noch einmal.',
+      body: 'RoSe kennt kein Buchungssystem. Ohne eingetragenes Abreisedatum wird die Routine deshalb nicht vor dieser Zeit fällig: Wer danach noch im Zimmer ist, bleibt. Sonst würde ein Abreisezimmer vor dem Check-out gereinigt — und danach gleich noch einmal. Trägt die Rezeption beim Check-in ein Abreisedatum ein, gilt an den Tagen davor schon die Routine-Zeit.',
     },
     {
       path: '/einstellungen/hotel', anchor: 'regeln.aufschub',

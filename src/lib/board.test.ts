@@ -4,7 +4,7 @@ import {
   cleanDeferOptions, dateKeyAfterNights, isCleanDeferred, isDepartureToday, isRoomActive, isStayoverDue,
   isWithinCleaningWindow, localDateKey, parseCleanDefer, parseCleaningWindow, stayoverDueTime,
   parseStayoverPolicy, PRESENCE_STALE_HOURS, roomScore, staleCleaningCutoff, guestCleaningStatus,
-  canAnswerAtDoor, doorDeferUntil, isDeclinedToday,
+  canAnswerAtDoor, doorDeferUntil, isDeclinedToday, isKnownStayover,
 } from './board'
 import { zonedInstant } from './tz'
 
@@ -448,5 +448,36 @@ describe('Gast an der Tür', () => {
       // Gestern verzichtet zählt heute nicht.
       expect(guestCleaningStatus({ ...base, state: { ...idle, clean_declined_on: '2026-09-25' }, now }).kind).toBe('scheduled')
     })
+  })
+})
+
+describe('Routine bei bekanntem Abreisedatum', () => {
+  const policy = parseStayoverPolicy({ stayoverAutoClean: true, stayoverAutoCleanTime: '09:00', checkoutUntil: '11:00' })
+  const due = (now: Date, expectedCheckout: string | null) => isStayoverDue({
+    policy, occupied: true, checkedInAt: berlin(2026, 9, 24, 15).toISOString(), guestSignal: 'none',
+    cleanedToday: false, expectedCheckout, now, timeZone: B,
+  })
+
+  it('bleibt der Gast sicher, gilt die Routine-Zeit statt der Check-out-Frist', () => {
+    expect(due(berlin(2026, 9, 26, 9, 30), '2026-09-28')).toBe(true)
+    expect(due(berlin(2026, 9, 26, 8, 59), '2026-09-28')).toBe(false)
+  })
+
+  it('ohne Datum, am Abreisetag und bei überfälligem Datum bleibt es bei der Frist bzw. ohne Routine', () => {
+    expect(due(berlin(2026, 9, 26, 9, 30), null)).toBe(false)
+    expect(due(berlin(2026, 9, 26, 11, 0), null)).toBe(true)
+    expect(due(berlin(2026, 9, 26, 12, 0), '2026-09-26')).toBe(false) // Abreisetag
+    expect(due(berlin(2026, 9, 26, 9, 30), '2026-09-25')).toBe(false) // überfällig = unbekannt
+    expect(isKnownStayover('2026-09-27', berlin(2026, 9, 26, 23, 30), B)).toBe(true)
+    expect(isKnownStayover('2026-09-27', berlin(2026, 9, 27, 0, 30), B)).toBe(false) // vor Ort schon der 27.
+  })
+
+  it('der Gaststatus nennt die frühere Zeit', () => {
+    const state = { guest_signal: 'none' as const, priority: false, cleaning_by: null, cleaning_started_at: null, clean_not_before: null }
+    const base = { state, staleMinutes: 90, policy, timeZone: B, checkedInAt: berlin(2026, 9, 24, 15).toISOString(), lastCleanDoneAt: null }
+    expect(guestCleaningStatus({ ...base, expectedCheckout: '2026-09-28', now: berlin(2026, 9, 26, 8) }))
+      .toEqual({ kind: 'scheduled_from', at: berlin(2026, 9, 26, 9), reason: 'routine' })
+    expect(guestCleaningStatus({ ...base, expectedCheckout: null, now: berlin(2026, 9, 26, 8) }))
+      .toEqual({ kind: 'scheduled_from', at: berlin(2026, 9, 26, 11), reason: 'routine' })
   })
 })

@@ -147,10 +147,11 @@ export default function HotelSettingsForm({ hotelSlug, initial }: { hotelSlug: s
           Uhr
         </label>
         <p className="mt-1 text-xs text-ink-muted">
-          Die Routine-Reinigung wird nie vor dieser Zeit fällig — wer danach noch im Zimmer
-          ist, bleibt. So wird ein Abreisezimmer nicht vor dem Check-out gereinigt und
-          danach noch einmal. Trägt die Rezeption beim Check-in ein Abreisedatum ein, setzt
-          die Routine an diesem Tag ganz aus.
+          Ohne bekanntes Abreisedatum wird die Routine-Reinigung nicht vor dieser Zeit fällig —
+          wer danach noch im Zimmer ist, bleibt. So wird ein Abreisezimmer nicht vor dem
+          Check-out gereinigt und danach noch einmal. Trägt die Rezeption beim Check-in ein
+          Abreisedatum ein, gilt an den Tagen davor schon die Routine-Zeit, und am Abreisetag
+          setzt die Routine ganz aus.
         </p>
       </div>
 

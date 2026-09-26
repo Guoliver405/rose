@@ -89,7 +89,8 @@ function formatDateKey(key: string): string {
 /* ── Abreise wählen: Nächte, Datum oder offen ────────────────────────────
    a) und b) sind zwei Eingabeformen für denselben Wert (gespeichert wird nur
    das Datum); c) „offen" ist die Vorgabe, damit der Check-in ein Klick
-   bleibt — die Routine fällt dann auf die Check-out-Frist zurück. */
+   bleibt — die Routine fällt dann auf die Check-out-Frist zurück. Mit Datum
+   gilt an den Tagen davor schon die Routine-Zeit (`isKnownStayover`). */
 
 type DepartureChoice =
   | { kind: 'open' }

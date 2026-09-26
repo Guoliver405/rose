@@ -175,7 +175,10 @@ export function cleanDeferOptions(
 
 //
 // Zwei Schranken gegen die doppelte Reinigung am Abreisetag (06.09.2026):
-//   1. Die Routine wird NIE vor der Check-out-Zeit des Hauses fällig
+//   1. Die Routine wird nicht vor der Check-out-Zeit des Hauses fällig — es sei
+//      denn, ein eingetragenes Abreisedatum nach heute belegt, dass der Gast
+//      bleibt (26.09.2026, `isKnownStayover`); dann gilt die Routine-Zeit.
+//      Bisher: NIE vor der Check-out-Zeit
 //      (`policies.checkoutUntil`, Default 11:00). Wer nach der Check-out-Frist
 //      noch im Zimmer ist, bleibt per Definition — Abreisen laufen vormittags
 //      über den Check-out-Klick, Stayovers danach.
@@ -210,8 +213,14 @@ export function parseStayoverPolicy(policies: Record<string, unknown>): Stayover
   }
 }
 
-/** Uhrzeit, ab der die Routine tatsächlich fällig wird: das Spätere aus Routine-Zeit und Check-out-Frist. */
-export function stayoverDueTime(policy: StayoverPolicy): { hour: number; minute: number } {
+/**
+ * Uhrzeit, ab der die Routine tatsächlich fällig wird: das Spätere aus
+ * Routine-Zeit und Check-out-Frist — weil RoSe ohne Abreisedatum nicht weiß,
+ * ob der Gast bleibt. Steht fest, dass er bleibt (`knownStayover`, siehe
+ * `isKnownStayover`), gilt die Routine-Zeit selbst (26.09.2026).
+ */
+export function stayoverDueTime(policy: StayoverPolicy, knownStayover = false): { hour: number; minute: number } {
+  if (knownStayover) return { hour: policy.hour, minute: policy.minute }
   const routine = policy.hour * 60 + policy.minute
   const checkout = policy.checkoutHour * 60 + policy.checkoutMinute
   const m = Math.max(routine, checkout)
@@ -234,6 +243,18 @@ export function isDepartureToday(
 ): boolean {
   if (!expectedCheckout) return false
   return expectedCheckout.slice(0, 10) === zonedDateKey(now, tz)
+}
+
+/**
+ * Bleibt der Gast heute sicher? Nur wenn ein Abreisedatum eingetragen ist und
+ * es NACH heute liegt. Ohne Datum, am Abreisetag und bei überfälligem Datum
+ * (gestern, nicht nachgezogen) ist das unbekannt.
+ */
+export function isKnownStayover(
+  expectedCheckout: string | null | undefined, now: Date = new Date(), tz: string = DEFAULT_TIME_ZONE,
+): boolean {
+  if (!expectedCheckout) return false
+  return expectedCheckout.slice(0, 10) > zonedDateKey(now, tz)
 }
 
 export function isStayoverDue(args: {
@@ -266,7 +287,7 @@ export function isStayoverDue(args: {
   if (args.cleanNotBefore && new Date(args.cleanNotBefore).getTime() > now.getTime()) return false
   if (isDeclinedToday(args.cleanDeclinedOn, now, tz)) return false
 
-  const due = stayoverDueTime(policy)
+  const due = stayoverDueTime(policy, isKnownStayover(args.expectedCheckout, now, tz))
   return now.getTime() >= zonedTimeToday(now, tz, due.hour, due.minute).getTime()
 }
 
@@ -405,7 +426,7 @@ export function guestCleaningStatus(args: {
   if (checkedIn >= todayStart) return { kind: 'none', reason: 'first_day' }
   if (isDepartureToday(args.expectedCheckout, now, tz)) return { kind: 'none', reason: 'departure' }
 
-  const due = stayoverDueTime(policy)
+  const due = stayoverDueTime(policy, isKnownStayover(args.expectedCheckout, now, tz))
   const dueAt = zonedTimeToday(now, tz, due.hour, due.minute)
   const doorAt = state.clean_not_before ? new Date(state.clean_not_before) : null
   if (doorAt && doorAt > now && doorAt >= dueAt) return { kind: 'scheduled_from', at: doorAt, reason: 'door' }

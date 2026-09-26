@@ -78,7 +78,7 @@ export const ROOM_SYMBOLS: Record<RoomSymbolId, RoomSymbol> = {
   },
   routine: {
     label: 'Routine-Reinigung fällig',
-    text: 'Nur mit eingeschalteter Routine (Hotel & Regeln): ab der zweiten Nacht und ab der eingestellten Uhrzeit, frühestens zur Check-out-Frist, solange heute noch nicht gereinigt wurde und kein „Nicht stören" anliegt.',
+    text: 'Nur mit eingeschalteter Routine (Hotel & Regeln): ab der zweiten Nacht und ab der eingestellten Uhrzeit — ohne eingetragenes Abreisedatum frühestens zur Check-out-Frist —, solange heute noch nicht gereinigt wurde und kein „Nicht stören" anliegt.',
     className: 'text-attention-strong',
   },
   checkout: {

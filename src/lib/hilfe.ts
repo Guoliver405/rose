@@ -371,7 +371,7 @@ const REGELN: HilfeThema = {
         },
         {
           frage: 'Was bewirkt „Check-out bis"?',
-          antwort: 'Es ist die Untergrenze der Routine. RoSe kennt kein Buchungssystem und weiß nicht, wer heute abreist; deshalb wird die Routine nie vor dieser Zeit fällig — wer danach noch da ist, bleibt. Sonst würde ein Abreisezimmer vor dem Check-out gereinigt und danach noch einmal. Das Handout nennt die effektive Zeit.',
+          antwort: 'Es ist die Untergrenze der Routine, solange RoSe nicht weiß, ob der Gast heute abreist: Dann wird die Routine nicht vor dieser Zeit fällig — wer danach noch da ist, bleibt. Sonst würde ein Abreisezimmer vor dem Check-out gereinigt und danach noch einmal. Ist beim Aufenthalt ein Abreisedatum eingetragen, gilt an den Tagen davor schon die Routine-Zeit. Das Handout nennt die Zeit ohne Abreisedatum.',
         },
         {
           frage: '„Frühestens ab" — wie wähle ich die Grenze?',
