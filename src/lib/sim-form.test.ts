@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG } from './cleaning-sim'
-import { DEFAULT_FORM, configFromForm, formFromConfig, fromClock, sharesTotal, toClock } from './sim-form'
+import { DEFAULT_FORM, changedDetails, configFromForm, formFromConfig, fromClock, occupancyOf, sharesTotal, toClock, withOccupancy } from './sim-form'
 
 describe('Simulator-Formular', () => {
   it('die Vorgabe des Formulars ist exakt die Konfiguration der Landing Page', () => {
@@ -29,5 +29,29 @@ describe('Simulator-Formular', () => {
     const { config } = configFromForm(f)
     expect(Object.values(config.mix).reduce((a, b) => a + b, 0)).toBe(21)
     expect(config.guest.dndAllDay).toBe(0.5)
+  })
+})
+
+describe('Wesentliches und Details', () => {
+  it('Vorgabe: 83 % belegt, 25 % Abreisen, keine Detail-Abweichung', () => {
+    expect(occupancyOf(DEFAULT_FORM)).toBe(83)
+    expect(DEFAULT_FORM.shares.departure).toBe(25)
+    expect(changedDetails(DEFAULT_FORM)).toBe(0)
+  })
+
+  it('Belegung ändern: Summe bleibt 100, Bleibegäste behalten ihr Verhältnis, zählt nicht als Detail', () => {
+    const f = withOccupancy(DEFAULT_FORM, 60, 20)
+    expect(sharesTotal(f)).toBe(100)
+    expect(f.shares.empty).toBe(40)
+    expect(f.shares.departure).toBe(20)
+    expect(f.shares.outWants / f.shares.declines).toBeCloseTo(47 / 5, 0)
+    expect(changedDetails(f)).toBe(0)
+    expect(configFromForm(f).errors).toEqual([])
+  })
+
+  it('Abreisen höchstens so viele wie belegt; Details werden gezählt', () => {
+    expect(withOccupancy(DEFAULT_FORM, 30, 50).shares.departure).toBe(30)
+    const f = { ...DEFAULT_FORM, days: 30, guest: { ...DEFAULT_FORM.guest, signals: 50 }, duration: { ...DEFAULT_FORM.duration, walkFloor: 3, stay: 20 } }
+    expect(changedDetails(f)).toBe(3)
   })
 })

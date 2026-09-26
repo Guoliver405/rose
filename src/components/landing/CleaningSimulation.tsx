@@ -80,10 +80,12 @@ function reducedMotion(): boolean {
 }
 const noSubscribe = () => () => {}
 
-export default function CleaningSimulation({ scenario = SCENARIO, caption }: {
+export default function CleaningSimulation({ scenario = SCENARIO, caption, policy: controlled }: {
   scenario?: Scenario
   /** Kleingedrucktes unter dem Vergleich; Vorgabe ist das der Landing Page. */
   caption?: ReactNode
+  /** Von außen gesteuert (Simulator: ein Umschalter für Grafik und Zahlen) — dann ohne eigenen. */
+  policy?: Policy
 }) {
   const scn = scenario
   const clock = (min: number) => clockLabel(min, scn.params.shiftStart)
@@ -92,7 +94,8 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption }: {
     const res = simulate(c, p, scn)
     return { key: `${c}-${p}`, res, notes: highlights(res, scn) }
   }), [scn])
-  const [policy, setPolicy] = useState<Policy>('routine')
+  const [ownPolicy, setPolicy] = useState<Policy>('routine')
+  const policy = controlled ?? ownPolicy
   const shown = (c: Coordination) => runs.find(r => r.key === `${c}-${policy}`)!
   // Eine Uhr für alle Abläufe — der Umschalter verschiebt nichts.
   const end = useMemo(() => Math.max(...runs.map(r => r.res.metrics.finishedAt)) + 5, [runs])
@@ -180,7 +183,7 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption }: {
 
   return (
     <div ref={container} className="rounded-2xl border border-edge bg-surface-elevated p-4 sm:p-6">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+      {!controlled && <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
         <span className="text-sm font-semibold text-ink-soft">Bleibezimmer reinigen:</span>
         <div role="group" aria-label="Reinigung der Bleibezimmer" className="inline-flex rounded-lg border border-edge bg-surface p-0.5">
           {([['routine', 'täglich'], ['onDemand', 'nur auf Wunsch']] as const).map(([p, label]) => (
@@ -194,9 +197,9 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption }: {
           ))}
         </div>
         <span className="text-xs text-ink-muted">gilt für beide Bilder – verglichen wird nur die Koordination</span>
-      </div>
+      </div>}
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="min-w-20 text-3xl font-black tabular-nums text-ink">{clock(t)}</div>
         <button type="button" onClick={togglePlay}
           className="flex items-center gap-1.5 rounded-lg bg-action px-3 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong">
