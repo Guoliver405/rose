@@ -1,6 +1,6 @@
 # Offene Punkte
 
-Stand 16.09.2026. Herkunft in Klammern; Erledigtes wird gestrichen, nicht
+Stand 26.09.2026. Herkunft in Klammern; Erledigtes wird gestrichen, nicht
 gelöscht, damit erkennbar bleibt, was einmal offen war.
 
 ## Vor den ersten echten Kunden
@@ -54,10 +54,31 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
       danach darf die Landing Page „RoSe merkt es sich" sagen. Aufgabe liegt als
       Chip in der Sitzung vom 26.09.; Details im
       [Protokoll](Sessions/2026-09-26_Landing-Tagesvergleich.md).
-- [ ] **Routine früher bei bekanntem Abreisedatum?** (26.09.) Die Routine wird
-      frühestens zur Check-out-Frist fällig, weil RoSe nicht weiß, wer abreist.
-      Ist `stays.expected_checkout` gesetzt und nicht heute, könnte sie schon
-      zur Routine-Zeit fällig werden — weniger Leerlauf am Vormittag.
+- [ ] **Routine früher bei bekanntem Abreisedatum** (26.09., **als Nächstes**):
+      Die Routine wird frühestens zur Check-out-Frist fällig, weil RoSe nicht
+      weiß, wer abreist. Ist `stays.expected_checkout` gesetzt und nicht heute,
+      ist das Zimmer sicher ein Bleibezimmer — dann schon zur Routine-Zeit
+      fällig (`isStayoverDue`/`stayoverDueTime` in board.ts, Gaststatus,
+      Handout-Zeitangabe, Tests). Voraussetzung für die faire Korrektur des
+      Landing-Vergleichs (nächster Punkt).
+- [ ] **Landing-Vergleich: Bleibezimmer ohne Software ab 9:00** (26.09., Frage
+      des Users): Wer die Abreiseliste auf Papier hat, weiß auch, wer bleibt —
+      Bild 1 wartet heute zu Unrecht bis 11:00 (Überlagerung zweier früherer
+      Korrekturen, siehe Protokoll 2026-09-26). Korrektur: Bild 1 reinigt
+      Bleibezimmer ab 9:00 und klopft umsonst, wo der Gast noch da ist; Bild 2
+      bekommt dasselbe Wissen über das Abreisedatum (Punkt davor). Danach
+      Startwert neu suchen, Fertig-Zeiten und Protokolle prüfen.
+- [ ] **In Produktion ansehen — geht nur mit Management-Anmeldung** (26.09.):
+      (a) Rezeptions-Übersicht in einem Haus mit Routine: Kachel mit Blatt
+      („Heute keine Reinigung") bzw. Uhr („Reinigung ab … an der Tür
+      vereinbart"); (b) Zimmer-Verlauf: „Heute keine Reinigung gewünscht —
+      Gast", „An der Tür: Gast möchte später / heute keine Reinigung";
+      (c) Hilfe → „Das Reinigungsboard" (Tür-Knöpfe, Schritt „Gast ist da …")
+      und „Was der Gast sieht" (Verzicht-Knopf); (d) Landing `#vergleich`:
+      läuft die Schleife nach 8 s Endstand wieder ab 9:00?
+- [ ] **Reinigungsdauer einer Abreise belegen** (26.09.): Landing-Vergleich
+      rechnet 30 min als Planwert, nicht recherchiert (üblich 25–45 min). Eine
+      Quelle suchen oder die Zahl im Kleingedruckten als Annahme kennzeichnen.
 - [ ] **Zwei Zimmer-Zustände?** Aktuell gibt es einen (`deactivated_at`). Ob
       „Renovierung" von „abbestellt" getrennt gehört, ist eine reine
       Preisfrage — am Datenmodell ändert sie nichts. (6d-Plan, Abschnitt 14)
