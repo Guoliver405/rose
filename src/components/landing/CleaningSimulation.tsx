@@ -256,7 +256,10 @@ function Panel({ title, lead, res, t }: { title: string; lead: string; res: SimR
       <div className="mt-3 space-y-1 rounded-xl border border-edge bg-surface p-1.5 sm:p-2">
         {floors.map(f => (
           <div key={f} className="flex items-center gap-0.5 sm:gap-1">
-            <span className="w-7 shrink-0 text-[10px] font-semibold text-ink-muted sm:w-8">{f}. OG</span>
+            {/* Schmal nur die Etage und in der Kachel die Zimmernummer auf der Etage — „1001" passt dort nicht. */}
+            <span className="w-4 shrink-0 text-[10px] font-semibold text-ink-muted lg:w-8">
+              {f}<span className="hidden lg:inline">. OG</span>
+            </span>
             {tiles.filter(x => x.floor === f).map(x => (
               <RoomTile key={x.nr} tile={x} maidsHere={maids.flatMap((nr, i) => (nr === x.nr ? [i] : []))} />
             ))}
@@ -325,7 +328,8 @@ function RoomTile({ tile, maidsHere }: { tile: Tile; maidsHere: number[] }) {
   return (
     <div className={`relative flex h-7 min-w-0 flex-1 items-center justify-center gap-px rounded border text-[9px] font-bold tabular-nums sm:text-[10px] ${TILE[tile.state]} ${ring}`}>
       {BAR[tile.state] && <span className={`absolute inset-x-0 bottom-0 h-1 rounded-b-[3px] ${BAR[tile.state]}`} aria-hidden />}
-      {tile.nr}
+      <span className="lg:hidden">{tile.nr.slice(-2)}</span>
+      <span className="hidden lg:inline">{tile.nr}</span>
       {(tile.state === 'dnd' || tile.state === 'declined') && <Ban className={icon} aria-hidden />}
       {tile.state === 'skipped' && <Leaf className={icon} aria-hidden />}
       {tile.state === 'cleaning' && <Loader2 className={`${icon} animate-spin`} aria-hidden />}
