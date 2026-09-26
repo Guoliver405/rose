@@ -9,7 +9,6 @@ import SimSignupForm from './SimSignupForm'
 
 export const metadata: Metadata = {
   title: `Registrieren – ${SIMULATOR_NAME}`,
-  robots: { index: false, follow: false },
 }
 
 export default async function SimRegistrierenPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {

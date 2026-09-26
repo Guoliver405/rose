@@ -225,6 +225,10 @@ formuliert, dass ein Abweichen ein Befund ist.
 | L8 | Mein Konto | Einwilligung ab- und wieder anschalten | Text „Abbestellt" bzw. Datum; DB-Zeile folgt | C+M |
 | L9 | Konto löschen | „LÖSCHEN" eintippen | abgemeldet auf der Startseite; Auth-Nutzer und `sim_accounts` weg; Anmeldung scheitert | **M** |
 | L10 | Hotelzugang | als Inhaber `/simulator` öffnen | Werkzeug ohne eigene Registrierung; „Mein Konto" bietet nur „Simulator-Daten löschen" | C |
+| L11 | Szenario speichern | Einstellungen ändern, „Speichern …" mit Namen; weiter ändern → „geändert", „Speichern" überschreibt | Liste zeigt Name, Zimmer, Kräfte, Datum; Laden stellt das Formular wieder her | M |
+| L12 | Vergleich | zwei oder drei Szenarien ankreuzen, „Ausgewählte vergleichen" | Fortschritt je Szenario; Tabelle nebeneinander, Umschalter täglich/auf Wunsch wirkt | M |
+| L13 | Diagramm | nach dem Rechnen, beide Kennzahlen umschalten, über Säulen fahren und mit Tab durchgehen | Tooltip „n Tage · Reihe · Uhrzeit"; Check-in-Linie nur bei Abreisen; am Handy seitlich scrollbar | C |
+| L14 | Drucken | „Drucken" im Ergebnis | eingeklappte Teile im Druck offen, keine Knöpfe; danach wieder eingeklappt | **M** |
 
 ### K — Theme und Robustheit
 

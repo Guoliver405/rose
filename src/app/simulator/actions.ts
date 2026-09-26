@@ -6,6 +6,8 @@ import { getSimContext } from '@/utils/auth'
 import { currentIpHash } from '@/utils/login-throttle'
 import { deleteSimAccount, registerSimAccount, resendSimConfirmation, setSimMarketing } from '@/utils/sim-account'
 import { parseSignup } from '@/lib/sim-account'
+import { formFromSaved, toSaved, type SimForm } from '@/lib/sim-form'
+import { deleteScenario, listScenarios, renameScenario, saveScenario, type ScenarioItem } from '@/utils/sim-scenarios'
 
 /*
  * Aktionen des Housekeeping-Simulators (Phase 2, 26.09.2026). Die Logik steht
@@ -48,4 +50,30 @@ export async function simLogoutAction(): Promise<void> {
   const supabase = await createClient()
   await supabase.auth.signOut()
   redirect('/simulator')
+}
+
+// ── Szenarien (Phase 3) ─────────────────────────────────────────────────────
+
+export async function listScenariosAction(): Promise<{ items?: ScenarioItem[]; error?: string }> {
+  const ctx = await getSimContext()
+  if (!ctx) return { error: 'Bitte erneut anmelden.' }
+  return { items: await listScenarios(ctx.userId) }
+}
+
+export async function saveScenarioAction(name: string, form: SimForm, id?: string): Promise<{ id?: string; error?: string }> {
+  const ctx = await getSimContext()
+  if (!ctx) return { error: 'Bitte erneut anmelden.' }
+  return saveScenario(ctx.userId, name, formFromSaved(toSaved(form)), id)
+}
+
+export async function renameScenarioAction(id: string, name: string): Promise<{ error?: string }> {
+  const ctx = await getSimContext()
+  if (!ctx) return { error: 'Bitte erneut anmelden.' }
+  return renameScenario(ctx.userId, id, name)
+}
+
+export async function deleteScenarioAction(id: string): Promise<{ error?: string }> {
+  const ctx = await getSimContext()
+  if (!ctx) return { error: 'Bitte erneut anmelden.' }
+  return deleteScenario(ctx.userId, id)
 }

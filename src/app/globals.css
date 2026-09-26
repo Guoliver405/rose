@@ -232,6 +232,8 @@
   --color-text-secondary:  var(--rs-slate-700);
   --color-text-muted:      var(--rs-slate-400);
   --color-text-inverse:    var(--rs-white);
+  /* Diagramme: Vergleichsreihe neben der Aktionsfarbe (≥ 3:1 auf der Fläche, Simulator 26.09.2026) */
+  --color-text-chart-context: var(--rs-slate-500);
 
   /* Border */
   --color-border-subtle:   var(--rs-slate-200);
@@ -310,6 +312,8 @@
     --color-text-secondary:  var(--rs-slate-200);
     --color-text-muted:      var(--rs-slate-400);
     --color-text-inverse:    var(--rs-slate-900);
+    /* Diagramme: Vergleichsreihe neben der Aktionsfarbe (≥ 3:1 auf der Fläche, Simulator 26.09.2026) */
+    --color-text-chart-context: var(--rs-slate-400);
 
     --color-border-subtle:   var(--rs-slate-700);
     --color-border-strong:   var(--rs-slate-600);
@@ -381,6 +385,8 @@
   --color-text-secondary:  var(--rs-slate-200);
   --color-text-muted:      var(--rs-slate-400);
   --color-text-inverse:    var(--rs-slate-900);
+  /* Diagramme: Vergleichsreihe neben der Aktionsfarbe (≥ 3:1 auf der Fläche, Simulator 26.09.2026) */
+  --color-text-chart-context: var(--rs-slate-400);
 
   --color-border-subtle:   var(--rs-slate-700);
   --color-border-strong:   var(--rs-slate-600);
@@ -515,6 +521,8 @@
     --color-text-secondary:  var(--rs-slate-700);
     --color-text-muted:      var(--rs-slate-400);
     --color-text-inverse:    var(--rs-white);
+    /* Diagramme: Vergleichsreihe neben der Aktionsfarbe (≥ 3:1 auf der Fläche, Simulator 26.09.2026) */
+    --color-text-chart-context: var(--rs-slate-500);
 
     --color-border-subtle:   var(--rs-slate-200);
     --color-border-strong:   var(--rs-slate-300);
@@ -722,6 +730,7 @@
   --color-ink:         var(--color-text-primary);
   --color-ink-soft:    var(--color-text-secondary);
   --color-ink-muted:   var(--color-text-muted);
+  --color-chart-context: var(--color-text-chart-context);
   --color-ink-inverse: var(--color-text-inverse);
 
   /* Edge (Borders) */

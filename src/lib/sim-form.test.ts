@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG } from './cleaning-sim'
-import { DEFAULT_FORM, changedDetails, configFromForm, formFromConfig, fromClock, occupancyOf, sharesTotal, toClock, withOccupancy } from './sim-form'
+import { DEFAULT_FORM, changedDetails, configFromForm, formFromConfig, formFromSaved, fromClock, occupancyOf, sharesTotal, toClock, toSaved, withOccupancy } from './sim-form'
 
 describe('Simulator-Formular', () => {
   it('die Vorgabe des Formulars ist exakt die Konfiguration der Landing Page', () => {
@@ -53,5 +53,19 @@ describe('Wesentliches und Details', () => {
     expect(withOccupancy(DEFAULT_FORM, 30, 50).shares.departure).toBe(30)
     const f = { ...DEFAULT_FORM, days: 30, guest: { ...DEFAULT_FORM.guest, signals: 50 }, duration: { ...DEFAULT_FORM.duration, walkFloor: 3, stay: 20 } }
     expect(changedDetails(f)).toBe(3)
+  })
+})
+
+describe('Gespeicherte Szenarien', () => {
+  it('hin und zurück unverändert; Fehlendes und Kaputtes aus der Vorgabe', () => {
+    const f = withOccupancy({ ...DEFAULT_FORM, floors: 7, days: 30 }, 70, 20)
+    expect(formFromSaved(JSON.parse(JSON.stringify(toSaved(f))))).toEqual(f)
+    const partial = formFromSaved({ v: 1, form: { floors: 4, times: { shiftStart: '07:00' }, guest: { signals: 'x' } } })
+    expect(partial.floors).toBe(4)
+    expect(partial.times.shiftStart).toBe('07:00')
+    expect(partial.times.checkinFrom).toBe(DEFAULT_FORM.times.checkinFrom)
+    expect(partial.guest.signals).toBe(DEFAULT_FORM.guest.signals)
+    expect(formFromSaved(null)).toEqual(DEFAULT_FORM)
+    expect(formFromSaved('Unsinn')).toEqual(DEFAULT_FORM)
   })
 })

@@ -11,8 +11,8 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: '*',
-      allow: ['/', '/impressum', '/datenschutz', '/agb', '/login', '/registrieren'],
-      disallow: ['/admin', '/h/', '/guest', '/service', '/auth/', '/passwort-neu', '/passwort-vergessen'],
+      allow: ['/', '/impressum', '/datenschutz', '/agb', '/login', '/registrieren', '/simulator', '/simulator-nutzung'],
+      disallow: ['/admin', '/h/', '/guest', '/service', '/auth/', '/passwort-neu', '/passwort-vergessen', '/simulator/konto'],
     },
     sitemap: `${siteUrl()}/sitemap.xml`,
   }

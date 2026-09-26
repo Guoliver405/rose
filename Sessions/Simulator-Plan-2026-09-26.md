@@ -1,10 +1,10 @@
 # Bauplan: Reinigungs-Simulator als eigenes Werkzeug hinter einer Anmeldung
 
-Stand 26.09.2026 · Entscheidungen des Users in dieser Session · **Phasen 1 und 2 gebaut (26.09. abends), siehe Abschnitte 11 und 12**
+Stand 26.09.2026 · Entscheidungen des Users in dieser Session · **Phasen 1 bis 3 gebaut (26.09. abends), siehe Abschnitte 11 bis 13**
 
 > **Wiederaufnahme in einer neuen Session:** Erst `AGENTS.md` lesen (Abschnitte
 > „Landing Page", „Check-out-Druck", „Mail-Versand mit Rückmeldung"), dann diesen
-> Plan. Phasen 1 und 2 sind gebaut (Abschnitte 11, 12) — offen ist der Produktionslauf L1–L10 (GUI-Katalog), dann Phase 3. Antworten durchgehend auf **Deutsch** – auch
+> Plan. Phasen 1 bis 3 sind gebaut (Abschnitte 11–13) — als Nächstes Phase 4 (Umwandlung in ein Hotelkonto). Antworten durchgehend auf **Deutsch** – auch
 > Zwischensätze zwischen Werkzeugaufrufen (Rückmeldung des Users).
 
 ---
@@ -310,3 +310,43 @@ Integrationstest [sim-account.test.ts](../tests/integration/sim-account.test.ts)
    Abmeldelink — wer sie baut, muss ihn mitliefern.
 3. Nebenwirkung: Registriert jemand eine Adresse mit offener Einladung ins Hotelprodukt,
    verliert die Einladung ihren Link (erneut senden hilft).
+
+## 13. Stand nach Phase 3 (26.09.2026, abends)
+
+Vorher, nach dem ersten Produktionsblick des Users:
+
+- **Aufbau** Einstellungen → mittlerer Tag als Bild → Kennzahlen; überall **Wesentliches
+  vorn, Details eingeklappt** (zehn Kernfelder, „Weitere Annahmen" mit Zähler der
+  abweichenden Werte; Belegung vorn als „belegt %" und „Abreisen %", die Bleibegäste
+  behalten dabei ihr Verhältnis — `withOccupancy` in [sim-form.ts](../src/lib/sim-form.ts)).
+  Ein Umschalter täglich/auf Wunsch für Bild und Zahlen (`CleaningSimulation` nimmt
+  `policy` von außen).
+- **Gleiche Ausgangslage im Tagesbild:** „frühestens ab" ist in beiden Bildern rot (RoSe
+  mit Stoppuhr statt Verbotsschild — derselbe Gast, nur kennt RoSe die Uhrzeit), die Uhr
+  beginnt um 7:59. Gilt auch für die Landing Page.
+
+Phase 3:
+
+- **Szenarien** ([ScenarioPanel](../src/app/simulator/ScenarioPanel.tsx),
+  [utils/sim-scenarios.ts](../src/utils/sim-scenarios.ts)): speichern, überschreiben,
+  speichern als, laden, umbenennen, löschen; höchstens 30. Gespeichert wird das Formular
+  (`{ v: 1, form }`); `formFromSaved` füllt Fehlendes aus der Vorgabe, damit alte
+  Szenarien nach einer Modellerweiterung weiter öffnen. **Vergleich** von zwei oder drei
+  Szenarien: nacheinander im Worker gerechnet, Tabelle nebeneinander (ohne → mit RoSe).
+  Integrationstest: fremde Nutzer können weder sehen noch ändern noch löschen.
+- **Diagramm** [DistributionChart](../src/components/simulator/DistributionChart.tsx),
+  Rechnung in [sim-chart.ts](../src/lib/sim-chart.ts): Säulen je 10 Minuten, beide
+  Reihen auf einer Achse und mit gemeinsamer Höhe, Check-in-Linie, Median markiert,
+  „nicht fertig" rechts; umschaltbar „Abreisen bezugsfertig" / „Alles fertig"; Tooltip
+  mit Zeiger und Tastatur. Form „Hervorhebung" nach dem dataviz-Verfahren: RoSe in der
+  Aktionsfarbe, Vergleichsreihe grau im neuen Token `--color-chart-context`
+  (hell Slate-500, dunkel Slate-400; Validator: Kontrast ≥ 3:1, ΔE ≥ 16 normal/protan,
+  tritan hell 6,9 — erlaubt, weil die Reihen zusätzlich in beschrifteten Zeilen stehen).
+  Mindestbreite 600 px mit seitlichem Scrollen, damit die Schrift am Handy lesbar bleibt.
+- **Drucken** ohne Bibliothek: öffnet vorher alle eingeklappten Teile, Bedienelemente
+  `print:hidden`.
+- **Landing Page:** unter `#vergleich` der Aufruf „Mit den Zahlen Ihres Hauses rechnen"
+  → `/simulator`; `/simulator`, `/simulator/registrieren`, `/simulator-nutzung` in
+  Sitemap und robots, `/simulator/konto` gesperrt, `noindex` entfernt.
+
+**Offen:** GUI-Fälle L11–L14 (Szenarien, Vergleich, Diagramm, Druck) in Produktion.

@@ -27,6 +27,8 @@ vi.mock('next/headers', () => ({
 import {
   getAccountContext, getAdminContext, getManagementContext, getSimContext, landingRoute, listAccessibleHotels,
 } from '@/utils/auth'
+import { deleteScenario, listScenarios, renameScenario, saveScenario } from '@/utils/sim-scenarios'
+import { DEFAULT_FORM } from '@/lib/sim-form'
 import {
   deleteSimAccount, markSimConfirmed, registerSimAccount, resendSimConfirmation, type SimSenders,
 } from '@/utils/sim-account'
@@ -171,6 +173,30 @@ describe('Simulator-Konto', () => {
     expect(acc).toEqual([])
     const { data: ownAcc } = await own.from('sim_accounts').select('user_id')
     expect(ownAcc).toEqual([{ user_id: sim.id }])
+  })
+
+  it('Szenarien: speichern, überschreiben, umbenennen, löschen — nur die eigenen', async () => {
+    const created = await saveScenario(sim.id, '  Sommer,   6 Kräfte ', { ...DEFAULT_FORM, maids: 6 }) as { id: string }
+    expect(created.id).toBeTruthy()
+    let list = await listScenarios(sim.id)
+    const mine = list.find(x => x.id === created.id)!
+    expect(mine.name).toBe('Sommer, 6 Kräfte')
+    expect(mine.form.maids).toBe(6)
+    expect((await saveScenario(sim.id, 'Sommer', { ...DEFAULT_FORM, maids: 7 }, created.id)).id).toBe(created.id)
+    expect(await renameScenario(sim.id, created.id, 'Hochsaison')).toEqual({})
+    list = await listScenarios(sim.id)
+    expect(list.find(x => x.id === created.id)).toMatchObject({ name: 'Hochsaison', form: { maids: 7 } })
+
+    // Fremde Nutzer: weder überschreiben noch umbenennen noch löschen, und sie sehen es nicht.
+    const other = world.alpha.owner.id
+    expect((await saveScenario(other, 'x', DEFAULT_FORM, created.id)).error).toBeTruthy()
+    expect((await renameScenario(other, created.id, 'x')).error).toBeTruthy()
+    expect((await deleteScenario(other, created.id)).error).toBeTruthy()
+    expect((await listScenarios(other)).some(x => x.id === created.id)).toBe(false)
+
+    expect(await deleteScenario(sim.id, created.id)).toEqual({})
+    expect((await listScenarios(sim.id)).some(x => x.id === created.id)).toBe(false)
+    expect((await saveScenario(sim.id, '   ', DEFAULT_FORM)).error).toMatch(/Namen/)
   })
 
   it('Hotelzugang: Inhaber und Manager ja, Rezeption und Reinigung nicht; Anmeldung landet weiter im Haus', async () => {

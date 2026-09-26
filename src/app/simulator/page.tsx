@@ -4,14 +4,13 @@ import { CheckCircle2 } from 'lucide-react'
 import LegalFooter from '@/components/LegalFooter'
 import { getSimContext } from '@/utils/auth'
 import { SIMULATOR_NAME } from '@/lib/sim-account'
+import { listScenarios } from '@/utils/sim-scenarios'
 import SimHeader from './SimHeader'
 import SimulatorApp from './SimulatorApp'
 
 export const metadata: Metadata = {
   title: `${SIMULATOR_NAME} – RoSe`,
   description: 'Rechnen Sie Ihr Haus durch: Housekeeping ohne Steuerung und mit RoSe, über viele Tage.',
-  // Bis der Aufruf auf der Landing Page steht (Phase 3), nicht im Suchindex.
-  robots: { index: false, follow: false },
 }
 
 /**
@@ -22,6 +21,7 @@ export const metadata: Metadata = {
  */
 export default async function SimulatorPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const [ctx, sp] = await Promise.all([getSimContext(), searchParams])
+  const scenarios = ctx ? await listScenarios(ctx.userId) : []
 
   return (
     <>
@@ -45,7 +45,7 @@ export default async function SimulatorPage({ searchParams }: { searchParams: Pr
             Die Regeln für „mit RoSe“ sind die des echten Reinigungsboards. Derzeit nur auf Deutsch.
           </p>
         </div>
-        {ctx ? <SimulatorApp /> : <Intro />}
+        {ctx ? <SimulatorApp initialScenarios={scenarios} /> : <Intro />}
       </main>
       <LegalFooter />
     </>

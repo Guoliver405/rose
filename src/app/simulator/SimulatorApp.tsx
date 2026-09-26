@@ -1,11 +1,14 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { AlertTriangle, ChevronRight, Leaf, Loader2, Play, RotateCcw, Square } from 'lucide-react'
+import { AlertTriangle, ChevronRight, Leaf, Loader2, Play, Printer, RotateCcw, Square, X } from 'lucide-react'
 import CleaningSimulation from '@/components/landing/CleaningSimulation'
+import DistributionChart from '@/components/simulator/DistributionChart'
+import type { ScenarioItem } from '@/utils/sim-scenarios'
+import ScenarioPanel from './ScenarioPanel'
 import { LIMITS, buildScenario, clockLabel, paramsFor, type MixKey, type Policy, type ScenarioConfig, type SimDurations, type SimTimes } from '@/lib/cleaning-sim'
 import { ROI_DEFAULTS, DAYS_PER_MONTH } from '@/lib/roi'
-import { validateRun, workload, type Dist, type SideSummary, type SimMessage, type SimRequest, type Summary } from '@/lib/sim-batch'
+import { validateRun, workload, type DayRun, type Dist, type SideSummary, type SimMessage, type SimRequest, type Summary } from '@/lib/sim-batch'
 import {
   DEFAULT_FORM, DETAIL_DURATIONS, ESSENTIAL_DURATIONS, ESSENTIAL_TIMES, changedDetails, configFromForm,
   occupancyOf, sharesTotal, withOccupancy, type GuestKey, type SimForm,
@@ -73,49 +76,103 @@ const STAY_MIX: MixKey[] = ['declines', 'outWants', 'outNoRequest']
 
 const field = 'w-full rounded-lg border border-edge bg-surface px-2.5 py-1.5 text-ink tabular-nums outline-none focus:border-active'
 
-type Running = { id: number; done: number; total: number }
-type Result = { summary: Summary; config: ScenarioConfig; days: number }
+type Running = { done: number; total: number; label?: string }
+type Result = { summary: Summary; runs: DayRun[]; config: ScenarioConfig; days: number }
+type Compared = { name: string; summary: Summary; config: ScenarioConfig; days: number }
 
-export default function SimulatorApp() {
+export default function SimulatorApp({ initialScenarios = [] }: { initialScenarios?: ScenarioItem[] }) {
   const [form, setForm] = useState<SimForm>(DEFAULT_FORM)
   const [running, setRunning] = useState<Running | null>(null)
   const [result, setResult] = useState<Result | null>(null)
   const [runErrors, setRunErrors] = useState<string[]>([])
   const [policy, setPolicy] = useState<Policy>('routine')
+  const [scenarios, setScenarios] = useState<ScenarioItem[]>(initialScenarios)
+  const [active, setActive] = useState<ScenarioItem | null>(null)
+  const [compared, setCompared] = useState<Compared[] | null>(null)
   const worker = useRef<Worker | null>(null)
+  const abort = useRef<(() => void) | null>(null)
   const nextId = useRef(1)
 
   const { config, errors: formErrors } = useMemo(() => configFromForm(form), [form])
   const errors = useMemo(() => [...formErrors, ...validateRun(config, form.days)], [formErrors, config, form.days])
   const stale = result !== null && (JSON.stringify(result.config) !== JSON.stringify(config) || result.days !== form.days)
+  const dirty = active !== null && JSON.stringify(active.form) !== JSON.stringify(form)
 
   useEffect(() => () => worker.current?.terminate(), [])
+
+  /**
+   * Ein Lauf im Worker. Je Lauf ein frischer Worker; Abbrechen beendet ihn
+   * (`terminate`) — ein synchron rechnender Worker nähme eine Nachricht erst
+   * nach dem Lauf entgegen.
+   */
+  const runJob = (cfg: ScenarioConfig, days: number, onProgress: (done: number, total: number) => void) =>
+    new Promise<{ runs: DayRun[]; summary: Summary }>((resolve, reject) => {
+      worker.current?.terminate()
+      const id = nextId.current++
+      const w = new Worker(new URL('../../components/simulator/sim.worker.ts', import.meta.url))
+      worker.current = w
+      abort.current = () => reject(new Error('abgebrochen'))
+      w.onmessage = (e: MessageEvent<SimMessage>) => {
+        const msg = e.data
+        if (msg.id !== id) return
+        if (msg.type === 'progress') onProgress(msg.done, msg.total)
+        else if (msg.type === 'invalid') { w.terminate(); reject(new Error(msg.errors.join(' '))) }
+        else { w.terminate(); resolve({ runs: msg.runs, summary: msg.summary }) }
+      }
+      w.onerror = () => { w.terminate(); reject(new Error('Die Rechnung ist abgebrochen. Bitte erneut versuchen.')) }
+      const req: SimRequest = { type: 'run', id, config: cfg, days }
+      w.postMessage(req)
+    })
 
   const stop = () => {
     worker.current?.terminate()
     worker.current = null
+    abort.current?.()
+    abort.current = null
     setRunning(null)
+  }
+
+  const fail = (err: unknown) => {
+    if (err instanceof Error && err.message !== 'abgebrochen') setRunErrors([err.message])
   }
 
   const run = () => {
     if (errors.length > 0) return
-    stop()
-    const id = nextId.current++
-    const w = new Worker(new URL('../../components/simulator/sim.worker.ts', import.meta.url))
-    worker.current = w
     const snapshot = { config, days: form.days }
     setRunErrors([])
-    setRunning({ id, done: 0, total: form.days })
-    w.onmessage = (e: MessageEvent<SimMessage>) => {
-      const msg = e.data
-      if (msg.id !== id) return
-      if (msg.type === 'progress') setRunning({ id, done: msg.done, total: msg.total })
-      else if (msg.type === 'invalid') { setRunErrors(msg.errors); stop() }
-      else { setResult({ summary: msg.summary, ...snapshot }); stop() }
+    setRunning({ done: 0, total: form.days })
+    runJob(config, form.days, (done, total) => setRunning({ done, total }))
+      .then(r => setResult({ ...r, ...snapshot }))
+      .catch(fail)
+      .finally(() => setRunning(null))
+  }
+
+  /** Zwei bis drei gespeicherte Szenarien nacheinander rechnen und nebeneinanderstellen. */
+  const compare = async (items: ScenarioItem[]) => {
+    setRunErrors([])
+    setCompared(null)
+    const out: Compared[] = []
+    try {
+      for (const [i, item] of items.entries()) {
+        const { config: cfg, errors: errs } = configFromForm(item.form)
+        const bad = [...errs, ...validateRun(cfg, item.form.days)]
+        if (bad.length > 0) throw new Error(`„${item.name}“: ${bad.join(' ')}`)
+        const label = `Szenario ${i + 1} von ${items.length}: ${item.name}`
+        setRunning({ done: 0, total: item.form.days, label })
+        const r = await runJob(cfg, item.form.days, (done, total) => setRunning({ done, total, label }))
+        out.push({ name: item.name, summary: r.summary, config: cfg, days: item.form.days })
+      }
+      setCompared(out)
+    } catch (err) {
+      fail(err)
+    } finally {
+      setRunning(null)
     }
-    w.onerror = () => { setRunErrors(['Die Rechnung ist abgebrochen. Bitte erneut versuchen.']); stop() }
-    const req: SimRequest = { type: 'run', id, config, days: form.days }
-    w.postMessage(req)
+  }
+
+  const load = (item: ScenarioItem | null) => {
+    setActive(item)
+    if (item) setForm(item.form)
   }
 
   const set = (patch: Partial<SimForm>) => setForm(f => ({ ...f, ...patch }))
@@ -129,7 +186,10 @@ export default function SimulatorApp() {
 
   return (
     <div className="flex flex-col gap-8">
-      <section className="rounded-2xl border border-edge bg-surface-elevated p-4 sm:p-5" aria-labelledby="ihr-haus">
+      <ScenarioPanel items={scenarios} setItems={setScenarios} form={form} activeId={active?.id ?? null} dirty={dirty}
+        onLoad={load} onCompare={items => { void compare(items) }} busy={running !== null} />
+
+      <section className="rounded-2xl border border-edge bg-surface-elevated p-4 sm:p-5 print:border-0 print:p-0" aria-labelledby="ihr-haus">
         <div className="mb-4 flex items-center justify-between gap-2">
           <h2 id="ihr-haus" className="text-lg font-bold text-ink">Ihr Haus</h2>
           <button type="button" onClick={() => setForm(DEFAULT_FORM)} className="flex items-center gap-1 text-xs font-semibold text-action-strong hover:underline">
@@ -230,7 +290,7 @@ export default function SimulatorApp() {
         </details>
       </section>
 
-      <div className="flex flex-col gap-3 rounded-2xl border border-edge bg-surface-elevated p-4">
+      <div className="flex flex-col gap-3 rounded-2xl border border-edge bg-surface-elevated p-4 print:hidden">
         <div className="flex flex-wrap items-center gap-3">
           {running ? (
             <button type="button" onClick={stop}
@@ -249,7 +309,7 @@ export default function SimulatorApp() {
               <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-sunken">
                 <div className="h-full bg-action" style={{ width: `${(running.done / running.total) * 100}%` }} />
               </div>
-              <span className="text-sm tabular-nums text-ink-soft">Tag {running.done} von {running.total}</span>
+              <span className="text-sm tabular-nums text-ink-soft">{running.label ? `${running.label} · ` : ''}Tag {running.done} von {running.total}</span>
             </div>
           )}
           {!running && stale && <span className="text-sm font-semibold text-caution-strong">Einstellungen geändert – das Ergebnis unten gilt noch für die alten.</span>}
@@ -273,6 +333,7 @@ export default function SimulatorApp() {
         )}
       </div>
 
+      {compared && <Comparison items={compared} policy={policy} onPolicy={setPolicy} onClose={() => setCompared(null)} />}
       {result && <Results result={result} policy={policy} onPolicy={setPolicy} />}
     </div>
   )
@@ -359,6 +420,9 @@ function Results({ result, policy, onPolicy }: { result: Result; policy: Policy;
     { label: 'Sonderfall erledigt nach', value: x => (x.complaintMinutes ? <DistCell d={x.complaintMinutes} fmt={v => `${Math.round(v)} min`} /> : '–') },
   ]
 
+  const [metric, setMetric] = useState<'departures' | 'finished'>('departures')
+  const values = (c: 'paper' | 'rose') => result.runs.map(r =>
+    metric === 'departures' ? r[policy][c].departuresReadyAt ?? P.horizon : r[policy][c].finishedAt)
   const coreRows = rows.slice(0, 4)
   const moreRows = rows.slice(4)
   const table = (list: typeof rows) => (
@@ -392,9 +456,14 @@ function Results({ result, policy, onPolicy }: { result: Result; policy: Policy;
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <h2 id="ergebnis" className="text-2xl font-black text-ink">Ergebnis über {days} Tage</h2>
         <PolicySwitch policy={policy} onPolicy={onPolicy} />
+        <span className="flex-1" />
+        <button type="button" onClick={printPage}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink hover:border-edge-strong print:hidden">
+          <Printer className="h-4 w-4" aria-hidden /> Drucken
+        </button>
       </div>
 
-      <div>
+      <div className="break-inside-avoid">
         <h3 className="text-lg font-bold text-ink">Der mittlere Tag</h3>
         <p className="mt-1 text-sm text-ink-soft">
           Aus den {days} gerechneten der Tag, der beim Vorsprung der Abreisen der Mitte am nächsten liegt.
@@ -424,6 +493,24 @@ function Results({ result, policy, onPolicy }: { result: Result; policy: Policy;
             sub={`Wege und vergebliche Gänge; ≈ ${euro.format(savedMonthly)} im Monat bei ${euro.format(ROI_DEFAULTS.hourlyCostCents / 100)} je Stunde`} />
           <Kpi label="Mit RoSe früher fertig" value={percent(s.roseFinishesEarlier)} sub="Anteil der Tage, an denen alles früher erledigt ist" />
         </div>
+        <div className="break-inside-avoid rounded-2xl border border-edge bg-surface-elevated p-4">
+          <div className="mb-2 flex flex-wrap items-center gap-2 print:hidden">
+            <span className="text-sm font-semibold text-ink-soft">Verteilung über die Tage:</span>
+            {([['departures', 'Abreisen bezugsfertig'], ['finished', 'Alles fertig']] as const).map(([k, label]) => (
+              <button key={k} type="button" aria-pressed={metric === k} onClick={() => setMetric(k)}
+                className={`rounded-md px-2.5 py-1 text-sm font-semibold ${metric === k ? 'bg-surface-sunken text-ink ring-1 ring-edge-strong' : 'text-ink-soft hover:bg-surface-sunken'}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <DistributionChart
+            title={`${metric === 'departures' ? 'Letzte Abreise bezugsfertig' : 'Alles fertig'} — jede Säule zählt die Tage je 10 Minuten`}
+            rows={[
+              { key: 'paper', label: 'Ohne Steuerung', values: values('paper'), color: 'var(--color-chart-context)' },
+              { key: 'rose', label: 'Mit RoSe', values: values('rose'), color: 'var(--color-action)' },
+            ]}
+            horizon={P.horizon} shiftStart={P.shiftStart} checkinAt={metric === 'departures' ? P.checkinAt : undefined} />
+        </div>
         {table(coreRows)}
         <details className="group rounded-xl border border-edge">
           <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-3 font-semibold text-ink [&::-webkit-details-marker]:hidden">
@@ -445,6 +532,81 @@ function Results({ result, policy, onPolicy }: { result: Result; policy: Policy;
         </details>
         <p className="text-xs text-ink-muted">Modellrechnung, keine Zusicherung.</p>
       </div>
+    </section>
+  )
+}
+
+/**
+ * Drucken ohne PDF-Bibliothek: vorher alle eingeklappten Teile öffnen (ein
+ * geschlossenes <details> druckt nur seine Überschrift), danach zurück.
+ */
+function printPage() {
+  const closed = [...document.querySelectorAll('details:not([open])')] as HTMLDetailsElement[]
+  closed.forEach(d => { d.open = true })
+  window.addEventListener('afterprint', () => closed.forEach(d => { d.open = false }), { once: true })
+  window.print()
+}
+
+// ── Vergleich gespeicherter Szenarien ──────────────────────────────────────
+
+function Comparison({ items, policy, onPolicy, onClose }: {
+  items: Compared[]
+  policy: Policy
+  onPolicy: (p: Policy) => void
+  onClose: () => void
+}) {
+  const rows: { label: string; value: (c: Compared) => ReactNode }[] = [
+    { label: 'Haus', value: c => `${c.config.floors * c.config.roomsPerFloor} Zimmer, ${c.config.maids} Kräfte, ${c.days} Tage` },
+    { label: 'Abreisen bezugsfertig', value: c => {
+      const P = paramsFor(c.config.times, c.config.duration)
+      const f = (m: number) => (m >= P.horizon ? 'nicht fertig' : clockLabel(Math.round(m), P.shiftStart))
+      const s = c.summary[policy]
+      return <>{f(s.paper.departuresReady.median)} → <span className="font-bold">{f(s.rose.departuresReady.median)}</span></>
+    } },
+    { label: 'Check-in verpasst', value: c => {
+      const s = c.summary[policy]
+      return <>{percent(s.paper.missedCheckin)} → <span className="font-bold">{percent(s.rose.missedCheckin)}</span></>
+    } },
+    { label: 'Alles fertig', value: c => {
+      const P = paramsFor(c.config.times, c.config.duration)
+      const f = (m: number) => (m >= P.horizon ? 'nicht fertig' : clockLabel(Math.round(m), P.shiftStart))
+      const s = c.summary[policy]
+      return <>{f(s.paper.finishedAt.median)} → <span className="font-bold">{f(s.rose.finishedAt.median)}</span></>
+    } },
+    { label: 'Eingesparte Arbeitszeit', value: c => `${hours(c.summary[policy].savedMinutes.median)} je Tag` },
+    { label: 'Vergeblich an der Tür', value: c => {
+      const s = c.summary[policy]
+      return <>{s.paper.turnedAway.median}× → <span className="font-bold">{s.rose.turnedAway.median}×</span></>
+    } },
+  ]
+  return (
+    <section className="flex flex-col gap-3 rounded-2xl border border-edge bg-surface-elevated p-4" aria-labelledby="vergleich-szenarien">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <h2 id="vergleich-szenarien" className="text-xl font-black text-ink">Szenarien im Vergleich</h2>
+        <PolicySwitch policy={policy} onPolicy={onPolicy} />
+        <span className="flex-1" />
+        <button type="button" onClick={onClose} aria-label="Vergleich schließen"
+          className="rounded-lg p-1.5 text-ink-muted hover:bg-surface-sunken hover:text-ink print:hidden"><X className="h-5 w-5" aria-hidden /></button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[34rem] text-sm">
+          <thead className="text-left text-ink-soft">
+            <tr>
+              <th className="px-3 py-2 font-semibold">Median; ohne Steuerung → mit RoSe</th>
+              {items.map(c => <th key={c.name} className="px-3 py-2 font-bold text-ink">{c.name}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(r => (
+              <tr key={r.label} className="border-t border-edge align-top">
+                <th scope="row" className="px-3 py-2 text-left font-medium text-ink">{r.label}</th>
+                {items.map(c => <td key={c.name} className="px-3 py-2 tabular-nums text-ink">{r.value(c)}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-xs text-ink-muted">Jedes Szenario mit seinen eigenen Einstellungen und Tagen gerechnet. Modellrechnung, keine Zusicherung.</p>
     </section>
   )
 }

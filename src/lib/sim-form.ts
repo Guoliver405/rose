@@ -136,3 +136,38 @@ export const ESSENTIAL_TIMES = ['shiftStart', 'checkoutUntil', 'checkinFrom'] as
 export const DETAIL_TIMES = ['shiftEnd', 'stayRoutineFrom', 'dndGiveUp', 'complaintAt', 'departFrom', 'leaveFrom', 'leaveUntil'] as const
 export const ESSENTIAL_DURATIONS = ['departure', 'stay'] as const
 export const DETAIL_DURATIONS = ['walkFloor', 'walkRoom', 'overview', 'knock', 'skip', 'retry', 'complaint', 'complaintReach'] as const
+
+// ── Gespeicherte Szenarien (Phase 3) ──────────────────────────────────────
+
+/** Version der gespeicherten Form — bei einem Umbau des Formulars hochzählen und in `formFromSaved` übersetzen. */
+export const SAVED_VERSION = 1
+export const MAX_SCENARIOS = 30
+
+export type SavedConfig = { v: number; form: SimForm }
+
+export const toSaved = (f: SimForm): SavedConfig => ({ v: SAVED_VERSION, form: f })
+
+/**
+ * Gespeichertes Szenario → Formular. Was fehlt oder nicht passt, kommt aus
+ * der Vorgabe — ein Szenario von heute soll auch nach einer Erweiterung des
+ * Modells (neue Annahme) noch öffnen, dann eben mit deren Vorgabe.
+ */
+export function formFromSaved(raw: unknown): SimForm {
+  const d = DEFAULT_FORM
+  const src = (raw && typeof raw === 'object' && 'form' in raw ? (raw as SavedConfig).form : null) as Partial<SimForm> | null
+  if (!src || typeof src !== 'object') return d
+  const num = (v: unknown, fb: number) => (typeof v === 'number' && Number.isFinite(v) ? v : fb)
+  const str = (v: unknown, fb: string) => (typeof v === 'string' ? v : fb)
+  const pickNums = <T extends Record<string, number>>(base: T, v: unknown): T =>
+    Object.fromEntries(Object.entries(base).map(([k, fb]) => [k, num((v as Record<string, unknown> | undefined)?.[k], fb)])) as T
+  return {
+    floors: num(src.floors, d.floors),
+    roomsPerFloor: num(src.roomsPerFloor, d.roomsPerFloor),
+    maids: num(src.maids, d.maids),
+    shares: pickNums(d.shares, src.shares),
+    guest: pickNums(d.guest, src.guest),
+    times: Object.fromEntries(Object.entries(d.times).map(([k, fb]) => [k, str((src.times as Record<string, unknown> | undefined)?.[k], fb)])) as SimForm['times'],
+    duration: pickNums(d.duration, src.duration),
+    days: num(src.days, d.days),
+  }
+}

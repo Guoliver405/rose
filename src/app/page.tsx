@@ -396,6 +396,20 @@ function DayComparison() {
       <div className="mt-10">
         <CleaningSimulation />
       </div>
+      {/* Simulator Phase 3 (26.09.2026): derselbe Rechenkern mit den Zahlen des eigenen Hauses. */}
+      <div className="mt-8 flex flex-col items-center gap-3 rounded-2xl border border-edge bg-surface-elevated px-6 py-6 text-center sm:flex-row sm:text-left">
+        <div className="flex-1">
+          <p className="text-lg font-bold text-ink">Mit den Zahlen Ihres Hauses rechnen</p>
+          <p className="mt-1 text-sm text-ink-soft">
+            Etagen, Zimmer, Personal, Zeiten und Gästeverhalten einstellen – der Housekeeping-Simulator rechnet viele Tage
+            durch. Kostenlos, mit E-Mail-Adresse, ohne Zahlungsdaten.
+          </p>
+        </div>
+        <Link href="/simulator"
+          className="shrink-0 rounded-lg bg-action px-5 py-3 font-bold text-action-foreground hover:bg-action-strong">
+          Zum Simulator
+        </Link>
+      </div>
     </section>
   )
 }
