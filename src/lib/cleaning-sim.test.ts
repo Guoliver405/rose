@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { COMPLAINT, MIX, CHECKOUT_AT, SCENARIO, buildScenario, highlights, roseHighlights, maidsAt, simulate, tilesAt } from './cleaning-sim'
+import { COMPLAINT, MIX, CHECKOUT_AT, SIM_START_HOUR, SCENARIO, buildScenario, highlights, roseHighlights, maidsAt, simulate, tilesAt } from './cleaning-sim'
 
 describe('Reinigungs-Simulation', () => {
   const [linear, score, onDemand] = (['linear', 'score', 'onDemand'] as const).map(s => simulate(s))
@@ -7,7 +7,7 @@ describe('Reinigungs-Simulation', () => {
   const dnd = SCENARIO.rooms.filter(r => r.kind === 'stay' && r.presence === 'dnd').map(r => r.nr)
 
   it('mit RoSe sind die Abreisen vor 14:00 bezugsfertig, ohne Steuerung nicht', () => {
-    const at14 = 14 * 60 - 9 * 60
+    const at14 = (14 - SIM_START_HOUR) * 60
     expect(score.metrics.departuresReadyAt!).toBeLessThan(at14)
     expect(onDemand.metrics.departuresReadyAt!).toBeLessThan(at14)
     expect(linear.metrics.departuresReadyAt!).toBeGreaterThan(at14)

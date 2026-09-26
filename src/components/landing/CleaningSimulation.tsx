@@ -214,8 +214,9 @@ export default function CleaningSimulation() {
 
       <p className="mt-4 text-xs text-ink-muted">
         Derselbe Tag in allen drei Bildern: {SCENARIO.rooms.length} Zimmer auf {SCENARIO.floors} Etagen,
-        zwei Reinigungskräfte ab 9:00, Check-out bis 11:00. Bleibezimmer ab 9:00 — ohne Software über
-        die Abreiseliste, mit RoSe über das beim Check-in eingetragene Abreisedatum. Abreise 30 min, Bleibe 18 min.
+        zwei Reinigungskräfte ab 8:00, Check-out bis 11:00. Bleibezimmer ohne Software ab 8:00 laut Abreiseliste; mit RoSe
+        Routine ab 9:00, der Verbleib über das beim Check-in eingetragene Abreisedatum. Abreise 30 min, Bleibe 18 min,
+        Etagenwechsel mit Wagen 5 min.
       </p>
     </div>
   )
@@ -229,6 +230,7 @@ function Panel({ className, title, lead, res, t }: {
   const floors = [...new Set(tiles.map(x => x.floor))].sort((a, b) => b - a)
   const done = t >= res.metrics.finishedAt
   const deps = res.metrics.departuresReadyAt
+  const depsDone = deps !== null && deps <= t
   const rose = res.strategy !== 'linear'
 
   return (
@@ -247,21 +249,21 @@ function Panel({ className, title, lead, res, t }: {
       </div>
 
       <div className={`mt-3 flex items-center gap-2 rounded-xl border px-3 py-2 ${
-        done ? (rose ? 'border-positive bg-positive-tint' : 'border-edge bg-surface-sunken') : 'border-edge'
+        depsDone ? (rose ? 'border-positive bg-positive-tint' : 'border-edge bg-surface-sunken') : 'border-edge'
       }`}>
-        {done
+        {depsDone
           ? (rose ? <Check className="h-5 w-5 text-positive-strong" aria-hidden /> : <Clock className="h-5 w-5 text-ink-muted" aria-hidden />)
           : <Loader2 className="h-5 w-5 animate-spin text-ink-muted" aria-hidden />}
         <div className="flex-1 text-sm text-ink-soft">
-          <div>{done ? 'Fertig um' : 'Bei der Arbeit'}</div>
+          <div>Abreisen bezugsfertig</div>
           <div className="text-xs">
-            Abreisen bezugsfertig{' '}
+            Alles fertig{' '}
             <span className="font-semibold tabular-nums text-ink">
-              {deps !== null && deps <= t ? clockLabel(deps) : '…'}
+              {done ? clockLabel(res.metrics.finishedAt) : '…'}
             </span>
           </div>
         </div>
-        {done && <span className="text-2xl font-black tabular-nums text-ink">{clockLabel(res.metrics.finishedAt)}</span>}
+        {depsDone && <span className="text-2xl font-black tabular-nums text-ink">{clockLabel(deps!)}</span>}
       </div>
     </div>
   )

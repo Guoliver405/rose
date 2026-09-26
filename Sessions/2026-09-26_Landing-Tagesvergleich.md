@@ -154,3 +154,22 @@ ab der Routine-Zeit, nicht erst ab der Check-out-Frist.
   Der Vorsprung von Bild 2 liegt jetzt vor allem bei den Abreisen.
 - Gezeigter Tag: Startwert 2 (am nächsten am Mittel unter den Tagen, die alle
   Bedingungen erfüllen): 15:08/15:08 · 13:00/14:50 · 12:49/14:14.
+
+---
+
+# Nachtrag 4: Schichtbeginn 8:00, Etagenwechsel 5 min, Abreisen als Hauptzahl
+
+Anmerkung des User: Der Vorteil von Bild 2 war mit fairen Regeln gering; die
+Schicht beginnt eher um 8:00, und dann werden viele Kräfte weggeschickt.
+
+- Schicht ab 8:00; Gäste gehen weiter 9:00–10:40, Check-outs 9:00–11:00.
+  Ohne Software Bleibezimmer ab 8:00 laut Liste (neuer Protokolleintrag „N-mal
+  weggeschickt"), mit RoSe Routine ab 9:00. Nachgemessen über 300 Tage:
+  Routine 10:00 lässt die RoSe-Kräfte warten (nur 185/300 Tage vorn), 8:00
+  klopft so oft wie ohne Software; 9:00 ist am stimmigsten (292/300).
+- Ehrliche Lesart: Das Wegschicken trifft Bild 1 und 2 fast gleich — ihm
+  entkommt man nur mit Reinigung auf Wunsch.
+- Etagenwechsel mit Wagen und Aufzug 5 statt 3 min.
+- Hauptzahl im Kasten ist jetzt „Abreisen bezugsfertig", darunter „Alles fertig".
+- Mittel über 300 Tage: Abreisen 15:15 / 14:14 / 13:55, fertig 15:23 / 15:00 /
+  14:24. Gezeigter Tag Startwert 48: 15:18/15:18 · 13:59/14:56 · 13:45/14:27.

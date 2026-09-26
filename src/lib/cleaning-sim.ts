@@ -39,27 +39,30 @@ import { ROI_DEFAULTS } from './roi'
 
 export type Strategy = 'linear' | 'score' | 'onDemand'
 
-/** Minuten nach Schichtbeginn (9:00). */
-export const SIM_START_HOUR = 9
+/** Minuten nach Schichtbeginn (8:00). */
+export const SIM_START_HOUR = 8
 
 /** Check-out-Frist 11:00. Ab dann ist ohne Software jede Abreise sicher frei. */
-export const CHECKOUT_AT = 120
+export const CHECKOUT_AT = 180
 
 /**
- * Routine-Zeit 9:00: ab dann sind Bleibezimmer dran, wo der Gast weg ist.
- * Ohne Software sagt die Papierliste, wer bleibt; mit RoSe das beim Check-in
- * eingetragene Abreisedatum (`isKnownStayover` in board.ts, seit 26.09.2026).
- * Ob der Gast gerade im Zimmer ist, weiß keins von beiden — geklopft wird in
- * Bild 1 und 2 gleich.
+ * Ab wann Bleibezimmer dran sind. Ohne Software sagt die Papierliste, wer
+ * bleibt — die Kraft beginnt mit Schichtbeginn und klopft, auch wenn um 8:00
+ * die meisten Gäste noch im Zimmer sind (sie hat vor 11:00 sonst nichts zu
+ * tun). Mit RoSe legt das Haus die Routine auf 9:00: Die erste Stunde kommen
+ * die Abreisen live aufs Board, danach ist das Klopfen seltener umsonst.
+ * (10:00 ließe die Kräfte morgens warten, 8:00 klopft so oft wie ohne
+ * Software — nachgemessen über 300 Tage.) Bleiben muss der Gast sicher sein —
+ * dafür steht das beim Check-in eingetragene Abreisedatum (`isKnownStayover`).
  */
-export const STAY_ROUTINE_AT = 0
+export const STAY_ROUTINE_AT = { linear: 0, score: 60 } as const
 
 /**
  * Sonderfall: ein Gast meldet mittags ein Problem in seinem bereits
  * gereinigten Zimmer (Handtücher fehlen, etwas verschüttet …). Ohne Software muss die Rezeption die zuständige Kraft erst
  * erreichen — anrufen, suchen; mit RoSe priorisiert sie mit einem Klick.
  */
-export const COMPLAINT = { at: 240, reachDelay: 20 } as const
+export const COMPLAINT = { at: 300, reachDelay: 20 } as const
 
 export const DURATION = {
   complaint: 15,
@@ -70,7 +73,8 @@ export const DURATION = {
   /** Nach einem Klopfen bei anwesendem Gast frühestens so viel später wieder. */
   retry: 30,
   walkRoom: 1,
-  walkFloor: 3,
+  /** Mit Wäschewagen und Aufzug. */
+  walkFloor: 5,
 } as const
 
 /**
@@ -128,7 +132,7 @@ export const MIX = {
 } as const
 
 /**
- * 6 Etagen × 6 Zimmer, zwei Reinigungskräfte ab 9:00. Belegung aus `MIX`,
+ * 6 Etagen × 6 Zimmer, zwei Reinigungskräfte ab 8:00. Belegung aus `MIX`,
  * zufällig verteilt mit festem Startwert. Check-outs zwischen 9:00 und 11:00
  * (gehäuft gegen Ende), Bleibegäste gehen zwischen 9:00 und 10:40.
  */
@@ -148,12 +152,12 @@ export function buildScenario(seed: number, mix: Record<keyof typeof MIX, number
     const floor = Math.floor(i / roomsPerFloor) + 1
     const nr = `${floor}${String((i % roomsPerFloor) + 1).padStart(2, '0')}`
     switch (k) {
-      case 'departure': return { nr, floor, kind: 'departure', checkoutAt: five(120 * Math.sqrt(rand())) }
+      case 'departure': return { nr, floor, kind: 'departure', checkoutAt: 60 + five(120 * Math.sqrt(rand())) }
       case 'empty': return { nr, floor, kind: 'empty' }
       case 'dnd': return { nr, floor, kind: 'stay', presence: 'dnd' }
       case 'declines': return { nr, floor, kind: 'stay', presence: 'declines' }
-      case 'outWants': return { nr, floor, kind: 'stay', presence: 'out', outAt: five(100 * rand()), wants: true }
-      case 'outNoRequest': return { nr, floor, kind: 'stay', presence: 'out', outAt: five(100 * rand()), wants: false }
+      case 'outWants': return { nr, floor, kind: 'stay', presence: 'out', outAt: 60 + five(100 * rand()), wants: true }
+      case 'outNoRequest': return { nr, floor, kind: 'stay', presence: 'out', outAt: 60 + five(100 * rand()), wants: false }
     }
   })
   const half = Math.ceil(floors / 2)
@@ -200,7 +204,7 @@ function jobsFor(scn: Scenario, strategy: Strategy): Job[] {
       if (r.presence === 'dnd') continue // Türschild sieht jede Strategie
       const readyAt = r.presence === 'out' ? r.outAt : Infinity
       let knownAt: number
-      if (strategy !== 'onDemand') knownAt = STAY_ROUTINE_AT
+      if (strategy !== 'onDemand') knownAt = STAY_ROUTINE_AT[strategy]
       else {
         // Auf Wunsch: nur wer beim Gehen tippt.
         if (r.presence !== 'out' || !r.wants) continue
@@ -412,7 +416,7 @@ export function simulate(strategy: Strategy, scn: Scenario = SCENARIO): SimResul
  * 20 Startwerte sichert nur ab, dass die Reihenfolge der Fertig-Zeiten auch
  * im Allgemeinen gilt.
  */
-export const SCENARIO_SEED = 2
+export const SCENARIO_SEED = 48
 export const SCENARIO: Scenario = buildScenario(SCENARIO_SEED)
 
 // ── Zustand zu einem Zeitpunkt (für die Anzeige) ──────────────────────────
@@ -512,6 +516,12 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
       out.push({ at: CHECKOUT_AT - 30, tone: 'bad', text: `${early} Zimmer sind ausgecheckt – doch nur die Rezeption weiß es.` })
     }
     out.push({ at: CHECKOUT_AT, tone: 'neutral', text: 'Check-out-Frist: erst jetzt können diese Zimmer sicher gereinigt werden.' })
+    // Früh morgens sind die meisten Gäste noch im Zimmer — ohne Software wird
+    // trotzdem geklopft. Gezählt wird bis zur ersten vollen Stunde nach 8:00.
+    const earlyKnocks = res.segments.filter(g => g.kind === 'knock' && g.start < 60).length
+    if (earlyKnocks >= 3) {
+      out.push({ at: 60, tone: 'bad', text: `${earlyKnocks}-mal weggeschickt — um diese Zeit sind die meisten Gäste noch im Zimmer.` })
+    }
     const declines = res.segments.filter(g => g.kind === 'declined').sort((a, b) => a.start - b.start)
     const first = declines.find(g => !g.again)
     if (first) {
