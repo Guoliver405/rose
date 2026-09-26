@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   ALL_RUNS, CHECKIN_AT, CHECKOUT_AT, COMPLAINT, MAIDS, MIX, SCENARIO, SCENARIO_SEED,
-  buildScenario, floorOf, highlights, maidsAt, simulate, tilesAt, typicalSeed,
+  buildScenario, floorOf, highlights, maidsAt, simulate, tilesAt, turnedAwayAt, typicalSeed,
   type Coordination, type Policy, type SimResult,
 } from './cleaning-sim'
 
@@ -55,6 +55,35 @@ describe('Reinigungs-Simulation', () => {
       leads.sort((x, y) => x - y)
       expect(leads[50]).toBeGreaterThan(0)
       if (p === 'routine') expect(leads[0]).toBeGreaterThan(0)
+    }
+  })
+
+  it('ab 8:00 ist schon manches Zimmer frei: vor 9:00 wird in beiden Bildern gereinigt', () => {
+    for (const c of ['paper', 'rose'] as const) {
+      expect(run[`${c}-routine`].segments.some(g => g.kind === 'clean' && g.start < 60)).toBe(true)
+    }
+  })
+
+  it('an der Tür weggeschickt: mit RoSe seltener — am gezeigten Tag und im Mittel über 101 Tage', () => {
+    const away = (r: SimResult) => turnedAwayAt(r, Infinity)
+    expect(away(run['rose-routine'])).toBeLessThan(away(run['paper-routine']))
+    const saved: number[] = []
+    for (let seed = 1; seed <= 101; seed++) {
+      const scn = buildScenario(seed)
+      saved.push(simulate('paper', 'routine', scn).metrics.knocks - simulate('rose', 'routine', scn).metrics.knocks)
+    }
+    expect(saved.sort((a, b) => a - b)[50]).toBeGreaterThan(0)
+  })
+
+  it('„später“ an der Tür: ohne Software kennt es nur, wer geklopft hat; mit RoSe klopft niemand vor der Zeit', () => {
+    for (const p of ['routine', 'onDemand'] as const) {
+      const r = run[`rose-${p}`]
+      expect(r.segments.some(g => g.again)).toBe(false)
+      const knocks = r.segments.filter(g => g.kind === 'knock')
+      for (const k of knocks) {
+        const earlier = knocks.filter(o => o.nr === k.nr && o.start < k.start)
+        for (const e of earlier) expect(k.start).toBeGreaterThanOrEqual(e.end + 30)
+      }
     }
   })
 

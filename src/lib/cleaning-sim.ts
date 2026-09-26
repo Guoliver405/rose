@@ -33,6 +33,13 @@
  *             Kraft erst, wenn sie auf dieser Etage ist. Hat sie nichts zu tun,
  *             geht sie ihre Etagen ab.
  *
+ * In beiden Stellungen gilt: Wer beim Gehen Reinigung will, kann es anzeigen —
+ * ohne Software mit dem Türanhänger (sichtbar nur auf der Etage), mit RoSe per
+ * Tipp im Portal (sichtbar für alle, auf jeder Etage). Bei täglicher Reinigung
+ * tut das ein Teil der Gäste (`SIGNAL_SHARE`, Annahme), auf Wunsch jeder, der
+ * Reinigung will. Sagt ein Gast an der Tür „später", weiß das ohne Software nur
+ * die Kraft, die geklopft hat; mit RoSe („In 30 Min") gilt es für alle.
+ *
  * Vorab vollständig durchgerechnet: die Oberfläche zeichnet nur den Zustand
  * zu einem Zeitpunkt, beide Bilder laufen dadurch garantiert synchron.
  * Reine Rechenlogik ohne I/O.
@@ -89,10 +96,11 @@ export const DURATION = {
  *  dnd      — Türschild „Bitte nicht stören" den ganzen Tag
  *  declines — bleibt im Zimmer und will keine Reinigung und sagt es an der
  *             Tür; auf Wunsch fordert er schlicht nichts an
- * `wants` zählt nur bei `out`: fordert er beim Gehen Reinigung an?
+ * `wants` zählt nur bei `out`: fordert er beim Gehen Reinigung an? `signals`:
+ * zeigt er es auch bei täglicher Reinigung an (Anhänger bzw. Tipp)?
  */
 export type Stay =
-  | { presence: 'out'; outAt: number; wants: boolean }
+  | { presence: 'out'; outAt: number; wants: boolean; signals: boolean }
   | { presence: 'dnd' }
   | { presence: 'declines' }
 
@@ -125,6 +133,13 @@ function rng(seed: number) {
   }
 }
 
+/**
+ * Anteil der Gäste, die bei täglicher Reinigung beim Gehen anzeigen, dass das
+ * Zimmer frei ist (Anhänger bzw. Tipp) — Annahme, im Kleingedruckten genannt.
+ * Auf Wunsch zeigt es jeder an, der Reinigung will; sonst wird nicht gereinigt.
+ */
+export const SIGNAL_SHARE = 0.3
+
 /** Belegung von 100 Zimmern. */
 export const MIX = {
   departure: 25,
@@ -145,8 +160,10 @@ export const MAIDS = 5
 
 /**
  * 10 Etagen × 10 Zimmer, fünf Reinigungskräfte ab 8:00. Belegung aus `MIX`,
- * zufällig verteilt. Check-outs zwischen 9:00 und 11:00 (gehäuft gegen Ende),
- * Bleibegäste gehen zwischen 9:00 und 10:40.
+ * zufällig verteilt. Check-outs zwischen 7:00 und 11:00 (gehäuft gegen Ende),
+ * Bleibegäste gehen zwischen 7:00 und 11:00 (gehäuft um 9:00). Um 8:00 ist
+ * also schon manches Zimmer frei, die meisten Gäste sind aber noch da —
+ * Klopfen lohnt sich, geht aber oft ins Leere.
  */
 export function buildScenario(seed: number): Scenario {
   const rand = rng(seed)
@@ -160,16 +177,18 @@ export function buildScenario(seed: number): Scenario {
     ;[kinds[i], kinds[j]] = [kinds[j], kinds[i]]
   }
   const five = (v: number) => Math.round(v / 5) * 5
+  /** 7:00–11:00, gehäuft um 9:00 (Dreiecksverteilung). */
+  const leaveAt = () => -60 + five(240 * (rand() + rand()) / 2)
   const rooms: SimRoom[] = kinds.map((k, i) => {
     const floor = Math.floor(i / ROOMS_PER_FLOOR) + 1
     const nr = `${floor}${String((i % ROOMS_PER_FLOOR) + 1).padStart(2, '0')}`
     switch (k) {
-      case 'departure': return { nr, floor, kind: 'departure', checkoutAt: 60 + five(120 * Math.sqrt(rand())) }
+      case 'departure': return { nr, floor, kind: 'departure', checkoutAt: -60 + five(240 * Math.sqrt(rand())) }
       case 'empty': return { nr, floor, kind: 'empty' }
       case 'dnd': return { nr, floor, kind: 'stay', presence: 'dnd' }
       case 'declines': return { nr, floor, kind: 'stay', presence: 'declines' }
-      case 'outWants': return { nr, floor, kind: 'stay', presence: 'out', outAt: 60 + five(100 * rand()), wants: true }
-      case 'outNoRequest': return { nr, floor, kind: 'stay', presence: 'out', outAt: 60 + five(100 * rand()), wants: false }
+      case 'outWants': return { nr, floor, kind: 'stay', presence: 'out', outAt: leaveAt(), wants: true, signals: rand() < SIGNAL_SHARE }
+      case 'outNoRequest': return { nr, floor, kind: 'stay', presence: 'out', outAt: leaveAt(), wants: false, signals: false }
     }
   })
   const per = FLOORS / MAIDS
@@ -199,10 +218,10 @@ type Job = {
   kind: 'departure' | 'stay' | 'complaint'
   /** Ab wann das Zimmer frei ist (Infinity = nie). */
   readyAt: number
-  /** Ab wann die Kraft von dem Auftrag wissen KANN (Liste, Board, Anhänger). */
+  /** Ab wann der Auftrag auf Liste bzw. Board steht (Infinity = nur über ein Signal). */
   knownAt: number
-  /** Türanhänger: erst sichtbar, wenn eine Kraft auf der Etage ist. */
-  hanger: boolean
+  /** Gast zeigt beim Gehen an, dass das Zimmer frei ist (Infinity = nie). */
+  signalAt: number
   /** Gast bleibt im Zimmer und lehnt an der Tür ab. */
   declines: boolean
   duration: number
@@ -212,7 +231,7 @@ type Job = {
 function jobsFor(scn: Scenario, coord: Coordination, policy: Policy): Job[] {
   const jobs: Job[] = []
   for (const r of scn.rooms) {
-    const base = { id: r.nr, nr: r.nr, floor: r.floor, hanger: false }
+    const base = { id: r.nr, nr: r.nr, floor: r.floor, signalAt: Infinity }
     if (r.kind === 'departure') {
       jobs.push({ ...base, kind: 'departure', readyAt: r.checkoutAt, declines: false,
         // Ohne Software: sicher frei erst zur Frist. Mit RoSe: erscheint beim Check-out.
@@ -223,18 +242,19 @@ function jobsFor(scn: Scenario, coord: Coordination, policy: Policy): Job[] {
       if (policy === 'routine') {
         jobs.push({ ...base, kind: 'stay', readyAt: r.presence === 'out' ? r.outAt : Infinity,
           knownAt: STAY_ROUTINE_AT, declines: r.presence === 'declines',
+          signalAt: r.presence === 'out' && r.signals ? r.outAt : Infinity,
           duration: DURATION.stay, weight: SCORE_WEIGHTS.pleaseClean })
       } else {
         // Auf Wunsch: nur wer beim Gehen anfordert — per Tipp oder Türanhänger.
         if (r.presence !== 'out' || !r.wants) continue
-        jobs.push({ ...base, kind: 'stay', readyAt: r.outAt, knownAt: r.outAt, hanger: coord === 'paper',
+        jobs.push({ ...base, kind: 'stay', readyAt: r.outAt, knownAt: Infinity, signalAt: r.outAt,
           declines: false, duration: DURATION.stay, weight: SCORE_WEIGHTS.pleaseClean })
       }
     }
   }
   const c = scn.complaint
   if (c) {
-    jobs.push({ id: `${c.nr}!`, nr: c.nr, floor: floorOf(c.nr), kind: 'complaint', readyAt: c.at, declines: false, hanger: false,
+    jobs.push({ id: `${c.nr}!`, nr: c.nr, floor: floorOf(c.nr), kind: 'complaint', readyAt: c.at, declines: false, signalAt: Infinity,
       knownAt: coord === 'paper' ? c.at + COMPLAINT.reachDelay : c.at,
       duration: DURATION.complaint, weight: SCORE_WEIGHTS.priority })
   }
@@ -250,7 +270,7 @@ export type Segment = {
   nr: string
   /** Auftrag (bei clean/knock/declined). */
   jobId?: string
-  /** declined: eine andere Kraft hatte hier schon eine Ablehnung erfahren. */
+  /** declined/knock: eine andere Kraft hatte hier schon eine Ablehnung bzw. ein „später" gehört. */
   again?: boolean
   start: number
   end: number
@@ -315,13 +335,23 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
   const noticedAt: Record<string, number> = {}
   /** Türanhänger: welche Kraft ihn gesehen hat. */
   const seenBy: Record<string, Set<number>> = {}
+  /** Signal bekannt: mit RoSe allen ab dem Tipp, ohne Software nur, wer den Anhänger gesehen hat. */
+  const signalKnown = (j: Job, maid: number, at: number) =>
+    j.signalAt <= at && (coord === 'rose' || !!seenBy[j.id]?.has(maid))
   /**
    * Wer von einer Ablehnung weiß. Ohne Software nur die Kraft, die geklopft
    * hat; mit RoSe steht es auf dem Board und damit bei allen.
    */
   const declinedFor: Record<string, Set<number>> = {}
-  /** Nach einem Klopfen bei anwesendem Gast: nicht vor diesem Zeitpunkt wieder. */
-  const retryAt: Record<string, number> = {}
+  /**
+   * Nach einem Klopfen bei anwesendem Gast: nicht vor diesem Zeitpunkt wieder.
+   * Ohne Software weiß das nur die Kraft, die geklopft hat; mit RoSe alle.
+   */
+  const retry: Record<string, { until: number; by: number }> = {}
+  const retryFor = (j: Job, maid: number) => {
+    const r = retry[j.id]
+    return r && (coord === 'rose' || r.by === maid) ? r.until : 0
+  }
   let knocks = 0
   let declined = 0
 
@@ -334,9 +364,9 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
     if (!m || m.t >= HORIZON) break
     const t = m.t
     // Wer auf einer Etage steht, sieht die Türanhänger dort.
-    if (m.pos) {
+    if (m.pos && coord === 'paper') {
       for (const j of jobs) {
-        if (j.hanger && j.floor === m.pos.floor && j.knownAt <= t && doneAt[j.id] === undefined) {
+        if (j.floor === m.pos.floor && j.signalAt <= t && doneAt[j.id] === undefined) {
           ;(seenBy[j.id] ??= new Set()).add(m.i)
           noticedAt[j.id] ??= t
         }
@@ -346,8 +376,9 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
     // die Kraft anderswo aus — mit ihrem eigenen Wissen.
     const helping = !!m.floors && !open(m.i).some(j => m.floors!.has(j.floor))
     const mine = (j: Job) => !m.floors || helping || m.floors.has(j.floor)
-    const visible = (j: Job) => mine(j) && j.knownAt <= t && (retryAt[j.id] ?? 0) <= t
-      && (!j.hanger || !!seenBy[j.id]?.has(m.i))
+    const visible = (j: Job) => mine(j) && (j.knownAt <= t || signalKnown(j, m.i, t)) && retryFor(j, m.i) <= t
+    // Ein angezeigt freies Zimmer geht vor — dort geht das Klopfen nicht ins Leere.
+    const signaled = (j: Job) => (signalKnown(j, m.i, t) ? 0 : 1)
 
     let pick: Job | undefined
     const urgent = open(m.i).filter(j => j.kind === 'complaint' && visible(j))
@@ -357,11 +388,14 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
     } else if (coord === 'paper') {
       m.queue = m.queue.filter(j => open(m.i).includes(j) && visible(j))
       if (m.queue.length === 0) m.queue = open(m.i).filter(visible).sort((a, b) => a.floor - b.floor || a.nr.localeCompare(b.nr))
+      // Auf der Etage, auf der sie steht, nimmt sie ein Zimmer mit Anhänger zuerst.
+      const hung = m.pos ? m.queue.find(j => j.floor === m.pos!.floor && signaled(j) === 0) : undefined
+      if (hung) m.queue = [hung, ...m.queue.filter(j => j !== hung)]
       pick = m.queue.shift()
     } else {
       const avail = open(m.i).filter(visible)
       if (avail.length > 0) {
-        const byUrgency = (a: Job, b: Job) => b.weight - a.weight || a.nr.localeCompare(b.nr)
+        const byUrgency = (a: Job, b: Job) => b.weight - a.weight || signaled(a) - signaled(b) || a.nr.localeCompare(b.nr)
         const here = m.pos ? avail.filter(j => j.floor === m.pos!.floor) : []
         if (here.length > 0) {
           pick = here.sort(byUrgency)[0]
@@ -382,7 +416,9 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
       // Ohne Software und auf Wunsch: Hängt irgendwo schon ein Anhänger, den
       // diese Kraft noch nicht gesehen hat, geht sie ihre Etagen ab — sie weiß
       // nicht, wo er hängt, also der Reihe nach.
-      const unseen = open(m.i).filter(j => j.hanger && mine(j) && j.knownAt <= t && !seenBy[j.id]?.has(m.i))
+      const unseen = coord === 'paper'
+        ? open(m.i).filter(j => j.knownAt === Infinity && mine(j) && j.signalAt <= t && !seenBy[j.id]?.has(m.i))
+        : []
       if (unseen.length > 0) {
         const range = helping ? Array.from({ length: scn.floors }, (_, k) => k + 1) : m.own
         const cur = m.pos?.floor ?? 0
@@ -395,7 +431,7 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
         continue
       }
       // Warten, bis sich für diese Kraft etwas tun könnte.
-      const next = Math.min(...open(m.i).filter(mine).map(j => Math.max(j.knownAt, retryAt[j.id] ?? 0)).filter(v => v > t))
+      const next = Math.min(...open(m.i).filter(mine).map(j => Math.max(Math.min(j.knownAt, j.signalAt), retryFor(j, m.i))).filter(v => v > t))
       if (!Number.isFinite(next) || next >= HORIZON) {
         m.finished = true
         continue
@@ -421,9 +457,11 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
       else maids.forEach(o => knowers.add(o.i))
       declined++
     } else if (pick.readyAt > now) {
-      segments.push({ maid: m.i, kind: 'knock', nr: pick.nr, jobId: pick.id, start: now, end: now + DURATION.knock })
+      // Nochmal geklopft, obwohl eine Kollegin eben „später" gehört hat?
+      const again = !!retry[pick.id] && retry[pick.id].by !== m.i && retry[pick.id].until > now
+      segments.push({ maid: m.i, kind: 'knock', nr: pick.nr, jobId: pick.id, again, start: now, end: now + DURATION.knock })
       now += DURATION.knock
-      retryAt[pick.id] = now + DURATION.retry
+      retry[pick.id] = { until: now + DURATION.retry, by: m.i }
       knocks++
     } else {
       segments.push({ maid: m.i, kind: 'clean', nr: pick.nr, jobId: pick.id, start: now, end: now + pick.duration })
@@ -491,7 +529,7 @@ export function typicalSeed(days = TYPICAL_DAYS): number {
 }
 
 /** Ergebnis von `typicalSeed()` — der Test hält fest, dass beides übereinstimmt. */
-export const SCENARIO_SEED = 37
+export const SCENARIO_SEED = 55
 export const SCENARIO: Scenario = buildScenario(SCENARIO_SEED)
 
 // ── Zustand zu einem Zeitpunkt (für die Anzeige) ──────────────────────────
@@ -541,9 +579,14 @@ export function maidsAt(res: SimResult, t: number): (string | null)[] {
   return at
 }
 
+/** An der Tür weggeschickt bis t: Gast noch da oder lehnt ab — in beiden Bildern gleich gezählt. */
+export function turnedAwayAt(res: SimResult, t: number): number {
+  return res.segments.filter(g => (g.kind === 'knock' || g.kind === 'declined') && g.start <= t).length
+}
+
 export function clockLabel(min: number): string {
   const h = SIM_START_HOUR + Math.floor(min / 60)
-  const m = Math.floor(min % 60)
+  const m = Math.floor(((min % 60) + 60) % 60)
   return `${h}:${String(m).padStart(2, '0')}`
 }
 
@@ -589,7 +632,7 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
   if (res.coord === 'paper') {
     const firstCheckout = [...deps].sort((a, b) => a.checkoutAt - b.checkoutAt || a.nr.localeCompare(b.nr))[0]
     if (firstCheckout) {
-      out.push({ at: firstCheckout.checkoutAt, tone: 'bad',
+      out.push({ at: Math.max(0, firstCheckout.checkoutAt), tone: 'bad',
         text: `${firstCheckout.nr} ist bereits ausgecheckt – auf der Papierliste steht das nicht.` })
     }
     const early = deps.filter(d => d.checkoutAt <= CHECKOUT_AT - 30).length
@@ -606,6 +649,13 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
       const knower = declines.find(g => !g.again && g.nr === again.nr)!
       out.push({ at: again.start, tone: 'bad',
         text: `Kraft ${MAID_LABELS[again.maid]} hilft aus und klopft bei ${again.nr} noch einmal – dass der Gast abgelehnt hat, wusste nur Kraft ${MAID_LABELS[knower.maid]}.` })
+    }
+    const knockAgain = res.segments.filter(g => g.kind === 'knock' && g.again).sort((a, b) => a.start - b.start)[0]
+    if (knockAgain) {
+      const told = res.segments.filter(g => g.kind === 'knock' && g.nr === knockAgain.nr && g.maid !== knockAgain.maid && g.start < knockAgain.start)
+        .sort((a, b) => b.start - a.start)[0]
+      out.push({ at: knockAgain.start, tone: 'bad',
+        text: `Kraft ${MAID_LABELS[knockAgain.maid]} klopft bei ${knockAgain.nr} – dass der Gast eben „später“ gesagt hat, wusste nur Kraft ${MAID_LABELS[told.maid]}.` })
     }
     // Türanhänger: der, der am längsten unbemerkt hing.
     const waits = Object.entries(res.noticedAt).flatMap(([nr, seen]) => {
@@ -634,11 +684,27 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
     if (res.policy === 'onDemand') {
       const firstRequest = scn.rooms
         .flatMap(r => (r.kind === 'stay' && r.presence === 'out' && r.wants ? [r] : []))
-        .sort((a, b) => a.outAt - b.outAt || a.nr.localeCompare(b.nr))[0]
+        .sort((a, b) => a.outAt - b.outAt || a.nr.localeCompare(b.nr))
+        .find(r => r.outAt >= 0)
       if (firstRequest) {
         out.push({ at: firstRequest.outAt, tone: 'good',
           text: `${firstRequest.nr} tippt beim Gehen „Zimmer reinigen“ – sofort auf dem Board, niemand muss suchen.` })
       }
+    }
+    if (res.policy === 'routine') {
+      const firstSignal = scn.rooms
+        .flatMap(r => (r.kind === 'stay' && r.presence === 'out' && r.signals ? [r] : []))
+        .sort((a, b) => a.outAt - b.outAt || a.nr.localeCompare(b.nr))
+        .find(r => r.outAt >= 0)
+      if (firstSignal) {
+        out.push({ at: firstSignal.outAt, tone: 'good',
+          text: `${firstSignal.nr} tippt beim Gehen „Zimmer reinigen“ – alle Kräfte sehen: frei, hier klopft niemand ins Leere.` })
+      }
+    }
+    const firstLater = res.segments.filter(g => g.kind === 'knock').sort((a, b) => a.start - b.start)[0]
+    if (firstLater) {
+      out.push({ at: firstLater.start, tone: 'good',
+        text: `${firstLater.nr}: Gast noch da – „In 30 Min“ getippt, bis dahin klopft keine Kollegin.` })
     }
     // Erster Etagenwechsel nach dem Start: die Empfehlung des Boards.
     const switchWalk = res.segments.find(g => g.kind === 'walk' && g.end - g.start === DURATION.walkFloor && g.start > (firstDep?.start ?? 0))
