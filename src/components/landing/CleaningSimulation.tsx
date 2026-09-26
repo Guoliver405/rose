@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
-import { AlertTriangle, Ban, Check, Clock, DoorClosed, Flag, Hand, Leaf, Loader2, Pause, Play, RotateCcw, Timer } from 'lucide-react'
+import { AlertTriangle, Ban, Check, ChevronLeft, ChevronRight, Clock, DoorClosed, Flag, Hand, Leaf, Loader2, Pause, Play, RotateCcw, Timer } from 'lucide-react'
 import {
   ALL_RUNS, GUEST, SCENARIO, clockLabel, highlights, maidLabel, maidsAt, simulate, tilesAt, turnedAwayAt,
   type Coordination, type Highlight, type Policy, type Scenario, type SimResult, type Tile, type TileState,
@@ -188,6 +188,7 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption, polic
     setPlaying(true)
   }
   const stop = () => { setTouched(true); setPlaying(false); setLoop(false) }
+  const step = (d: number) => { stop(); setT(Math.min(end, Math.max(START, Math.round(t) + d))) }
 
   return (
     <div ref={container} className="rounded-2xl border border-edge bg-surface-elevated p-4 sm:p-6">
@@ -218,9 +219,20 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption, polic
           className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-2 text-sm font-medium text-ink-soft hover:bg-surface-sunken">
           <RotateCcw className="h-4 w-4" aria-hidden /> Zurück auf {clock(START)}
         </button>
-        <input type="range" min={START} max={end} step={1} value={Math.round(t)} aria-label="Uhrzeit"
-          onChange={ev => { stop(); setT(Number(ev.target.value)) }}
-          className="min-w-40 flex-1 accent-[var(--color-action)]" />
+        {/* Minutenweise durchklicken (Wunsch des Users, 26.09.2026) — hält die Wiedergabe an. */}
+        <div className="flex min-w-60 flex-1 items-center gap-1.5">
+          <button type="button" onClick={() => step(-1)} disabled={t <= START} aria-label="Eine Minute zurück"
+            className="flex shrink-0 items-center rounded-lg border border-edge px-1.5 py-1.5 text-xs font-semibold text-ink-soft hover:bg-surface-sunken disabled:opacity-40">
+            <ChevronLeft className="h-4 w-4" aria-hidden /><span className="pr-0.5">1 Min</span>
+          </button>
+          <input type="range" min={START} max={end} step={1} value={Math.round(t)} aria-label="Uhrzeit"
+            onChange={ev => { stop(); setT(Number(ev.target.value)) }}
+            className="min-w-24 flex-1 accent-[var(--color-action)]" />
+          <button type="button" onClick={() => step(1)} disabled={t >= end} aria-label="Eine Minute vor"
+            className="flex shrink-0 items-center rounded-lg border border-edge px-1.5 py-1.5 text-xs font-semibold text-ink-soft hover:bg-surface-sunken disabled:opacity-40">
+            <span className="pl-0.5">1 Min</span><ChevronRight className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
       </div>
 
       <div className="mt-6 grid gap-x-6 gap-y-6 md:grid-cols-2">
