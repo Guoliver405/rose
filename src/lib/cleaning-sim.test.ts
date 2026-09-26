@@ -278,3 +278,54 @@ describe('Simulator-Konfiguration', () => {
     expect([maidLabel(0), maidLabel(25), maidLabel(26)]).toEqual(['A', 'Z', '27'])
   })
 })
+
+describe('Etagenliste ohne Software', () => {
+  const cfg: ScenarioConfig = { ...DEFAULT_CONFIG, floors: 20, roomsPerFloor: 30, maids: 30, mix: mixFromShares(600, MIX) }
+  const scn = buildScenario(3, cfg)
+  const paper = simulate('paper', 'routine', scn)
+
+  it('Überblick nur ohne Software und nur beim Wechsel auf eine andere Etage', () => {
+    expect(simulate('rose', 'routine', scn).segments.some(g => g.kind === 'overview')).toBe(false)
+    const byMaid = new Map<number, typeof paper.segments>()
+    for (const g of paper.segments) byMaid.set(g.maid, [...(byMaid.get(g.maid) ?? []), g])
+    for (const segs of byMaid.values()) {
+      let floor: number | null = null
+      for (const g of segs) {
+        if (g.kind === 'overview') {
+          expect(floor).not.toBeNull()
+          expect(floorOf(g.nr)).not.toBe(floor)
+          expect(g.end - g.start).toBe(DEFAULT_CONFIG.duration.overview)
+        }
+        // Der Gang trägt schon das Ziel — die Etage zählt erst, wenn sie dort etwas tut.
+        if (g.nr && g.kind !== 'idle' && g.kind !== 'walk' && g.kind !== 'patrol') floor = floorOf(g.nr)
+      }
+    }
+  })
+
+  it('wer die Liste nach einer Ablehnung gelesen hat, klopft dort nicht noch einmal', () => {
+    const first = new Map<string, number>()
+    for (const g of [...paper.segments].sort((a, b) => a.end - b.end)) if (g.kind === 'declined' && !first.has(g.nr)) first.set(g.nr, g.end)
+    for (const g of paper.segments.filter(x => x.kind === 'declined' && x.again)) {
+      const read = paper.segments.filter(o => o.maid === g.maid && o.kind === 'overview' && floorOf(o.nr) === floorOf(g.nr) && o.end <= g.start)
+      for (const o of read) expect(o.end).toBeLessThan(first.get(g.nr)!)
+    }
+  })
+
+  it('kein Pappkamerad: die Ersparnis je Kraft wächst nicht mit der Hausgröße', () => {
+    const perMaid = (c: ScenarioConfig, days: number) => {
+      let sum = 0
+      for (let seed = 1; seed <= days; seed++) {
+        const x = buildScenario(seed, c)
+        const [a, b] = [simulate('paper', 'routine', x).metrics, simulate('rose', 'routine', x).metrics]
+        sum += (a.walkMinutes + a.doorMinutes) - (b.walkMinutes + b.doorMinutes)
+      }
+      return sum / days / c.maids
+    }
+    const small = perMaid(DEFAULT_CONFIG, 10)
+    const big = perMaid(cfg, 3)
+    expect(small).toBeGreaterThan(0)
+    expect(big).toBeGreaterThan(0)
+    expect(big).toBeLessThan(small * 1.5)
+  }, 60000)
+})
+

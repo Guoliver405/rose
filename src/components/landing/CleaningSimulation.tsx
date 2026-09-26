@@ -22,7 +22,7 @@ import {
 
 const LEAD: Record<Coordination, Record<Policy, string>> = {
   paper: {
-    routine: 'Papierliste. Wann jemand abreist, was an den Türen hängt und was ein Gast gesagt hat, weiß nur, wer davorsteht.',
+    routine: 'Papierliste je Etage. Wann jemand abreist, weiß niemand; was an den Türen hängt und was ein Gast gesagt hat, erfährt nur, wer auf die Etage kommt.',
     onDemand: 'Papierliste und Türanhänger „Bitte reinigen“ – zu sehen nur für den, der im Flur steht.',
   },
   rose: {
@@ -252,8 +252,9 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption }: {
         Annahmen zum Gästeverhalten: {Math.round(GUEST.signals * 100)} % der Gäste mit Reinigungswunsch zeigen ihn beim
         Gehen an (auf Wunsch: alle), {Math.round(GUEST.notBefore * 100)} % nennen in RoSe „frühestens ab“,
         {' '}{Math.round(GUEST.dndMorning * 100)} % haben morgens „Nicht stören“ an der Tür, ein Drittel davon den ganzen
-        Tag. Ohne Software sieht eine Kraft Anhänger und Schilder erst auf der Etage, und was ein Gast an der Tür sagt,
-        weiß nur sie; mit RoSe steht all das sofort für alle auf dem Board.
+        Tag. Ohne Software sieht eine Kraft Anhänger und Schilder erst auf der Etage; was ein Gast an der Tür sagt,
+        steht auf einer Liste, die auf der Etage bleibt – wer dorthin kommt, liest sie (2 min), wer aushilft, fragt die
+        Kollegin. Mit RoSe steht all das sofort für alle auf dem Board.
         Etagenwechsel mit Wagen 5 min. Reinigungsdauer als Annahme, eher knapp: Abreise 30 min, Bleibe 18 min — gemessen
         wurden 35–43 bzw. 20–25 min (Quellen Q4 und Q7 im Nutzenrechner).
       </p>}

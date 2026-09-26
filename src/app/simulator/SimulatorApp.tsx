@@ -54,6 +54,7 @@ const DURATION_LABEL: Record<keyof SimDurations, [string, string]> = {
   retry: ['Wieder hin nach', 'Nach Klopfen oder Schild frühestens so viel später.'],
   walkRoom: ['Zum nächsten Zimmer', 'Auf derselben Etage.'],
   walkFloor: ['Etagenwechsel', 'Mit Wäschewagen und Aufzug.'],
+  overview: ['Überblick auf der Etage', 'Ohne Software: beim Ankommen Etagenliste lesen oder mit der Kollegin sprechen.'],
   complaintReach: ['Rezeption erreicht Kraft', 'Ohne Software: anrufen, suchen.'],
 }
 
@@ -310,7 +311,7 @@ function Results({ result, policy, onPolicy }: { result: Result; policy: Policy;
     { label: 'Alles fertig', value: x => <DistCell d={x.finishedAt} fmt={clock} /> },
     { label: `Um ${clockLabel(P.horizon, P.shiftStart)} liegen geblieben`, hint: 'Zimmer, die frei gewesen wären', value: x => <DistCell d={x.leftUndone} fmt={v => String(v)} /> },
     { label: 'Vergeblich an der Tür', hint: 'Gast da, lehnt ab, Schild', value: x => <DistCell d={x.turnedAway} fmt={v => `${v}×`} /> },
-    { label: 'Wege', hint: 'alle Kräfte, mit Etagen abgehen', value: x => <DistCell d={x.walkMinutes} fmt={hours} /> },
+    { label: 'Wege und Überblick', hint: 'alle Kräfte; Etagen abgehen, Etagenliste lesen', value: x => <DistCell d={x.walkMinutes} fmt={hours} /> },
     { label: 'An der Tür ohne Reinigung', hint: 'alle Kräfte', value: x => <DistCell d={x.doorMinutes} fmt={hours} /> },
     { label: 'Warten ohne Arbeit', hint: 'alle Kräfte', value: x => <DistCell d={x.idleMinutes} fmt={hours} /> },
     { label: 'Anteil Reinigen', hint: 'an der Zeit bis Feierabend', value: x => <DistCell d={x.cleaningShare} fmt={percent} /> },
@@ -365,7 +366,7 @@ function Results({ result, policy, onPolicy }: { result: Result; policy: Policy;
         Modellrechnung, keine Zusicherung: {rooms} Zimmer auf {config.floors} Etagen, {config.maids} Reinigungskräfte, {days} Tage
         mit jeweils anderen Gästen. Beide Spalten rechnen dieselben Gäste und dieselbe Reinigungspolitik; verglichen wird nur die
         Koordination. Ohne Software arbeitet jede Kraft zuerst ihre festen Etagen ab und sieht Anhänger und Schilder erst auf der
-        Etage; mit RoSe wählt sie wie das echte Board. Die Euro-Angabe rechnet die eingesparten Stunden mit den Vollkosten aus dem
+        Etage; was andere an der Tür erfahren haben, steht auf einer Liste je Etage, die sie beim Ankommen liest; mit RoSe wählt sie wie das echte Board. Die Euro-Angabe rechnet die eingesparten Stunden mit den Vollkosten aus dem
         Nutzenrechner hoch – Geld wird daraus nur, wenn die Einsatzplanung angepasst wird.
       </p>
 

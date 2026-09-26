@@ -10,8 +10,13 @@
  *          abreisen, weiß die Kraft, aber nicht, WANN der Gast auscheckt:
  *          Abreisen reinigt sie deshalb erst ab der Check-out-Frist. Was an den
  *          Türen hängt (Anhänger, „Nicht stören"), sieht sie nur auf der Etage,
- *          auf der sie gerade ist; was ein Gast an der Tür sagt, weiß nur sie.
- *          Ist in ihrem Bereich nichts mehr zu erwarten, hilft sie anderswo aus.
+ *          auf der sie gerade ist. Was ein Gast an der Tür sagt, notiert sie
+ *          auf der Liste dieser Etage (User, 26.09.2026): Wer auf die Etage
+ *          kommt, liest sie (`overview`, 2 min), wer dort gerade arbeitet,
+ *          bekommt es mit. Ist in ihrem Bereich nichts mehr zu erwarten, fragt
+ *          sie die Kollegin mit der meisten offenen Arbeit, übernimmt deren
+ *          Stand und hilft auf deren Etagen — sie läuft nicht das Haus ab.
+ *          Die Etage, auf der sie steht, arbeitet sie zu Ende.
  *  rose  — mit RoSe, gemeinsames Board. Check-out, Reinigungswunsch,
  *          „frühestens ab", „Nicht stören" und dessen Rücknahme, „später" und
  *          „heute nicht" an der Tür stehen sofort für ALLE Kräfte auf dem Board.
@@ -96,6 +101,12 @@ export const DURATION = {
   walkRoom: 1,
   /** Mit Wäschewagen und Aufzug. */
   walkFloor: 5,
+  /**
+   * Ohne Software: Wer auf eine Etage kommt, verschafft sich einen Überblick —
+   * Etagenliste lesen oder kurz mit der Kollegin sprechen, die dort arbeitet.
+   * Danach weiß sie, was dort notiert ist (User, 26.09.2026).
+   */
+  overview: 2,
 } as const
 
 export type SimDurations = { [K in keyof typeof DURATION]: number } & {
@@ -501,9 +512,10 @@ export type Segment = {
   maid: number
   /**
    * knock = Gast noch da, declined = Gast lehnt ab, skip = Schild „Nicht
-   * stören" an der Tür, patrol = Etagen abgehen.
+   * stören" an der Tür, patrol = Etagen abgehen, overview = ohne Software
+   * beim Ankommen auf einer Etage die Etagenliste lesen.
    */
-  kind: 'walk' | 'patrol' | 'knock' | 'declined' | 'skip' | 'clean' | 'idle'
+  kind: 'walk' | 'patrol' | 'overview' | 'knock' | 'declined' | 'skip' | 'clean' | 'idle'
   /** Zimmer, an dem die Kraft am Ende des Abschnitts steht. */
   nr: string
   /** Auftrag (bei clean/knock/declined/skip). */
@@ -583,6 +595,8 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
     own: floors,
     /** Ohne Software: die laufende Runde. */
     queue: [] as Job[],
+    /** Ohne Software beim Aushelfen: die Kollegin, auf deren Etagen sie hilft. */
+    helpFor: null as number | null,
     finished: false,
   }))
   const segments: Segment[] = []
@@ -595,19 +609,39 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
   const signalKnown = (j: Job, maid: number, at: number) =>
     j.signalAt <= at && (coord === 'rose' || !!seenBy[j.id]?.has(maid))
   /**
-   * Wer von einer Ablehnung weiß. Ohne Software nur die Kraft, die geklopft
-   * hat; mit RoSe steht es auf dem Board und damit bei allen.
+   * Ohne Software liegt auf jeder Etage eine Liste, die dort bleibt: Was eine
+   * Kraft an der Tür erfährt, notiert sie dort. Eine andere Kraft weiß es,
+   * sobald sie die Liste beim Ankommen auf der Etage gelesen hat (`overview`)
+   * — was danach notiert wird, erst beim nächsten Ankommen. Hier: wann jede
+   * Kraft die Liste einer Etage zuletzt gelesen hat.
+   */
+  const readAt = maids.map(() => new Map<number, number>())
+  const hasRead = (maid: number, floor: number, at: number) => at <= (readAt[maid].get(floor) ?? -Infinity)
+  /**
+   * Wer von einer Ablehnung weiß. Ohne Software die Kraft, die geklopft hat,
+   * und wer die Etagenliste seitdem gelesen hat; mit RoSe steht es auf dem
+   * Board und damit bei allen.
    */
   const declinedFor: Record<string, Set<number>> = {}
+  const knowsDeclined = (j: Job, maid: number) =>
+    !!declinedFor[j.id]?.has(maid) || (declinedAt[j.id] !== undefined && hasRead(maid, j.floor, declinedAt[j.id]))
   /**
    * Nach einem Klopfen bei anwesendem Gast oder einem „Nicht stören" an der
-   * Tür: nicht vor diesem Zeitpunkt wieder. Ohne Software weiß das nur die
-   * Kraft, die da war; mit RoSe alle.
+   * Tür: nicht vor diesem Zeitpunkt wieder. Ohne Software weiß das die Kraft,
+   * die da war, und wer es seitdem auf der Etagenliste gelesen hat; mit RoSe alle.
    */
-  const retry: Record<string, { until: number; by: number }> = {}
+  const retry: Record<string, { until: number; by: number; at: number }> = {}
   const retryFor = (j: Job, maid: number) => {
     const r = retry[j.id]
-    return r && (coord === 'rose' || r.by === maid) ? r.until : 0
+    return r && (coord === 'rose' || r.by === maid || hasRead(maid, j.floor, r.at)) ? r.until : 0
+  }
+  /** Ohne Software: beim Ankommen auf einer anderen Etage die Liste lesen. */
+  const arrive = (maid: number, from: Pos, floor: number, nr: string, at: number): number => {
+    if (coord !== 'paper' || !from || from.floor === floor) return at
+    const end = at + D.overview
+    if (D.overview > 0) segments.push({ maid, kind: 'overview', nr, start: at, end })
+    readAt[maid].set(floor, end)
+    return end
   }
   let knocks = 0
   let declined = 0
@@ -615,7 +649,7 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
 
   // Ein Auftrag gilt als vergeben, sobald eine Kraft ihn übernommen hat —
   // die Schleife läuft in Zeitreihenfolge, deshalb ist das race-frei.
-  const open = (maid: number, t: number) => jobs.filter(j => doneAt[j.id] === undefined && !declinedFor[j.id]?.has(maid)
+  const open = (maid: number, t: number) => jobs.filter(j => doneAt[j.id] === undefined && !knowsDeclined(j, maid)
     // Nach 14:00 schaut niemand mehr nach „Nicht stören".
     && !(j.dndUntil > t && t >= P.dndGiveUp))
 
@@ -636,7 +670,27 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
     // Ohne Software: eigener Bereich; ist dort nichts mehr zu erwarten, hilft
     // die Kraft anderswo aus — mit ihrem eigenen Wissen.
     const helping = !!m.floors && !openNow.some(j => m.floors!.has(j.floor))
-    const mine = (j: Job) => !m.floors || helping || m.floors.has(j.floor)
+    // Aushelfen: Sie fragt eine Kollegin, die nach deren Wissen noch am meisten
+    // offen hat, übernimmt deren Stand (die Etagenlisten ihrer Etagen) und hilft
+    // dort — statt das Haus Etage für Etage abzulaufen.
+    let helpFloors: Set<number> | null = null
+    if (helping) {
+      const leftFor = (c: (typeof maids)[number]) =>
+        c.own.reduce((n, f) => n + (jobsOnFloor.get(f) ?? []).filter(j => doneAt[j.id] === undefined && !knowsDeclined(j, c.i)).length, 0)
+      const cur = m.helpFor !== null ? maids[m.helpFor] : null
+      if (!cur || leftFor(cur) === 0) {
+        const best = maids.filter(c => c !== m && !c.own.every(f => m.floors!.has(f)))
+          .map(c => ({ c, left: leftFor(c) })).filter(x => x.left > 0)
+          .sort((a, b) => b.left - a.left || a.c.i - b.c.i)[0]
+        m.helpFor = best ? best.c.i : null
+        if (best) {
+          for (const f of best.c.own) readAt[m.i].set(f, Math.max(readAt[m.i].get(f) ?? -Infinity, t))
+          for (const j of jobs) if (best.c.own.includes(j.floor) && knowsDeclined(j, best.c.i)) (declinedFor[j.id] ??= new Set()).add(m.i)
+        }
+      }
+      if (m.helpFor !== null) helpFloors = new Set(maids[m.helpFor].own)
+    }
+    const mine = (j: Job) => !m.floors || (helping ? (!helpFloors || helpFloors.has(j.floor)) : m.floors.has(j.floor))
     const visible = (j: Job) => {
       if (!mine(j) || retryFor(j, m.i) > t) return false
       if (!(j.knownAt <= t || signalKnown(j, m.i, t))) return false
@@ -665,9 +719,11 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
       const openSet = new Set(openNow)
       m.queue = m.queue.filter(j => openSet.has(j) && visible(j))
       if (m.queue.length === 0) m.queue = openNow.filter(visible).sort((a, b) => a.floor - b.floor || a.nr.localeCompare(b.nr))
-      // Auf der Etage, auf der sie steht, nimmt sie ein Zimmer mit Anhänger zuerst.
-      const hung = m.pos ? m.queue.find(j => j.floor === m.pos!.floor && signaled(j) === 0) : undefined
-      if (hung) m.queue = [hung, ...m.queue.filter(j => j !== hung)]
+      // Die Etage, auf der sie steht, arbeitet sie zu Ende, bevor sie wechselt —
+      // dort ein Zimmer mit Anhänger zuerst.
+      const cur = m.pos?.floor
+      const here = cur === undefined ? undefined : m.queue.find(j => j.floor === cur && signaled(j) === 0) ?? m.queue.find(j => j.floor === cur)
+      if (here) m.queue = [here, ...m.queue.filter(j => j !== here)]
       pick = m.queue.shift()
     } else {
       const avail = openNow.filter(visible)
@@ -708,14 +764,14 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
         ? openNow.filter(j => j.knownAt === Infinity && mine(j) && j.signalAt <= t && !seenBy[j.id]?.has(m.i))
         : []
       if (unseen.length > 0) {
-        const range = helping ? Array.from({ length: scn.floors }, (_, k) => k + 1) : m.own
+        const range = helping ? (helpFloors ? [...helpFloors] : Array.from({ length: scn.floors }, (_, k) => k + 1)) : m.own
         const cur = m.pos?.floor ?? 0
         const nextFloor = range.find(f => f > cur) ?? range[0]
         const nr = `${nextFloor}01`
         const w = walkTime(D, m.pos, nextFloor, nr)
         segments.push({ maid: m.i, kind: 'patrol', nr, start: t, end: t + w })
+        m.t = arrive(m.i, m.pos, nextFloor, nr, t + w)
         m.pos = { floor: nextFloor, nr }
-        m.t = t + w
         continue
       }
       // Warten, bis sich für diese Kraft etwas tun könnte.
@@ -739,12 +795,26 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
     const w = walkTime(D, m.pos, pick.floor, pick.nr)
     if (w > 0) segments.push({ maid: m.i, kind: 'walk', nr: pick.nr, start: now, end: now + w, pulledFrom })
     now += w
+    now = arrive(m.i, m.pos, pick.floor, pick.nr, now)
     m.pos = { floor: pick.floor, nr: pick.nr }
+    if (coord === 'paper' && (knowsDeclined(pick, m.i) || retryFor(pick, m.i) > now)) {
+      // Auf der Etagenliste steht, dass es hier gerade nichts zu tun gibt — neu entscheiden.
+      m.t = now
+      continue
+    }
+    // Ohne Software: Wer gerade auf derselben Etage arbeitet, bekommt mit, was hier notiert wird.
+    const tellFloor = (at: number) => {
+      if (coord !== 'paper') return
+      for (const o of maids) {
+        if (o !== m && !o.finished && o.pos?.floor === pick.floor) readAt[o.i].set(pick.floor, Math.max(readAt[o.i].get(pick.floor) ?? -Infinity, at))
+      }
+    }
     if (pick.dndUntil > now) {
       // Nur ohne Software möglich: erst vor der Tür sieht sie das Schild.
       segments.push({ maid: m.i, kind: 'skip', nr: pick.nr, jobId: pick.id, start: now, end: now + D.skip })
       now += D.skip
-      retry[pick.id] = { until: now + D.retry, by: m.i }
+      retry[pick.id] = { until: now + D.retry, by: m.i, at: now }
+      tellFloor(now)
       skips++
     } else if (pick.declines) {
       const again = declinedAt[pick.id] !== undefined
@@ -754,13 +824,15 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
       const knowers = (declinedFor[pick.id] ??= new Set())
       if (coord === 'paper') knowers.add(m.i)
       else maids.forEach(o => knowers.add(o.i))
+      tellFloor(now)
       declined++
     } else if (pick.readyAt > now) {
       // Nochmal geklopft, obwohl eine Kollegin eben „später" gehört hat?
       const again = !!retry[pick.id] && retry[pick.id].by !== m.i && retry[pick.id].until > now
       segments.push({ maid: m.i, kind: 'knock', nr: pick.nr, jobId: pick.id, again, start: now, end: now + D.knock })
       now += D.knock
-      retry[pick.id] = { until: now + D.retry, by: m.i }
+      retry[pick.id] = { until: now + D.retry, by: m.i, at: now }
+      tellFloor(now)
       knocks++
     } else {
       segments.push({ maid: m.i, kind: 'clean', nr: pick.nr, jobId: pick.id, start: now, end: now + pick.duration })
@@ -796,7 +868,7 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
       complaintDoneAt: complaintJob ? doneAt[complaintJob.id] ?? null : null,
       finishedAt: Math.max(0, ...work.map(g => g.end)),
       cleanMinutes: minutesOf('clean'),
-      walkMinutes: minutesOf('walk', 'patrol'),
+      walkMinutes: minutesOf('walk', 'patrol', 'overview'),
       doorMinutes: minutesOf('knock', 'declined', 'skip'),
       departuresOpenAtCheckin: deps.filter(j => !(doneAt[j.id] <= P.checkinAt)).length,
       leftUndone: jobs.filter(j => doneAt[j.id] === undefined && j.readyAt < P.horizon && !j.declines && !(j.dndUntil >= P.horizon)).length,
@@ -990,7 +1062,7 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
     if (again) {
       const knower = declines.find(g => !g.again && g.nr === again.nr)!
       out.push({ at: again.start, tone: 'bad',
-        text: `Kraft ${maidLabel(again.maid)} hilft aus und klopft bei ${again.nr} noch einmal – dass der Gast abgelehnt hat, wusste nur Kraft ${maidLabel(knower.maid)}.` })
+        text: `Kraft ${maidLabel(again.maid)} hilft aus und klopft bei ${again.nr} noch einmal – dass der Gast bei Kraft ${maidLabel(knower.maid)} abgelehnt hat, stand noch nicht auf der Etagenliste, als sie kam.` })
     }
     // Nur, wenn die Kollegin wirklich geklopft hat — `again` entsteht auch nach einem „Nicht stören“-Schild.
     const told = (g: Segment) => res.segments.filter(o => o.kind === 'knock' && o.nr === g.nr && o.maid !== g.maid && o.start < g.start)
@@ -999,7 +1071,7 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
     if (knockAgain) {
       const teller = told(knockAgain)
       out.push({ at: knockAgain.start, tone: 'bad',
-        text: `Kraft ${maidLabel(knockAgain.maid)} klopft bei ${knockAgain.nr} – dass der Gast eben „später“ gesagt hat, wusste nur Kraft ${maidLabel(teller.maid)}.` })
+        text: `Kraft ${maidLabel(knockAgain.maid)} klopft bei ${knockAgain.nr} – dass der Gast Kraft ${maidLabel(teller.maid)} eben „später“ gesagt hat, stand noch nicht auf der Etagenliste.` })
     }
     // Türanhänger: der, der am längsten unbemerkt hing.
     const waits = Object.entries(res.noticedAt).flatMap(([nr, seen]) => {

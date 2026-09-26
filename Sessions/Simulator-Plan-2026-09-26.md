@@ -243,16 +243,29 @@ Vorschlag für den Text am Häkchen:
 
 **Offen, vor Phase 2 zu entscheiden:**
 
-1. **Modell ohne Software bei vielen Kräften unglaubwürdig.** Eine aushelfende
-   Kraft weiß nur, was sie selbst gehört hat — bei 30 Kräften klopft deshalb
-   fast jede einmal bei jedem ablehnenden Gast (3 000 Zimmer, 200 Kräfte: 9 589
-   Ablehnungen bei 150 ablehnenden Gästen). Ergebnis im 600-Zimmer-Haus: „92,9 h
-   je Tag eingespart, ≈ 47 000 € im Monat" — das glaubt niemand, und es ist
-   genau der Pappkamerad, den Phase 5 vermeiden soll. Vorschlag: Aushelfen nur
-   auf den Etagen **einer** Kollegin und deren Wissen mitnehmen (sie sagt, was
-   sie weiß), oder Ablehnungen etagenweise teilen. Ändert die Landing-Zahlen
-   leicht — also gemeinsam entscheiden.
+1. ~~**Modell ohne Software bei vielen Kräften unglaubwürdig.**~~ **Gelöst
+   am selben Abend über die Etagenliste** (Vorschlag des Users): Auf jeder Etage
+   bleibt eine Liste, was an der Tür gesagt wurde. Drei Regeln, alle nur für
+   „ohne Software": (a) Wer auf eine andere Etage kommt, liest sie (`overview`,
+   Vorgabe 2 min, einstellbar) und weiß danach, was dort notiert ist; steht
+   dort, dass es beim gewählten Zimmer gerade nichts zu tun gibt, entscheidet
+   sie neu. (b) Wer auf derselben Etage arbeitet, bekommt Neues sofort mit.
+   (c) Wer aushilft, fragt die Kollegin, die nach eigenem Wissen am meisten
+   offen hat, übernimmt deren Stand und hilft auf deren Etagen — vorher lief
+   eine Aushilfe das Haus Etage für Etage ab (Zeitleiste: ab 14:00 elf Etagen
+   hintereinander, jeweils nur ein ablehnender Gast). Dazu (d): Die Etage, auf
+   der sie steht, arbeitet sie zu Ende. Wirkung (Median, tägliche Reinigung):
+
+   | Haus | Ersparnis je Tag vorher | nachher | je Kraft nachher |
+   |---|---|---|---|
+   | Landing, 100 Zimmer / 5 Kräfte (101 Tage) | 4,1 h | 2,5 h | 30 min |
+   | 600 Zimmer / 30 Kräfte (20 Tage) | 92,9 h | 13,2 h | 26 min |
+
+   Landing-Zahlen täglich: Abreisen ohne Steuerung 15:11 → 15:06, RoSe
+   unverändert 12:37; Check-in verpasst 82 → 72 von 101 Tagen. Der gezeigte Tag
+   bleibt 46. Ein Test hält fest, dass die Ersparnis je Kraft im großen Haus
+   nicht über das 1,5-Fache des kleinen wächst.
 2. **Rechenzeit großer Häuser:** 3 000 Zimmer ≈ 7 s je Tag (davon ~3 s nur für
-   die Wahl des Sonderfall-Zimmers, vier Vorläufe). Budget 75 000 Zimmertage;
-   weiter beschleunigen erst, wenn Nutzer große Häuser rechnen.
+   die Wahl des Sonderfall-Zimmers, vier Vorläufe). Budget 75 000 Zimmertage —
+   vom User bestätigt; weiter beschleunigen erst, wenn Nutzer große Häuser rechnen.
 3. Offene Fragen aus Abschnitt 10 unverändert.
