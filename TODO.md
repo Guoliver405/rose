@@ -77,7 +77,10 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
       Gast", „An der Tür: Gast möchte später / heute keine Reinigung";
       (c) Hilfe → „Das Reinigungsboard" (Tür-Knöpfe, Schritt „Gast ist da …")
       und „Was der Gast sieht" (Verzicht-Knopf); (d) Landing `#vergleich`:
-      läuft die Schleife nach 8 s Endstand wieder ab 9:00?
+      Stand vom 26.09. (Schicht ab 8:00, „N-mal weggeschickt", Abreisen als
+      Hauptzahl: 15:18 · 13:59 · 13:45) ansehen und ob die Schleife nach 8 s
+      Endstand wieder ab 8:00 läuft; (e) eine Routine-Kachel mit eingetragenem
+      Abreisedatum: schon zur Routine-Zeit offen statt erst zur Frist?
 - [ ] **Reinigungsdauer einer Abreise belegen** (26.09.): Landing-Vergleich
       rechnet 30 min als Planwert, nicht recherchiert (üblich 25–45 min). Eine
       Quelle suchen oder die Zahl im Kleingedruckten als Annahme kennzeichnen.
