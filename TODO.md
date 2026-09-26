@@ -43,8 +43,8 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
       siehe „Konto-Seite" und „Zahlungsprovider" unten.
 - [x] ~~**Reinigungsboard: „Gast an der Tür — in 30 min / in 1 h / heute nicht"**~~
       — 26.09. erledigt, dazu im Gastportal „Heute keine Reinigung" (nur bei
-      Routine). Offen daraus nur: die Hilfe-Nachbauten `SimReinigung`/`SimGast`
-      zeigen die neuen Knöpfe noch nicht.
+      Routine); Hilfe-Nachbauten und Landing-Vergleich („RoSe merkt es sich")
+      nachgezogen.
       (26.09., aus dem Landing-Vergleich): Lehnt ein Gast ohne Türschild an der
       Tür ab, kann die Kraft das nicht erfassen; ein routine-fälliges Zimmer
       bleibt aktiv, zählt in den Etagenscore, und die Kollegin klopft erneut.

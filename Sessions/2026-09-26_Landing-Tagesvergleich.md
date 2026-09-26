@@ -17,7 +17,7 @@ an festen Plätzen eingeblendet werden, wenn sie passieren; darüber
 |---|---|---|---|
 | Abreise bekannt | Papierliste: welche, nicht wann — Start zur Check-out-Frist 11:00 | beim Check-out live auf dem Board | wie Mitte |
 | Bleibezimmer | ab 11:00 (sonst Doppelreinigung nach Abreise) | Routine ab 11:00 | nur, wer beim Gehen tippt |
-| Gast bleibt im Zimmer, will nichts (2) | geklopft, abgelehnt | „Nicht stören" im Portal | tippt nicht |
+| Gast bleibt im Zimmer, will nichts (2) | geklopft, abgelehnt; die aushelfende Kraft klopft erneut | geklopft, „Heute nicht" getippt — RoSe merkt es sich für alle (seit Nachtrag 2) | tippt nicht |
 | Gast unterwegs, bräuchte nichts (2) | gereinigt | gereinigt | tippt nicht |
 | Verzicht | 0 % | ≈ 10 % („vorsichtig" im Nutzenrechner) | ≈ 20 % („typisch") |
 | Kräfte | feste Hälften; wer fertig ist, hilft aus — mit eigenem Wissen | gemeinsames Board, Etagenscore ÷ (Kräfte vor Ort + 1) | wie Mitte |
@@ -115,3 +115,23 @@ Link-Verfahren seit gestern, Routine vorübergehend sofort fällig.
   Verlaufszeilen, Policies des Lotsen-Hauses zurückgesetzt).
 
 `npm run verify` grün.
+
+---
+
+# Nachtrag 2: Hilfe-Nachbauten und „RoSe merkt es sich"
+
+- **Hilfe-Nachbauten:** `SimReinigung` zeigt im Zimmer-Dialog die drei
+  Tür-Knöpfe; danach trägt die Kachel Uhr bzw. Blatt und ist nicht mehr offen
+  (neuer Lotsen-Schritt `reinigung.tuer`). `SimGast` hat den Knopf „Heute keine
+  Reinigung" mit dem Hinweis, dass es ihn nur bei täglicher Routine gibt (neue
+  Szene `verzicht`, Schritt `gast.verzicht`); der DND-Schritt sagt jetzt, dass
+  DND bis zur Rücknahme gilt. Zwei Texte zu „ausgegraut" nennen den Verzicht.
+  Im Browser **nicht** geöffnet (liegt hinter der Management-Anmeldung) —
+  Typecheck und der Anker-Test der Lotsen sind grün.
+- **Landing-Vergleich:** Bild 2 modelliert die ablehnenden Gäste jetzt wie
+  Bild 1 an der Tür (vorher „Nicht stören" im Portal), aber mit geteiltem
+  Wissen: jede Ablehnung genau einmal (2 statt 4 Gänge). Neuer Eintrag im
+  gemeinsamen RoSe-Protokoll, als Fähigkeit formuliert, weil er auch über
+  Bild 3 steht: „Möchte ein Gast an der Tür heute keine Reinigung, reicht ein
+  Tipp – RoSe merkt es sich für alle Kräfte." Bild 2 jetzt 13:55 / 15:13,
+  Reihenfolge und alle Tests unverändert gültig.

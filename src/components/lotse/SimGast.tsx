@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, CheckCircle2, Clock, KeyRound, Moon, QrCode, Sparkles } from 'lucide-react'
+import { Check, CheckCircle2, Clock, KeyRound, Leaf, Moon, QrCode, Sparkles } from 'lucide-react'
 import { szeneFuerSchritt } from '@/lib/lotsen'
 import { useLotseSchritt } from './schritt'
 import SimFrame from './SimFrame'
@@ -43,10 +43,12 @@ type Gast = {
   abUhr: string | null
   /** Gesetzte Uhrzeit am aktiven Wunsch. */
   aktivAb: string | null
+  /** „Heute keine Reinigung" (nur bei täglicher Routine des Hauses). */
+  verzicht: boolean
   bestellt: string[]
 }
 
-const START: Gast = { angemeldet: false, signal: 'none', abUhr: null, aktivAb: null, bestellt: [] }
+const START: Gast = { angemeldet: false, signal: 'none', abUhr: null, aktivAb: null, verzicht: false, bestellt: [] }
 
 function szeneState(szene: string): Gast {
   switch (szene) {
@@ -57,6 +59,8 @@ function szeneState(szene: string): Gast {
       return { ...START, angemeldet: true, abUhr: '10:00' }
     case 'gewuenscht':
       return { ...START, angemeldet: true, signal: 'clean', aktivAb: '10:00' }
+    case 'verzicht':
+      return { ...START, angemeldet: true, verzicht: true }
     case 'dnd':
       return { ...START, angemeldet: true, signal: 'dnd' }
     case 'bestellt':
@@ -71,6 +75,7 @@ type Aktion =
   | { t: 'signal'; signal: Signal }
   | { t: 'abUhr'; uhr: string | null }
   | { t: 'bestellen'; name: string }
+  | { t: 'verzicht' }
 
 function reduce(s: Gast, a: Aktion): Gast {
   switch (a.t) {
@@ -79,8 +84,11 @@ function reduce(s: Gast, a: Aktion): Gast {
     case 'signal': {
       // Erneut tippen nimmt zurück; ein Wunsch übernimmt die gewählte Uhrzeit.
       const neu: Signal = s.signal === a.signal ? 'none' : a.signal
-      return { ...s, signal: neu, aktivAb: neu === 'clean' ? s.abUhr : null }
+      // Ein Wunsch hebt den Verzicht für heute auf.
+      return { ...s, signal: neu, aktivAb: neu === 'clean' ? s.abUhr : null, verzicht: neu === 'clean' ? false : s.verzicht }
     }
+    case 'verzicht':
+      return { ...s, verzicht: !s.verzicht, signal: !s.verzicht && s.signal === 'clean' ? 'none' : s.signal, aktivAb: null }
     case 'abUhr':
       return { ...s, abUhr: a.uhr }
     case 'bestellen':
@@ -185,6 +193,30 @@ export default function SimGast() {
             </p>
           </div>
         )}
+
+        <button
+          type="button"
+          data-lotse="gast.verzicht"
+          onClick={() => tu({ t: 'verzicht' })}
+          className={`flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left ${
+            s.verzicht
+              ? 'border-positive bg-positive text-positive-foreground'
+              : 'border-edge bg-surface-elevated text-ink hover:border-edge-strong'
+          }`}
+        >
+          <Leaf className="h-5 w-5 shrink-0" />
+          <span>
+            <span className="block text-base font-bold">Heute keine Reinigung</span>
+            <span className={`block text-xs ${s.verzicht ? '' : 'text-ink-muted'}`}>
+              {s.verzicht
+                ? 'Danke! Gilt nur für heute — erneut tippen zum Zurücknehmen'
+                : 'Spart Wasser und Waschmittel. Morgen wird wieder gereinigt'}
+            </span>
+          </span>
+        </button>
+        <p className="-mt-1 px-1 text-[10px] text-ink-muted">
+          Diesen Knopf gibt es nur in Häusern mit täglicher Routine-Reinigung.
+        </p>
 
         <button
           type="button"

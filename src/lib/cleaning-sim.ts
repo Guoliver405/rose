@@ -14,8 +14,9 @@
  *             noch da, kommt sie in der nächsten Runde wieder; lehnt er ab, ist
  *             das Zimmer für heute erledigt. Türschilder sieht sie auch.
  *  score    — mit RoSe und täglicher Routine-Reinigung, gemeinsames Board.
- *             Wer keine Reinigung will und im Zimmer bleibt, tippt im Portal
- *             „Nicht stören" — niemand klopft umsonst. Wer unterwegs ist, wird
+ *             Wer keine Reinigung will und im Zimmer bleibt, sagt es an der Tür;
+ *             die Kraft tippt „Heute nicht", und RoSe merkt es sich für alle —
+ *             keine Kollegin klopft dort ein zweites Mal. Wer unterwegs ist, wird
  *             nach Routine gereinigt, auch ohne Bedarf (≈ 10 % Verzicht, die
  *             Voreinstellung „vorsichtig" des Nutzenrechners).
  *             Abreisen erscheinen live beim Check-out — das ist der Kern des
@@ -70,8 +71,8 @@ export const DURATION = {
  * Bleibegast:
  *  out      — verlässt das Zimmer um `outAt`
  *  dnd      — Türschild „Bitte nicht stören" den ganzen Tag
- *  declines — bleibt im Zimmer und will keine Reinigung: ohne Software lehnt
- *             er an der Tür ab, mit RoSe tippt er „Nicht stören" im Portal
+ *  declines — bleibt im Zimmer und will keine Reinigung und sagt es an der
+ *             Tür; auf Wunsch fordert er schlicht nichts an
  * `wants` zählt nur bei `out`: tippt er beim Gehen „Zimmer reinigen"?
  */
 export type Stay =
@@ -191,8 +192,6 @@ function jobsFor(scn: Scenario, strategy: Strategy): Job[] {
         duration: DURATION.departure, weight: SCORE_WEIGHTS.checkoutPending })
     } else if (r.kind === 'stay') {
       if (r.presence === 'dnd') continue // Türschild sieht jede Strategie
-      // Mit RoSe wählt, wer im Zimmer bleibt und nichts will, „Nicht stören".
-      if (r.presence === 'declines' && strategy !== 'linear') continue
       const readyAt = r.presence === 'out' ? r.outAt : Infinity
       // Vor der Check-out-Frist ist nicht sicher, wer bleibt — ein früh
       // gereinigtes Zimmer müsste nach einer Abreise ein zweites Mal gereinigt
@@ -444,7 +443,6 @@ export function tilesAt(res: SimResult, t: number, scn: Scenario = SCENARIO): Ti
     else if (refused) state = 'declined'
     else if (r.kind === 'departure') state = t >= r.checkoutAt ? 'departed' : 'occupied'
     else if (r.presence === 'dnd') state = 'dnd'
-    else if (res.strategy === 'score' && r.presence === 'declines') state = 'dnd' // per Portal
     else if (res.strategy === 'onDemand' && (r.presence === 'declines' || !r.wants)) state = 'skipped'
     else if (r.presence === 'declines') state = 'occupied'
     else state = t >= r.outAt ? 'wants' : 'occupied'
@@ -541,6 +539,15 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
     if (switchWalk) {
       out.push({ at: switchWalk.start, tone: 'good',
         text: 'RoSe schickt dorthin, wo am meisten zu tun ist – abgestimmt und verteilt auf die Kräfte.' })
+    }
+    // Ablehnung an der Tür: ein Tipp, und das Board kennt sie für alle
+    // Kräfte (Funktion „Gast an der Tür", seit 26.09.2026). Als Fähigkeit
+    // formuliert — der Eintrag steht über beiden RoSe-Bildern, und auf Wunsch
+    // klopft gar niemand.
+    const firstDecline = res.segments.filter(g => g.kind === 'declined').sort((a, b) => a.start - b.start)[0]
+    if (firstDecline) {
+      out.push({ at: firstDecline.start, tone: 'good',
+        text: 'Möchte ein Gast an der Tür heute keine Reinigung, reicht ein Tipp – RoSe merkt es sich für alle Kräfte.' })
     }
     // Erste Kraft, die auf einer Etage weitermacht, auf der die Kollegin schon war.
     // (Der Sonderfall zählt nicht — er hat seinen eigenen Hinweis.)

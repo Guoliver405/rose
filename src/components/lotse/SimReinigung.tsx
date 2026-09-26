@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import {
-  ArrowLeft, Ban, BedDouble, ChevronRight, Clock, Coffee, DoorOpen, Flag,
+  ArrowLeft, Ban, BedDouble, ChevronRight, Clock, Coffee, DoorOpen, Flag, Leaf,
   KeyRound, Loader2, QrCode, SlidersHorizontal, Sparkles, Target, Users,
 } from 'lucide-react'
 import SlideAction from '@/components/SlideAction'
@@ -44,8 +44,10 @@ type Zimmer = {
   etage: number
   belegt: boolean
   signal: Signal
-  /** Wunsch gilt erst ab dieser Uhrzeit — bis dahin nicht offen. */
+  /** Reinigung erst ab dieser Uhrzeit (Wunsch des Gastes oder „bitte später" an der Tür) — bis dahin nicht offen. */
   abUhr?: string
+  /** An der Tür „heute nicht" — für heute erledigt. */
+  heuteNicht?: boolean
   checkout: boolean
   prio: boolean
   reinigtVon: string | null
@@ -119,6 +121,7 @@ type Aktion =
   | { t: 'start'; nr: string }
   | { t: 'fertig'; nr: string }
   | { t: 'status'; auf: boolean }
+  | { t: 'tuer'; nr: string; wahl: 'spaeter30' | 'spaeter60' | 'heute' }
 
 function reduce(s: Board, a: Aktion): Board {
   switch (a.t) {
@@ -140,15 +143,26 @@ function reduce(s: Board, a: Aktion): Board {
           : r)),
       }
     case 'status': return { ...s, status: a.auf }
+    case 'tuer':
+      // Der Nachbau steht um 10:00 — „in 30 Min" heißt also ab 10:30.
+      return {
+        ...s, dialog: null,
+        zimmer: s.zimmer.map(r => {
+          if (r.nr !== a.nr) return r
+          if (a.wahl === 'heute') return { ...r, heuteNicht: true, abUhr: undefined, signal: r.signal === 'clean' ? 'none' : r.signal }
+          return { ...r, abUhr: a.wahl === 'spaeter30' ? '10:30' : '11:00' }
+        }),
+      }
   }
 }
 
 /* ── Ableitungen, gespiegelt aus board.ts ───────────────────────── */
 
-/** Aufgeschobener Wunsch zählt erst ab seiner Uhrzeit — hier immer „noch nicht". */
+/** Aufgeschobenes zählt erst ab seiner Uhrzeit — hier immer „noch nicht". */
 function offen(r: Zimmer): boolean {
   if (r.reinigtVon) return false
-  if (r.signal === 'clean' && r.abUhr) return false
+  if (r.heuteNicht) return false
+  if (r.abUhr && !r.checkout) return false
   return r.checkout || r.prio || r.signal === 'clean'
 }
 
@@ -171,7 +185,9 @@ function zustand(r: Zimmer): string {
   if (r.reinigtVon) return r.reinigtVon === KRAFT ? 'Du bist hier' : r.reinigtVon
   if (r.prio) return 'priorisiert'
   if (r.checkout) return 'ausgecheckt'
-  if (r.signal === 'clean') return r.abUhr ? `Reinigung ab ${r.abUhr}` : 'Reinigung gewünscht'
+  if (r.heuteNicht) return 'heute keine Reinigung'
+  if (r.abUhr) return `Reinigung ab ${r.abUhr}`
+  if (r.signal === 'clean') return 'Reinigung gewünscht'
   if (r.signal === 'dnd') return 'nicht stören'
   return ''
 }
@@ -438,7 +454,8 @@ export default function SimReinigung() {
                         {r.belegt && <BedDouble className="h-3 w-3 text-active-strong" />}
                         {r.signal === 'dnd' && <Ban className="h-3 w-3 text-blocked-strong" />}
                         {r.signal === 'clean' && !r.abUhr && <Sparkles className="h-3 w-3 text-attention-strong" />}
-                        {r.signal === 'clean' && r.abUhr && <Clock className="h-3 w-3 text-ink-soft" />}
+                        {r.abUhr && <Clock className="h-3 w-3 text-ink-soft" />}
+                        {r.heuteNicht && <Leaf className="h-3 w-3 text-ink-soft" />}
                         {r.checkout && <DoorOpen className="h-3 w-3 text-caution-strong" />}
                         {r.prio && <Flag className="h-3 w-3 text-accent-strong" />}
                         {r.reinigtVon && <Loader2 className="h-3 w-3 animate-spin text-positive-strong" />}
@@ -487,6 +504,25 @@ export default function SimReinigung() {
                     <p className="mt-1 text-[11px] text-ink-muted">
                       Erst die laufende Reinigung abschließen.
                     </p>
+                  )}
+                  {/* Gast an der Tür — wie im echten Board ohne vorherigen Start. */}
+                  {dialogZimmer.belegt && !dialogZimmer.checkout && (
+                    <div data-lotse="reinigung.tuer" className="mt-2 rounded-lg border border-edge bg-surface-elevated px-2.5 py-2">
+                      <p className="mb-1.5 text-[11px] font-semibold text-ink-soft">Gast ist im Zimmer und möchte gerade nicht?</p>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {([['spaeter30', 'In 30 Min'], ['spaeter60', 'In 1 Std'], ['heute', 'Heute nicht']] as const).map(([wahl, label]) => (
+                          <button
+                            key={wahl}
+                            type="button"
+                            disabled={s.pause}
+                            onClick={() => tu({ t: 'tuer', nr: dialogZimmer.nr, wahl })}
+                            className="rounded-md border border-edge bg-surface px-1.5 py-1.5 text-[11px] font-bold text-ink hover:border-edge-strong disabled:opacity-50"
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
               ) : (

@@ -472,7 +472,7 @@ const KONTO: Lotse = {
  */
 export const SIM_SZENEN = {
   reinigung: ['login', 'schicht', 'etagen', 'zimmer', 'dialog', 'reinigung', 'status'],
-  gast: ['zugang', 'portal', 'aufschub', 'gewuenscht', 'dnd', 'services', 'bestellt'],
+  gast: ['zugang', 'portal', 'aufschub', 'gewuenscht', 'verzicht', 'dnd', 'services', 'bestellt'],
 } as const
 
 export type SimBereich = keyof typeof SIM_SZENEN
@@ -519,12 +519,18 @@ const REINIGUNG: Lotse = {
     {
       path: '/hilfe/reinigung', anchor: 'reinigung.kacheln', sim: 'zimmer',
       title: 'Eine Etage wählen heißt einbuchen',
-      body: 'Die Kollegin steht ab jetzt sichtbar auf dieser Etage — in der Rezeptions-Übersicht und für alle anderen Kräfte. Ausgegraute Zimmer sind nicht gesperrt, sondern nur ohne Auftrag: unbelegt, „Nicht stören", oder ein Wunsch, der erst später gilt.',
+      body: 'Die Kollegin steht ab jetzt sichtbar auf dieser Etage — in der Rezeptions-Übersicht und für alle anderen Kräfte. Ausgegraute Zimmer sind nicht gesperrt, sondern nur ohne Auftrag: unbelegt, „Nicht stören", heute keine Reinigung gewünscht, oder eine Reinigung, die erst später gilt.',
     },
     {
       path: '/hilfe/reinigung', anchor: 'reinigung.starten', sim: 'dialog',
       title: 'Starten per Slider, nicht per Knopf',
       body: 'Ein Tipp auf die Kachel öffnet das Zimmer. Gestartet wird mit einem Zug, der am Griff beginnen und die Bahn fast ganz zurücklegen muss — ein Handy in der Schürzentasche soll keine Reinigung auslösen.',
+    },
+    {
+      path: '/hilfe/reinigung', anchor: 'reinigung.tuer', sim: 'dialog',
+      title: 'Gast ist da und möchte gerade nicht?',
+      body: 'Dafür muss niemand starten: „In 30 Min" oder „In 1 Std" nimmt das Zimmer bis dahin vom Board — für alle Kräfte, niemand klopft zwischendurch noch einmal; danach ist es von selbst wieder offen. „Heute nicht" erledigt es für heute. Wünscht der Gast doch noch Reinigung, tippt er im Portal. Als Reinigung gezählt wird beides nicht, im Zimmer-Verlauf steht es trotzdem.',
+      tun: 'Probieren Sie einen der drei Knöpfe — die Kachel zeigt danach, was passiert ist.',
     },
     {
       path: '/hilfe/reinigung', anchor: 'reinigung.abschliessen', sim: 'reinigung',
@@ -547,7 +553,7 @@ const REINIGUNG: Lotse = {
 const GAST: Lotse = {
   id: 'gast',
   title: 'Was der Gast sieht',
-  subtitle: 'Nachgebaut: das Gäste-Portal am Handy — Reinigung, „frühestens ab", Nicht stören, Services',
+  subtitle: 'Nachgebaut: das Gäste-Portal am Handy — Reinigung, „frühestens ab", Verzicht, Nicht stören, Services',
   zugang: 'alle',
   steps: [
     {
@@ -577,9 +583,14 @@ const GAST: Lotse = {
       body: 'Ein aktiver Wunsch bleibt sichtbar, samt der gewählten Uhrzeit. Das ist die einzige Rückmeldung, die das Portal gibt — bewusst: Ein Versprechen, wann jemand kommt, könnte RoSe ohne Zuweisungslogik nicht halten.',
     },
     {
+      path: '/hilfe/gast', anchor: 'gast.verzicht', sim: 'verzicht',
+      title: '„Heute keine Reinigung" — nur bei täglicher Routine',
+      body: 'Reinigt das Haus täglich, verzichtet der Gast mit einem Tipp für heute. Das ist nicht dasselbe wie „Nicht stören": Der Verzicht gilt nur bis Mitternacht, Services und Rezeption bleiben erreichbar, morgen wird wieder gereinigt. Auf dem Board wird das Zimmer grau mit einem Blatt. Reinigt das Haus nur auf Wunsch, fehlt der Knopf — dort ist Nicht-Anfordern schon der Verzicht.',
+    },
+    {
       path: '/hilfe/gast', anchor: 'gast.dnd', sim: 'dnd',
       title: '„Nicht stören" schlägt alles',
-      body: 'Solange es aktiv ist, klopft niemand, und auch die tägliche Routine-Reinigung setzt aus. Zurücknehmen geht jederzeit — anders als der Reinigungswunsch ist „Nicht stören" nie durch ein Zeitfenster gesperrt, sonst säße jemand damit fest.',
+      body: 'Solange es aktiv ist, klopft niemand — auch nicht für einen Service —, und die tägliche Routine-Reinigung setzt aus. Es gilt, bis der Gast es zurücknimmt, auch über Nacht. Zurücknehmen geht jederzeit — anders als der Reinigungswunsch ist „Nicht stören" nie durch ein Zeitfenster gesperrt, sonst säße jemand damit fest.',
     },
     {
       path: '/hilfe/gast', anchor: 'gast.services', sim: 'services',

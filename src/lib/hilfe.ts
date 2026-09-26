@@ -709,7 +709,7 @@ const REINIGUNG: HilfeThema = {
         },
         {
           frage: 'Warum ist ein Zimmer ausgegraut?',
-          antwort: 'Es ist nicht gesperrt, sondern ohne Auftrag: unbelegt, belegt ohne Wunsch, „Nicht stören" oder ein Wunsch, der erst später gilt („ab 11:00"). Sichtbar bleibt es, damit die Etage vollständig ist. Zur Uhrzeit wechselt ein aufgeschobener Wunsch von selbst nach offen.',
+          antwort: 'Es ist nicht gesperrt, sondern ohne Auftrag: unbelegt, belegt ohne Wunsch, „Nicht stören", heute keine Reinigung gewünscht (Blatt) oder eine Reinigung, die erst später gilt („ab 11:00"). Sichtbar bleibt es, damit die Etage vollständig ist. Zur Uhrzeit wechselt ein aufgeschobener Wunsch von selbst nach offen.',
         },
         {
           frage: 'Ich klopfe, der Gast ist da und möchte gerade keine Reinigung.',

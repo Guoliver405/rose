@@ -45,9 +45,9 @@ describe('Reinigungs-Simulation', () => {
     expect(first(score)).toBeGreaterThanOrEqual(earliestCheckout)
   })
 
-  it('wer im Zimmer bleibt und nichts will: ohne Steuerung umsonst geklopft, mit RoSe „Nicht stören“ im Portal', () => {
-    expect(linear.metrics.declined).toBeGreaterThanOrEqual(MIX.declines)
-    expect(score.metrics.declined).toBe(0)
+  it('wer im Zimmer bleibt und nichts will: mit RoSe genau einmal an der Tür, ohne Steuerung auch öfter, auf Wunsch nie', () => {
+    expect(linear.metrics.declined).toBeGreaterThan(MIX.declines) // die aushelfende Kraft klopft erneut
+    expect(score.metrics.declined).toBe(MIX.declines) // RoSe merkt es sich für alle
     expect(onDemand.metrics.declined).toBe(0)
   })
 
@@ -170,7 +170,7 @@ describe('Reinigungs-Simulation', () => {
     const end = tilesAt(score, score.metrics.finishedAt)
     const deps = SCENARIO.rooms.filter(r => r.kind === 'departure').map(r => r.nr)
     expect(end.filter(x => deps.includes(x.nr)).every(x => x.state === 'done')).toBe(true)
-    expect(end.filter(x => decliners.includes(x.nr)).every(x => x.state === 'dnd')).toBe(true)
+    expect(end.filter(x => decliners.includes(x.nr)).every(x => x.state === 'declined')).toBe(true)
     const endLinear = tilesAt(linear, linear.metrics.finishedAt)
     expect(endLinear.filter(x => decliners.includes(x.nr)).every(x => x.state === 'declined')).toBe(true)
   })
