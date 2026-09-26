@@ -21,11 +21,12 @@
  * Die REINIGUNGSPOLITIK ist ein Umschalter, der für BEIDE Bilder gilt (User,
  * 26.09.2026) — sonst vergliche das Bild Politik und Koordination zugleich:
  *
- *  routine  — Bleibezimmer täglich. Ohne Software ab Schichtbeginn laut Liste
- *             (die Kraft klopft, auch wenn die meisten Gäste noch da sind), mit
- *             RoSe ab der Routine-Zeit 9:00 — der Verbleib ist über das beim
- *             Check-in eingetragene Abreisedatum sicher (`isKnownStayover`).
- *             Wer im Zimmer bleibt und nichts will, sagt es an der Tür.
+ *  routine  — Bleibezimmer täglich, in BEIDEN Bildern ab Schichtbeginn 8:00
+ *             (User, 26.09.2026: gleiche Rahmenbedingungen — die Startzeit ist
+ *             eine Entscheidung des Hauses, keine Koordination). Ohne Software
+ *             steht der Verbleib auf der Liste, mit RoSe über das beim Check-in
+ *             eingetragene Abreisedatum (`isKnownStayover`). Wer im Zimmer bleibt
+ *             und nichts will, sagt es an der Tür.
  *  onDemand — nur auf Wunsch. Mit RoSe tippt der Gast beim Gehen „Zimmer
  *             reinigen" und das Zimmer steht sofort auf dem Board. Ohne Software
  *             hängt er den Türanhänger „Bitte reinigen" raus — den sieht eine
@@ -53,14 +54,13 @@ export const CHECKOUT_AT = 180
 export const CHECKIN_AT = 420
 
 /**
- * Ab wann Bleibezimmer bei täglicher Reinigung dran sind. Ohne Software sagt
- * die Papierliste, wer bleibt — die Kraft beginnt mit Schichtbeginn und
- * klopft, auch wenn um 8:00 die meisten Gäste noch im Zimmer sind (sie hat vor
- * 11:00 sonst nichts zu tun). Mit RoSe legt das Haus die Routine auf 9:00: Die
- * erste Stunde kommen die Abreisen live aufs Board, danach ist das Klopfen
- * seltener umsonst.
+ * Ab wann Bleibezimmer bei täglicher Reinigung dran sind — für beide Bilder
+ * gleich, mit Schichtbeginn. (Bis 26.09. nachmittags: ohne Software 8:00, mit
+ * RoSe 9:00 — das verglich eine Hausentscheidung statt der Koordination. 9:00
+ * für beide ließe alle Kräfte eine Stunde warten; nachgerechnet ist der
+ * Vorsprung von RoSe in beiden Fällen ähnlich.)
  */
-export const STAY_ROUTINE_AT = { paper: 0, rose: 60 } as const
+export const STAY_ROUTINE_AT = 0
 
 /**
  * Sonderfall: ein Gast meldet mittags ein Problem in seinem bereits
@@ -222,7 +222,7 @@ function jobsFor(scn: Scenario, coord: Coordination, policy: Policy): Job[] {
       if (r.presence === 'dnd') continue // Türschild sieht jede Strategie
       if (policy === 'routine') {
         jobs.push({ ...base, kind: 'stay', readyAt: r.presence === 'out' ? r.outAt : Infinity,
-          knownAt: STAY_ROUTINE_AT[coord], declines: r.presence === 'declines',
+          knownAt: STAY_ROUTINE_AT, declines: r.presence === 'declines',
           duration: DURATION.stay, weight: SCORE_WEIGHTS.pleaseClean })
       } else {
         // Auf Wunsch: nur wer beim Gehen anfordert — per Tipp oder Türanhänger.
@@ -491,7 +491,7 @@ export function typicalSeed(days = TYPICAL_DAYS): number {
 }
 
 /** Ergebnis von `typicalSeed()` — der Test hält fest, dass beides übereinstimmt. */
-export const SCENARIO_SEED = 64
+export const SCENARIO_SEED = 37
 export const SCENARIO: Scenario = buildScenario(SCENARIO_SEED)
 
 // ── Zustand zu einem Zeitpunkt (für die Anzeige) ──────────────────────────
@@ -597,19 +597,12 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
       out.push({ at: CHECKOUT_AT - 30, tone: 'bad', text: `${early} Zimmer sind ausgecheckt – doch nur die Rezeption weiß es.` })
     }
     out.push({ at: CHECKOUT_AT, tone: 'neutral', text: 'Check-out-Frist: erst jetzt können diese Zimmer sicher gereinigt werden.' })
-    // Früh morgens sind die meisten Gäste noch im Zimmer — ohne Software wird
-    // trotzdem geklopft. Gezählt wird bis zur ersten vollen Stunde nach 8:00.
-    const earlyKnocks = res.segments.filter(g => g.kind === 'knock' && g.start < 60).length
-    if (earlyKnocks >= 3) {
-      out.push({ at: 60, tone: 'bad', text: `${earlyKnocks}-mal weggeschickt — um diese Zeit sind die meisten Gäste noch im Zimmer.` })
-    }
+    // Klopfen bei anwesenden Gästen und die erste Ablehnung passieren in
+    // beiden Bildern gleich — kein Eintrag. Der Koordinationsnachteil ist erst
+    // das ZWEITE Klopfen durch eine Kollegin, die von der Ablehnung nichts weiß.
     const declines = res.segments.filter(g => g.kind === 'declined').sort((a, b) => a.start - b.start)
-    const first = declines.find(g => !g.again)
-    if (first) {
-      out.push({ at: first.start, tone: 'bad', text: `Umsonst geklopft: ${first.nr} möchte heute keine Reinigung.` })
-    }
     const again = declines.find(g => g.again)
-    if (again && first) {
+    if (again) {
       const knower = declines.find(g => !g.again && g.nr === again.nr)!
       out.push({ at: again.start, tone: 'bad',
         text: `Kraft ${MAID_LABELS[again.maid]} hilft aus und klopft bei ${again.nr} noch einmal – dass der Gast abgelehnt hat, wusste nur Kraft ${MAID_LABELS[knower.maid]}.` })

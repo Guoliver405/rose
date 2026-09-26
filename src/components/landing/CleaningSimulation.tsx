@@ -25,7 +25,7 @@ const LEAD: Record<Coordination, Record<Policy, string>> = {
     onDemand: 'Papierliste und Türanhänger „Bitte reinigen“ – zu sehen erst, wer im Flur steht.',
   },
   rose: {
-    routine: 'Tägliche Routine ab 9:00. Check-out live auf dem Board.',
+    routine: 'Gemeinsames Board. Check-out live, Ablehnungen für alle sichtbar.',
     onDemand: 'Gäste tippen „Zimmer reinigen“ – sofort auf dem Board.',
   },
 }
@@ -230,8 +230,8 @@ export default function CleaningSimulation() {
       <p className="mt-4 text-xs text-ink-muted">
         Ein gewöhnlicher Tag: der mittlere aus 101 durchgerechneten, gemessen am Vorsprung bei den Abreisen in beiden
         Stellungen des Umschalters. {SCENARIO.rooms.length} Zimmer auf {SCENARIO.floors} Etagen, {MAIDS} Reinigungskräfte
-        ab 8:00 (ohne Software je zwei feste Etagen), Check-out bis 11:00, Check-in ab 15:00. Täglich: ohne Software
-        Bleibezimmer ab 8:00 laut Liste, mit RoSe Routine ab 9:00 über das beim Check-in eingetragene Abreisedatum. Auf
+        ab 8:00 (ohne Software je zwei feste Etagen), Check-out bis 11:00, Check-in ab 15:00. Täglich: Bleibezimmer in beiden
+        Bildern ab 8:00 – ohne Software laut Liste, mit RoSe über das beim Check-in eingetragene Abreisedatum. Auf
         Wunsch: ohne Software Türanhänger, den eine Kraft erst auf der Etage sieht; mit RoSe der Knopf im Gastportal.
         Etagenwechsel mit Wagen 5 min. Reinigungsdauer als Annahme, eher knapp: Abreise 30 min, Bleibe 18 min — gemessen
         wurden 35–43 bzw. 20–25 min (Quellen Q4 und Q7 im Nutzenrechner).

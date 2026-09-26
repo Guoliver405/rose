@@ -135,7 +135,8 @@ describe('Reinigungs-Simulation', () => {
       for (const g of r.segments.filter(x => x.nr && x.kind !== 'walk' && x.kind !== 'idle')) {
         const own = SCENARIO.maidFloors[g.maid]
         if (own.includes(floorOf(g.nr))) continue
-        const lastOwnStart = Math.max(...cleans.filter(o => own.includes(floorOf(o.nr))).map(o => o.start))
+        // Nur ihre eigenen Reinigungen — eine aushelfende Kollegin darf dort später noch arbeiten.
+        const lastOwnStart = Math.max(...cleans.filter(o => o.maid === g.maid && own.includes(floorOf(o.nr))).map(o => o.start))
         expect(g.start).toBeGreaterThanOrEqual(lastOwnStart)
       }
     }
