@@ -21,7 +21,7 @@ export default async function SimKontoPage() {
 
   return (
     <>
-      <SimHeader signedIn />
+      <SimHeader signedIn hotel={ctx.kind === 'hotel'} />
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
         <h1 className="text-2xl font-black text-ink">Mein Konto</h1>
         <KontoForms email={data.user?.email ?? ''} kind={ctx.kind} marketingOptInAt={ctx.marketingOptInAt} />

@@ -142,7 +142,7 @@ export default async function AdminLayout({
           reicht — nichts wird verdeckt. */}
       <div className="flex flex-1 justify-center">
         <main className="w-full min-w-0 max-w-[1400px] flex-1 p-4">{children}</main>
-        <HilfeLeiste slug={ctx.hotelSlug} istVerwaltung={ctx.role !== 'reception'} istInhaber={ctx.isOwner} />
+        <HilfeLeiste slug={ctx.hotelSlug} istVerwaltung={ctx.role !== 'reception'} istInhaber={ctx.isOwner} nutzer={ctx.userId} />
       </div>
     </div>
   )

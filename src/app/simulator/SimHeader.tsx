@@ -3,7 +3,11 @@ import { SIMULATOR_NAME } from '@/lib/sim-account'
 import { simLogoutAction } from './actions'
 
 /** Kopfzeile aller Seiten des Housekeeping-Simulators. */
-export default function SimHeader({ signedIn }: { signedIn: boolean }) {
+export default function SimHeader({ signedIn, hotel = false }: {
+  signedIn: boolean
+  /** Zugang mit Hotelkonto: Rückweg ins Portal. */
+  hotel?: boolean
+}) {
   return (
     <header className="border-b border-edge bg-surface">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-3 px-4">
@@ -14,6 +18,11 @@ export default function SimHeader({ signedIn }: { signedIn: boolean }) {
         <nav className="flex shrink-0 items-center gap-2 text-sm">
           {signedIn ? (
             <>
+              {hotel && (
+                <Link href="/admin" className="rounded-lg px-2 py-1.5 font-semibold text-ink-soft hover:bg-surface-sunken hover:text-ink">
+                  Häuser
+                </Link>
+              )}
               <Link href="/simulator/konto" className="rounded-lg px-2 py-1.5 font-semibold text-ink-soft hover:bg-surface-sunken hover:text-ink">
                 Mein Konto
               </Link>

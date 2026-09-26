@@ -6,6 +6,8 @@ import {
   ALL_RUNS, GUEST, SCENARIO, clockLabel, highlights, maidLabel, maidsAt, simulate, tilesAt, turnedAwayAt,
   type Coordination, type Highlight, type Policy, type Scenario, type SimResult, type Tile, type TileState,
 } from '@/lib/cleaning-sim'
+import { eventLog } from '@/lib/sim-log'
+import EventLog from '@/components/simulator/EventLog'
 
 /**
  * Reinigungs-Vergleich (25./26.09.2026): derselbe Tag zweimal nebeneinander —
@@ -84,20 +86,22 @@ function reducedMotion(): boolean {
 }
 const noSubscribe = () => () => {}
 
-export default function CleaningSimulation({ scenario = SCENARIO, caption, policy: controlled }: {
+export default function CleaningSimulation({ scenario = SCENARIO, caption, policy: controlled, detailLog = false }: {
   scenario?: Scenario
   /** Kleingedrucktes unter dem Vergleich; Vorgabe ist das der Landing Page. */
   caption?: ReactNode
   /** Von außen gesteuert (Simulator: ein Umschalter für Grafik und Zahlen) — dann ohne eigenen. */
   policy?: Policy
+  /** Simulator: vollständiges Ereignis-Protokoll statt der ausgewählten Hinweise der Landing Page. */
+  detailLog?: boolean
 }) {
   const scn = scenario
   const clock = (min: number) => clockLabel(min, scn.params.shiftStart)
   const maids = scn.maidFloors.length
   const runs = useMemo(() => ALL_RUNS.map(([c, p]) => {
     const res = simulate(c, p, scn)
-    return { key: `${c}-${p}`, res, notes: highlights(res, scn) }
-  }), [scn])
+    return { key: `${c}-${p}`, res, notes: detailLog ? [] : highlights(res, scn), log: detailLog ? eventLog(res, scn) : [] }
+  }), [scn, detailLog])
   const [ownPolicy, setPolicy] = useState<Policy>('routine')
   const policy = controlled ?? ownPolicy
   const shown = (c: Coordination) => runs.find(r => r.key === `${c}-${policy}`)!
@@ -226,7 +230,9 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption, polic
             <div key={c} className="flex min-w-0 flex-col gap-4">
               <Panel title={TITLE[c]} lead={LEAD[c][policy]} res={run.res} t={t} scn={scn} />
               {/* key: beim Umschalten neue Einträge, keine überblendeten alten */}
-              <Log key={run.key} notes={run.notes} t={t} clock={clock} />
+              {detailLog
+                ? <EventLog key={run.key} entries={run.log} t={t} clock={clock} onSeek={at => { stop(); setT(at) }} />
+                : <Log key={run.key} notes={run.notes} t={t} clock={clock} />}
             </div>
           )
         })}

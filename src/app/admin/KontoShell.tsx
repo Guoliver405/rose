@@ -4,6 +4,7 @@ import { logoutAction } from '@/app/login/actions'
 import HilfeKnopf from '@/components/hilfe/HilfeKnopf'
 import HilfeLeiste from '@/components/hilfe/HilfeLeiste'
 import LotsePilot from '@/components/lotse/LotsePilot'
+import { getAuthUserId } from '@/utils/auth'
 
 /**
  * Rahmen der Konto-Seiten außerhalb von `/h/<slug>/`: Logo, Name der
@@ -11,7 +12,7 @@ import LotsePilot from '@/components/lotse/LotsePilot'
  * `/admin` selbst entscheidet, ob es rendert oder auf `/login` umleitet —
  * ein Layout würde die Kopfzeile auch um diese Umleitung herum zeichnen.
  */
-export default function KontoShell({
+export default async function KontoShell({
   who, istInhaber, children,
 }: {
   who: string | undefined
@@ -58,7 +59,7 @@ export default function KontoShell({
           {children}
         </main>
         {/* Kein Slug im Konto-Bereich — die Leiste verlinkt dann nicht ins Haus. */}
-        <HilfeLeiste slug={null} istVerwaltung istInhaber={istInhaber} />
+        <HilfeLeiste slug={null} istVerwaltung istInhaber={istInhaber} nutzer={await getAuthUserId()} />
       </div>
     </div>
   )

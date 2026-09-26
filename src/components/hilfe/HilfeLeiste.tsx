@@ -10,7 +10,7 @@ import {
 } from '@/lib/hilfe'
 import { lotseById, lotseStart } from '@/lib/lotsen'
 import { HilfeBloecke } from './HilfeThema'
-import { schliesseLeiste, useLeiste, waehleThema } from './leiste'
+import { schliesseLeiste, setzeNutzer, useLeiste, waehleThema } from './leiste'
 
 /**
  * Die Hilfe-Leiste: rechts neben dem Inhalt, vom „?" in der Kopfzeile ein-
@@ -32,15 +32,18 @@ import { schliesseLeiste, useLeiste, waehleThema } from './leiste'
  * die Leiste bietet sie als „Als Seite öffnen" an.
  */
 export default function HilfeLeiste({
-  slug, istVerwaltung, istInhaber,
+  slug, istVerwaltung, istInhaber, nutzer,
 }: {
   /** Slug des Hauses; `null` im Konto-Bereich. */
   slug: string | null
   istVerwaltung: boolean
   istInhaber: boolean
+  /** Angemeldete Person — „offen" merkt sich die Leiste je Person (leiste.ts). */
+  nutzer: string | null
 }) {
   const pathname = usePathname()
   const { offen, wahl } = useLeiste()
+  useEffect(() => { setzeNutzer(nutzer) }, [nutzer])
 
   // Esc schließt die Leiste — dieselbe Erwartung wie beim Lotsen. Der
   // Handler schreibt nur in den Store, kein setState im Effekt.

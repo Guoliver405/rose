@@ -14,7 +14,11 @@ import { useSyncExternalStore } from 'react'
  *
  * „Offen" wird im Browser gemerkt (`localStorage`), damit ein Neuladen die
  * Leiste nicht schließt — eine Rezeption, die sich einarbeitet, lässt sie
- * tagelang offen. Die Themenwahl dagegen ist flüchtig und **an den Pfad
+ * tagelang offen. **Je Person, nicht je Browser** (26.09.2026): Vorher erbte
+ * ein neu registriertes Konto die offene Leiste eines früheren Zugangs im
+ * selben Browser und wurde auf der ersten Seite davon erschlagen. Der
+ * Schlüssel trägt deshalb die Nutzer-ID (`setzeNutzer`); solange sie nicht
+ * bekannt ist, bleibt die Leiste zu. Die Themenwahl dagegen ist flüchtig und **an den Pfad
  * gebunden**, auf dem sie getroffen wurde: Beim Seitenwechsel gilt wieder das
  * Thema der Seite. So muss kein Effekt die Wahl „zurücksetzen" — sie ist auf
  * dem neuen Pfad schlicht nicht mehr gültig (abgeleitet, nicht nachgezogen).
@@ -35,12 +39,24 @@ export type LeisteZustand = {
 const ZU: LeisteZustand = { offen: false, wahl: null }
 
 let zustand: LeisteZustand | null = null
+let nutzer: string | null = null
+
+const schluessel = () => `${SCHLUESSEL}:${nutzer}`
+
+/** Wem gehört der gemerkte Zustand? Aus dem Layout, sobald die Seite im Browser steht. */
+export function setzeNutzer(id: string | null): void {
+  if (id === nutzer) return
+  nutzer = id
+  zustand = null
+  window.dispatchEvent(new Event(EREIGNIS))
+}
 
 function lies(): LeisteZustand {
   if (zustand) return zustand
+  if (!nutzer) return ZU
   let offen = false
   try {
-    offen = localStorage.getItem(SCHLUESSEL) === '1'
+    offen = localStorage.getItem(schluessel()) === '1'
   } catch {
     // Privatfenster, gesperrter Speicher — dann eben zu.
   }
@@ -51,7 +67,7 @@ function lies(): LeisteZustand {
 function schreibe(neu: LeisteZustand): void {
   zustand = neu
   try {
-    localStorage.setItem(SCHLUESSEL, neu.offen ? '1' : '0')
+    if (nutzer) localStorage.setItem(schluessel(), neu.offen ? '1' : '0')
   } catch {
     // s. o.
   }

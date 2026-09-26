@@ -26,7 +26,7 @@ export default async function SimulatorPage({ searchParams }: { searchParams: Pr
 
   return (
     <>
-      <SimHeader signedIn={!!ctx} />
+      <SimHeader signedIn={!!ctx} hotel={ctx?.kind === 'hotel'} />
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8">
         {sp.willkommen && ctx && (
           <p className="flex items-center gap-2 rounded-xl border border-positive-pill-edge bg-positive-tint px-4 py-3 text-sm font-semibold text-positive-deep">

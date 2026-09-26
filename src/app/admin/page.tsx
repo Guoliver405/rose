@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { Building2, ChevronRight, ConciergeBell, CreditCard, Sparkles } from 'lucide-react'
+import { BarChart3, Building2, ChevronRight, ConciergeBell, CreditCard, Sparkles } from 'lucide-react'
 import { listAccessibleHotels, getAccountContext } from '@/utils/auth'
 import { createAdminClient } from '@/utils/supabase/service'
 import { isRoomActive } from '@/lib/board'
@@ -253,6 +253,21 @@ export default async function HotelPickerPage() {
           })}
         </div>
       </section>
+
+      {/* Housekeeping-Simulator (26.09.2026) — nur Inhaber und Manager, wie `getSimContext`. */}
+      {hotels.some(h => h.role !== 'reception') && (
+        <Link href="/simulator"
+          className="flex items-center gap-3 rounded-xl border border-edge bg-surface p-4 hover:border-edge-strong">
+          <BarChart3 className="h-5 w-5 shrink-0 text-action" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <div className="font-bold text-ink">Housekeeping-Simulator</div>
+            <div className="text-sm text-ink-soft">
+              Ihr Haus mit anderen Zahlen durchrechnen – Personal, Zeiten, Belegung – über viele Tage, ohne Steuerung und mit RoSe.
+            </div>
+          </div>
+          <ChevronRight className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden />
+        </Link>
+      )}
 
       {/* Löschbegehren — nur der Kontoinhaber, bewusst ganz unten. */}
       {account && (

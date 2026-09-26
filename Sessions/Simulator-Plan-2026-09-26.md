@@ -4,7 +4,7 @@ Stand 26.09.2026 · Entscheidungen des Users in dieser Session · **Phasen 1 bis
 
 > **Wiederaufnahme in einer neuen Session:** Erst `AGENTS.md` lesen (Abschnitte
 > „Landing Page", „Check-out-Druck", „Mail-Versand mit Rückmeldung"), dann diesen
-> Plan. Phasen 1 bis 4 sind gebaut (Abschnitte 11–14) — als Nächstes das Ereignis-Protokoll (Abschnitt 14, „Nächster Schritt"), dann Phase 5. Antworten durchgehend auf **Deutsch** – auch
+> Plan. Phasen 1 bis 4 sind gebaut und in Produktion getestet (Abschnitte 11–14), das Ereignis-Protokoll ebenso (Abschnitt 15). Offen: Phase 5. Antworten durchgehend auf **Deutsch** – auch
 > Zwischensätze zwischen Werkzeugaufrufen (Rückmeldung des Users).
 
 ---
@@ -382,3 +382,27 @@ Gast geht, Schild ab, Wunsch, Etagenwechsel, Etagenliste, Klopfen, Reinigung von
 Warten, Sonderfall), abgeleitet aus dem Ablauf. Zugeklappt wenige Zeilen, aufgeklappt
 ein scrollbarer Kasten, der mit der Uhr mitläuft; Klick auf eine Zeile setzt die Uhr.
 Später ein Filter nach Kraft oder Zimmer (große Häuser: tausende Zeilen).
+
+## 15. Ereignis-Protokoll, Wege zwischen Portal und Simulator, Hilfe-Leiste (26.09.2026, spät)
+
+- **Umwandlung in Produktion getestet** (User): „Hotel Pattaya", 81 Zimmer samt Zustand,
+  Regeln übernommen, derselbe Zugang Inhaber. Einladungscode: Die erste Ablehnung war ein
+  anderer Eintrag im Feld (Log: `laenge 6, erwartet 19`) — die Prüfung ignoriert seither
+  trotzdem Leer- und unsichtbare Zeichen und Groß-/Kleinschreibung, das Log nennt nur Längen.
+- **Ereignis-Protokoll statt Hinweise im Simulator** ([sim-log.ts](../src/lib/sim-log.ts),
+  getestet; [EventLog](../src/components/simulator/EventLog.tsx)): jede Zeile mit Uhrzeit,
+  Kraft/Gast/Haus und Zimmer — Check-out, Gast geht, Schild ab, Wunsch, „frühestens ab",
+  Etagenwechsel (mit Hinweis, wenn das Board eine Kraft wegen der Abreisen holt),
+  Etagenliste, Klopfen, Reinigung mit Ende, Warten ab 5 min, Sonderfall, Check-in,
+  „alle Abreisen fertig", Feierabend je Kraft. Zugeklappt die letzten vier Ereignisse bis zur
+  Uhr, aufgeklappt ein scrollbarer Kasten, der mitläuft, bis jemand selbst scrollt;
+  Klick setzt die Uhr; Filter nach Kraft („A"), Etage („3") oder Zimmer („305").
+  Die Landing Page behält die ausgewählten Hinweise (`CleaningSimulation` ohne `detailLog`).
+- **Wege:** `/admin` trägt für Inhaber und Manager die Karte „Housekeeping-Simulator";
+  im Simulator führt „Häuser" zurück, wenn der Zugang ein Hotelkonto hat.
+- **Hilfe-Leiste je Person:** „offen" liegt in `localStorage` unter einem Schlüssel mit
+  der Nutzer-ID (`setzeNutzer`), vorher erbte ein neues Konto die offene Leiste eines
+  früheren Zugangs im selben Browser. **Lotse:** Esc beendet ihn nicht mehr; der
+  Begrüßungsschritt nennt den „Weiter"-Knopf.
+- **Umwandlungs-Karte ohne Beträge** (User: Zahlen an dieser Stelle hemmen den Klick),
+  mit Link „Preise".

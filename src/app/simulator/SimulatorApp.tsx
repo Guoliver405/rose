@@ -475,7 +475,7 @@ function Results({ result, policy, onPolicy }: { result: Result; policy: Policy;
           Aus den {days} gerechneten der Tag, der beim Vorsprung der Abreisen der Mitte am nächsten liegt.
         </p>
         <div className="mt-3">
-          <CleaningSimulation scenario={typical} policy={policy} caption={
+          <CleaningSimulation scenario={typical} policy={policy} detailLog caption={
             <p>
               Tag {summary.typicalSeed} von {days}. {rooms} Zimmer auf {config.floors} Etagen, {config.maids} Reinigungskräfte ab{' '}
               {clockLabel(0, P.shiftStart)}, Check-out bis {clockLabel(P.checkoutAt, P.shiftStart)}, Check-in ab{' '}
