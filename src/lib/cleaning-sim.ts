@@ -8,11 +8,11 @@
  *  linear   — ohne Software. Das Haus ist fest aufgeteilt (untere und obere
  *             Etagen). Die Abreise- und Bleibeliste vom Morgen liegt vor —
  *             welche Zimmer abreisen, weiß die Kraft, aber nicht, WANN der Gast
- *             auscheckt. Sie beginnt deshalb zur Check-out-Frist und geht Etage
- *             für Etage, Zimmer für Zimmer. Bleibezimmer ebenfalls erst dann,
- *             sonst droht nach einer Abreise eine zweite Reinigung. Ist der Gast
- *             noch da, kommt sie in der nächsten Runde wieder; lehnt er ab, ist
- *             das Zimmer für heute erledigt. Türschilder sieht sie auch.
+ *             auscheckt: Abreisen reinigt sie deshalb erst ab der Check-out-Frist.
+ *             Bleibezimmer kennt sie von der Liste und nimmt sie ab 9:00 mit —
+ *             Etage für Etage, Zimmer für Zimmer. Ist der Gast noch da, kommt
+ *             sie in der nächsten Runde wieder; lehnt er ab, ist das Zimmer für
+ *             heute erledigt. Türschilder sieht sie auch.
  *  score    — mit RoSe und täglicher Routine-Reinigung, gemeinsames Board.
  *             Wer keine Reinigung will und im Zimmer bleibt, sagt es an der Tür;
  *             die Kraft tippt „Heute nicht", und RoSe merkt es sich für alle —
@@ -42,11 +42,17 @@ export type Strategy = 'linear' | 'score' | 'onDemand'
 /** Minuten nach Schichtbeginn (9:00). */
 export const SIM_START_HOUR = 9
 
+/** Check-out-Frist 11:00. Ab dann ist ohne Software jede Abreise sicher frei. */
+export const CHECKOUT_AT = 120
+
 /**
- * Check-out-Frist 11:00. Ab dann ist ohne Software jede Abreise sicher frei,
- * und die Routine-Reinigung wird fällig (die Frist ist ihre Untergrenze).
+ * Routine-Zeit 9:00: ab dann sind Bleibezimmer dran, wo der Gast weg ist.
+ * Ohne Software sagt die Papierliste, wer bleibt; mit RoSe das beim Check-in
+ * eingetragene Abreisedatum (`isKnownStayover` in board.ts, seit 26.09.2026).
+ * Ob der Gast gerade im Zimmer ist, weiß keins von beiden — geklopft wird in
+ * Bild 1 und 2 gleich.
  */
-export const ROUTINE_AT = 120
+export const STAY_ROUTINE_AT = 0
 
 /**
  * Sonderfall: ein Gast meldet mittags ein Problem in seinem bereits
@@ -188,16 +194,13 @@ function jobsFor(scn: Scenario, strategy: Strategy): Job[] {
     if (r.kind === 'departure') {
       jobs.push({ ...base, kind: 'departure', readyAt: r.checkoutAt, declines: false,
         // Ohne Software: sicher frei erst zur Frist. Mit RoSe: erscheint beim Check-out.
-        knownAt: strategy === 'linear' ? Math.max(ROUTINE_AT, r.checkoutAt) : r.checkoutAt,
+        knownAt: strategy === 'linear' ? Math.max(CHECKOUT_AT, r.checkoutAt) : r.checkoutAt,
         duration: DURATION.departure, weight: SCORE_WEIGHTS.checkoutPending })
     } else if (r.kind === 'stay') {
       if (r.presence === 'dnd') continue // Türschild sieht jede Strategie
       const readyAt = r.presence === 'out' ? r.outAt : Infinity
-      // Vor der Check-out-Frist ist nicht sicher, wer bleibt — ein früh
-      // gereinigtes Zimmer müsste nach einer Abreise ein zweites Mal gereinigt
-      // werden. Das gilt mit und ohne Software gleich.
       let knownAt: number
-      if (strategy !== 'onDemand') knownAt = ROUTINE_AT
+      if (strategy !== 'onDemand') knownAt = STAY_ROUTINE_AT
       else {
         // Auf Wunsch: nur wer beim Gehen tippt.
         if (r.presence !== 'out' || !r.wants) continue
@@ -409,7 +412,7 @@ export function simulate(strategy: Strategy, scn: Scenario = SCENARIO): SimResul
  * 20 Startwerte sichert nur ab, dass die Reihenfolge der Fertig-Zeiten auch
  * im Allgemeinen gilt.
  */
-export const SCENARIO_SEED = 297
+export const SCENARIO_SEED = 2
 export const SCENARIO: Scenario = buildScenario(SCENARIO_SEED)
 
 // ── Zustand zu einem Zeitpunkt (für die Anzeige) ──────────────────────────
@@ -504,11 +507,11 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
       out.push({ at: firstCheckout.checkoutAt, tone: 'bad',
         text: `${firstCheckout.nr} ist bereits ausgecheckt – auf der Papierliste steht das nicht.` })
     }
-    const early = deps.filter(d => d.checkoutAt <= ROUTINE_AT - 30).length
+    const early = deps.filter(d => d.checkoutAt <= CHECKOUT_AT - 30).length
     if (early > 1) {
-      out.push({ at: ROUTINE_AT - 30, tone: 'bad', text: `${early} Zimmer sind ausgecheckt – doch nur die Rezeption weiß es.` })
+      out.push({ at: CHECKOUT_AT - 30, tone: 'bad', text: `${early} Zimmer sind ausgecheckt – doch nur die Rezeption weiß es.` })
     }
-    out.push({ at: ROUTINE_AT, tone: 'neutral', text: 'Check-out-Frist: erst jetzt können diese Zimmer sicher gereinigt werden.' })
+    out.push({ at: CHECKOUT_AT, tone: 'neutral', text: 'Check-out-Frist: erst jetzt können diese Zimmer sicher gereinigt werden.' })
     const declines = res.segments.filter(g => g.kind === 'declined').sort((a, b) => a.start - b.start)
     const first = declines.find(g => !g.again)
     if (first) {
@@ -574,7 +577,7 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
     }
     const none = scn.rooms.filter(r => r.kind === 'stay' && (r.presence === 'declines' || (r.presence === 'out' && !r.wants))).length
     if (none > 0) {
-      out.push({ at: ROUTINE_AT, tone: 'good',
+      out.push({ at: CHECKOUT_AT, tone: 'good',
         text: `${none} Gäste möchten heute keine Reinigung – weniger Arbeit, Wasser und Waschmittel.` })
     }
   }

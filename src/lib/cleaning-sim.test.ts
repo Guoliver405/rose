@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { COMPLAINT, MIX, ROUTINE_AT, SCENARIO, buildScenario, highlights, roseHighlights, maidsAt, simulate, tilesAt } from './cleaning-sim'
+import { COMPLAINT, MIX, CHECKOUT_AT, SCENARIO, buildScenario, highlights, roseHighlights, maidsAt, simulate, tilesAt } from './cleaning-sim'
 
 describe('Reinigungs-Simulation', () => {
   const [linear, score, onDemand] = (['linear', 'score', 'onDemand'] as const).map(s => simulate(s))
@@ -26,7 +26,7 @@ describe('Reinigungs-Simulation', () => {
     expect(highlights(score).every(x => x.tone === 'good')).toBe(true)
     // Der „sofort auf dem Board"-Hinweis fällt auf einen echten Reinigungsbeginn vor der Frist.
     const live = highlights(score).find(x => x.text.includes('sofort auf dem Board'))!
-    expect(live.at).toBeLessThan(ROUTINE_AT)
+    expect(live.at).toBeLessThan(CHECKOUT_AT)
     expect(score.segments.some(g => g.kind === 'clean' && g.start === live.at)).toBe(true)
   })
 
@@ -37,12 +37,18 @@ describe('Reinigungs-Simulation', () => {
     expect(new Set(SCENARIO.rooms.map(r => r.nr)).size).toBe(36)
   })
 
-  it('ohne Software beginnt die Reinigung erst zur Check-out-Frist, mit RoSe beim Check-out', () => {
-    const first = (r: typeof linear) => Math.min(...r.segments.filter(g => g.kind === 'clean').map(g => g.start))
-    expect(first(linear)).toBeGreaterThanOrEqual(ROUTINE_AT)
-    const earliestCheckout = Math.min(...SCENARIO.rooms.flatMap(r => (r.kind === 'departure' ? [r.checkoutAt] : [])))
-    expect(first(score)).toBeLessThan(ROUTINE_AT)
-    expect(first(score)).toBeGreaterThanOrEqual(earliestCheckout)
+  it('Abreisen: ohne Software erst zur Check-out-Frist, mit RoSe ab dem Check-out', () => {
+    const deps = SCENARIO.rooms.filter(r => r.kind === 'departure').map(r => r.nr)
+    const firstDep = (r: typeof linear) => Math.min(...r.segments.filter(g => g.kind === 'clean' && deps.includes(g.nr)).map(g => g.start))
+    expect(firstDep(linear)).toBeGreaterThanOrEqual(CHECKOUT_AT)
+    expect(firstDep(score)).toBeLessThan(CHECKOUT_AT)
+  })
+
+  it('Bleibezimmer: ohne Software und mit RoSe schon vor 11:00 (Liste bzw. Abreisedatum)', () => {
+    const stays = SCENARIO.rooms.filter(r => r.kind === 'stay').map(r => r.nr)
+    for (const r of [linear, score]) {
+      expect(r.segments.some(g => g.kind === 'clean' && stays.includes(g.nr) && g.start < CHECKOUT_AT)).toBe(true)
+    }
   })
 
   it('wer im Zimmer bleibt und nichts will: mit RoSe genau einmal an der Tür, ohne Steuerung auch öfter, auf Wunsch nie', () => {
@@ -123,20 +129,17 @@ describe('Reinigungs-Simulation', () => {
     expect(onDemand.metrics.finishedAt).toBeLessThan(score.metrics.finishedAt)
   })
 
-  it('an jedem von 20 Tagen ist jede Stufe früher fertig als die vorige', () => {
-    for (let seed = 1; seed <= 20; seed++) {
+  it('über 100 Tage: auf Wunsch immer vor RoSe, RoSe an mindestens 90 % der Tage vor ohne Steuerung', () => {
+    let scoreAhead = 0
+    for (let seed = 1; seed <= 100; seed++) {
       const scn = buildScenario(seed)
       const [l, sc, od] = (['linear', 'score', 'onDemand'] as const).map(s => simulate(s, scn).metrics.finishedAt)
-      expect(sc).toBeLessThan(l)
       expect(od).toBeLessThan(sc)
+      if (sc < l) scoreAhead++
     }
+    expect(scoreAhead).toBeGreaterThanOrEqual(90)
   })
 
-  it('mit Routine erscheint kein Bleibezimmer vor der Routine-Zeit', () => {
-    const stays = SCENARIO.rooms.filter(r => r.kind === 'stay').map(r => r.nr)
-    const early = score.segments.filter(g => (g.kind === 'clean' || g.kind === 'declined') && stays.includes(g.nr) && g.start < ROUTINE_AT)
-    expect(early).toEqual([])
-  })
 
   it('ohne Steuerung bleibt jede Kraft auf ihren Etagen, bis dort alles vergeben ist', () => {
     const cleans = linear.segments.filter(g => g.kind === 'clean')

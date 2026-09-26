@@ -214,7 +214,8 @@ export default function CleaningSimulation() {
 
       <p className="mt-4 text-xs text-ink-muted">
         Derselbe Tag in allen drei Bildern: {SCENARIO.rooms.length} Zimmer auf {SCENARIO.floors} Etagen,
-        zwei Reinigungskräfte ab 9:00, Check-out bis 11:00. Abreise 30 min, Bleibe 18 min.
+        zwei Reinigungskräfte ab 9:00, Check-out bis 11:00. Bleibezimmer ab 9:00 — ohne Software über
+        die Abreiseliste, mit RoSe über das beim Check-in eingetragene Abreisedatum. Abreise 30 min, Bleibe 18 min.
       </p>
     </div>
   )

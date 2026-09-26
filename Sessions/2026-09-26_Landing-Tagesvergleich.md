@@ -135,3 +135,22 @@ Link-Verfahren seit gestern, Routine vorübergehend sofort fällig.
   Bild 3 steht: „Möchte ein Gast an der Tür heute keine Reinigung, reicht ein
   Tipp – RoSe merkt es sich für alle Kräfte." Bild 2 jetzt 13:55 / 15:13,
   Reihenfolge und alle Tests unverändert gültig.
+
+---
+
+# Nachtrag 3: Bleibezimmer ab 9:00 (faire Korrektur)
+
+Frage des Users: Warum beginnt Bild 1 erst um 11:00? Zu Recht — wer die
+Abreiseliste hat, weiß auch, wer bleibt. Voraussetzung auf Produktseite
+(Commit 84c65db): Mit eingetragenem Abreisedatum nach heute gilt die Routine
+ab der Routine-Zeit, nicht erst ab der Check-out-Frist.
+
+- Simulation: zwei Zeiten statt einer — `CHECKOUT_AT` (11:00, Abreisen ohne
+  Software) und `STAY_ROUTINE_AT` (9:00, Bleibezimmer in Bild 1 und 2, mit
+  Klopfen, wo der Gast noch da ist). Kleingedrucktes nennt die Annahme, dass
+  die Rezeption das Abreisedatum eingetragen hat.
+- Ergebnis über 300 Tage: fertig 15:08 / 14:51 / 14:14, Abreisen 15:01 /
+  14:07 / 13:48. Bild 2 an 288/300 Tagen vor Bild 1, Bild 3 immer vor Bild 2.
+  Der Vorsprung von Bild 2 liegt jetzt vor allem bei den Abreisen.
+- Gezeigter Tag: Startwert 2 (am nächsten am Mittel unter den Tagen, die alle
+  Bedingungen erfüllen): 15:08/15:08 · 13:00/14:50 · 12:49/14:14.

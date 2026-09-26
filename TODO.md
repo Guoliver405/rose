@@ -63,7 +63,7 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
       fällig (`isStayoverDue`/`stayoverDueTime` in board.ts, Gaststatus,
       Handout-Zeitangabe, Tests). Voraussetzung für die faire Korrektur des
       Landing-Vergleichs (nächster Punkt).
-- [ ] **Landing-Vergleich: Bleibezimmer ohne Software ab 9:00** (26.09., Frage
+- [x] ~~**Landing-Vergleich: Bleibezimmer ohne Software ab 9:00**~~ — 26.09. erledigt (Startwert 2). Ursprünglich: (26.09., Frage
       des Users): Wer die Abreiseliste auf Papier hat, weiß auch, wer bleibt —
       Bild 1 wartet heute zu Unrecht bis 11:00 (Überlagerung zweier früherer
       Korrekturen, siehe Protokoll 2026-09-26). Korrektur: Bild 1 reinigt
