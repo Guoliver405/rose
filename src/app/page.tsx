@@ -36,8 +36,8 @@ export const metadata: Metadata = {
  * veralten mit jedem UI-Feinschliff. Der Preis-Abschnitt trägt neben der
  * Preiskarte den Nutzenrechner (`RoiCalculator`, Rechnung in `roi.ts` mit
  * ausgewiesenen Annahmen und Quellen). Hinter dem Ablauf zeigt
- * `CleaningSimulation` denselben Tag dreimal — ohne Steuerung, mit RoSe, mit
- * RoSe und Reinigung auf Wunsch (Rechnung in `cleaning-sim.ts`). Preise kommen aus `pricing.ts`,
+ * `CleaningSimulation` denselben Tag ohne Steuerung und mit RoSe, umschaltbar
+ * zwischen täglicher Reinigung und Reinigung auf Wunsch (Rechnung in `cleaning-sim.ts`). Preise kommen aus `pricing.ts`,
  * damit Landing Page, AGB und Konto dieselben Zahlen zeigen.
  */
 export default function LandingPage() {
@@ -383,15 +383,15 @@ function Flow() {
   )
 }
 
-/* ── Derselbe Tag, dreimal ───────────────────────────────────────── */
+/* ── Derselbe Tag, mit und ohne RoSe ───────────────────────────────────────── */
 
 function DayComparison() {
   return (
     <section id="vergleich" className="mx-auto w-full max-w-6xl scroll-mt-20 px-4 py-16">
-      <h2 className="text-center text-3xl font-black text-ink">Derselbe Tag, dreimal</h2>
+      <h2 className="text-center text-3xl font-black text-ink">Derselbe Tag, mit und ohne RoSe</h2>
       <p className="mx-auto mt-3 max-w-2xl text-center text-ink-soft">
-        Gleiche Zimmer, gleiche Gäste, gleiche Reinigungskräfte. Der Unterschied ist allein, was sie
-        wissen und wonach sie das nächste Zimmer wählen.
+        100 Zimmer, gleiche Gäste, gleiche Reinigungskräfte. Der Unterschied ist allein, was sie
+        wissen und wonach sie das nächste Zimmer wählen – ob Ihr Haus täglich reinigt oder nur auf Wunsch.
       </p>
       <div className="mt-10">
         <CleaningSimulation />

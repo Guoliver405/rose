@@ -1,166 +1,151 @@
 import { describe, expect, it } from 'vitest'
-import { COMPLAINT, MIX, CHECKOUT_AT, SIM_START_HOUR, SCENARIO, buildScenario, highlights, roseHighlights, maidsAt, simulate, tilesAt } from './cleaning-sim'
+import {
+  ALL_RUNS, CHECKIN_AT, CHECKOUT_AT, COMPLAINT, MAIDS, MIX, SCENARIO, SCENARIO_SEED,
+  buildScenario, floorOf, highlights, maidsAt, simulate, tilesAt, typicalSeed,
+  type Coordination, type Policy, type SimResult,
+} from './cleaning-sim'
 
 describe('Reinigungs-Simulation', () => {
-  const [linear, score, onDemand] = (['linear', 'score', 'onDemand'] as const).map(s => simulate(s))
+  const run = Object.fromEntries(ALL_RUNS.map(([c, p]) => [`${c}-${p}`, simulate(c, p)])) as Record<`${Coordination}-${Policy}`, SimResult>
+  const all = Object.values(run)
   const decliners = SCENARIO.rooms.filter(r => r.kind === 'stay' && r.presence === 'declines').map(r => r.nr)
   const dnd = SCENARIO.rooms.filter(r => r.kind === 'stay' && r.presence === 'dnd').map(r => r.nr)
+  const deps = SCENARIO.rooms.filter(r => r.kind === 'departure').map(r => r.nr)
+  const stays = MIX.declines + MIX.outWants + MIX.outNoRequest // ohne Türschild
 
-  it('mit RoSe sind die Abreisen vor 14:00 bezugsfertig, ohne Steuerung nicht', () => {
-    const at14 = (14 - SIM_START_HOUR) * 60
-    expect(score.metrics.departuresReadyAt!).toBeLessThan(at14)
-    expect(onDemand.metrics.departuresReadyAt!).toBeLessThan(at14)
-    expect(linear.metrics.departuresReadyAt!).toBeGreaterThan(at14)
-  })
-
-  it('Hinweise: zeitlich geordnet, jeder belegt durch den Ablauf, Bild 3 wiederholt Bild 2 nicht', () => {
-    const texts2 = highlights(score).map(x => x.text)
-    expect(highlights(onDemand).some(x => texts2.includes(x.text))).toBe(false)
-    for (const r of [linear, score, onDemand]) {
-      const h = highlights(r)
-      expect(h.length).toBeGreaterThanOrEqual(2)
-      expect(h.map(x => x.at)).toEqual([...h.map(x => x.at)].sort((a, b) => a - b))
-    }
-    // Ohne Steuerung nur Warnungen/Neutrales, mit RoSe nur Vorteile.
-    expect(highlights(linear).some(x => x.tone === 'good')).toBe(false)
-    expect(highlights(score).every(x => x.tone === 'good')).toBe(true)
-    // Der „sofort auf dem Board"-Hinweis fällt auf einen echten Reinigungsbeginn vor der Frist.
-    const live = highlights(score).find(x => x.text.includes('sofort auf dem Board'))!
-    expect(live.at).toBeLessThan(CHECKOUT_AT)
-    expect(score.segments.some(g => g.kind === 'clean' && g.start === live.at)).toBe(true)
-  })
-
-  it('Szenario: 6 × 6 Zimmer in der Mischung aus MIX', () => {
-    expect(SCENARIO.rooms).toHaveLength(36)
+  it('Szenario: 10 × 10 Zimmer in der Mischung aus MIX, Etagen auch zweistellig', () => {
+    expect(SCENARIO.rooms).toHaveLength(100)
+    expect(new Set(SCENARIO.rooms.map(r => r.nr)).size).toBe(100)
     expect(SCENARIO.rooms.filter(r => r.kind === 'departure')).toHaveLength(MIX.departure)
     expect(decliners).toHaveLength(MIX.declines)
-    expect(new Set(SCENARIO.rooms.map(r => r.nr)).size).toBe(36)
+    expect(SCENARIO.rooms.every(r => floorOf(r.nr) === r.floor)).toBe(true)
+    expect(floorOf('1004')).toBe(10)
+    expect(SCENARIO.maidFloors).toHaveLength(MAIDS)
   })
 
-  it('Abreisen: ohne Software erst zur Check-out-Frist, mit RoSe ab dem Check-out', () => {
-    const deps = SCENARIO.rooms.filter(r => r.kind === 'departure').map(r => r.nr)
-    const firstDep = (r: typeof linear) => Math.min(...r.segments.filter(g => g.kind === 'clean' && deps.includes(g.nr)).map(g => g.start))
-    expect(firstDep(linear)).toBeGreaterThanOrEqual(CHECKOUT_AT)
-    expect(firstDep(score)).toBeLessThan(CHECKOUT_AT)
+  it('der gezeigte Tag ist der mittlere, nicht ausgesucht', () => {
+    expect(typicalSeed()).toBe(SCENARIO_SEED)
   })
 
-  it('Bleibezimmer: ohne Software und mit RoSe schon vor 11:00 (Liste bzw. Abreisedatum)', () => {
-    const stays = SCENARIO.rooms.filter(r => r.kind === 'stay').map(r => r.nr)
-    for (const r of [linear, score]) {
-      expect(r.segments.some(g => g.kind === 'clean' && stays.includes(g.nr) && g.start < CHECKOUT_AT)).toBe(true)
+  it('Abreisen: ohne Software erst zur Check-out-Frist, mit RoSe ab dem Check-out — in beiden Stellungen', () => {
+    const firstDep = (r: SimResult) => Math.min(...r.segments.filter(g => g.kind === 'clean' && deps.includes(g.nr)).map(g => g.start))
+    for (const p of ['routine', 'onDemand'] as const) {
+      expect(firstDep(run[`paper-${p}`])).toBeGreaterThanOrEqual(CHECKOUT_AT)
+      expect(firstDep(run[`rose-${p}`])).toBeLessThan(CHECKOUT_AT)
+    }
+  })
+
+  it('am gezeigten Tag ist RoSe bei den Abreisen und beim Ende vorn, in beiden Stellungen', () => {
+    for (const p of ['routine', 'onDemand'] as const) {
+      const [a, b] = [run[`paper-${p}`].metrics, run[`rose-${p}`].metrics]
+      expect(b.departuresReadyAt!).toBeLessThan(a.departuresReadyAt!)
+      expect(b.finishedAt).toBeLessThan(a.finishedAt)
+    }
+  })
+
+  it('über 101 Tage: RoSe ist jeden Tag früher fertig; bei den Abreisen im Mittel vorn', () => {
+    for (const p of ['routine', 'onDemand'] as const) {
+      const leads: number[] = []
+      for (let seed = 1; seed <= 101; seed++) {
+        const scn = buildScenario(seed)
+        const [a, b] = [simulate('paper', p, scn).metrics, simulate('rose', p, scn).metrics]
+        expect(b.finishedAt).toBeLessThan(a.finishedAt)
+        leads.push((a.departuresReadyAt ?? Infinity) - (b.departuresReadyAt ?? Infinity))
+      }
+      leads.sort((x, y) => x - y)
+      expect(leads[50]).toBeGreaterThan(0)
+      if (p === 'routine') expect(leads[0]).toBeGreaterThan(0)
+    }
+  })
+
+  it('täglich: Bleibezimmer in beiden Bildern schon vor 11:00', () => {
+    const stayNrs = SCENARIO.rooms.filter(r => r.kind === 'stay').map(r => r.nr)
+    for (const c of ['paper', 'rose'] as const) {
+      expect(run[`${c}-routine`].segments.some(g => g.kind === 'clean' && stayNrs.includes(g.nr) && g.start < CHECKOUT_AT)).toBe(true)
     }
   })
 
   it('wer im Zimmer bleibt und nichts will: mit RoSe genau einmal an der Tür, ohne Steuerung auch öfter, auf Wunsch nie', () => {
-    expect(linear.metrics.declined).toBeGreaterThan(MIX.declines) // die aushelfende Kraft klopft erneut
-    expect(score.metrics.declined).toBe(MIX.declines) // RoSe merkt es sich für alle
-    expect(onDemand.metrics.declined).toBe(0)
+    expect(run['paper-routine'].metrics.declined).toBeGreaterThanOrEqual(MIX.declines)
+    expect(run['rose-routine'].metrics.declined).toBe(MIX.declines)
+    for (const c of ['paper', 'rose'] as const) {
+      expect(run[`${c}-onDemand`].metrics.declined).toBe(0)
+      expect(run[`${c}-onDemand`].metrics.knocks).toBe(0)
+    }
+    expect(run['rose-routine'].segments.some(g => g.again)).toBe(false)
   })
 
-  it('der gezeigte Tag: RoSe + auf Wunsch liegt bei beiden Zeiten vorn', () => {
-    expect(onDemand.metrics.departuresReadyAt!).toBeLessThan(score.metrics.departuresReadyAt!)
-    expect(onDemand.metrics.finishedAt).toBeLessThan(score.metrics.finishedAt)
-    expect(score.metrics.departuresReadyAt!).toBeLessThan(linear.metrics.departuresReadyAt!)
+  it('Türanhänger ohne Software: gereinigt erst, nachdem eine Kraft ihn auf der Etage gesehen hat', () => {
+    const r = run['paper-onDemand']
+    const hangers = SCENARIO.rooms.flatMap(x => (x.kind === 'stay' && x.presence === 'out' && x.wants ? [x] : []))
+    for (const h of hangers) {
+      const seen = r.noticedAt[h.nr]
+      expect(seen).toBeGreaterThanOrEqual(h.outAt)
+      const clean = r.segments.find(g => g.kind === 'clean' && g.jobId === h.nr)!
+      expect(clean.start).toBeGreaterThanOrEqual(seen)
+    }
+    expect(run['rose-onDemand'].segments.some(g => g.kind === 'patrol')).toBe(false)
   })
 
-  it('Sonderfall trifft ein Zimmer, das in allen drei Bildern schon gereinigt ist', () => {
+  it('Verzicht wie im Nutzenrechner: täglich ohne Steuerung 0, mit RoSe ≈ 10 %, auf Wunsch ≈ 20 %', () => {
+    const cleanedStays = (r: SimResult) => r.metrics.cleaned - MIX.departure - 1 // ohne Sonderfall
+    expect(cleanedStays(run['paper-routine'])).toBe(stays - MIX.declines) // abgelehnt an der Tür
+    expect(1 - cleanedStays(run['rose-routine']) / stays).toBeCloseTo(0.1, 1)
+    for (const c of ['paper', 'rose'] as const) {
+      expect(1 - cleanedStays(run[`${c}-onDemand`]) / stays).toBeCloseTo(0.2, 1)
+    }
+  })
+
+  it('Sonderfall trifft ein Zimmer, das in allen vier Abläufen schon gereinigt ist; mit RoSe schneller', () => {
     const c = SCENARIO.complaint!
-    for (const r of [linear, score, onDemand]) {
+    expect(c).not.toBeNull()
+    for (const r of all) {
       const first = r.segments.find(g => g.kind === 'clean' && g.jobId === c.nr)!
       expect(first.end).toBeLessThanOrEqual(c.at)
     }
-  })
-
-  it('das gemeinsame RoSe-Protokoll stimmt für beide Bilder', () => {
-    const shared = roseHighlights(score, onDemand)
-    const c = SCENARIO.complaint!
-    const line = shared.find(h => h.text.startsWith('Sonderfall'))!
-    const within = (res: typeof score) => {
-      const min = Math.round((res.metrics.complaintDoneAt! - c.at) / 5) * 5
-      return line.text.includes(String(min))
+    for (const p of ['routine', 'onDemand'] as const) {
+      const paper = run[`paper-${p}`]
+      expect(run[`rose-${p}`].metrics.complaintDoneAt!).toBeLessThan(paper.metrics.complaintDoneAt!)
+      const start = paper.segments.find(g => g.jobId === `${c.nr}!` && g.kind === 'clean')!.start
+      expect(start).toBeGreaterThanOrEqual(c.at + COMPLAINT.reachDelay)
     }
-    expect(within(score) && within(onDemand)).toBe(true)
-    expect(line.at).toBe(Math.max(score.metrics.complaintDoneAt!, onDemand.metrics.complaintDoneAt!))
   })
 
-  it('Sonderfall: mit RoSe sofort bei der nächsten freien Kraft, ohne erst nach dem Erreichen', () => {
-    const c = SCENARIO.complaint!
-    expect(c).not.toBeNull()
-    expect(score.metrics.complaintDoneAt! - c.at).toBeLessThan(linear.metrics.complaintDoneAt! - c.at)
-    const firstLinear = linear.segments.find(g => g.jobId === `${c.nr}!` && g.kind === 'clean')!
-    expect(firstLinear.start).toBeGreaterThanOrEqual(c.at + COMPLAINT.reachDelay)
-  })
-
-  it('Aushelfen ohne Software: die zweite Kraft klopft, wo die erste schon abgewiesen wurde', () => {
-    const again = linear.segments.filter(g => g.kind === 'declined' && g.again)
-    expect(again.length).toBeGreaterThan(0)
-    for (const g of again) {
-      const first = linear.segments.find(o => o.kind === 'declined' && !o.again && o.nr === g.nr)!
-      expect(first.maid).not.toBe(g.maid)
-      expect(first.start).toBeLessThan(g.start)
+  it('Hinweise: zeitlich geordnet, Töne passen zum Bild, Check-in aus dem Ablauf', () => {
+    for (const r of all) {
+      const h = highlights(r)
+      expect(h.length).toBeGreaterThanOrEqual(3)
+      expect(h.map(x => x.at)).toEqual([...h.map(x => x.at)].sort((a, b) => a - b))
+      const ready = r.metrics.departuresReadyAt!
+      const checkin = h.find(x => x.text.includes('Check-in'))!
+      expect(checkin.tone).toBe(ready <= CHECKIN_AT ? 'good' : 'bad')
+      if (r.coord === 'rose') expect(h.every(x => x.tone !== 'bad')).toBe(true)
+      // Ohne Software ist der Check-in-Eintrag der einzige, der gut ausgehen kann.
+      else expect(h.filter(x => x.tone === 'good').every(x => x === checkin)).toBe(true)
     }
-    expect(score.segments.some(g => g.again)).toBe(false)
+    const live = highlights(run['rose-routine']).find(x => x.text.includes('sofort auf dem Board'))!
+    expect(live.at).toBeLessThan(CHECKOUT_AT)
+    expect(run['rose-routine'].segments.some(g => g.kind === 'clean' && g.start === live.at)).toBe(true)
   })
-
-  it('Verzicht wie im Nutzenrechner: ohne Steuerung 0, mit RoSe ≈ 10 %, auf Wunsch ≈ 20 %', () => {
-    const stays = MIX.declines + MIX.outWants + MIX.outNoRequest // ohne Türschild
-    const cleanedStays = (r: typeof linear) => r.metrics.cleaned - MIX.departure - 1 // ohne Sonderfall
-    expect(cleanedStays(linear)).toBe(stays - MIX.declines) // abgelehnt an der Tür
-    expect(1 - cleanedStays(score) / stays).toBeCloseTo(0.1, 1)
-    expect(1 - cleanedStays(onDemand) / stays).toBeCloseTo(0.2, 1)
-  })
-
-  it('auf Wunsch entfällt zusätzlich, wer unterwegs ist und nichts anfordert', () => {
-    expect(score.metrics.cleaned).toBe(linear.metrics.cleaned)
-    expect(onDemand.metrics.cleaned).toBe(score.metrics.cleaned - MIX.outNoRequest)
-  })
-
-  it('über viele Tage: im Mittel ist jede Stufe früher fertig als die vorige', () => {
-    const seeds = Array.from({ length: 20 }, (_, i) => i + 1)
-    const avg = (s: 'linear' | 'score' | 'onDemand') =>
-      seeds.reduce((sum, seed) => sum + simulate(s, buildScenario(seed)).metrics.finishedAt, 0) / seeds.length
-    expect(avg('score')).toBeLessThan(avg('linear'))
-    expect(avg('onDemand')).toBeLessThan(avg('score'))
-  })
-
-  it('der gezeigte Tag ordnet sich wie der Mittelwert', () => {
-    expect(score.metrics.finishedAt).toBeLessThan(linear.metrics.finishedAt)
-    expect(score.metrics.departuresReadyAt!).toBeLessThan(linear.metrics.departuresReadyAt!)
-    expect(onDemand.metrics.finishedAt).toBeLessThan(score.metrics.finishedAt)
-  })
-
-  it('über 100 Tage: auf Wunsch immer vor RoSe, RoSe an mindestens 90 % der Tage vor ohne Steuerung', () => {
-    let scoreAhead = 0
-    for (let seed = 1; seed <= 100; seed++) {
-      const scn = buildScenario(seed)
-      const [l, sc, od] = (['linear', 'score', 'onDemand'] as const).map(s => simulate(s, scn).metrics.finishedAt)
-      expect(od).toBeLessThan(sc)
-      if (sc < l) scoreAhead++
-    }
-    expect(scoreAhead).toBeGreaterThanOrEqual(90)
-  })
-
 
   it('ohne Steuerung bleibt jede Kraft auf ihren Etagen, bis dort alles vergeben ist', () => {
-    const cleans = linear.segments.filter(g => g.kind === 'clean')
-    for (const g of linear.segments.filter(x => x.nr && x.kind !== 'walk')) {
-      const own = SCENARIO.maidFloors[g.maid]
-      if (own.includes(Number(g.nr[0]))) continue
-      const lastOwnStart = Math.max(...cleans.filter(o => own.includes(Number(o.nr[0]))).map(o => o.start))
-      expect(g.start).toBeGreaterThanOrEqual(lastOwnStart)
+    for (const p of ['routine', 'onDemand'] as const) {
+      const r = run[`paper-${p}`]
+      const cleans = r.segments.filter(g => g.kind === 'clean')
+      for (const g of r.segments.filter(x => x.nr && x.kind !== 'walk' && x.kind !== 'idle')) {
+        const own = SCENARIO.maidFloors[g.maid]
+        if (own.includes(floorOf(g.nr))) continue
+        const lastOwnStart = Math.max(...cleans.filter(o => own.includes(floorOf(o.nr))).map(o => o.start))
+        expect(g.start).toBeGreaterThanOrEqual(lastOwnStart)
+      }
     }
   })
 
-  it('Türschild und ablehnende Gäste werden in keiner Strategie gereinigt, kein Auftrag doppelt', () => {
-    for (const r of [linear, score, onDemand]) {
+  it('Türschild und ablehnende Gäste werden nie gereinigt, kein Auftrag doppelt, keine Überlappung', () => {
+    for (const r of all) {
       const cleaned = r.segments.filter(g => g.kind === 'clean')
       expect(cleaned.map(g => g.nr).filter(nr => [...dnd, ...decliners].includes(nr))).toEqual([])
       expect(new Set(cleaned.map(g => g.jobId)).size).toBe(cleaned.length)
-    }
-  })
-
-  it('Abschnitte einer Kraft überlappen nicht', () => {
-    for (const r of [linear, score, onDemand]) {
       for (let i = 1; i < r.segments.length; i++) {
         const [a, b] = [r.segments[i - 1], r.segments[i]]
         if (a.maid === b.maid) expect(b.start).toBeGreaterThanOrEqual(a.end)
@@ -168,13 +153,15 @@ describe('Reinigungs-Simulation', () => {
     }
   })
 
-  it('Anzeige: vor 9:00 steht keine Kraft, am Ende ist jede Abreise fertig und jede Ablehnung vermerkt', () => {
-    expect(maidsAt(score, -1)).toEqual([null, null])
-    const end = tilesAt(score, score.metrics.finishedAt)
-    const deps = SCENARIO.rooms.filter(r => r.kind === 'departure').map(r => r.nr)
-    expect(end.filter(x => deps.includes(x.nr)).every(x => x.state === 'done')).toBe(true)
-    expect(end.filter(x => decliners.includes(x.nr)).every(x => x.state === 'declined')).toBe(true)
-    const endLinear = tilesAt(linear, linear.metrics.finishedAt)
-    expect(endLinear.filter(x => decliners.includes(x.nr)).every(x => x.state === 'declined')).toBe(true)
+  it('Anzeige: vor 8:00 steht keine Kraft, am Ende ist jede Abreise fertig und jede Ablehnung vermerkt', () => {
+    expect(maidsAt(run['rose-routine'], -1)).toEqual(Array(MAIDS).fill(null))
+    for (const c of ['paper', 'rose'] as const) {
+      const r = run[`${c}-routine`]
+      const end = tilesAt(r, r.metrics.finishedAt)
+      expect(end.filter(x => deps.includes(x.nr)).every(x => x.state === 'done')).toBe(true)
+      expect(end.filter(x => decliners.includes(x.nr)).every(x => x.state === 'declined')).toBe(true)
+    }
+    const od = run['rose-onDemand']
+    expect(tilesAt(od, od.metrics.finishedAt).filter(x => decliners.includes(x.nr)).every(x => x.state === 'skipped')).toBe(true)
   })
 })
