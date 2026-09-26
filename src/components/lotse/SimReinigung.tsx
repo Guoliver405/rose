@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import SlideAction from '@/components/SlideAction'
 import { szeneFuerSchritt } from '@/lib/lotsen'
+import { SCORE_WEIGHTS } from '@/lib/board'
 import { useLotseSchritt } from './schritt'
 import SimFrame from './SimFrame'
 
@@ -168,7 +169,9 @@ function offen(r: Zimmer): boolean {
 
 function gewicht(r: Zimmer): number {
   if (!offen(r)) return 0
-  return (r.prio ? 3 : 0) + (r.checkout ? 2 : 0) + (r.signal === 'clean' ? 2 : 0)
+  // Dieselben Gewichte wie das echte Board.
+  return (r.prio ? SCORE_WEIGHTS.priority : 0) + (r.checkout ? SCORE_WEIGHTS.checkoutPending : 0)
+    + (r.signal === 'clean' ? SCORE_WEIGHTS.pleaseClean : 0)
 }
 
 function balken(r: Zimmer): string {

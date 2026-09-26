@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { AlertTriangle, Ban, Check, Clock, DoorClosed, Flag, Hand, Leaf, Loader2, Pause, Play, RotateCcw } from 'lucide-react'
 import {
-  ALL_RUNS, MAID_LABELS, MAIDS, SCENARIO, SIGNAL_SHARE, clockLabel, highlights, maidsAt, simulate, tilesAt, turnedAwayAt,
+  ALL_RUNS, GUEST, MAID_LABELS, MAIDS, SCENARIO, clockLabel, highlights, maidsAt, simulate, tilesAt, turnedAwayAt,
   type Coordination, type Highlight, type Policy, type SimResult, type Tile, type TileState,
 } from '@/lib/cleaning-sim'
 
@@ -21,12 +21,12 @@ import {
 
 const LEAD: Record<Coordination, Record<Policy, string>> = {
   paper: {
-    routine: 'Papierliste: Welche Zimmer abreisen, ist bekannt – wann, nicht. Türanhänger sieht nur, wer im Flur steht.',
-    onDemand: 'Papierliste und Türanhänger „Bitte reinigen“ – zu sehen erst, wer im Flur steht.',
+    routine: 'Papierliste. Wann jemand abreist, was an den Türen hängt und was ein Gast gesagt hat, weiß nur, wer davorsteht.',
+    onDemand: 'Papierliste und Türanhänger „Bitte reinigen“ – zu sehen nur für den, der im Flur steht.',
   },
   rose: {
-    routine: 'Gemeinsames Board: Check-out, „Zimmer frei“ und „später“ an der Tür – für alle sichtbar.',
-    onDemand: 'Gäste tippen „Zimmer reinigen“ – sofort auf dem Board.',
+    routine: 'Gemeinsames Board: Check-out, Wunsch, „frühestens ab“, „Nicht stören“ und „später“ – sofort für alle.',
+    onDemand: 'Gäste tippen „Zimmer reinigen“ oder „frühestens ab“ – sofort auf dem Board, für alle.',
   },
 }
 const TITLE: Record<Coordination, string> = { paper: 'Ohne Steuerung', rose: 'Mit RoSe' }
@@ -42,6 +42,7 @@ const TILE: Record<TileState, string> = {
   empty: 'border-edge bg-surface-sunken text-ink-muted',
   occupied: 'border-fresh-tint-edge bg-fresh-tint text-ink',
   dnd: 'border-blocked-tint-edge bg-blocked-tint text-ink',
+  deferred: 'border-edge bg-surface-muted text-ink-soft',
   skipped: 'border-edge bg-surface-muted text-ink-muted',
   declined: 'border-blocked-tint-edge bg-blocked-tint text-ink',
   departed: 'border-caution-tint-edge bg-caution-tint text-ink',
@@ -65,6 +66,7 @@ const LEGEND: { state: TileState; label: string }[] = [
   { state: 'departed', label: 'ausgecheckt' },
   { state: 'wants', label: 'Gast weg, Reinigung offen' },
   { state: 'dnd', label: 'Bitte nicht stören / abgelehnt' },
+  { state: 'deferred', label: '„frühestens ab“ – nur mit RoSe bekannt' },
   { state: 'skipped', label: 'keine Reinigung gewünscht' },
   { state: 'empty', label: 'leer' },
   { state: 'cleaning', label: 'wird gereinigt' },
@@ -230,12 +232,14 @@ export default function CleaningSimulation() {
       <p className="mt-4 text-xs text-ink-muted">
         Ein gewöhnlicher Tag: der mittlere aus 101 durchgerechneten, gemessen am Vorsprung bei den Abreisen in beiden
         Stellungen des Umschalters. {SCENARIO.rooms.length} Zimmer auf {SCENARIO.floors} Etagen, {MAIDS} Reinigungskräfte
-        ab 8:00 (ohne Software je zwei feste Etagen), Check-out bis 11:00, Check-in ab 15:00; Gäste gehen und reisen zwischen 7:00 und 11:00 ab.
-        Täglich: Bleibezimmer in beiden Bildern ab 8:00 – ohne Software laut Liste, mit RoSe über das beim Check-in
-        eingetragene Abreisedatum; {Math.round(SIGNAL_SHARE * 100)} % der Gäste zeigen beim Gehen an, dass das Zimmer
-        frei ist (Annahme). Auf Wunsch zeigt es jeder an, der Reinigung will. Ohne Software geschieht das per
-        Türanhänger, den eine Kraft erst auf der Etage sieht, und ein „später“ an der Tür kennt nur, wer geklopft hat;
-        mit RoSe sehen beides alle Kräfte.
+        ab 8:00 (ohne Software je zwei feste Etagen), Check-out bis 11:00, Check-in ab 15:00. Dieselben Gäste in beiden Bildern: Sie reisen zwischen 7:00 und 11:00 ab
+        bzw. verlassen das Zimmer, gleichverteilt – je später, desto eher lohnt das Klopfen. Täglich: Bleibezimmer in
+        beiden Bildern ab 8:00, ohne Software laut Liste, mit RoSe über das beim Check-in eingetragene Abreisedatum.
+        Annahmen zum Gästeverhalten: {Math.round(GUEST.signals * 100)} % der Gäste mit Reinigungswunsch zeigen ihn beim
+        Gehen an (auf Wunsch: alle), {Math.round(GUEST.notBefore * 100)} % nennen in RoSe „frühestens ab“,
+        {' '}{Math.round(GUEST.dndMorning * 100)} % haben morgens „Nicht stören“ an der Tür, ein Drittel davon den ganzen
+        Tag. Ohne Software sieht eine Kraft Anhänger und Schilder erst auf der Etage, und was ein Gast an der Tür sagt,
+        weiß nur sie; mit RoSe steht all das sofort für alle auf dem Board.
         Etagenwechsel mit Wagen 5 min. Reinigungsdauer als Annahme, eher knapp: Abreise 30 min, Bleibe 18 min — gemessen
         wurden 35–43 bzw. 20–25 min (Quellen Q4 und Q7 im Nutzenrechner).
       </p>
@@ -284,7 +288,7 @@ function Panel({ title, lead, res, t }: { title: string; lead: string; res: SimR
             <span className="font-semibold tabular-nums text-ink">
               {done ? clockLabel(res.metrics.finishedAt) : '…'}
             </span>
-            {' · '}an der Tür weggeschickt{' '}
+            {' · '}vergeblich an der Tür{' '}
             <span className="font-semibold tabular-nums text-ink">{away}×</span>
           </div>
         </div>
@@ -337,6 +341,7 @@ function RoomTile({ tile, maidsHere }: { tile: Tile; maidsHere: number[] }) {
       <span className="lg:hidden">{tile.nr.slice(-2)}</span>
       <span className="hidden lg:inline">{tile.nr}</span>
       {(tile.state === 'dnd' || tile.state === 'declined') && <Ban className={icon} aria-hidden />}
+      {tile.state === 'deferred' && <Clock className={icon} aria-hidden />}
       {tile.state === 'skipped' && <Leaf className={icon} aria-hidden />}
       {tile.state === 'cleaning' && <Loader2 className={`${icon} animate-spin`} aria-hidden />}
       {tile.priority && tile.state !== 'cleaning' && <Flag className={`${icon} text-accent`} aria-hidden />}
@@ -344,6 +349,7 @@ function RoomTile({ tile, maidsHere }: { tile: Tile; maidsHere: number[] }) {
         <span className="absolute -right-1 -top-1.5 z-10 flex h-4 min-w-4 items-center justify-center rounded-full border border-edge bg-surface-elevated px-0.5 shadow">
           {tile.knock === 'present' && <DoorClosed className="h-2.5 w-2.5 text-critical-strong" aria-hidden />}
           {tile.knock === 'declined' && <Hand className="h-2.5 w-2.5 text-critical-strong" aria-hidden />}
+          {tile.knock === 'dnd' && <Ban className="h-2.5 w-2.5 text-critical-strong" aria-hidden />}
           {!tile.knock && <span className="text-[8px] font-black text-ink">{maidsHere.map(i => MAID_LABELS[i]).join('')}</span>}
         </span>
       )}

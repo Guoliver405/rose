@@ -17,8 +17,14 @@ import {
 
 export const CLEANING_STALE_MINUTES_DEFAULT = 90
 
-/** Etagenscore-Gewichte: leichte Priorisierungshilfe fürs Reinigungsboard. */
-export const SCORE_WEIGHTS = { priority: 3, checkoutPending: 2, pleaseClean: 1 } as const
+/**
+ * Etagenscore-Gewichte: leichte Priorisierungshilfe fürs Reinigungsboard.
+ * Seit 26.09.2026 wiegt ein Reinigungswunsch mehr als eine fällige Routine:
+ * Der Gast hat angezeigt, dass er weg ist und Reinigung will — dort ist das
+ * Klopfen ein sicherer Erfolg, bei der Routine eines ins Ungewisse. Vorher
+ * wogen beide gleich, und ein früher Wunsch zog keine Kraft auf seine Etage.
+ */
+export const SCORE_WEIGHTS = { priority: 4, checkoutPending: 3, pleaseClean: 2, stayover: 1 } as const
 
 export type RoomStateLike = {
   guest_signal: 'none' | 'please_clean' | 'dnd'
@@ -115,7 +121,7 @@ export function roomScore(state: ActiveLike, stayoverDue = false, now: Date = ne
   if (state.priority) score += SCORE_WEIGHTS.priority
   if (state.checkout_pending) score += SCORE_WEIGHTS.checkoutPending
   if (state.guest_signal === 'please_clean' && !isCleanDeferred(state, now)) score += SCORE_WEIGHTS.pleaseClean
-  else if (stayoverDue) score += SCORE_WEIGHTS.pleaseClean // Routine wiegt wie ein Wunsch
+  else if (stayoverDue) score += SCORE_WEIGHTS.stayover // Routine: Gast vielleicht noch da
   return score
 }
 

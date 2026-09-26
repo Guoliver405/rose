@@ -8,37 +8,34 @@
  *  paper — ohne Software. Das Haus ist fest aufgeteilt (je Kraft zwei Etagen).
  *          Die Abreise- und Bleibeliste vom Morgen liegt vor — welche Zimmer
  *          abreisen, weiß die Kraft, aber nicht, WANN der Gast auscheckt:
- *          Abreisen reinigt sie deshalb erst ab der Check-out-Frist. Ist in
- *          ihrem Bereich nichts mehr zu erwarten, hilft sie anderswo aus — mit
- *          ihrem eigenen Wissen. Türschilder sieht sie.
- *  rose  — mit RoSe, gemeinsames Board. Abreisen erscheinen live beim
- *          Check-out — wer um 9:30 auscheckt, ist um 9:30 auf dem Board, auf
- *          der Papierliste erst zur Frist. Die Etage wählt jede Kraft nach dem
- *          Etagenscore (Gewichte aus `board.ts`, geteilt durch Kräfte vor Ort + 1
- *          wie auf dem Board). Ablehnungen an der Tür merkt sich das Board für
- *          alle Kräfte.
+ *          Abreisen reinigt sie deshalb erst ab der Check-out-Frist. Was an den
+ *          Türen hängt (Anhänger, „Nicht stören"), sieht sie nur auf der Etage,
+ *          auf der sie gerade ist; was ein Gast an der Tür sagt, weiß nur sie.
+ *          Ist in ihrem Bereich nichts mehr zu erwarten, hilft sie anderswo aus.
+ *  rose  — mit RoSe, gemeinsames Board. Check-out, Reinigungswunsch,
+ *          „frühestens ab", „Nicht stören" und dessen Rücknahme, „später" und
+ *          „heute nicht" an der Tür stehen sofort für ALLE Kräfte auf dem Board.
+ *          Die Etage wählt jede Kraft nach dem Etagenscore (Gewichte aus
+ *          `board.ts`: ein Wunsch wiegt doppelt so viel wie eine Routine; geteilt
+ *          durch Kräfte vor Ort + 1 wie auf dem Board).
  *
- * Die REINIGUNGSPOLITIK ist ein Umschalter, der für BEIDE Bilder gilt (User,
- * 26.09.2026) — sonst vergliche das Bild Politik und Koordination zugleich:
+ * Die GÄSTE sind in beiden Bildern dieselben (User, 26.09.2026 — „du hast die
+ * wesentlichen Eigenschaften von RoSe gar nicht eingebaut"):
+ *  - Jeder Bleibegast lässt Reinigung ab einer Uhrzeit zu (er geht), gleich-
+ *    verteilt 7:00–11:00: Die Chance, dass ein Klopfen gelingt, steigt linear.
+ *  - Ein Teil zeigt beim Gehen an, dass er Reinigung will — ohne Software per
+ *    Türanhänger, mit RoSe per Tipp. Auf Wunsch tut das jeder, der Reinigung will.
+ *  - Ein Teil nennt in RoSe morgens „frühestens ab" (volle Stunde): Bis dahin
+ *    klopft niemand. Ohne Software gibt es diese Angabe nicht.
+ *  - Morgens hängt an manchen Türen „Nicht stören"; beim Gehen nimmt der Gast
+ *    es ab (und wünscht teils Reinigung), ein Rest bleibt den ganzen Tag.
+ * Alle Anteile sind Annahmen und stehen im Kleingedruckten; Feinabstimmung
+ * folgt (User: „erst muss der Kern so arbeiten wie gedacht").
  *
- *  routine  — Bleibezimmer täglich, in BEIDEN Bildern ab Schichtbeginn 8:00
- *             (User, 26.09.2026: gleiche Rahmenbedingungen — die Startzeit ist
- *             eine Entscheidung des Hauses, keine Koordination). Ohne Software
- *             steht der Verbleib auf der Liste, mit RoSe über das beim Check-in
- *             eingetragene Abreisedatum (`isKnownStayover`). Wer im Zimmer bleibt
- *             und nichts will, sagt es an der Tür.
- *  onDemand — nur auf Wunsch. Mit RoSe tippt der Gast beim Gehen „Zimmer
- *             reinigen" und das Zimmer steht sofort auf dem Board. Ohne Software
- *             hängt er den Türanhänger „Bitte reinigen" raus — den sieht eine
- *             Kraft erst, wenn sie auf dieser Etage ist. Hat sie nichts zu tun,
- *             geht sie ihre Etagen ab.
- *
- * In beiden Stellungen gilt: Wer beim Gehen Reinigung will, kann es anzeigen —
- * ohne Software mit dem Türanhänger (sichtbar nur auf der Etage), mit RoSe per
- * Tipp im Portal (sichtbar für alle, auf jeder Etage). Bei täglicher Reinigung
- * tut das ein Teil der Gäste (`SIGNAL_SHARE`, Annahme), auf Wunsch jeder, der
- * Reinigung will. Sagt ein Gast an der Tür „später", weiß das ohne Software nur
- * die Kraft, die geklopft hat; mit RoSe („In 30 Min") gilt es für alle.
+ * Die REINIGUNGSPOLITIK ist ein Umschalter, der für BEIDE Bilder gilt:
+ *  routine  — Bleibezimmer täglich, in beiden Bildern ab Schichtbeginn 8:00.
+ *             Wer im Zimmer bleibt und nichts will, sagt es an der Tür.
+ *  onDemand — nur auf Wunsch. Wer nichts anzeigt, wird nicht gereinigt.
  *
  * Vorab vollständig durchgerechnet: die Oberfläche zeichnet nur den Zustand
  * zu einem Zeitpunkt, beide Bilder laufen dadurch garantiert synchron.
@@ -60,14 +57,11 @@ export const CHECKOUT_AT = 180
 /** Check-in ab 15:00 — bis dahin sollten die Abreisezimmer bezugsfertig sein. */
 export const CHECKIN_AT = 420
 
-/**
- * Ab wann Bleibezimmer bei täglicher Reinigung dran sind — für beide Bilder
- * gleich, mit Schichtbeginn. (Bis 26.09. nachmittags: ohne Software 8:00, mit
- * RoSe 9:00 — das verglich eine Hausentscheidung statt der Koordination. 9:00
- * für beide ließe alle Kräfte eine Stunde warten; nachgerechnet ist der
- * Vorsprung von RoSe in beiden Fällen ähnlich.)
- */
+/** Bleibezimmer bei täglicher Reinigung: in beiden Bildern ab Schichtbeginn. */
 export const STAY_ROUTINE_AT = 0
+
+/** Nach 14:00 schaut niemand mehr nach „Nicht stören" — in beiden Bildern. */
+export const DND_GIVE_UP = 360
 
 /**
  * Sonderfall: ein Gast meldet mittags ein Problem in seinem bereits
@@ -83,24 +77,43 @@ export const DURATION = {
   stay: ROI_DEFAULTS.stayoverMinutes,
   /** Klopfen, warten, kurzer Wortwechsel. */
   knock: 3,
-  /** Nach einem Klopfen bei anwesendem Gast frühestens so viel später wieder. */
+  /** Vor der Tür stehen, Schild „Nicht stören" sehen, notieren. */
+  skip: 1,
+  /** Nach einem Klopfen bzw. „Nicht stören" frühestens so viel später wieder. */
   retry: 30,
   walkRoom: 1,
   /** Mit Wäschewagen und Aufzug. */
   walkFloor: 5,
 } as const
 
+/** Annahmen zum Gästeverhalten (Kleingedrucktes). */
+export const GUEST = {
+  /** Anteil der Bleibegäste mit „Nicht stören" am Morgen … */
+  dndMorning: 0.15,
+  /** … davon so viele den ganzen Tag. */
+  dndAllDay: 1 / 3,
+  /** Wer „Nicht stören" abnimmt und Reinigung will: zeigt es dabei an. */
+  dndLiftSignals: 0.5,
+  /** Anteil der Gäste mit Reinigungswunsch, die in RoSe „frühestens ab" nennen. */
+  notBefore: 0.2,
+  /** Anteil der Gäste mit Reinigungswunsch, die es bei täglicher Reinigung beim Gehen anzeigen. */
+  signals: 0.3,
+} as const
+
+/** Wann ein Gast, der „frühestens ab" nennt, das tut: beim Frühstück, 7:00. */
+const NOT_BEFORE_SET_AT = -60
+
 /**
  * Bleibegast:
- *  out      — verlässt das Zimmer um `outAt`
- *  dnd      — Türschild „Bitte nicht stören" den ganzen Tag
- *  declines — bleibt im Zimmer und will keine Reinigung und sagt es an der
- *             Tür; auf Wunsch fordert er schlicht nichts an
- * `wants` zählt nur bei `out`: fordert er beim Gehen Reinigung an? `signals`:
- * zeigt er es auch bei täglicher Reinigung an (Anhänger bzw. Tipp)?
+ *  out      — verlässt das Zimmer um `outAt`; `wants`: will er Reinigung?
+ *  declines — bleibt im Zimmer, will keine Reinigung, sagt es an der Tür
+ *  dnd      — „Nicht stören" den ganzen Tag
+ * `dndUntil`: „Nicht stören" am Morgen, abgenommen beim Gehen (= `outAt`).
+ * `signals`: zeigt beim Gehen an, dass er Reinigung will (Anhänger bzw. Tipp).
+ * `notBefore`: nennt in RoSe „frühestens ab" (volle Stunde ≥ `outAt`).
  */
 export type Stay =
-  | { presence: 'out'; outAt: number; wants: boolean; signals: boolean }
+  | { presence: 'out'; outAt: number; wants: boolean; signals: boolean; dndUntil: number | null; notBefore: number | null }
   | { presence: 'dnd' }
   | { presence: 'declines' }
 
@@ -133,23 +146,15 @@ function rng(seed: number) {
   }
 }
 
-/**
- * Anteil der Gäste, die bei täglicher Reinigung beim Gehen anzeigen, dass das
- * Zimmer frei ist (Anhänger bzw. Tipp) — Annahme, im Kleingedruckten genannt.
- * Auf Wunsch zeigt es jeder an, der Reinigung will; sonst wird nicht gereinigt.
- */
-export const SIGNAL_SHARE = 0.3
-
 /** Belegung von 100 Zimmern. */
 export const MIX = {
   departure: 25,
   empty: 17,
-  dnd: 5,
-  /** Im Zimmer, will keine Reinigung — 5 von 53 ≈ 10 % („vorsichtig" im Nutzenrechner). */
+  /** Im Zimmer, will keine Reinigung. */
   declines: 5,
-  /** Unterwegs und will Reinigung. */
-  outWants: 42,
-  /** Unterwegs, bräuchte keine — mit den `declines` 11 von 53 ≈ 20 % („typisch"). */
+  /** Geht und will Reinigung. */
+  outWants: 47,
+  /** Geht, bräuchte keine. */
   outNoRequest: 6,
 } as const
 
@@ -161,9 +166,7 @@ export const MAIDS = 5
 /**
  * 10 Etagen × 10 Zimmer, fünf Reinigungskräfte ab 8:00. Belegung aus `MIX`,
  * zufällig verteilt. Check-outs zwischen 7:00 und 11:00 (gehäuft gegen Ende),
- * Bleibegäste gehen zwischen 7:00 und 11:00 (gehäuft um 9:00). Um 8:00 ist
- * also schon manches Zimmer frei, die meisten Gäste sind aber noch da —
- * Klopfen lohnt sich, geht aber oft ins Leere.
+ * Bleibegäste gehen gleichverteilt zwischen 7:00 und 11:00.
  */
 export function buildScenario(seed: number): Scenario {
   const rand = rng(seed)
@@ -177,18 +180,29 @@ export function buildScenario(seed: number): Scenario {
     ;[kinds[i], kinds[j]] = [kinds[j], kinds[i]]
   }
   const five = (v: number) => Math.round(v / 5) * 5
-  /** 7:00–11:00, gehäuft um 9:00 (Dreiecksverteilung). */
-  const leaveAt = () => -60 + five(240 * (rand() + rand()) / 2)
+  const out = (nr: string, floor: number, wants: boolean): SimRoom => {
+    const outAt = -60 + five(240 * rand())
+    if (rand() < GUEST.dndMorning) {
+      if (rand() < GUEST.dndAllDay) return { nr, floor, kind: 'stay', presence: 'dnd' }
+      return { nr, floor, kind: 'stay', presence: 'out', outAt, wants, dndUntil: outAt, notBefore: null,
+        signals: wants && rand() < GUEST.dndLiftSignals }
+    }
+    if (wants && rand() < GUEST.notBefore) {
+      return { nr, floor, kind: 'stay', presence: 'out', outAt, wants, dndUntil: null,
+        notBefore: Math.ceil(outAt / 60) * 60, signals: false }
+    }
+    return { nr, floor, kind: 'stay', presence: 'out', outAt, wants, dndUntil: null, notBefore: null,
+      signals: wants && rand() < GUEST.signals }
+  }
   const rooms: SimRoom[] = kinds.map((k, i) => {
     const floor = Math.floor(i / ROOMS_PER_FLOOR) + 1
     const nr = `${floor}${String((i % ROOMS_PER_FLOOR) + 1).padStart(2, '0')}`
     switch (k) {
       case 'departure': return { nr, floor, kind: 'departure', checkoutAt: -60 + five(240 * Math.sqrt(rand())) }
       case 'empty': return { nr, floor, kind: 'empty' }
-      case 'dnd': return { nr, floor, kind: 'stay', presence: 'dnd' }
       case 'declines': return { nr, floor, kind: 'stay', presence: 'declines' }
-      case 'outWants': return { nr, floor, kind: 'stay', presence: 'out', outAt: leaveAt(), wants: true, signals: rand() < SIGNAL_SHARE }
-      case 'outNoRequest': return { nr, floor, kind: 'stay', presence: 'out', outAt: leaveAt(), wants: false, signals: false }
+      case 'outWants': return out(nr, floor, true)
+      case 'outNoRequest': return out(nr, floor, false)
     }
   })
   const per = FLOORS / MAIDS
@@ -220,8 +234,12 @@ type Job = {
   readyAt: number
   /** Ab wann der Auftrag auf Liste bzw. Board steht (Infinity = nur über ein Signal). */
   knownAt: number
-  /** Gast zeigt beim Gehen an, dass das Zimmer frei ist (Infinity = nie). */
+  /** Ab wann ein Reinigungswunsch angezeigt ist (Anhänger bzw. Tipp; Infinity = nie). */
   signalAt: number
+  /** „Nicht stören" bis (Infinity = ganztags, 0 = keins). */
+  dndUntil: number
+  /** „Frühestens ab" — nur RoSe kennt es (sonst 0). */
+  notBefore: number
   /** Gast bleibt im Zimmer und lehnt an der Tür ab. */
   declines: boolean
   duration: number
@@ -230,31 +248,44 @@ type Job = {
 
 function jobsFor(scn: Scenario, coord: Coordination, policy: Policy): Job[] {
   const jobs: Job[] = []
+  const none = { signalAt: Infinity, dndUntil: 0, notBefore: 0, declines: false }
   for (const r of scn.rooms) {
-    const base = { id: r.nr, nr: r.nr, floor: r.floor, signalAt: Infinity }
+    const base = { id: r.nr, nr: r.nr, floor: r.floor }
     if (r.kind === 'departure') {
-      jobs.push({ ...base, kind: 'departure', readyAt: r.checkoutAt, declines: false,
+      jobs.push({ ...base, ...none, kind: 'departure', readyAt: r.checkoutAt,
         // Ohne Software: sicher frei erst zur Frist. Mit RoSe: erscheint beim Check-out.
         knownAt: coord === 'paper' ? Math.max(CHECKOUT_AT, r.checkoutAt) : r.checkoutAt,
         duration: DURATION.departure, weight: SCORE_WEIGHTS.checkoutPending })
-    } else if (r.kind === 'stay') {
-      if (r.presence === 'dnd') continue // Türschild sieht jede Strategie
-      if (policy === 'routine') {
-        jobs.push({ ...base, kind: 'stay', readyAt: r.presence === 'out' ? r.outAt : Infinity,
-          knownAt: STAY_ROUTINE_AT, declines: r.presence === 'declines',
-          signalAt: r.presence === 'out' && r.signals ? r.outAt : Infinity,
-          duration: DURATION.stay, weight: SCORE_WEIGHTS.pleaseClean })
-      } else {
-        // Auf Wunsch: nur wer beim Gehen anfordert — per Tipp oder Türanhänger.
-        if (r.presence !== 'out' || !r.wants) continue
-        jobs.push({ ...base, kind: 'stay', readyAt: r.outAt, knownAt: Infinity, signalAt: r.outAt,
-          declines: false, duration: DURATION.stay, weight: SCORE_WEIGHTS.pleaseClean })
-      }
+      continue
     }
+    if (r.kind !== 'stay') continue
+    const stayBase = { ...base, kind: 'stay' as const, duration: DURATION.stay, weight: SCORE_WEIGHTS.stayover }
+    if (r.presence === 'dnd') {
+      // Ganztags „Nicht stören": RoSe weiß es; ohne Software steht das Zimmer
+      // auf der Liste, und erst vor der Tür sieht die Kraft das Schild.
+      if (policy === 'routine' && coord === 'paper') {
+        jobs.push({ ...stayBase, ...none, readyAt: Infinity, knownAt: STAY_ROUTINE_AT, dndUntil: Infinity })
+      }
+      continue
+    }
+    if (r.presence === 'declines') {
+      if (policy === 'routine') jobs.push({ ...stayBase, ...none, readyAt: Infinity, knownAt: STAY_ROUTINE_AT, declines: true })
+      continue
+    }
+    // Unterwegs. Der Wunsch: mit RoSe per Tipp — bei „frühestens ab" zu dieser
+    // Uhrzeit —, ohne Software als Anhänger beim Gehen.
+    const shows = policy === 'onDemand' ? r.wants : (r.signals || r.notBefore !== null)
+    const signalAt = !shows ? Infinity : coord === 'rose' && r.notBefore !== null ? r.notBefore : r.outAt
+    if (policy === 'onDemand' && !r.wants) continue
+    jobs.push({ ...stayBase, readyAt: r.outAt, declines: false,
+      knownAt: policy === 'routine' ? STAY_ROUTINE_AT : Infinity,
+      signalAt,
+      dndUntil: r.dndUntil ?? 0,
+      notBefore: coord === 'rose' && r.notBefore !== null ? r.notBefore : 0 })
   }
   const c = scn.complaint
   if (c) {
-    jobs.push({ id: `${c.nr}!`, nr: c.nr, floor: floorOf(c.nr), kind: 'complaint', readyAt: c.at, declines: false, signalAt: Infinity,
+    jobs.push({ id: `${c.nr}!`, nr: c.nr, floor: floorOf(c.nr), kind: 'complaint', readyAt: c.at, ...none,
       knownAt: coord === 'paper' ? c.at + COMPLAINT.reachDelay : c.at,
       duration: DURATION.complaint, weight: SCORE_WEIGHTS.priority })
   }
@@ -264,11 +295,14 @@ function jobsFor(scn: Scenario, coord: Coordination, policy: Policy): Job[] {
 export type Segment = {
   /** Index der Reinigungskraft. */
   maid: number
-  /** knock = Gast noch da, declined = Gast lehnt ab, patrol = Etagen abgehen. */
-  kind: 'walk' | 'patrol' | 'knock' | 'declined' | 'clean' | 'idle'
+  /**
+   * knock = Gast noch da, declined = Gast lehnt ab, skip = Schild „Nicht
+   * stören" an der Tür, patrol = Etagen abgehen.
+   */
+  kind: 'walk' | 'patrol' | 'knock' | 'declined' | 'skip' | 'clean' | 'idle'
   /** Zimmer, an dem die Kraft am Ende des Abschnitts steht. */
   nr: string
-  /** Auftrag (bei clean/knock/declined). */
+  /** Auftrag (bei clean/knock/declined/skip). */
   jobId?: string
   /** declined/knock: eine andere Kraft hatte hier schon eine Ablehnung bzw. ein „später" gehört. */
   again?: boolean
@@ -286,7 +320,7 @@ export type SimResult = {
   doneAt: Record<string, number>
   /** Wann der Gast an der Tür abgelehnt hat. */
   declinedAt: Record<string, number>
-  /** Türanhänger: wann ihn die erste Kraft gesehen hat. */
+  /** Türanhänger (ohne Software): wann ihn die erste Kraft gesehen hat. */
   noticedAt: Record<string, number>
   metrics: {
     cleaned: number
@@ -294,6 +328,8 @@ export type SimResult = {
     knocks: number
     /** Geklopft, Gast lehnt ab. */
     declined: number
+    /** Vor der Tür „Nicht stören" gesehen. */
+    skips: number
     /** Minuten ohne Arbeit, weil nichts frei war (alle Kräfte). */
     idleMinutes: number
     /** Letzte Abreise bezugsfertig. */
@@ -335,7 +371,7 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
   const noticedAt: Record<string, number> = {}
   /** Türanhänger: welche Kraft ihn gesehen hat. */
   const seenBy: Record<string, Set<number>> = {}
-  /** Signal bekannt: mit RoSe allen ab dem Tipp, ohne Software nur, wer den Anhänger gesehen hat. */
+  /** Wunsch bekannt: mit RoSe allen ab dem Tipp, ohne Software nur, wer den Anhänger gesehen hat. */
   const signalKnown = (j: Job, maid: number, at: number) =>
     j.signalAt <= at && (coord === 'rose' || !!seenBy[j.id]?.has(maid))
   /**
@@ -344,8 +380,9 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
    */
   const declinedFor: Record<string, Set<number>> = {}
   /**
-   * Nach einem Klopfen bei anwesendem Gast: nicht vor diesem Zeitpunkt wieder.
-   * Ohne Software weiß das nur die Kraft, die geklopft hat; mit RoSe alle.
+   * Nach einem Klopfen bei anwesendem Gast oder einem „Nicht stören" an der
+   * Tür: nicht vor diesem Zeitpunkt wieder. Ohne Software weiß das nur die
+   * Kraft, die da war; mit RoSe alle.
    */
   const retry: Record<string, { until: number; by: number }> = {}
   const retryFor = (j: Job, maid: number) => {
@@ -354,16 +391,19 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
   }
   let knocks = 0
   let declined = 0
+  let skips = 0
 
   // Ein Auftrag gilt als vergeben, sobald eine Kraft ihn übernommen hat —
   // die Schleife läuft in Zeitreihenfolge, deshalb ist das race-frei.
-  const open = (maid: number) => jobs.filter(j => doneAt[j.id] === undefined && !declinedFor[j.id]?.has(maid))
+  const open = (maid: number, t: number) => jobs.filter(j => doneAt[j.id] === undefined && !declinedFor[j.id]?.has(maid)
+    // Nach 14:00 schaut niemand mehr nach „Nicht stören".
+    && !(j.dndUntil > t && t >= DND_GIVE_UP))
 
   for (;;) {
     const m = maids.filter(x => !x.finished).sort((a, b) => a.t - b.t || a.i - b.i)[0]
     if (!m || m.t >= HORIZON) break
     const t = m.t
-    // Wer auf einer Etage steht, sieht die Türanhänger dort.
+    // Ohne Software: Wer auf einer Etage steht, sieht die Anhänger dort.
     if (m.pos && coord === 'paper') {
       for (const j of jobs) {
         if (j.floor === m.pos.floor && j.signalAt <= t && doneAt[j.id] === undefined) {
@@ -372,37 +412,45 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
         }
       }
     }
+    const openNow = open(m.i, t)
     // Ohne Software: eigener Bereich; ist dort nichts mehr zu erwarten, hilft
     // die Kraft anderswo aus — mit ihrem eigenen Wissen.
-    const helping = !!m.floors && !open(m.i).some(j => m.floors!.has(j.floor))
+    const helping = !!m.floors && !openNow.some(j => m.floors!.has(j.floor))
     const mine = (j: Job) => !m.floors || helping || m.floors.has(j.floor)
-    const visible = (j: Job) => mine(j) && (j.knownAt <= t || signalKnown(j, m.i, t)) && retryFor(j, m.i) <= t
-    // Ein angezeigt freies Zimmer geht vor — dort geht das Klopfen nicht ins Leere.
+    const visible = (j: Job) => {
+      if (!mine(j) || retryFor(j, m.i) > t) return false
+      if (!(j.knownAt <= t || signalKnown(j, m.i, t))) return false
+      // RoSe weiß von „Nicht stören" und „frühestens ab" — solche Zimmer sind nicht offen.
+      if (coord === 'rose' && (j.dndUntil > t || j.notBefore > t)) return false
+      return true
+    }
+    // Ein angezeigter Wunsch geht vor — dort geht das Klopfen nicht ins Leere.
     const signaled = (j: Job) => (signalKnown(j, m.i, t) ? 0 : 1)
+    const weightOf = (j: Job) => (j.kind === 'stay' && signalKnown(j, m.i, t) ? SCORE_WEIGHTS.pleaseClean : j.weight)
 
     let pick: Job | undefined
-    const urgent = open(m.i).filter(j => j.kind === 'complaint' && visible(j))
+    const urgent = openNow.filter(j => j.kind === 'complaint' && visible(j))
     if (urgent.length > 0) {
       // Sonderfall geht vor — sobald die Kraft davon weiß.
       pick = urgent[0]
     } else if (coord === 'paper') {
-      m.queue = m.queue.filter(j => open(m.i).includes(j) && visible(j))
-      if (m.queue.length === 0) m.queue = open(m.i).filter(visible).sort((a, b) => a.floor - b.floor || a.nr.localeCompare(b.nr))
+      m.queue = m.queue.filter(j => openNow.includes(j) && visible(j))
+      if (m.queue.length === 0) m.queue = openNow.filter(visible).sort((a, b) => a.floor - b.floor || a.nr.localeCompare(b.nr))
       // Auf der Etage, auf der sie steht, nimmt sie ein Zimmer mit Anhänger zuerst.
       const hung = m.pos ? m.queue.find(j => j.floor === m.pos!.floor && signaled(j) === 0) : undefined
       if (hung) m.queue = [hung, ...m.queue.filter(j => j !== hung)]
       pick = m.queue.shift()
     } else {
-      const avail = open(m.i).filter(visible)
+      const avail = openNow.filter(visible)
       if (avail.length > 0) {
-        const byUrgency = (a: Job, b: Job) => b.weight - a.weight || signaled(a) - signaled(b) || a.nr.localeCompare(b.nr)
+        const byUrgency = (a: Job, b: Job) => weightOf(b) - weightOf(a) || signaled(a) - signaled(b) || a.nr.localeCompare(b.nr)
         const here = m.pos ? avail.filter(j => j.floor === m.pos!.floor) : []
         if (here.length > 0) {
           pick = here.sort(byUrgency)[0]
         } else {
           // Etagenscore ÷ (Kolleginnen vor Ort + 1), bei Gleichstand die untere Etage.
           const score = new Map<number, number>()
-          for (const j of avail) score.set(j.floor, (score.get(j.floor) ?? 0) + j.weight)
+          for (const j of avail) score.set(j.floor, (score.get(j.floor) ?? 0) + weightOf(j))
           const crowd = (f: number) => maids.filter(o => o !== m && !o.finished && o.pos?.floor === f).length
           const floor = [...score.entries()]
             .map(([f, s]) => [f, s / (crowd(f) + 1)] as const)
@@ -417,7 +465,7 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
       // diese Kraft noch nicht gesehen hat, geht sie ihre Etagen ab — sie weiß
       // nicht, wo er hängt, also der Reihe nach.
       const unseen = coord === 'paper'
-        ? open(m.i).filter(j => j.knownAt === Infinity && mine(j) && j.signalAt <= t && !seenBy[j.id]?.has(m.i))
+        ? openNow.filter(j => j.knownAt === Infinity && mine(j) && j.signalAt <= t && !seenBy[j.id]?.has(m.i))
         : []
       if (unseen.length > 0) {
         const range = helping ? Array.from({ length: scn.floors }, (_, k) => k + 1) : m.own
@@ -431,8 +479,13 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
         continue
       }
       // Warten, bis sich für diese Kraft etwas tun könnte.
-      const next = Math.min(...open(m.i).filter(mine).map(j => Math.max(Math.min(j.knownAt, j.signalAt), retryFor(j, m.i))).filter(v => v > t))
-      if (!Number.isFinite(next) || next >= HORIZON) {
+      const wake = (j: Job) => {
+        let at = Math.max(Math.min(j.knownAt, j.signalAt), retryFor(j, m.i))
+        if (coord === 'rose') at = Math.max(at, Math.min(j.dndUntil, HORIZON), j.notBefore)
+        return at
+      }
+      const next = Math.min(...openNow.filter(mine).map(wake).filter(v => v > t), DND_GIVE_UP > t ? DND_GIVE_UP : Infinity)
+      if (!Number.isFinite(next) || next >= HORIZON || !openNow.some(mine)) {
         m.finished = true
         continue
       }
@@ -441,13 +494,19 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
       continue
     }
 
-    // Hingehen, klopfen — reinigen, später wiederkommen oder streichen.
+    // Hingehen — Schild, Klopfen, Ablehnung oder Reinigung.
     let now = t
     const w = walkTime(m.pos, pick.floor, pick.nr)
     if (w > 0) segments.push({ maid: m.i, kind: 'walk', nr: pick.nr, start: now, end: now + w })
     now += w
     m.pos = { floor: pick.floor, nr: pick.nr }
-    if (pick.declines) {
+    if (pick.dndUntil > now) {
+      // Nur ohne Software möglich: erst vor der Tür sieht sie das Schild.
+      segments.push({ maid: m.i, kind: 'skip', nr: pick.nr, jobId: pick.id, start: now, end: now + DURATION.skip })
+      now += DURATION.skip
+      retry[pick.id] = { until: now + DURATION.retry, by: m.i }
+      skips++
+    } else if (pick.declines) {
       const again = declinedAt[pick.id] !== undefined
       segments.push({ maid: m.i, kind: 'declined', nr: pick.nr, jobId: pick.id, again, start: now, end: now + DURATION.knock })
       now += DURATION.knock
@@ -489,6 +548,7 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
       cleaned: cleanSegs.length,
       knocks,
       declined,
+      skips,
       idleMinutes: segments.filter(g => g.kind === 'idle').reduce((sum, g) => sum + g.end - g.start, 0),
       departuresReadyAt: depsDone ? Math.max(...deps.map(j => doneAt[j.id])) : null,
       complaintDoneAt: complaintJob ? doneAt[complaintJob.id] ?? null : null,
@@ -506,8 +566,7 @@ export const TYPICAL_DAYS = 101
  * Der mittlere Tag: Für jeden Startwert zählt der Vorsprung von RoSe bei den
  * Abreisen, in beiden Stellungen des Umschalters. Gewählt wird der Tag, der
  * in beiden Rangfolgen am nächsten an der Mitte liegt. So darf die Seite „ein
- * gewöhnlicher Tag" sagen — der Tag ist gerechnet, nicht ausgesucht
- * (Entscheidung 26.09.2026; vorher war er zugunsten von RoSe gewählt).
+ * gewöhnlicher Tag" sagen — der Tag ist gerechnet, nicht ausgesucht.
  */
 export function typicalSeed(days = TYPICAL_DAYS): number {
   const lead = (scn: Scenario, p: Policy) => {
@@ -529,7 +588,7 @@ export function typicalSeed(days = TYPICAL_DAYS): number {
 }
 
 /** Ergebnis von `typicalSeed()` — der Test hält fest, dass beides übereinstimmt. */
-export const SCENARIO_SEED = 55
+export const SCENARIO_SEED = 94
 export const SCENARIO: Scenario = buildScenario(SCENARIO_SEED)
 
 // ── Zustand zu einem Zeitpunkt (für die Anzeige) ──────────────────────────
@@ -538,6 +597,7 @@ export type TileState =
   | 'empty'      // leer, nichts zu tun
   | 'occupied'   // Gast da / noch nicht ausgecheckt
   | 'dnd'
+  | 'deferred'   // „frühestens ab" — nur mit RoSe bekannt
   | 'skipped'    // keine Reinigung angefordert (nur auf Wunsch)
   | 'declined'   // Gast hat an der Tür abgelehnt
   | 'departed'   // ausgecheckt, wartet auf Reinigung
@@ -545,7 +605,7 @@ export type TileState =
   | 'cleaning'
   | 'done'
 
-export type Tile = { nr: string; floor: number; state: TileState; knock: 'present' | 'declined' | null; priority: boolean }
+export type Tile = { nr: string; floor: number; state: TileState; knock: 'present' | 'declined' | 'dnd' | null; priority: boolean }
 
 export function tilesAt(res: SimResult, t: number, scn: Scenario = SCENARIO): Tile[] {
   const current = res.segments.filter(g => g.start <= t && t < g.end)
@@ -553,7 +613,7 @@ export function tilesAt(res: SimResult, t: number, scn: Scenario = SCENARIO): Ti
   const complaintOpen = !!c && t >= c.at && !(res.metrics.complaintDoneAt !== null && res.metrics.complaintDoneAt <= t)
   return scn.rooms.map(r => {
     const kinds = current.filter(g => g.nr === r.nr).map(g => g.kind)
-    const knock = kinds.includes('knock') ? 'present' : kinds.includes('declined') ? 'declined' : null
+    const knock = kinds.includes('knock') ? 'present' : kinds.includes('declined') ? 'declined' : kinds.includes('skip') ? 'dnd' : null
     const done = res.doneAt[r.nr] !== undefined && res.doneAt[r.nr] <= t
     const refused = res.declinedAt[r.nr] !== undefined && res.declinedAt[r.nr] <= t
     let state: TileState
@@ -563,8 +623,10 @@ export function tilesAt(res: SimResult, t: number, scn: Scenario = SCENARIO): Ti
     else if (refused) state = 'declined'
     else if (r.kind === 'departure') state = t >= r.checkoutAt ? 'departed' : 'occupied'
     else if (r.presence === 'dnd') state = 'dnd'
+    else if (r.presence === 'out' && r.dndUntil !== null && t < r.dndUntil) state = 'dnd'
     else if (res.policy === 'onDemand' && (r.presence === 'declines' || !r.wants)) state = 'skipped'
     else if (r.presence === 'declines') state = 'occupied'
+    else if (res.coord === 'rose' && r.notBefore !== null && t >= NOT_BEFORE_SET_AT && t < r.notBefore) state = 'deferred'
     else state = t >= r.outAt ? 'wants' : 'occupied'
     return { nr: r.nr, floor: r.floor, state, knock, priority: complaintOpen && c!.nr === r.nr }
   })
@@ -579,9 +641,9 @@ export function maidsAt(res: SimResult, t: number): (string | null)[] {
   return at
 }
 
-/** An der Tür weggeschickt bis t: Gast noch da oder lehnt ab — in beiden Bildern gleich gezählt. */
+/** Vergeblich an der Tür bis t: Gast noch da, lehnt ab oder „Nicht stören" — in beiden Bildern gleich gezählt. */
 export function turnedAwayAt(res: SimResult, t: number): number {
-  return res.segments.filter(g => (g.kind === 'knock' || g.kind === 'declined') && g.start <= t).length
+  return res.segments.filter(g => (g.kind === 'knock' || g.kind === 'declined' || g.kind === 'skip') && g.start <= t).length
 }
 
 export function clockLabel(min: number): string {
@@ -600,6 +662,10 @@ export type Highlight = { at: number; tone: 'good' | 'bad' | 'neutral'; text: st
 
 export const MAID_LABELS = ['A', 'B', 'C', 'D', 'E', 'F']
 
+type OutGuest = Extract<SimRoom, { presence: 'out' }>
+const outGuests = (scn: Scenario) => scn.rooms.flatMap(r => (r.kind === 'stay' && r.presence === 'out' ? [r as OutGuest] : []))
+const firstBy = <T>(xs: T[], key: (x: T) => number) => [...xs].sort((a, b) => key(a) - key(b))[0]
+
 export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[] {
   const out: Highlight[] = []
   const deps = scn.rooms.flatMap(r => (r.kind === 'departure' ? [r] : []))
@@ -607,6 +673,8 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
   const m = res.metrics
   const c = scn.complaint
   const minutes = c && m.complaintDoneAt !== null ? Math.round(m.complaintDoneAt - c.at) : 0
+  const guests = outGuests(scn)
+  const firstClean = (nr: string) => cleans.find(g => g.jobId === nr)?.start
 
   // Politik, nicht Koordination: steht in beiden Bildern gleich, neutral.
   if (res.policy === 'onDemand') {
@@ -630,7 +698,7 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
   }
 
   if (res.coord === 'paper') {
-    const firstCheckout = [...deps].sort((a, b) => a.checkoutAt - b.checkoutAt || a.nr.localeCompare(b.nr))[0]
+    const firstCheckout = firstBy(deps, d => d.checkoutAt)
     if (firstCheckout) {
       out.push({ at: Math.max(0, firstCheckout.checkoutAt), tone: 'bad',
         text: `${firstCheckout.nr} ist bereits ausgecheckt – auf der Papierliste steht das nicht.` })
@@ -640,9 +708,27 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
       out.push({ at: CHECKOUT_AT - 30, tone: 'bad', text: `${early} Zimmer sind ausgecheckt – doch nur die Rezeption weiß es.` })
     }
     out.push({ at: CHECKOUT_AT, tone: 'neutral', text: 'Check-out-Frist: erst jetzt können diese Zimmer sicher gereinigt werden.' })
-    // Klopfen bei anwesenden Gästen und die erste Ablehnung passieren in
-    // beiden Bildern gleich — kein Eintrag. Der Koordinationsnachteil ist erst
-    // das ZWEITE Klopfen durch eine Kollegin, die von der Ablehnung nichts weiß.
+    // Geklopft, wo der Gast in RoSe „frühestens ab" gesagt hätte.
+    const nb = res.segments.filter(g => g.kind === 'knock' && guests.some(x => x.nr === g.nr && x.notBefore !== null))
+      .sort((a, b) => a.start - b.start)[0]
+    if (nb) {
+      const gst = guests.find(x => x.nr === nb.nr)!
+      out.push({ at: nb.start, tone: 'bad',
+        text: `Geklopft bei ${nb.nr} – der Gast will erst ab ${clockLabel(gst.notBefore!)} Reinigung, aber davon weiß niemand.` })
+    }
+    // „Nicht stören" abgenommen — gesehen erst, wenn jemand vorbeikommt.
+    const lifted = guests.filter(x => x.dndUntil !== null && x.dndUntil >= 0 && firstClean(x.nr) !== undefined)
+      .map(x => ({ nr: x.nr, at: x.dndUntil!, seen: firstClean(x.nr)! }))
+      .sort((a, b) => (b.seen - b.at) - (a.seen - a.at))[0]
+    if (lifted && lifted.seen - lifted.at >= 30) {
+      out.push({ at: lifted.seen, tone: 'bad',
+        text: `Das „Nicht stören“ an ${lifted.nr} ist seit ${clockLabel(lifted.at)} weg – gereinigt erst jetzt, niemand kam vorbei.` })
+    }
+    const firstSkip = res.segments.filter(g => g.kind === 'skip').sort((a, b) => a.start - b.start)[0]
+    if (firstSkip) {
+      out.push({ at: firstSkip.start, tone: 'bad',
+        text: `Vor ${firstSkip.nr}: „Nicht stören“ – das sieht die Kraft erst an der Tür, später muss sie wieder hin.` })
+    }
     const declines = res.segments.filter(g => g.kind === 'declined').sort((a, b) => a.start - b.start)
     const again = declines.find(g => g.again)
     if (again) {
@@ -659,13 +745,13 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
     }
     // Türanhänger: der, der am längsten unbemerkt hing.
     const waits = Object.entries(res.noticedAt).flatMap(([nr, seen]) => {
-      const r = scn.rooms.find(x => x.nr === nr)
-      return r?.kind === 'stay' && r.presence === 'out' ? [{ nr, hung: r.outAt, seen }] : []
+      const g = guests.find(x => x.nr === nr)
+      return g ? [{ nr, hung: g.outAt, seen }] : []
     }).sort((a, b) => (b.seen - b.hung) - (a.seen - a.hung) || a.nr.localeCompare(b.nr))
     const longest = waits[0]
-    if (longest && longest.seen - longest.hung >= 15) {
+    if (longest && longest.seen - Math.max(0, longest.hung) >= 15) {
       out.push({ at: longest.seen, tone: 'bad',
-        text: `Der Anhänger an ${longest.nr} hing seit ${clockLabel(longest.hung)} – gesehen erst jetzt, als eine Kraft auf die Etage kam.` })
+        text: `Der Anhänger „Bitte reinigen“ an ${longest.nr} hing seit ${clockLabel(longest.hung)} – gesehen erst jetzt, als eine Kraft auf die Etage kam.` })
     }
     const patrols = res.segments.filter(g => g.kind === 'patrol')
     if (patrols.length >= 3) {
@@ -681,51 +767,35 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
       out.push({ at: firstDep.start, tone: 'good',
         text: `${firstDep.nr} ausgecheckt – sofort auf dem Board und zur Reinigung eingereiht.` })
     }
-    if (res.policy === 'onDemand') {
-      const firstRequest = scn.rooms
-        .flatMap(r => (r.kind === 'stay' && r.presence === 'out' && r.wants ? [r] : []))
-        .sort((a, b) => a.outAt - b.outAt || a.nr.localeCompare(b.nr))
-        .find(r => r.outAt >= 0)
-      if (firstRequest) {
-        out.push({ at: firstRequest.outAt, tone: 'good',
-          text: `${firstRequest.nr} tippt beim Gehen „Zimmer reinigen“ – sofort auf dem Board, niemand muss suchen.` })
-      }
+    // Eine Uhrzeit nach Schichtbeginn, sonst zeigt der Hinweis nichts.
+    const nb = firstBy(guests.filter(x => x.notBefore !== null && x.notBefore >= 60 && (res.policy === 'routine' || x.wants)), x => x.notBefore!)
+    if (nb) {
+      out.push({ at: 0, tone: 'good',
+        text: `${nb.nr} hat im Portal „frühestens ab ${clockLabel(nb.notBefore!)}“ angegeben – bis dahin klopft niemand, die Kräfte planen drumherum.` })
     }
-    if (res.policy === 'routine') {
-      const firstSignal = scn.rooms
-        .flatMap(r => (r.kind === 'stay' && r.presence === 'out' && r.signals ? [r] : []))
-        .sort((a, b) => a.outAt - b.outAt || a.nr.localeCompare(b.nr))
-        .find(r => r.outAt >= 0)
-      if (firstSignal) {
-        out.push({ at: firstSignal.outAt, tone: 'good',
-          text: `${firstSignal.nr} tippt beim Gehen „Zimmer reinigen“ – alle Kräfte sehen: frei, hier klopft niemand ins Leere.` })
-      }
+    const lift = firstBy(guests.filter(x => x.dndUntil !== null && x.dndUntil >= 0 && (res.policy === 'routine' || x.wants)), x => x.dndUntil!)
+    if (lift) {
+      out.push({ at: lift.dndUntil!, tone: 'good',
+        text: lift.signals || res.policy === 'onDemand'
+          ? `${lift.nr} nimmt „Nicht stören“ zurück und wünscht Reinigung – sofort auf dem Board, für alle Kräfte.`
+          : `${lift.nr} nimmt „Nicht stören“ zurück – das Zimmer ist sofort wieder auf dem Board.` })
+    }
+    const firstSignal = firstBy(guests.filter(x => x.outAt >= 0 && x.notBefore === null && x.dndUntil === null
+      && (res.policy === 'onDemand' ? x.wants : x.signals)), x => x.outAt)
+    if (firstSignal) {
+      out.push({ at: firstSignal.outAt, tone: 'good',
+        text: `${firstSignal.nr} tippt beim Gehen „Zimmer reinigen“ – das Board zieht die nächste freie Kraft auf diese Etage.` })
     }
     const firstLater = res.segments.filter(g => g.kind === 'knock').sort((a, b) => a.start - b.start)[0]
     if (firstLater) {
       out.push({ at: firstLater.start, tone: 'good',
         text: `${firstLater.nr}: Gast noch da – „In 30 Min“ getippt, bis dahin klopft keine Kollegin.` })
     }
-    // Erster Etagenwechsel nach dem Start: die Empfehlung des Boards.
-    const switchWalk = res.segments.find(g => g.kind === 'walk' && g.end - g.start === DURATION.walkFloor && g.start > (firstDep?.start ?? 0))
-    if (switchWalk) {
-      out.push({ at: switchWalk.start, tone: 'good',
-        text: 'RoSe schickt dorthin, wo am meisten zu tun ist – abgestimmt und verteilt auf die Kräfte.' })
-    }
     // Ablehnung an der Tür: ein Tipp, und das Board kennt sie für alle Kräfte.
     const firstDecline = res.segments.filter(g => g.kind === 'declined').sort((a, b) => a.start - b.start)[0]
     if (firstDecline) {
       out.push({ at: firstDecline.start, tone: 'good',
         text: `${firstDecline.nr} möchte an der Tür heute keine Reinigung – ein Tipp, und RoSe merkt es sich für alle Kräfte.` })
-    }
-    // Erste Kraft, die auf einer Etage weitermacht, auf der die Kollegin schon war.
-    // (Der Sonderfall zählt nicht — er hat seinen eigenen Hinweis.)
-    const regular = cleans.filter(g => !g.jobId?.endsWith('!'))
-    const before = (g: Segment) => regular.find(o => o.maid !== g.maid && o.end <= g.start && floorOf(o.nr) === floorOf(g.nr))
-    const handover = regular.find(g => before(g))
-    if (handover) {
-      out.push({ at: handover.start, tone: 'good',
-        text: `Kraft ${MAID_LABELS[handover.maid]} macht auf der ${floorOf(handover.nr)}. Etage weiter – das Board zeigt ihr, was Kraft ${MAID_LABELS[before(handover)!.maid]} dort schon erledigt hat.` })
     }
     if (c && m.complaintDoneAt !== null) {
       out.push({ at: m.complaintDoneAt, tone: 'good',

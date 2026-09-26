@@ -11,7 +11,6 @@ describe('Reinigungs-Simulation', () => {
   const decliners = SCENARIO.rooms.filter(r => r.kind === 'stay' && r.presence === 'declines').map(r => r.nr)
   const dnd = SCENARIO.rooms.filter(r => r.kind === 'stay' && r.presence === 'dnd').map(r => r.nr)
   const deps = SCENARIO.rooms.filter(r => r.kind === 'departure').map(r => r.nr)
-  const stays = MIX.declines + MIX.outWants + MIX.outNoRequest // ohne Türschild
 
   it('Szenario: 10 × 10 Zimmer in der Mischung aus MIX, Etagen auch zweistellig', () => {
     expect(SCENARIO.rooms).toHaveLength(100)
@@ -116,13 +115,32 @@ describe('Reinigungs-Simulation', () => {
     expect(run['rose-onDemand'].segments.some(g => g.kind === 'patrol')).toBe(false)
   })
 
-  it('Verzicht wie im Nutzenrechner: täglich ohne Steuerung 0, mit RoSe ≈ 10 %, auf Wunsch ≈ 20 %', () => {
-    const cleanedStays = (r: SimResult) => r.metrics.cleaned - MIX.departure - 1 // ohne Sonderfall
-    expect(cleanedStays(run['paper-routine'])).toBe(stays - MIX.declines) // abgelehnt an der Tür
-    expect(1 - cleanedStays(run['rose-routine']) / stays).toBeCloseTo(0.1, 1)
-    for (const c of ['paper', 'rose'] as const) {
-      expect(1 - cleanedStays(run[`${c}-onDemand`]) / stays).toBeCloseTo(0.2, 1)
+  it('„frühestens ab“ und „Nicht stören“: RoSe klopft dort nicht vorher, ohne Software steht man vor der Tür', () => {
+    const guests = SCENARIO.rooms.flatMap(r => (r.kind === 'stay' && r.presence === 'out' ? [r] : []))
+    for (const p of ['routine', 'onDemand'] as const) {
+      const r = run[`rose-${p}`]
+      expect(r.metrics.skips).toBe(0)
+      for (const g of r.segments.filter(x => x.kind === 'knock' || x.kind === 'clean')) {
+        const gst = guests.find(x => x.nr === g.nr)
+        if (!gst) continue
+        if (gst.notBefore !== null) expect(g.start).toBeGreaterThanOrEqual(gst.notBefore)
+        if (gst.dndUntil !== null) expect(g.start).toBeGreaterThanOrEqual(gst.dndUntil)
+      }
     }
+    expect(run['paper-routine'].metrics.skips).toBeGreaterThan(0)
+  })
+
+  it('gereinigt wird in beiden Bildern dasselbe: täglich alle, die gehen; auf Wunsch nur, wer es will', () => {
+    const cleanedStays = (r: SimResult) => r.metrics.cleaned - MIX.departure - 1 // ohne Sonderfall
+    const out = SCENARIO.rooms.filter(r => r.kind === 'stay' && r.presence === 'out')
+    const wanting = out.filter(r => r.kind === 'stay' && r.presence === 'out' && r.wants)
+    for (const c of ['paper', 'rose'] as const) {
+      expect(cleanedStays(run[`${c}-routine`])).toBe(out.length)
+      expect(cleanedStays(run[`${c}-onDemand`])).toBe(wanting.length)
+    }
+    // Verzicht auf Wunsch in der Größenordnung „typisch" des Nutzenrechners (≈ 20 %).
+    expect(1 - wanting.length / (out.length + decliners.length)).toBeGreaterThan(0.1)
+    expect(1 - wanting.length / (out.length + decliners.length)).toBeLessThan(0.3)
   })
 
   it('Sonderfall trifft ein Zimmer, das in allen vier Abläufen schon gereinigt ist; mit RoSe schneller', () => {

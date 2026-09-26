@@ -93,7 +93,7 @@ describe('isRoomActive', () => {
     expect(isCleanDeferred(wish, new Date('2026-09-07T08:59:00Z'))).toBe(true)
     expect(isRoomActive(wish, new Date('2026-09-07T09:00:00Z'))).toBe(true)
     expect(roomScore(wish, false, new Date('2026-09-07T08:00:00Z'))).toBe(0)
-    expect(roomScore(wish, false, new Date('2026-09-07T10:00:00Z'))).toBe(1)
+    expect(roomScore(wish, false, new Date('2026-09-07T10:00:00Z'))).toBe(2)
     // Seit 26.09.: auch ohne Wunsch — Aufschub an der Tür für die Routine.
     expect(isCleanDeferred({ ...base, clean_not_before: '2099-01-01T00:00:00Z' })).toBe(true)
     // Nie bei einer Abreise und nie bei „Nicht stören".
@@ -131,18 +131,18 @@ describe('roomScore', () => {
   const base = { guest_signal: 'none' as const, checkout_pending: false, priority: false }
 
   it('gewichtet Priorität am höchsten und summiert', () => {
-    expect(roomScore({ ...base, priority: true })).toBe(3)
-    expect(roomScore({ ...base, checkout_pending: true })).toBe(2)
-    expect(roomScore({ ...base, guest_signal: 'please_clean' })).toBe(1)
-    expect(roomScore({ guest_signal: 'please_clean', checkout_pending: true, priority: true })).toBe(6)
+    expect(roomScore({ ...base, priority: true })).toBe(4)
+    expect(roomScore({ ...base, checkout_pending: true })).toBe(3)
+    expect(roomScore({ ...base, guest_signal: 'please_clean' })).toBe(2)
+    expect(roomScore({ guest_signal: 'please_clean', checkout_pending: true, priority: true })).toBe(9)
   })
 
-  it('wertet die Routine-Reinigung wie einen Gast-Wunsch', () => {
+  it('wertet die Routine-Reinigung geringer als einen Gast-Wunsch', () => {
     expect(roomScore(base, true)).toBe(1)
   })
 
   it('zählt Wunsch und Routine nicht doppelt', () => {
-    expect(roomScore({ ...base, guest_signal: 'please_clean' }, true)).toBe(1)
+    expect(roomScore({ ...base, guest_signal: 'please_clean' }, true)).toBe(2)
   })
 
   it('ist 0 für ein ruhiges Zimmer', () => {
