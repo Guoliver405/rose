@@ -211,6 +211,21 @@ formuliert, dass ein Abweichen ein Befund ist.
 | J11 | Logo | Hotel & Regeln: PNG, SVG, zu kleines Bild, helles Logo, entfernen | Vorschau auf Weiß; Hinweis unter ~400 px; erscheint im Kopf beider Blätter; nach „Entfernen" wieder der Hausname | C+M (Dateiauswahl) |
 | J12 | Logo-Ablage | nach Upload und nach Entfernen | Storage-Ordner `hotel-logos/<hotelId>` enthält genau eine bzw. keine Datei; alter Gegenstand ist weg (kein CDN-Rest) | C |
 
+### L — Housekeeping-Simulator (`/simulator`, seit 26.09.2026)
+
+| ID | Fall | Schritte | Erwartung | Wer |
+|---|---|---|---|---|
+| L1 | Registrierung | `/simulator/registrieren` mit eigener Adresse, Werbe-Häkchen **gesetzt** | Hinweis „Bitte bestätigen", Countdown am „erneut senden"; Mail „Bitte bestätigen …" nennt die Einwilligung; Link zeigt auf die Produktions-URL | **C+M** (Postfach) |
+| L2 | Vor der Bestätigung | `/login` mit dieser Adresse | Meldung „Bitte zuerst die E-Mail-Adresse bestätigen" | M |
+| L3 | Bestätigen | Link aus der Mail (gern auf einem anderen Gerät) | landet angemeldet auf `/simulator` mit „Adresse bestätigt – willkommen"; `sim_accounts.confirmed_at` und `marketing_opt_in_at` gesetzt | **C+M** |
+| L4 | Link zweimal | denselben Link erneut | `/simulator/registrieren?fehler=link` mit „abgelaufen oder schon benutzt" und Formular für neuen Link | M |
+| L5 | Schon registriert | erneut registrieren (bestätigte Adresse, anderes Passwort) | Seite antwortet wie bei neuer Adresse; Mail „Sie haben bereits einen Zugang"; altes Passwort gilt weiter | **C+M** |
+| L6 | Login-Weiche | abmelden, über `/login` anmelden | landet auf `/simulator`, nicht auf `/admin` | M |
+| L7 | Rechnen angemeldet | Vorgaben rechnen | Ergebnis wie Phase 1 (Tag 46, RoSe 12:37) | C |
+| L8 | Mein Konto | Einwilligung ab- und wieder anschalten | Text „Abbestellt" bzw. Datum; DB-Zeile folgt | C+M |
+| L9 | Konto löschen | „LÖSCHEN" eintippen | abgemeldet auf der Startseite; Auth-Nutzer und `sim_accounts` weg; Anmeldung scheitert | **M** |
+| L10 | Hotelzugang | als Inhaber `/simulator` öffnen | Werkzeug ohne eigene Registrierung; „Mein Konto" bietet nur „Simulator-Daten löschen" | C |
+
 ### K — Theme und Robustheit
 
 | ID | Fall | Schritte | Erwartung | Wer |

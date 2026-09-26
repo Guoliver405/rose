@@ -1,10 +1,10 @@
 # Bauplan: Reinigungs-Simulator als eigenes Werkzeug hinter einer Anmeldung
 
-Stand 26.09.2026 · Entscheidungen des Users in dieser Session · **Phase 1 gebaut (26.09. abends), siehe Abschnitt 11**
+Stand 26.09.2026 · Entscheidungen des Users in dieser Session · **Phasen 1 und 2 gebaut (26.09. abends), siehe Abschnitte 11 und 12**
 
 > **Wiederaufnahme in einer neuen Session:** Erst `AGENTS.md` lesen (Abschnitte
 > „Landing Page", „Check-out-Druck", „Mail-Versand mit Rückmeldung"), dann diesen
-> Plan. Phase 1 ist gebaut (Abschnitt 11) — weiter mit den offenen Punkten dort, dann Phase 2. Antworten durchgehend auf **Deutsch** – auch
+> Plan. Phasen 1 und 2 sind gebaut (Abschnitte 11, 12) — offen ist der Produktionslauf L1–L10 (GUI-Katalog), dann Phase 3. Antworten durchgehend auf **Deutsch** – auch
 > Zwischensätze zwischen Werkzeugaufrufen (Rückmeldung des Users).
 
 ---
@@ -268,4 +268,45 @@ Vorschlag für den Text am Häkchen:
 2. **Rechenzeit großer Häuser:** 3 000 Zimmer ≈ 7 s je Tag (davon ~3 s nur für
    die Wahl des Sonderfall-Zimmers, vier Vorläufe). Budget 75 000 Zimmertage —
    vom User bestätigt; weiter beschleunigen erst, wenn Nutzer große Häuser rechnen.
-3. Offene Fragen aus Abschnitt 10 unverändert.
+3. ~~Offene Fragen aus Abschnitt 10~~ — entschieden am 26.09. abends (alle drei
+   Vorschläge angenommen): Umwandlung verlangt den Einladungscode, solange die
+   Registrierung geschlossen ist; Name „Housekeeping-Simulator"; Häuser im
+   Ausland nicht sperren, aber „derzeit nur auf Deutsch" sagen.
+
+## 12. Stand nach Phase 2 (26.09.2026, abends)
+
+**Gebaut und in Produktion** (Migration `2026-09-26_simulator_konto.sql` eingespielt,
+Integrationstest [sim-account.test.ts](../tests/integration/sim-account.test.ts) grün):
+
+- **Registrierung** `/simulator/registrieren` ([utils/sim-account.ts](../src/utils/sim-account.ts),
+  Regeln und Texte in [lib/sim-account.ts](../src/lib/sim-account.ts)): Supabase erzeugt
+  Nutzer und Link (`generateLink` signup), die Mail geht über `dispatch` (Zweck
+  `sim_confirm`). **Die Seite verrät nicht, ob es ein Konto gibt** — eine bekannte Adresse
+  bekommt per Mail „Sie haben bereits einen Zugang", eine unbestätigte einen neuen Link.
+  Drossel 5 je IP und Stunde (`signup_attempts`), unbestätigte Konten verfallen nach 7 Tagen
+  (aufgeräumt bei jeder Registrierung; nur Nutzer ohne Rolle im Hotelprodukt).
+- **Nachgemessenes Verhalten von `generateLink`**, auf dem die Fallunterscheidung steht:
+  unbestätigte Adresse → derselbe Nutzer ohne Fehler (Passwort bleibt, alter Link
+  ungültig); bestätigte → `email_exists`; `magiclink` legt für unbekannte Adressen einen
+  Nutzer an und wird deshalb nicht benutzt. Die erste Fassung löschte einen unbestätigten
+  Nutzer beim Zurückrollen — vom Integrationstest gefunden, vor dem Push behoben.
+- **Bestätigung** über `/auth/confirm` (Typen `signup`/`magiclink`); `markSimConfirmed`
+  setzt `confirmed_at` und macht eine angekreuzte Einwilligung **erst dann** wirksam
+  (`marketing_opt_in_at`, Double-Opt-in). Abgelaufene Links führen auf die Registrierung
+  mit „neuen Link anfordern".
+- **Zugang** `getSimContext` ([auth.ts](../src/utils/auth.ts)): eigenes, bestätigtes
+  Simulator-Konto **oder** ein Hotelzugang. `landingRoute` und `/login` schicken
+  Simulator-Konten auf `/simulator`. Im Hotelprodukt keine Rechte (Test: Guards, RLS).
+- **Mein Konto** `/simulator/konto`: Einwilligung umschalten (Zeitpunkt und Textversion),
+  Konto löschen — beim Hotelzugang nur die Simulator-Daten.
+- **Rechtstexte:** Datenschutz Abschnitt 7 (Anker `#simulator`, Nummern danach +1),
+  Nutzungsbedingungen `/simulator-nutzung`. Entwürfe, anwaltliche Prüfung offen.
+- `/simulator` ist öffentlich erreichbar (kein 404 mehr), aber `noindex` und noch nicht
+  verlinkt — der Aufruf auf der Landing Page kommt mit Phase 3.
+
+**Offen:**
+1. Produktionslauf L1–L10 im [GUI-Katalog](GUI-Testkatalog.md) — braucht das Postfach des Users.
+2. Werbe-Mails selbst gibt es nicht; die Datenschutzerklärung verspricht für sie einen
+   Abmeldelink — wer sie baut, muss ihn mitliefern.
+3. Nebenwirkung: Registriert jemand eine Adresse mit offener Einladung ins Hotelprodukt,
+   verliert die Einladung ihren Link (erneut senden hilft).
