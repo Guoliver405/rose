@@ -177,7 +177,8 @@ function statusLabel(t: RoomTileData): string {
   if (t.cleaningActive) parts.push('Reinigung läuft')
   if (t.checkoutPending) parts.push('Reinigung nach Check-out offen')
   if (t.guestSignal === 'please_clean') {
-    parts.push(t.cleanDeferredUntil ? `Gast wünscht Reinigung ab ${t.cleanDeferredUntil}` : 'Gast wünscht Reinigung')
+    // Die Uhrzeit kann das „Frühestens ab" des Gastes oder „bitte später" an der Tür sein — der Verlauf sagt, was es war.
+    parts.push(t.cleanDeferredUntil ? `Gast wünscht Reinigung, frühestens ab ${t.cleanDeferredUntil}` : 'Gast wünscht Reinigung')
   } else if (t.cleanDeferredUntil) {
     parts.push(`Reinigung ab ${t.cleanDeferredUntil} (an der Tür vereinbart)`)
   }

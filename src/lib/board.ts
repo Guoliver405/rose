@@ -407,6 +407,8 @@ export function guestCleaningStatus(args: {
 
   if (state.guest_signal === 'please_clean') {
     const notBefore = state.clean_not_before ? new Date(state.clean_not_before) : null
+    // `reason: 'guest'` heißt hier „zum Wunsch des Gastes": die Uhrzeit kann auch an der
+    // Tür vereinbart sein (dasselbe Feld), die Anzeige bleibt deshalb neutral.
     if (notBefore && notBefore > now) return { kind: 'scheduled_from', at: notBefore, reason: 'guest' }
     return { kind: 'scheduled' }
   }

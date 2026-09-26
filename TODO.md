@@ -70,7 +70,15 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
       Bleibezimmer ab 9:00 und klopft umsonst, wo der Gast noch da ist; Bild 2
       bekommt dasselbe Wissen über das Abreisedatum (Punkt davor). Danach
       Startwert neu suchen, Fertig-Zeiten und Protokolle prüfen.
-- [ ] **In Produktion ansehen — offen nur noch (a) und (b)** (26.09.). Stand
+- [x] ~~**In Produktion ansehen**~~ — 26.09. vormittags alles bestanden.
+      (a)/(b) mit echten Klicks im Lotsen-Haus (Gast 203, Kraft Emma Putz):
+      Blatt-Kachel, Uhr-Kachel, Verlauf „Heute keine Reinigung gewünscht ·
+      Gast" und „An der Tür: Gast möchte später · Emma Putz". Befund behoben:
+      „bitte später" auf einen offenen Wunsch wurde dem Gast zugeschrieben
+      (Kachel „Gast wünscht Reinigung ab …", Gaststatus „Wie von dir
+      gewünscht") — beides schreibt `clean_not_before`, die Anzeige ist dort
+      jetzt neutral. Nicht gefahren: „Heute nicht" an der Tür (dasselbe Feld
+      wie der Gast-Verzicht, dessen Anzeige geprüft ist). Stand
       nach der Prüfung am 26.09. vormittags: (c) bestanden (Tür-Knöpfe und
       Verzicht in beiden Nachbauten; Lotsen-Text „einzige Rückmeldung" an die
       Statuskarte angepasst), (d) bestanden (15:18 · 13:59 · 13:45; Knopf hieß

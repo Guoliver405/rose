@@ -64,7 +64,8 @@ export default function GuestCleaningStatusCard({
             <span className={title}>Reinigung heute ab {formatHHMM(status.at, timeZone)} Uhr.</span>
             <span className={`${sub} text-ink-soft`}>
               {status.reason === 'guest'
-                ? 'Wie von dir gewünscht — vorher kommt niemand.'
+                // Beim offenen Wunsch kann die Uhrzeit vom Gast oder von der Tür stammen — neutral bleiben.
+                ? 'Dein Wunsch ist angekommen — vorher kommt niemand.'
                 : status.reason === 'door'
                   ? 'Wie an der Tür besprochen — vorher kommt niemand.'
                   : 'Das Haus reinigt täglich. Wenn du das heute nicht brauchst, tippe auf „Heute keine Reinigung".'}
