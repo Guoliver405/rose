@@ -19,7 +19,7 @@
 
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
 
-export type MailPurpose = 'invite' | 'recovery' | 'guest_access'
+export type MailPurpose = 'invite' | 'recovery' | 'guest_access' | 'sim_confirm'
 
 export type MailStatus =
   | 'queued'      // Zeile angelegt, Resend noch nicht gefragt

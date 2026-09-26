@@ -53,7 +53,7 @@ export default function DatenschutzPage() {
         <List
           items={[
             <><span className="font-semibold text-ink">Für Besucher dieser Website und für unsere Kunden</span> (Kontoinhaber, Manager, Rezeptionszugänge) sind wir selbst Verantwortlicher im Sinne der DSGVO. Das betrifft die Abschnitte 3 bis 7.</>,
-            <><span className="font-semibold text-ink">Für die Daten, die ein Hotel in RoSe verarbeitet</span> — Aufenthalte, Wünsche und Bestellungen der Gäste, Personal und Tätigkeitsnachweise — ist das jeweilige <span className="font-semibold text-ink">Hotel</span> Verantwortlicher und wir sein Auftragsverarbeiter nach Art. 28 DSGVO. Gäste und Mitarbeitende wenden sich mit ihren Rechten deshalb an das Haus, bei dem sie wohnen bzw. arbeiten. Was RoSe dabei technisch verarbeitet, steht in Abschnitt 8.</>,
+            <><span className="font-semibold text-ink">Für die Daten, die ein Hotel in RoSe verarbeitet</span> — Aufenthalte, Wünsche und Bestellungen der Gäste, Personal und Tätigkeitsnachweise — ist das jeweilige <span className="font-semibold text-ink">Hotel</span> Verantwortlicher und wir sein Auftragsverarbeiter nach Art. 28 DSGVO. Gäste und Mitarbeitende wenden sich mit ihren Rechten deshalb an das Haus, bei dem sie wohnen bzw. arbeiten. Was RoSe dabei technisch verarbeitet, steht in Abschnitt 9.</>,
           ]}
         />
       </Section>
@@ -125,7 +125,8 @@ export default function DatenschutzPage() {
 
       <Section title="5. E-Mail-Versand">
         <P>
-          E-Mails (Einladungen, Passwort zurücksetzen, Gast-Zugang auf Wunsch der Rezeption)
+          E-Mails (Einladungen, Passwort zurücksetzen, Gast-Zugang auf Wunsch der Rezeption,
+          Bestätigung eines Simulator-Kontos)
           werden über <span className="font-semibold text-ink">Resend Inc.</span>, 2261 Market Street
           #5039, San Francisco, CA 94114, USA, versendet. Resend verarbeitet dafür Empfängeradresse,
           Betreff und Inhalt der Mail und führt ein Zustellprotokoll (Adresse, Zeitpunkt,
@@ -178,7 +179,28 @@ export default function DatenschutzPage() {
         </P>
       </Section>
 
-      <Section title="7. Übermittlung in Drittländer">
+      <Section title="7. Housekeeping-Simulator" id="simulator">
+        <P>
+          Für den Housekeeping-Simulator legen Sie ein eigenes, kostenloses Konto an. Verantwortlich
+          sind wir als Anbieter (Abschnitt 1) — nicht ein Hotel. Wir verarbeiten:
+        </P>
+        <List
+          items={[
+            <>Ihre <span className="font-semibold text-ink">E-Mail-Adresse</span> und Ihr Passwort (nur als kryptografischer Hash), um das Konto bereitzustellen und die Adresse per Bestätigungslink zu prüfen (Art. 6 Abs. 1 lit. b DSGVO). Zahlungsdaten werden nicht erhoben.</>,
+            <>Die <span className="font-semibold text-ink">Einstellungen, die Sie rechnen oder speichern</span> (Hausgröße, Zeiten, Annahmen). Gerechnet wird in Ihrem Browser; gespeicherte Szenarien liegen in der Datenbank (Abschnitt 4).</>,
+            <>Den <span className="font-semibold text-ink">Hash Ihrer IP-Adresse</span> je Registrierungsversuch, eine Stunde lang, damit das offene Formular nicht massenhaft missbraucht wird (Art. 6 Abs. 1 lit. f DSGVO).</>,
+            <>Nur wenn Sie das freiwillige Häkchen setzen: Ihre <span className="font-semibold text-ink">Einwilligung in Informationen zu RoSe per E-Mail</span> — ausschließlich zu RoSe, ohne Weitergabe. Wirksam wird sie erst mit dem Klick auf den Bestätigungslink (Double-Opt-in); gespeichert werden Zeitpunkt und Wortlaut. Rechtsgrundlage ist Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), die Sie jederzeit im Konto oder über den Abmeldelink jeder Mail widerrufen können.</>,
+          ]}
+        />
+        <P>
+          Die Bestätigungsmail verschicken wir über Resend (Abschnitt 5). Wird ein Konto nicht
+          innerhalb von sieben Tagen bestätigt, löschen wir es. Ein bestätigtes Konto bleibt
+          bestehen, bis Sie es unter „Mein Konto“ selbst löschen — das wirkt sofort und nimmt
+          gespeicherte Szenarien und die Einwilligung mit.
+        </P>
+      </Section>
+
+      <Section title="8. Übermittlung in Drittländer">
         <P>
           Die genannten Dienstleister haben ihren Sitz außerhalb der EU; die Daten von RoSe
           werden in der EU gespeichert (Datenbank und Serverfunktionen in Irland). Soweit
@@ -194,7 +216,7 @@ export default function DatenschutzPage() {
         </P>
       </Section>
 
-      <Section title="8. Was RoSe im Auftrag der Hotels verarbeitet">
+      <Section title="9. Was RoSe im Auftrag der Hotels verarbeitet">
         <P>
           Für die folgenden Daten ist das jeweilige Hotel Verantwortlicher; wir verarbeiten sie
           ausschließlich nach dessen Weisung und auf Grundlage eines
@@ -239,7 +261,7 @@ export default function DatenschutzPage() {
         </Sub>
       </Section>
 
-      <Section title="9. Ihre Rechte">
+      <Section title="10. Ihre Rechte">
         <P>Sie haben gegenüber dem jeweils Verantwortlichen (siehe Abschnitt 2) das Recht auf</P>
         <List
           items={[
@@ -257,7 +279,7 @@ export default function DatenschutzPage() {
         </P>
       </Section>
 
-      <Section title="10. Datensicherheit">
+      <Section title="11. Datensicherheit">
         <P>
           Alle Verbindungen sind TLS-verschlüsselt. Zugriffe auf die Datenbank sind je Haus
           getrennt (Row Level Security); Passwörter und PINs von Mitarbeitenden werden nur als
@@ -267,7 +289,7 @@ export default function DatenschutzPage() {
         </P>
       </Section>
 
-      <Section title="11. Änderungen">
+      <Section title="12. Änderungen">
         <P>
           Wir passen diese Erklärung an, wenn sich der Dienst oder die Rechtslage ändert. Es gilt
           die jeweils hier veröffentlichte Fassung; das Datum steht oben.

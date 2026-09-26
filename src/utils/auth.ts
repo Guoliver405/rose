@@ -247,7 +247,8 @@ type HotelRow = { id: string; slug: string; name: string; account_id: string }
  */
 export async function landingRoute(): Promise<string | null> {
   const hotels = await listAccessibleHotels()
-  if (hotels.length === 0) return null
+  // Kein Haus: vielleicht ein Konto des Housekeeping-Simulators (26.09.2026).
+  if (hotels.length === 0) return (await getSimContext())?.kind === 'sim' ? '/simulator' : null
   const nurRezeption = hotels.every(h => h.role === 'reception')
   return nurRezeption ? `/h/${hotels[0].slug}/admin` : '/admin'
 }
@@ -293,4 +294,38 @@ export const getAccountContext = cache(async (): Promise<AccountContext | null> 
     displayName: membership.display_name,
     createdAt: new Date(account?.created_at ?? 0),
   }
+})
+
+/**
+ * Wer darf den Housekeeping-Simulator nutzen (Phase 2, 26.09.2026)?
+ *
+ *   sim   — eigenes Simulator-Konto (`sim_accounts`), **nur bestätigt**.
+ *   hotel — jeder mit Zugang zu einem Haus; der Simulator ist für Kunden ein
+ *           Werkzeug mehr, kein anderes Produkt.
+ *
+ * Die Gegenrichtung ist die eigentliche Grenze: Ein Simulator-Konto hat weder
+ * `profiles` noch `account_members`/`hotel_members` und bekommt deshalb in
+ * keinem Guard des Hotelprodukts Rechte (guards.test.ts).
+ */
+export type SimContext = {
+  userId: string
+  kind: 'sim' | 'hotel'
+  /** Werbe-Einwilligung wirksam (bestätigt), mit Zeitpunkt. */
+  marketingOptInAt: string | null
+}
+
+export const getSimContext = cache(async (): Promise<SimContext | null> => {
+  const userId = await getAuthUserId()
+  if (!userId) return null
+  const admin = createAdminClient()
+  const { data: sim } = await admin
+    .from('sim_accounts')
+    .select('confirmed_at, marketing_opt_in, marketing_opt_in_at')
+    .eq('user_id', userId)
+    .maybeSingle()
+  const marketingOptInAt = sim?.marketing_opt_in ? (sim.marketing_opt_in_at as string | null) : null
+  const hotels = await listAccessibleHotels()
+  if (hotels.length > 0) return { userId, kind: 'hotel', marketingOptInAt }
+  if (sim?.confirmed_at) return { userId, kind: 'sim', marketingOptInAt }
+  return null
 })

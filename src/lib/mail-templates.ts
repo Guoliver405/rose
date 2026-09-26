@@ -104,3 +104,51 @@ export function recoveryMail(m: { url: string; einladung?: boolean }): MailConte
     text,
   }
 }
+
+/**
+ * Bestätigung eines Simulator-Kontos (26.09.2026). Mit gesetztem Werbe-Häkchen
+ * nennt die Mail die Einwilligung ausdrücklich — der Klick bestätigt Adresse
+ * und Einwilligung in einem Schritt (Double-Opt-in).
+ */
+export function simConfirmMail(m: { url: string; marketing: boolean; toolName: string }): MailContent {
+  const zweck = `Bitte bestätigen Sie Ihre E-Mail-Adresse, damit Sie den ${m.toolName} von RoSe nutzen können.`
+  const werbung = 'Sie haben außerdem zugestimmt, dass RoSe Sie gelegentlich per E-Mail über neue Funktionen und besondere Angebote informiert – ausschließlich zu RoSe. Mit dem Klick bestätigen Sie auch diese Einwilligung; widerrufen können Sie sie jederzeit im Konto.'
+  const schluss = 'Der Link ist begrenzt gültig. Haben Sie sich nicht registriert, ignorieren Sie die Mail einfach — ohne Bestätigung wird das Konto nach sieben Tagen gelöscht.'
+
+  const html = `<!doctype html>
+<html lang="de"><body style="${STYLE_BODY}">
+  <p>Guten Tag,</p>
+  <p>${escapeHtml(zweck)}</p>
+  ${m.marketing ? `<p>${escapeHtml(werbung)}</p>` : ''}
+  ${knopf(m.url, 'E-Mail-Adresse bestätigen')}
+  ${linkZeile(m.url)}
+  <p style="${STYLE_SMALL}">${escapeHtml(schluss)}</p>
+</body></html>`
+
+  const text = ['Guten Tag,', '', zweck, ...(m.marketing ? ['', werbung] : []), '', m.url, '', schluss].join('\n')
+  return { subject: `Bitte bestätigen: Ihr Konto für den ${m.toolName}`, html, text }
+}
+
+/**
+ * Registrierung mit einer Adresse, zu der es schon einen RoSe-Zugang gibt.
+ * Die Seite antwortet in diesem Fall genauso wie bei einer neuen Adresse —
+ * sonst verriete sie, ob es ein Konto gibt —, und die eigentliche Antwort
+ * kommt per Mail an die Person, der die Adresse gehört.
+ */
+export function simExistsMail(m: { loginUrl: string; resetUrl: string; toolName: string }): MailContent {
+  const satz = `Für diese E-Mail-Adresse gibt es bereits einen Zugang zu RoSe. Melden Sie sich einfach an — der ${m.toolName} steht Ihnen danach zur Verfügung.`
+  const vergessen = 'Passwort vergessen? Dann setzen Sie es hier neu:'
+  const schluss = 'Haben Sie sich nicht erneut registriert, können Sie diese Mail ignorieren — an Ihrem Zugang hat sich nichts geändert.'
+
+  const html = `<!doctype html>
+<html lang="de"><body style="${STYLE_BODY}">
+  <p>Guten Tag,</p>
+  <p>${escapeHtml(satz)}</p>
+  ${knopf(m.loginUrl, 'Anmelden')}
+  <p>${escapeHtml(vergessen)} <a href="${escapeHtml(m.resetUrl)}">${escapeHtml(m.resetUrl)}</a></p>
+  <p style="${STYLE_SMALL}">${escapeHtml(schluss)}</p>
+</body></html>`
+
+  const text = ['Guten Tag,', '', satz, '', `Anmelden: ${m.loginUrl}`, '', `${vergessen} ${m.resetUrl}`, '', schluss].join('\n')
+  return { subject: 'Sie haben bereits einen Zugang zu RoSe', html, text }
+}

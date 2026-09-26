@@ -15,7 +15,7 @@ export default async function LoginPage() {
         <h1 className="text-3xl font-black text-ink">
           Ro<span className="text-blocked">Se</span>
         </h1>
-        <p className="mt-1 text-sm text-ink-muted">Rezeption — Anmeldung</p>
+        <p className="mt-1 text-sm text-ink-muted">Anmeldung</p>
       </div>
       <LoginForm />
 

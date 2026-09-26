@@ -65,5 +65,7 @@ export const config = {
     // Seiten lesen sie — alle drei brauchen den Cookie-Durchgriff.
     '/auth/:path*', '/passwort-vergessen', '/passwort-neu',
     '/service/:path*', '/h/:path*',
+    // Housekeeping-Simulator (26.09.2026): eigene Anmeldung, Default-Cookies.
+    '/simulator', '/simulator/:path*',
   ],
 }

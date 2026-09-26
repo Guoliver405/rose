@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { EmailOtpType } from '@supabase/supabase-js'
 import { createClient } from '@/utils/supabase/server'
+import { markSimConfirmed } from '@/utils/sim-account'
 
 /**
  * Rückkehr aus einer Supabase-Mail — Einladung, Passwort-Reset, Bestätigung.
@@ -28,7 +29,15 @@ import { createClient } from '@/utils/supabase/server'
  * `/auth/callback` bleibt bestehen, damit bereits verschickte Links weiter
  * funktionieren.
  */
-const ERLAUBTE_TYPEN: EmailOtpType[] = ['invite', 'recovery', 'email', 'email_change']
+const ERLAUBTE_TYPEN: EmailOtpType[] = ['invite', 'recovery', 'email', 'email_change', 'signup', 'magiclink']
+
+/**
+ * Bestätigung eines Simulator-Kontos (26.09.2026): `signup` beim ersten Link,
+ * `magiclink` beim erneut gesendeten. Beides bestätigt die Adresse; danach
+ * wird das Konto freigeschaltet und eine angekreuzte Werbe-Einwilligung
+ * wirksam (Double-Opt-in, `markSimConfirmed`).
+ */
+const SIM_TYPEN: EmailOtpType[] = ['signup', 'magiclink']
 
 export async function GET(request: Request): Promise<NextResponse> {
   const url = new URL(request.url)
@@ -36,19 +45,21 @@ export async function GET(request: Request): Promise<NextResponse> {
   // Hinter dem Vercel-Proxy ist `url.origin` nicht zwingend die öffentliche
   // Adresse — dieselbe Basis benutzen, die auch in die Mail geschrieben wurde.
   const base = (process.env.NEXT_PUBLIC_SITE_URL ?? url.origin).replace(/\/+$/, '')
-  const gescheitert = NextResponse.redirect(`${base}/passwort-vergessen?fehler=link`)
-
   const tokenHash = url.searchParams.get('token_hash')
   const typ = url.searchParams.get('type') as EmailOtpType | null
+  const gescheitert = NextResponse.redirect(
+    typ && SIM_TYPEN.includes(typ) ? `${base}/simulator/registrieren?fehler=link` : `${base}/passwort-vergessen?fehler=link`,
+  )
 
   if (!tokenHash || !typ || !ERLAUBTE_TYPEN.includes(typ)) return gescheitert
 
   const supabase = await createClient()
-  const { error } = await supabase.auth.verifyOtp({ type: typ, token_hash: tokenHash })
+  const { data, error } = await supabase.auth.verifyOtp({ type: typ, token_hash: tokenHash })
   if (error) {
     console.error('[auth/confirm] verifyOtp:', { typ, status: error.status, message: error.message })
     return gescheitert
   }
+  if (SIM_TYPEN.includes(typ) && data.user) await markSimConfirmed(data.user.id)
 
   // `next` kommt aus der URL und ist damit ungeprüft: nur projekteigene,
   // relative Ziele zulassen. Ohne diesen Riegel wäre die Route ein offener

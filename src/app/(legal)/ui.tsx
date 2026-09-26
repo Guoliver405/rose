@@ -17,9 +17,9 @@ export function Title({ children, sub }: { children: React.ReactNode; sub?: stri
   )
 }
 
-export function Section({ title, children }: { title: string; children: React.ReactNode }) {
+export function Section({ title, id, children }: { title: string; id?: string; children: React.ReactNode }) {
   return (
-    <section className="mb-8">
+    <section id={id} className="mb-8 scroll-mt-6">
       <h2 className="mb-3 text-xl font-bold text-ink">{title}</h2>
       <div className="space-y-3 text-sm leading-relaxed text-ink-soft">{children}</div>
     </section>

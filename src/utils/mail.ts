@@ -29,7 +29,8 @@
 
 import { createAdminClient } from '@/utils/supabase/service'
 import { guideLines, type GuestGuide } from '@/lib/guest-guide'
-import { inviteMail, recoveryMail } from '@/lib/mail-templates'
+import { inviteMail, recoveryMail, simConfirmMail, simExistsMail } from '@/lib/mail-templates'
+import { SIMULATOR_NAME } from '@/lib/sim-account'
 import {
   advance, domainPattern, MAIL_COOLDOWN_SECONDS, MAIL_LOG_RETENTION_DAYS,
   recipientDomain, recipientHash, type DomainRow, type MailPurpose, type MailStatus,
@@ -562,6 +563,30 @@ export function sendRecoveryMail(m: {
   })
 }
 
+// ─── Simulator-Konto ─────────────────────────────────────────────────────────
+
+/** Bestätigung eines Simulator-Kontos — Adresse und (falls angekreuzt) Werbe-Einwilligung. */
+export function sendSimConfirmMail(m: { to: string; userId: string; url: string; marketing: boolean }): Promise<MailResult> {
+  return dispatch({
+    purpose: 'sim_confirm',
+    to: m.to,
+    fromName: 'RoSe',
+    ...simConfirmMail({ url: m.url, marketing: m.marketing, toolName: SIMULATOR_NAME }),
+    userId: m.userId,
+  })
+}
+
+/** Hinweis an eine schon bekannte Adresse — statt einer Fehlermeldung auf der öffentlichen Seite. */
+export function sendSimExistsMail(m: { to: string; userId: string }): Promise<MailResult> {
+  return dispatch({
+    purpose: 'sim_confirm',
+    to: m.to,
+    fromName: 'RoSe',
+    ...simExistsMail({ loginUrl: `${siteBase()}/login`, resetUrl: `${siteBase()}/passwort-vergessen`, toolName: SIMULATOR_NAME }),
+    userId: m.userId,
+  })
+}
+
 /**
  * Notbremse für die öffentliche Passwort-Seite: Supabase hatte dort ein
  * IP-Limit gratis, Resend nicht. Mehr als diese Zahl Passwort-Mails in einer
@@ -587,7 +612,7 @@ export function siteBase(): string {
 }
 
 /** Der Einlöse-Link für einen `token_hash` aus `generateLink`, Ziel `/auth/confirm`. */
-export function confirmUrl(tokenHash: string, type: 'invite' | 'recovery', next: string): string {
+export function confirmUrl(tokenHash: string, type: 'invite' | 'recovery' | 'signup' | 'magiclink', next: string): string {
   const p = new URLSearchParams({ token_hash: tokenHash, type, next })
   return `${siteBase()}/auth/confirm?${p.toString()}`
 }
