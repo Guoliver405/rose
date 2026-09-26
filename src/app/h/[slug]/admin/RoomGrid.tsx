@@ -35,8 +35,10 @@ export type RoomTileData = {
   /** Abreisetag ist heute: keine Routine, Reinigung erst nach dem Check-out. */
   departureToday: boolean
   guestSignal: 'none' | 'please_clean' | 'dnd'
-  /** „HH:MM", wenn der Gast die Reinigung aufgeschoben hat und die Zeit noch nicht erreicht ist. */
+  /** „HH:MM" — Reinigung aufgeschoben (Wunsch des Gastes oder „bitte später" an der Tür), Zeit noch nicht erreicht. */
   cleanDeferredUntil: string | null
+  /** An der Tür „heute nicht" — Routine für heute erledigt. */
+  declinedToday: boolean
   checkoutPending: boolean
   priority: boolean
   cleaningActive: boolean
@@ -175,8 +177,11 @@ function statusLabel(t: RoomTileData): string {
   if (t.checkoutPending) parts.push('Reinigung nach Check-out offen')
   if (t.guestSignal === 'please_clean') {
     parts.push(t.cleanDeferredUntil ? `Gast wünscht Reinigung ab ${t.cleanDeferredUntil}` : 'Gast wünscht Reinigung')
+  } else if (t.cleanDeferredUntil) {
+    parts.push(`Reinigung ab ${t.cleanDeferredUntil} (an der Tür vereinbart)`)
   }
   if (t.stayoverDue) parts.push('Routine-Reinigung fällig')
+  if (t.declinedToday) parts.push('Gast möchte heute keine Reinigung')
   if (t.guestSignal === 'dnd') parts.push('Bitte nicht stören')
   if (t.openOrders > 0) {
     parts.push(
@@ -309,7 +314,8 @@ function RoomTile({ room, onClick, anchor }: { room: RoomTileData; onClick: () =
           {room.occupied && room.departureToday && <RoomSymbol id="departure" />}
           {room.guestSignal === 'dnd' && <RoomSymbol id="dnd" />}
           {room.guestSignal === 'please_clean' && !room.cleanDeferredUntil && <RoomSymbol id="clean" />}
-          {room.guestSignal === 'please_clean' && room.cleanDeferredUntil && <RoomSymbol id="deferred" />}
+          {room.cleanDeferredUntil && <RoomSymbol id="deferred" />}
+          {room.declinedToday && <RoomSymbol id="declined" />}
           {room.stayoverDue && <RoomSymbol id="routine" />}
           {room.checkoutPending && <RoomSymbol id="checkout" />}
           {room.priority && <RoomSymbol id="priority" />}

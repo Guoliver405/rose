@@ -223,6 +223,7 @@ export async function setScopeActiveAction(
       .from('room_states')
       .update({
         guest_signal: 'none',
+        clean_not_before: null,
         checkout_pending: false,
         priority: false,
         cleaning_by: null,

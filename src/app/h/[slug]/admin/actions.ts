@@ -163,7 +163,7 @@ export async function checkInAction(
 
   // Stale Gast-Signale des Vorgängers sterben mit dem neuen Check-in.
   await admin.from('room_states')
-    .update({ guest_signal: 'none', ...auditFields(ctx.userId) })
+    .update({ guest_signal: 'none', clean_not_before: null, clean_declined_on: null, ...auditFields(ctx.userId) })
     .eq('room_id', roomId)
     .eq('hotel_id', ctx.hotelId)
 
@@ -266,7 +266,7 @@ export async function checkOutAction(
 
   await Promise.all([
     admin.from('room_states')
-      .update({ checkout_pending: true, guest_signal: 'none', ...auditFields(ctx.userId) })
+      .update({ checkout_pending: true, guest_signal: 'none', clean_not_before: null, clean_declined_on: null, ...auditFields(ctx.userId) })
       .eq('room_id', roomId)
       .eq('hotel_id', ctx.hotelId),
     // `done_at`/`done_by` tragen auch hier Zeitpunkt und Person — welcher
@@ -321,6 +321,7 @@ export async function markCleanedAction(slug: string, roomId: string): Promise<{
       checkout_pending: false,
       priority: false,
       guest_signal: state?.guest_signal === 'please_clean' ? 'none' : (state?.guest_signal ?? 'none'),
+      clean_not_before: null,
       cleaning_by: null,
       cleaning_started_at: null,
       ...auditFields(ctx.userId),

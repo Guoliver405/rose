@@ -1,4 +1,4 @@
-import { Ban, CheckCircle2, Clock, Loader2, Luggage, Sparkles } from 'lucide-react'
+import { Ban, CheckCircle2, Clock, Leaf, Loader2, Luggage, Sparkles } from 'lucide-react'
 import type { GuestCleaningStatus } from '@/lib/board'
 import { formatHHMM } from '@/lib/tz'
 
@@ -65,7 +65,9 @@ export default function GuestCleaningStatusCard({
             <span className={`${sub} text-ink-soft`}>
               {status.reason === 'guest'
                 ? 'Wie von dir gewünscht — vorher kommt niemand.'
-                : 'Das Haus reinigt täglich. Wenn du das heute nicht möchtest, tippe auf „Bitte nicht stören".'}
+                : status.reason === 'door'
+                  ? 'Wie an der Tür besprochen — vorher kommt niemand.'
+                  : 'Das Haus reinigt täglich. Wenn du das heute nicht brauchst, tippe auf „Heute keine Reinigung".'}
             </span>
           </span>
         </div>
@@ -87,6 +89,16 @@ export default function GuestCleaningStatusCard({
           <span>
             <span className={title}>Dein Zimmer wurde heute um {formatHHMM(status.at, timeZone)} Uhr gereinigt.</span>
             <span className={sub}>Brauchst du noch etwas? Dann tippe auf „Zimmer reinigen&quot;.</span>
+          </span>
+        </div>
+      )
+    case 'declined':
+      return (
+        <div className={box('neutral')} data-status="declined">
+          <Leaf className={`${icon} text-ink-muted`} />
+          <span>
+            <span className={title}>Heute keine Reinigung.</span>
+            <span className={`${sub} text-ink-soft`}>Danke — das spart Wasser und Waschmittel. Anders überlegt? Dann tippe auf „Zimmer reinigen&quot;.</span>
           </span>
         </div>
       )

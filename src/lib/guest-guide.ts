@@ -45,8 +45,9 @@
  *
  * **Nachhaltigkeit** ist ein eigener Punkt, und er ist ehrlich verzweigt:
  * Reinigt das Haus nur auf Wunsch, ist der Verzicht der Normalfall und wird
- * begründet. Läuft die Routine, ist „Bitte nicht stören" der Hebel, den der
- * Gast in der Hand hat. Ein Werbetext, der zum Verzicht aufruft, während
+ * begründet. Läuft die Routine, ist seit 26.09.2026 der Knopf „Heute keine
+ * Reinigung" der Hebel, den der Gast in der Hand hat (vorher „Bitte nicht
+ * stören" — das hält aber auch den Service fern und gilt über den Tag hinaus). Ein Werbetext, der zum Verzicht aufruft, während
  * ohnehin täglich gereinigt wird, wäre eine Lüge auf Papier.
  *
  * Ohne I/O: Policies rein, Text raus — testbar in `guest-guide.test.ts`.
@@ -219,7 +220,7 @@ const VORLAGEN: Record<GuideLang, Vorlage> = {
     window: (start, end) => ` Reinigungswünsche nimmt das Portal täglich von ${start} bis ${end} Uhr entgegen.`,
     defer: limit => ` Im Portal können Sie die Reinigung auch bis spätestens ${limit} Uhr aufschieben — vorher kommt dann niemand.`,
     sustainabilityRoutine:
-      'Sie brauchen heute keine Reinigung? Ein Tipp auf „Bitte nicht stören" spart Wasser, Waschmittel und Energie — und Ihnen die Störung.',
+      'Sie brauchen heute keine Reinigung? Ein Tipp auf „Heute keine Reinigung" im Portal spart Wasser, Waschmittel und Energie — morgen wird wieder gereinigt.',
     sustainabilityOnRequest:
       'Weniger Reinigung, weniger Verbrauch: Jede Reinigung, die nicht nötig ist, spart Wasser, Waschmittel und Energie. Deshalb kommen wir nur, wenn Sie es möchten.',
     accessLink:
@@ -272,7 +273,7 @@ const VORLAGEN: Record<GuideLang, Vorlage> = {
     window: (start, end) => ` The portal accepts cleaning requests daily from ${start} to ${end}.`,
     defer: limit => ` You can also postpone cleaning until ${limit} at the latest — nobody will come before then.`,
     sustainabilityRoutine:
-      'No cleaning needed today? One tap on “Do not disturb” saves water, detergent and energy — and spares you the interruption.',
+      'No cleaning needed today? One tap on “Heute keine Reinigung” (no cleaning today) in the portal saves water, detergent and energy — cleaning resumes tomorrow.',
     sustainabilityOnRequest:
       'Less cleaning, less consumption: every cleaning that isn’t needed saves water, detergent and energy. That is why we only come when you want us to.',
     accessLink:
@@ -325,7 +326,7 @@ const VORLAGEN: Record<GuideLang, Vorlage> = {
     window: (start, end) => ` El portal admite solicitudes de limpieza a diario de ${start} a ${end}.`,
     defer: limit => ` También puede aplazar la limpieza hasta las ${limit} como máximo: antes no vendrá nadie.`,
     sustainabilityRoutine:
-      '¿Hoy no necesita limpieza? Un toque en «No molestar» ahorra agua, detergente y energía, y a usted le evita la interrupción.',
+      '¿Hoy no necesita limpieza? Un toque en «Heute keine Reinigung» (hoy sin limpieza) en el portal ahorra agua, detergente y energía; mañana se vuelve a limpiar.',
     sustainabilityOnRequest:
       'Menos limpieza, menos consumo: cada limpieza que no hace falta ahorra agua, detergente y energía. Por eso solo vamos cuando usted lo desea.',
     accessLink:
@@ -378,7 +379,7 @@ const VORLAGEN: Record<GuideLang, Vorlage> = {
     window: (start, end) => ` Le portail accepte les demandes de ménage tous les jours de ${start} à ${end}.`,
     defer: limit => ` Vous pouvez aussi reporter le ménage jusqu’à ${limit} au plus tard : personne ne viendra avant.`,
     sustainabilityRoutine:
-      'Pas besoin de ménage aujourd’hui ? Un appui sur « Ne pas déranger » économise eau, lessive et énergie — et vous évite le dérangement.',
+      'Pas besoin de ménage aujourd’hui ? Un appui sur « Heute keine Reinigung » (pas de ménage aujourd’hui) dans le portail économise eau, lessive et énergie — le ménage reprend demain.',
     sustainabilityOnRequest:
       'Moins de ménage, moins de consommation : chaque ménage inutile économise de l’eau, de la lessive et de l’énergie. C’est pourquoi nous ne venons que si vous le souhaitez.',
     accessLink:

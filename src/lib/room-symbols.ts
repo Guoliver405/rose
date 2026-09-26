@@ -20,7 +20,7 @@
  */
 
 export type RoomSymbolId =
-  | 'deactivated' | 'occupied' | 'departure' | 'dnd' | 'clean' | 'deferred'
+  | 'deactivated' | 'occupied' | 'departure' | 'dnd' | 'clean' | 'deferred' | 'declined'
   | 'routine' | 'checkout' | 'priority' | 'cleaning' | 'orders' | 'urgent'
 
 export type RoomSymbol = {
@@ -68,7 +68,12 @@ export const ROOM_SYMBOLS: Record<RoomSymbolId, RoomSymbol> = {
   },
   deferred: {
     label: 'Reinigung ab HH:MM',
-    text: 'Der Gast wünscht Reinigung, aber nicht vor einer Uhrzeit. Bis dahin gilt das Zimmer als nicht offen; zur Uhrzeit wechselt es von selbst in „Gast wünscht Reinigung".',
+    text: 'Nicht vor einer Uhrzeit: Der Gast hat es beim Reinigungswunsch so gewählt, oder er hat der Reinigungskraft an der Tür „bitte später" gesagt. Bis dahin gilt das Zimmer als nicht offen, für alle Kräfte; zur Uhrzeit ist es von selbst wieder offen.',
+    className: 'text-ink-soft',
+  },
+  declined: {
+    label: 'Heute keine Reinigung',
+    text: 'Der Gast verzichtet heute — per Knopf im Portal oder an der Tür zur Reinigungskraft gesagt. Die Routine setzt heute aus, als Reinigung gezählt wird es nicht; morgen gilt sie wieder. Tippt der Gast doch „Zimmer reinigen", ist das Zimmer sofort wieder offen.',
     className: 'text-ink-soft',
   },
   routine: {

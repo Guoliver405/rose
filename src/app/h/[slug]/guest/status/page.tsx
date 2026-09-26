@@ -4,7 +4,7 @@ import { requireHotelBySlug } from '@/utils/hotel'
 import { createAdminClient } from '@/utils/supabase/service'
 import {
   clampStaleMinutes, cleanDeferOptions, guestCleaningStatus, isWithinCleaningWindow, parseCleanDefer,
-  parseCleaningWindow, parseStayoverPolicy, stayoverDueTime, todayStartIso,
+  parseCleaningWindow, parseStayoverPolicy, stayoverDueTime, todayStartIso, isDeclinedToday,
 } from '@/lib/board'
 import { formatHHMM, parseTimeZone } from '@/lib/tz'
 import { guestLogoutAction } from '@/app/guest/actions'
@@ -74,6 +74,7 @@ export default async function GuestStatusPage({
   const status = guestCleaningStatus({
     state: {
       guest_signal: ctx.guestSignal, priority: ctx.priority, clean_not_before: ctx.cleanNotBefore,
+      clean_declined_on: ctx.cleanDeclinedOn,
       cleaning_by: ctx.cleaningActive ? 'x' : null, cleaning_started_at: ctx.cleaningStartedAt,
     },
     staleMinutes: clampStaleMinutes(ctx.policies.cleaningStaleMinutes),
@@ -146,6 +147,11 @@ export default async function GuestStatusPage({
             ? formatHHMM(new Date(ctx.cleanNotBefore), tz)
             : null
         }
+        // „Heute keine Reinigung" nur, wo es etwas abzuwählen gibt: bei
+        // täglicher Routine. Reinigt das Haus auf Wunsch, ist Nicht-Anfordern
+        // bereits der Verzicht.
+        offerSkip={stayover.enabled}
+        skipToday={isDeclinedToday(ctx.cleanDeclinedOn, now, tz)}
       />
 
       <GuestServicesPanel services={guestServices} links={guestLinks} orders={guestOrders} />

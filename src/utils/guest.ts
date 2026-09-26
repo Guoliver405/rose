@@ -21,6 +21,8 @@ export type GuestContext = {
   guestSignal: 'none' | 'please_clean' | 'dnd'
   /** „Frühestens ab" des aktiven Wunsches (ISO), sonst null. */
   cleanNotBefore: string | null
+  /** Verzicht für heute (`YYYY-MM-DD` vor Ort) — „Heute keine Reinigung". */
+  cleanDeclinedOn: string | null
   /** Rezeption hat die Reinigung priorisiert — für den Gast: „vorgesehen". */
   priority: boolean
   cleaningActive: boolean
@@ -53,7 +55,7 @@ export const getGuestContext = cache(async (): Promise<GuestContext | null> => {
   const { data: stay } = await admin
     .from('stays')
     .select(
-      'id, room_id, hotel_id, checked_in_at, expected_checkout, rooms(number, room_states(guest_signal, clean_not_before, priority, cleaning_by, cleaning_started_at)), hotels(name, slug, policies)',
+      'id, room_id, hotel_id, checked_in_at, expected_checkout, rooms(number, room_states(guest_signal, clean_not_before, clean_declined_on, priority, cleaning_by, cleaning_started_at)), hotels(name, slug, policies)',
     )
     .eq('session_token', token)
     .is('checked_out_at', null)
@@ -66,7 +68,7 @@ export const getGuestContext = cache(async (): Promise<GuestContext | null> => {
   type RoomEmbed = { number: string; room_states: unknown }
   type HotelEmbed = { name: string | null; slug: string; policies: unknown }
   type StateEmbed = {
-    guest_signal: string | null; clean_not_before: string | null; priority: boolean | null
+    guest_signal: string | null; clean_not_before: string | null; clean_declined_on: string | null; priority: boolean | null
     cleaning_by: string | null; cleaning_started_at: string | null
   }
   const room = one(stay.rooms as unknown as RoomEmbed | RoomEmbed[] | null)
@@ -83,6 +85,7 @@ export const getGuestContext = cache(async (): Promise<GuestContext | null> => {
     hotelSlug: hotel.slug,
     guestSignal: (state?.guest_signal ?? 'none') as GuestContext['guestSignal'],
     cleanNotBefore: state?.clean_not_before ?? null,
+    cleanDeclinedOn: state?.clean_declined_on ?? null,
     priority: Boolean(state?.priority),
     cleaningActive: Boolean(state?.cleaning_by),
     cleaningStartedAt: state?.cleaning_started_at ?? null,

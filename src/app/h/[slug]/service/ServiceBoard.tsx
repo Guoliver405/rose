@@ -10,9 +10,10 @@ import RoomSymbol from '@/components/RoomSymbol'
 import SlideAction from '@/components/SlideAction'
 import { ROOM_BARS, ROOM_RINGS } from '@/lib/room-symbols'
 import {
-  abortCleaningAction, enterFloorAction, finishCleaningAction,
+  abortCleaningAction, enterFloorAction, finishCleaningAction, guestAtDoorAction,
   leaveFloorAction, startCleaningAction,
 } from './actions'
+import type { DoorChoice } from '@/lib/board'
 
 export type BoardRoom = {
   id: string
@@ -23,8 +24,12 @@ export type BoardRoom = {
   /** Geplanter Abreisetag ist heute — keine Routine, Reinigung erst nach dem Check-out. */
   departureToday: boolean
   guestSignal: 'none' | 'please_clean' | 'dnd'
-  /** „HH:MM" — Gast wünscht Reinigung, aber erst ab dieser Uhrzeit (noch nicht erreicht). */
+  /** „HH:MM" — Reinigung erst ab dieser Uhrzeit: Wunsch des Gastes oder „bitte später" an der Tür. */
   cleanDeferredUntil: string | null
+  /** An der Tür „heute nicht" — Routine für heute erledigt. */
+  declinedToday: boolean
+  /** Die Kraft darf hier „Gast an der Tür" wählen (siehe `canAnswerAtDoor`). */
+  canAnswerAtDoor: boolean
   checkoutPending: boolean
   priority: boolean
   stayoverDue: boolean
@@ -67,7 +72,9 @@ function statusLabel(r: BoardRoom): string {
   if (r.priority) parts.push('Priorisiert')
   if (r.checkoutPending) parts.push('Ausgecheckt')
   if (r.guestSignal === 'please_clean') parts.push(r.cleanDeferredUntil ? `Reinigung ab ${r.cleanDeferredUntil}` : 'Reinigung gewünscht')
+  else if (r.cleanDeferredUntil) parts.push(`Reinigung ab ${r.cleanDeferredUntil}`)
   if (r.stayoverDue) parts.push('Routine fällig')
+  if (r.declinedToday) parts.push('Heute keine Reinigung')
   if (r.guestSignal === 'dnd') parts.push('Nicht stören')
   if (r.departureToday && !r.checkoutPending) parts.push('Abreise heute')
   if (parts.length === 0) parts.push(r.occupied ? 'Belegt' : 'Frei')
@@ -305,6 +312,7 @@ export default function ServiceBoard({
           onStart={() => run(() => startCleaningAction(selected.id))}
           onFinish={() => run(() => finishCleaningAction(selected.id), true)}
           onAbort={() => run(() => abortCleaningAction(selected.id), true)}
+          onDoor={choice => run(() => guestAtDoorAction(selected.id, choice), true)}
           onClose={() => setSelectedId(null)}
           error={error}
         />
@@ -402,7 +410,8 @@ function RoomTile({ room, onClick }: { room: BoardRoom; onClick: () => void }) {
           {room.departureToday && <RoomSymbol id="departure" size="md" aria-label="Abreise heute" />}
           {room.guestSignal === 'dnd' && <RoomSymbol id="dnd" size="md" />}
           {room.guestSignal === 'please_clean' && !room.cleanDeferredUntil && <RoomSymbol id="clean" size="md" />}
-          {room.guestSignal === 'please_clean' && room.cleanDeferredUntil && <RoomSymbol id="deferred" size="md" />}
+          {room.cleanDeferredUntil && <RoomSymbol id="deferred" size="md" />}
+          {room.declinedToday && <RoomSymbol id="declined" size="md" />}
           {room.stayoverDue && <RoomSymbol id="routine" size="md" />}
           {room.checkoutPending && <RoomSymbol id="checkout" size="md" />}
           {room.priority && <RoomSymbol id="priority" size="md" />}
@@ -423,7 +432,7 @@ function RoomTile({ room, onClick }: { room: BoardRoom; onClick: () => void }) {
 }
 
 function RoomDialog({
-  room, shift, myCleaningRoomId, pending, error, onStart, onFinish, onAbort, onClose,
+  room, shift, myCleaningRoomId, pending, error, onStart, onFinish, onAbort, onDoor, onClose,
 }: {
   room: BoardRoom
   shift: ShiftInfo
@@ -433,6 +442,7 @@ function RoomDialog({
   onStart: () => void
   onFinish: () => void
   onAbort: () => void
+  onDoor: (choice: DoorChoice) => void
   onClose: () => void
 }) {
   const mineActive = room.cleaningByMe && room.cleaningFresh
@@ -522,6 +532,30 @@ function RoomDialog({
             />
           )}
 
+          {/* Gast an der Tür: kein Start nötig — die Kraft steht davor. */}
+          {room.canAnswerAtDoor && shift.onShift && (
+            <div className="rounded-lg border border-edge bg-surface px-3 py-2.5">
+              <p className="mb-2 text-sm font-semibold text-ink-soft">Gast ist im Zimmer und möchte gerade nicht?</p>
+              <div className="grid grid-cols-3 gap-2">
+                {([['30', 'In 30 Min'], ['60', 'In 1 Std'], ['today', 'Heute nicht']] as [DoorChoice, string][]).map(([choice, label]) => (
+                  <button
+                    key={choice}
+                    type="button"
+                    disabled={pending}
+                    onClick={() => onDoor(choice)}
+                    className="rounded-lg border border-edge bg-surface-elevated px-2 py-2.5 text-sm font-bold text-ink hover:border-edge-strong disabled:opacity-50"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-ink-muted">
+                „Später“ nimmt das Zimmer bis dahin für alle vom Board. „Heute nicht“ erledigt es für heute —
+                wünscht der Gast doch noch Reinigung, tippt er im Portal.
+              </p>
+            </div>
+          )}
+
           {room.active && !room.cleaningFresh && !shift.onShift && (
             <p className="text-sm font-semibold text-ink-muted">
               Erst die Schicht beginnen, dann kannst du hier starten.
@@ -540,7 +574,19 @@ function RoomDialog({
             </p>
           )}
 
-          {!room.active && !room.cleaningFresh && room.guestSignal !== 'dnd' && (
+          {room.cleanDeferredUntil && !room.cleaningFresh && (
+            <p className="rounded-lg border border-edge bg-surface-sunken px-3 py-2 text-sm font-semibold text-ink-soft">
+              Reinigung erst ab {room.cleanDeferredUntil} Uhr — dann steht das Zimmer von selbst wieder offen.
+            </p>
+          )}
+
+          {room.declinedToday && !room.cleaningFresh && (
+            <p className="rounded-lg border border-edge bg-surface-sunken px-3 py-2 text-sm font-semibold text-ink-soft">
+              Der Gast möchte heute keine Reinigung.
+            </p>
+          )}
+
+          {!room.active && !room.cleaningFresh && room.guestSignal !== 'dnd' && !room.cleanDeferredUntil && !room.declinedToday && (
             <p className="text-sm font-semibold text-ink-muted">
               Für dieses Zimmer ist keine Reinigung offen.
             </p>

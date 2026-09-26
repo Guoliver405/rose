@@ -7,8 +7,10 @@ import { createAdminClient } from '@/utils/supabase/service'
 import { findHotelBySlug } from '@/utils/hotel'
 import { getGuestContext, GUEST_COOKIE } from '@/utils/guest'
 import { checkIpThrottle, currentIpHash, recordLoginFailure } from '@/utils/login-throttle'
-import { cleanDeferLimit, isWithinCleaningWindow, parseCleanDefer, parseCleaningWindow } from '@/lib/board'
-import { formatHHMM, parseTimeZone } from '@/lib/tz'
+import {
+  cleanDeferLimit, isWithinCleaningWindow, parseCleanDefer, parseCleaningWindow, parseStayoverPolicy,
+} from '@/lib/board'
+import { formatHHMM, parseTimeZone, zonedDateKey } from '@/lib/tz'
 import { throttleMessage } from '@/lib/login-throttle'
 
 /*
@@ -188,6 +190,8 @@ export async function setGuestSignalAction(
     .update({
       guest_signal: signal,
       clean_not_before: cleanNotBefore,
+      // Ein Wunsch hebt den Verzicht für heute auf.
+      ...(signal === 'please_clean' ? { clean_declined_on: null } : {}),
       last_updated_at: new Date().toISOString(),
       last_update_source: 'guest',
       last_updated_by: null,
@@ -265,4 +269,36 @@ export async function guestLogoutAction(): Promise<void> {
   const cookieStore = await cookies()
   cookieStore.set(GUEST_COOKIE, '', { maxAge: 0, path: '/' })
   redirect(ctx ? `/h/${ctx.hotelSlug}/guest` : '/guest')
+}
+
+/**
+ * „Heute keine Reinigung" (26.09.2026) — freundlicher als „Bitte nicht
+ * stören" und nicht dasselbe: DND heißt „niemand klopft" und gilt, bis der
+ * Gast es zurücknimmt; der Verzicht gilt nur heute und lässt alles andere
+ * (Service, Rezeption) unberührt. Nur in Häusern mit täglicher Routine — wo
+ * auf Wunsch gereinigt wird, ist Nicht-Anfordern bereits der Verzicht.
+ * Ein offener Reinigungswunsch wird dabei zurückgenommen.
+ */
+export async function setSkipTodayAction(skip: boolean): Promise<{ error?: string }> {
+  const ctx = await getGuestContext()
+  if (!ctx) return { error: 'Sitzung abgelaufen — bitte neu anmelden.' }
+  if (!parseStayoverPolicy(ctx.policies).enabled) return { error: 'Dieses Haus reinigt nur auf Wunsch.' }
+  const tz = parseTimeZone(ctx.policies)
+
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('room_states')
+    .update({
+      clean_declined_on: skip ? zonedDateKey(new Date(), tz) : null,
+      ...(skip && ctx.guestSignal === 'please_clean' ? { guest_signal: 'none', clean_not_before: null } : {}),
+      last_updated_at: new Date().toISOString(),
+      last_update_source: 'guest',
+      last_updated_by: null,
+    })
+    .eq('hotel_id', ctx.hotelId)
+    .eq('room_id', ctx.roomId)
+  if (error) return { error: 'Speichern fehlgeschlagen — bitte erneut versuchen.' }
+
+  revalidatePath(`/h/${ctx.hotelSlug}/guest/status`)
+  return {}
 }

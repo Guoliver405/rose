@@ -71,7 +71,7 @@ describe('Nachhaltigkeit', () => {
     // Zum Verzicht aufrufen, während ohnehin täglich gereinigt wird, wäre
     // eine Lüge auf Papier — der Hebel ist dann ein anderer.
     const g = buildGuestGuide({ stayoverAutoClean: true }, pinDeep)
-    expect(g.sustainability).toMatch(/Bitte nicht stören/)
+    expect(g.sustainability).toMatch(/Heute keine Reinigung/)
     expect(g.sustainability).not.toMatch(/nur, wenn Sie es möchten/)
   })
 

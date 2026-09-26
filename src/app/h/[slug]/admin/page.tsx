@@ -6,7 +6,7 @@ import { createAdminClient } from '@/utils/supabase/service'
 import { reapStaleCleanings } from '@/utils/stale-cleaning'
 import {
   clampStaleMinutes, isCleanDeferred, isCleaningFresh, isDepartureToday, isPresenceFresh, isStayoverDue,
-  parseStayoverPolicy, todayStartIso,
+  parseStayoverPolicy, todayStartIso, isDeclinedToday,
 } from '@/lib/board'
 import { formatHHMM, parseTimeZone } from '@/lib/tz'
 import RoomGrid, { type FloorGroup, type RoomTileData } from './RoomGrid'
@@ -27,7 +27,7 @@ export default async function AdminOverviewPage({
   // mehr auf ein Haus ein: der Kontoinhaber sieht alle Häuser seines Kontos.
   const [{ data: rooms }, { data: states }, { data: stays }, { data: hotel }, { data: cleanedToday }, { data: openOrders }, { data: presence }, { data: profiles }] = await Promise.all([
     supabase.from('rooms').select('id, number, floor, building, deactivated_at').eq('hotel_id', ctx.hotelId).order('number'),
-    supabase.from('room_states').select('room_id, guest_signal, clean_not_before, checkout_pending, priority, cleaning_by, cleaning_started_at').eq('hotel_id', ctx.hotelId),
+    supabase.from('room_states').select('room_id, guest_signal, clean_not_before, clean_declined_on, checkout_pending, priority, cleaning_by, cleaning_started_at').eq('hotel_id', ctx.hotelId),
     supabase.from('stays').select('id, room_id, pin, access_mode, checked_in_at, expected_checkout').eq('hotel_id', ctx.hotelId).is('checked_out_at', null),
     supabase.from('hotels').select('policies').eq('id', ctx.hotelId).maybeSingle(),
     supabase.from('staff_log').select('room_id').eq('hotel_id', ctx.hotelId).eq('kind', 'clean_done').gte('at', todayStartIso(new Date(), parseTimeZone(ctx.policies))),
@@ -99,9 +99,13 @@ export default async function AdminOverviewPage({
         guestSignal,
         cleanedToday: cleanedRoomsToday.has(r.id),
         expectedCheckout: stay?.expected_checkout ?? null,
+        cleanNotBefore: state?.clean_not_before ?? null,
+        cleanDeclinedOn: state?.clean_declined_on ?? null,
         now,
         timeZone: tz,
       }),
+      declinedToday: Boolean(stay) && guestSignal !== 'please_clean'
+        && isDeclinedToday(state?.clean_declined_on, now, tz) && !cleanedRoomsToday.has(r.id),
     }
   })
 

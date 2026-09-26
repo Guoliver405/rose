@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { formatHHMM, parseTimeZone } from '@/lib/tz'
+import { formatHHMM, parseTimeZone, zonedDateKey } from '@/lib/tz'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/utils/supabase/service'
 import { getMaidContext, type MaidContext } from '@/utils/maid-auth'
@@ -11,8 +11,8 @@ import { parseStaffTracking } from '@/lib/staff-tracking'
 import { randomUUID } from 'node:crypto'
 import { deriveShiftState, type ShiftState } from '@/lib/shift'
 import {
-  clampStaleMinutes, isCleanDeferred, isCleaningFresh, isRoomActive, isStayoverDue,
-  parseStayoverPolicy, todayStartIso,
+  DOOR_DEFER_MINUTES, canAnswerAtDoor, clampStaleMinutes, doorDeferUntil, isCleanDeferred,
+  isCleaningFresh, isRoomActive, isStayoverDue, parseStayoverPolicy, todayStartIso, type DoorChoice,
 } from '@/lib/board'
 
 type ActionResult = { error?: string }
@@ -82,6 +82,43 @@ async function findMyCleaningRoom(
   if (!data) return null
   const staleMinutes = clampStaleMinutes(ctx.policies.cleaningStaleMinutes)
   return isCleaningFresh(data, staleMinutes) ? data.room_id : null
+}
+
+/** Belegung und Routine-Fälligkeit eines Zimmers — dieselbe Ableitung wie im Board-Loader. */
+async function loadRoutine(
+  admin: SupabaseClient,
+  ctx: MaidContext,
+  roomId: string,
+  state: { guest_signal: 'none' | 'please_clean' | 'dnd'; clean_not_before: string | null; clean_declined_on: string | null },
+): Promise<{ occupied: boolean; stayoverDue: boolean }> {
+  const tz = parseTimeZone(ctx.policies)
+  const [{ data: stay }, { data: handled }] = await Promise.all([
+    admin
+      .from('stays')
+      .select('checked_in_at, expected_checkout')
+      .eq('room_id', roomId)
+      .is('checked_out_at', null)
+      .maybeSingle(),
+    admin
+      .from('staff_log')
+      .select('id')
+      .eq('room_id', roomId)
+      .eq('kind', 'clean_done')
+      .gte('at', todayStartIso(new Date(), tz))
+      .limit(1),
+  ])
+  const stayoverDue = isStayoverDue({
+    policy: parseStayoverPolicy(ctx.policies),
+    occupied: Boolean(stay),
+    checkedInAt: stay?.checked_in_at ?? null,
+    guestSignal: state.guest_signal,
+    cleanedToday: (handled ?? []).length > 0,
+    expectedCheckout: stay?.expected_checkout ?? null,
+    cleanNotBefore: state.clean_not_before,
+    cleanDeclinedOn: state.clean_declined_on,
+    timeZone: tz,
+  })
+  return { occupied: Boolean(stay), stayoverDue }
 }
 
 // ── Schicht & Pause ──────────────────────────────────────────────────────────
@@ -255,7 +292,7 @@ export async function startCleaningAction(roomId: string): Promise<ActionResult>
 
   const { data: state } = await admin
     .from('room_states')
-    .select('room_id, hotel_id, guest_signal, clean_not_before, checkout_pending, priority, cleaning_by, cleaning_started_at')
+    .select('room_id, hotel_id, guest_signal, clean_not_before, clean_declined_on, checkout_pending, priority, cleaning_by, cleaning_started_at')
     .eq('room_id', roomId)
     .maybeSingle()
   if (!state || state.hotel_id !== ctx.hotelId) return { error: 'Zimmer nicht gefunden.' }
@@ -268,30 +305,7 @@ export async function startCleaningAction(roomId: string): Promise<ActionResult>
   // Neben den persistenten Signalen zählt auch die abgeleitete
   // Stayover-Routine als „offen" (gleiche Logik wie im Board-Loader).
   if (!isRoomActive(state)) {
-    const [{ data: stay }, { data: cleaned }] = await Promise.all([
-      admin
-        .from('stays')
-        .select('checked_in_at, expected_checkout')
-        .eq('room_id', roomId)
-        .is('checked_out_at', null)
-        .maybeSingle(),
-      admin
-        .from('staff_log')
-        .select('id')
-        .eq('room_id', roomId)
-        .eq('kind', 'clean_done')
-        .gte('at', todayStartIso(new Date(), tz))
-        .limit(1),
-    ])
-    const stayoverDue = isStayoverDue({
-      policy: parseStayoverPolicy(ctx.policies),
-      occupied: Boolean(stay),
-      checkedInAt: stay?.checked_in_at ?? null,
-      guestSignal: state.guest_signal,
-      cleanedToday: (cleaned ?? []).length > 0,
-      expectedCheckout: stay?.expected_checkout ?? null,
-      timeZone: tz,
-    })
+    const { stayoverDue } = await loadRoutine(admin, ctx, roomId, state)
     if (!stayoverDue) return { error: 'Für dieses Zimmer ist keine Reinigung offen.' }
   }
 
@@ -367,6 +381,7 @@ export async function finishCleaningAction(roomId: string): Promise<ActionResult
       priority: false,
       // DND bleibt stehen — aktives Gast-Signal, keine Reinigungs-Anforderung.
       guest_signal: state.guest_signal === 'please_clean' ? 'none' : state.guest_signal,
+      clean_not_before: null,
       cleaning_by: null,
       cleaning_started_at: null,
       ...auditFields(ctx.profileId),
@@ -413,6 +428,76 @@ export async function abortCleaningAction(roomId: string): Promise<ActionResult>
 
   const res = await logStitch(admin, ctx, 'clean_aborted', roomId, shift.sessionId)
   if (res.error) return res
+
+  revalidatePath(boardPath(ctx))
+  revalidatePath('/admin', 'layout')
+  return {}
+}
+
+/**
+ * Gast an der Tür (26.09.2026): Die Kraft klopft, der Gast ist da und will
+ * gerade keine Reinigung. „Später" (30 min / 1 h) schiebt das Zimmer auf
+ * beiden Boards bis zur Uhrzeit weg — für alle Kräfte, nicht nur für die, die
+ * geklopft hat. „Heute nicht" erledigt die Routine für heute, ohne als
+ * Reinigung zu zählen, und nimmt einen offenen Wunsch zurück; tippt der Gast
+ * später doch „Zimmer reinigen", gilt das wieder.
+ */
+export async function guestAtDoorAction(roomId: string, choice: DoorChoice): Promise<ActionResult> {
+  const ctx = await getMaidContext()
+  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (choice !== 'today' && !DOOR_DEFER_MINUTES.includes(Number(choice) as 30 | 60)) {
+    return { error: 'Unbekannte Auswahl.' }
+  }
+  const admin = createAdminClient()
+
+  const shift = await loadShiftState(admin, ctx.profileId)
+  if (!shift.onShift) return { error: 'Erst die Schicht beginnen.' }
+
+  const { data: state } = await admin
+    .from('room_states')
+    .select('room_id, hotel_id, guest_signal, clean_not_before, clean_declined_on, checkout_pending, priority, cleaning_by, cleaning_started_at')
+    .eq('room_id', roomId)
+    .maybeSingle()
+  if (!state || state.hotel_id !== ctx.hotelId) return { error: 'Zimmer nicht gefunden.' }
+
+  const staleMinutes = clampStaleMinutes(ctx.policies.cleaningStaleMinutes)
+  const { occupied, stayoverDue } = await loadRoutine(admin, ctx, roomId, state)
+  const allowed = canAnswerAtDoor({
+    occupied,
+    checkoutPending: state.checkout_pending,
+    guestSignal: state.guest_signal,
+    stayoverDue,
+    deferred: isCleanDeferred(state),
+    cleaningFresh: isCleaningFresh(state, staleMinutes),
+  })
+  if (!allowed) return { error: 'Für dieses Zimmer ist gerade keine Reinigung offen.' }
+
+  if (choice === 'today') {
+    const { error } = await admin
+      .from('room_states')
+      .update({
+        guest_signal: state.guest_signal === 'please_clean' ? 'none' : state.guest_signal,
+        clean_not_before: null,
+        // Derselbe Verzicht wie „Heute keine Reinigung" im Portal — gilt bis Mitternacht vor Ort.
+        clean_declined_on: zonedDateKey(new Date(), parseTimeZone(ctx.policies)),
+        ...auditFields(ctx.profileId),
+      })
+      .eq('room_id', roomId)
+      .eq('hotel_id', ctx.hotelId)
+    if (error) return { error: error.message }
+    const res = await logStitch(admin, ctx, 'clean_declined', roomId, shift.sessionId)
+    if (res.error) return res
+  } else {
+    const until = doorDeferUntil(Number(choice))
+    const { error } = await admin
+      .from('room_states')
+      .update({ clean_not_before: until.toISOString(), ...auditFields(ctx.profileId) })
+      .eq('room_id', roomId)
+      .eq('hotel_id', ctx.hotelId)
+    if (error) return { error: error.message }
+    const res = await logStitch(admin, ctx, 'clean_deferred', roomId, shift.sessionId)
+    if (res.error) return res
+  }
 
   revalidatePath(boardPath(ctx))
   revalidatePath('/admin', 'layout')

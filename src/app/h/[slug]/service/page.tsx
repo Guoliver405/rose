@@ -7,7 +7,7 @@ import { reapStaleCleanings } from '@/utils/stale-cleaning'
 import { deriveShiftState } from '@/lib/shift'
 import {
   clampStaleMinutes, isCleanDeferred, isCleaningFresh, isDepartureToday, isPresenceFresh, isRoomActive, isStayoverDue,
-  parseStayoverPolicy, roomScore, todayStartIso,
+  parseStayoverPolicy, roomScore, todayStartIso, canAnswerAtDoor, isDeclinedToday,
 } from '@/lib/board'
 import RealtimeListener from '@/components/RealtimeListener'
 import { formatHHMM, parseTimeZone } from '@/lib/tz'
@@ -38,7 +38,7 @@ export default async function ServiceBoardPage({
       admin.from('rooms').select('id, number, floor, building').eq('hotel_id', ctx.hotelId).is('deactivated_at', null),
       admin
         .from('room_states')
-        .select('room_id, guest_signal, clean_not_before, checkout_pending, priority, cleaning_by, cleaning_started_at')
+        .select('room_id, guest_signal, clean_not_before, clean_declined_on, checkout_pending, priority, cleaning_by, cleaning_started_at')
         .eq('hotel_id', ctx.hotelId),
       admin.from('stays').select('room_id, checked_in_at, expected_checkout').eq('hotel_id', ctx.hotelId).is('checked_out_at', null),
       admin.from('profiles').select('id, display_name').eq('hotel_id', ctx.hotelId),
@@ -106,6 +106,8 @@ export default async function ServiceBoardPage({
       guestSignal: signal,
       cleanedToday: cleanedRoomsToday.has(r.id),
       expectedCheckout: stay?.expected_checkout ?? null,
+      cleanNotBefore: state?.clean_not_before ?? null,
+      cleanDeclinedOn: state?.clean_declined_on ?? null,
       now,
       timeZone: tz,
     })
@@ -130,6 +132,11 @@ export default async function ServiceBoardPage({
       cleaningByMe: state?.cleaning_by === ctx.profileId,
       cleaningFresh,
       cleaningStale,
+      declinedToday: Boolean(stay) && signal !== 'please_clean'
+        && isDeclinedToday(state?.clean_declined_on, now, tz) && !cleanedRoomsToday.has(r.id),
+      canAnswerAtDoor: canAnswerAtDoor({
+        occupied: Boolean(stay), checkoutPending, guestSignal: signal, stayoverDue, deferred, cleaningFresh,
+      }),
     }
   })
 

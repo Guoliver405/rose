@@ -25,6 +25,8 @@ const KIND_LABEL: Record<string, string> = {
   clean_start: 'Reinigung gestartet',
   clean_done: 'Reinigung abgeschlossen',
   clean_aborted: 'Reinigung abgebrochen',
+  clean_deferred: 'Gast an der Tür: später',
+  clean_declined: 'Gast an der Tür: heute nicht',
 }
 
 /** „YYYY-MM-DD" oder null. */

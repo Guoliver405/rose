@@ -54,6 +54,8 @@ function transitionLabel(field: string, oldValue: string | null, newValue: strin
   if (field === 'priority') {
     return newValue === 'true' ? 'Reinigung priorisiert' : 'Priorisierung aufgehoben'
   }
+  // Das Aufheben passiert still (Wunsch, Check-in, Check-out) — nur das Setzen zählt.
+  if (field === 'clean_declined_on') return newValue ? 'Heute keine Reinigung gewünscht' : null
   return null
 }
 
@@ -61,6 +63,8 @@ const STITCH_LABEL: Record<string, string> = {
   clean_start: 'Reinigung gestartet',
   clean_done: 'Reinigung abgeschlossen',
   clean_aborted: 'Reinigung nicht abgeschlossen',
+  clean_deferred: 'An der Tür: Gast möchte später',
+  clean_declined: 'An der Tür: Gast möchte heute keine Reinigung',
 }
 
 export async function getRoomHistoryAction(slug: string, roomId: string): Promise<RoomHistoryResult> {
@@ -89,7 +93,7 @@ export async function getRoomHistoryAction(slug: string, roomId: string): Promis
         .from('staff_log')
         .select('kind, profile_id, at')
         .eq('room_id', roomId)
-        .in('kind', ['clean_start', 'clean_done', 'clean_aborted'])
+        .in('kind', ['clean_start', 'clean_done', 'clean_aborted', 'clean_deferred', 'clean_declined'])
         .gte('at', since)
         .order('at', { ascending: false })
         .limit(MAX_EVENTS),
@@ -145,6 +149,8 @@ export async function getRoomHistoryAction(slug: string, roomId: string): Promis
   const events: RoomHistoryEvent[] = []
 
   for (const t of transitions ?? []) {
+    // An der Tür schreibt die Kraft zusätzlich einen Stich — der trägt den Eintrag.
+    if (t.field === 'clean_declined_on' && t.source === 'maid') continue
     const label = transitionLabel(t.field, t.old_value, t.new_value)
     if (!label) continue
     events.push({

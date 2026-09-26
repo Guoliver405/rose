@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Clock, Moon, Sparkles } from 'lucide-react'
-import { setGuestSignalAction } from '@/app/guest/actions'
+import { Clock, Leaf, Moon, Sparkles } from 'lucide-react'
+import { setGuestSignalAction, setSkipTodayAction } from '@/app/guest/actions'
 
 type Signal = 'none' | 'please_clean' | 'dnd'
 
@@ -16,6 +16,8 @@ export default function GuestSignalPanel({
   deferOptions,
   deferLimit,
   cleanNotBefore,
+  offerSkip,
+  skipToday,
 }: {
   signal: Signal
   /** Reinigungs-Zeitfenster der Hotel-Policy — null, wenn die Regel aus ist. */
@@ -27,6 +29,10 @@ export default function GuestSignalPanel({
   deferLimit: string | null
   /** „11:00" — aktiver Wunsch gilt erst ab dieser Uhrzeit; null, wenn sofort. */
   cleanNotBefore: string | null
+  /** „Heute keine Reinigung" anbieten — nur bei täglicher Routine des Hauses. */
+  offerSkip: boolean
+  /** Verzicht für heute ist gesetzt. */
+  skipToday: boolean
 }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
@@ -56,6 +62,15 @@ export default function GuestSignalPanel({
       const res = await setGuestSignalAction(target, target === 'please_clean' ? defer : null)
       if (res.error) setError(res.error)
       else setDefer(null)
+      router.refresh()
+    })
+  }
+
+  function toggleSkip() {
+    setError(null)
+    startTransition(async () => {
+      const res = await setSkipTodayAction(!skipToday)
+      if (res.error) setError(res.error)
       router.refresh()
     })
   }
@@ -134,6 +149,29 @@ export default function GuestSignalPanel({
             Bitte melde dich in diesem Zeitraum noch einmal — oder wende dich an die Rezeption.
           </span>
         </p>
+      )}
+
+      {offerSkip && (
+        <button
+          type="button"
+          disabled={pending}
+          onClick={toggleSkip}
+          className={`flex items-center gap-3 rounded-2xl border-2 px-5 py-4 text-left disabled:opacity-50 ${
+            skipToday
+              ? 'border-positive bg-positive text-positive-foreground'
+              : 'border-edge bg-surface-elevated text-ink hover:border-edge-strong'
+          }`}
+        >
+          <Leaf className="h-6 w-6 shrink-0" />
+          <span>
+            <span className="block text-lg font-bold">Heute keine Reinigung</span>
+            <span className={`block text-sm ${skipToday ? '' : 'text-ink-muted'}`}>
+              {skipToday
+                ? 'Danke! Gilt nur für heute — erneut tippen zum Zurücknehmen'
+                : 'Spart Wasser und Waschmittel. Morgen wird wieder gereinigt'}
+            </span>
+          </span>
+        </button>
       )}
 
       <button

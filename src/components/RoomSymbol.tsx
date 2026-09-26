@@ -1,5 +1,5 @@
 import {
-  Ban, BedDouble, Clock, ConciergeBell, DoorOpen, Flag, Loader2, Luggage, PowerOff, RefreshCw,
+  Ban, BedDouble, Clock, ConciergeBell, DoorOpen, Flag, Leaf, Loader2, Luggage, PowerOff, RefreshCw,
   Sparkles, type LucideIcon,
 } from 'lucide-react'
 import { ROOM_SYMBOLS, type RoomSymbolId } from '@/lib/room-symbols'
@@ -18,6 +18,7 @@ const ICONS: Record<RoomSymbolId, LucideIcon> = {
   dnd: Ban,
   clean: Sparkles,
   deferred: Clock,
+  declined: Leaf,
   routine: RefreshCw,
   checkout: DoorOpen,
   priority: Flag,

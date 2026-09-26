@@ -4,6 +4,7 @@ import {
   cleanDeferOptions, dateKeyAfterNights, isCleanDeferred, isDepartureToday, isRoomActive, isStayoverDue,
   isWithinCleaningWindow, localDateKey, parseCleanDefer, parseCleaningWindow, stayoverDueTime,
   parseStayoverPolicy, PRESENCE_STALE_HOURS, roomScore, staleCleaningCutoff, guestCleaningStatus,
+  canAnswerAtDoor, doorDeferUntil, isDeclinedToday,
 } from './board'
 import { zonedInstant } from './tz'
 
@@ -93,8 +94,11 @@ describe('isRoomActive', () => {
     expect(isRoomActive(wish, new Date('2026-09-07T09:00:00Z'))).toBe(true)
     expect(roomScore(wish, false, new Date('2026-09-07T08:00:00Z'))).toBe(0)
     expect(roomScore(wish, false, new Date('2026-09-07T10:00:00Z'))).toBe(1)
-    // Ohne Wunsch zählt clean_not_before nicht — Altwert aus einem früheren Wunsch.
-    expect(isCleanDeferred({ ...base, clean_not_before: '2099-01-01T00:00:00Z' })).toBe(false)
+    // Seit 26.09.: auch ohne Wunsch — Aufschub an der Tür für die Routine.
+    expect(isCleanDeferred({ ...base, clean_not_before: '2099-01-01T00:00:00Z' })).toBe(true)
+    // Nie bei einer Abreise und nie bei „Nicht stören".
+    expect(isCleanDeferred({ ...base, checkout_pending: true, clean_not_before: '2099-01-01T00:00:00Z' })).toBe(false)
+    expect(isCleanDeferred({ ...base, guest_signal: 'dnd', clean_not_before: '2099-01-01T00:00:00Z' })).toBe(false)
   })
 })
 
@@ -372,5 +376,77 @@ describe('guestCleaningStatus', () => {
     expect(guestCleaningStatus({ ...base, now, checkedInAt: berlin(2026, 9, 16, 9).toISOString() })).toEqual({ kind: 'none', reason: 'first_day' })
     expect(guestCleaningStatus({ ...base, now, expectedCheckout: '2026-09-16' })).toEqual({ kind: 'none', reason: 'departure' })
     expect(guestCleaningStatus({ ...base, now, policy: policyOff })).toEqual({ kind: 'none', reason: 'no_routine' })
+  })
+})
+
+describe('Gast an der Tür', () => {
+  const policyOn = parseStayoverPolicy({ stayoverAutoClean: true, stayoverAutoCleanTime: '10:00', checkoutUntil: '11:00' })
+  const routine = (now: Date, extra: { cleanNotBefore?: string | null; cleanedToday?: boolean } = {}) => isStayoverDue({
+    policy: policyOn, occupied: true, checkedInAt: berlin(2026, 9, 25, 15).toISOString(), guestSignal: 'none',
+    cleanedToday: extra.cleanedToday ?? false, cleanNotBefore: extra.cleanNotBefore ?? null, now, timeZone: B,
+  })
+
+  it('„bitte später" hält die Routine bis zur Uhrzeit an, danach ist sie wieder fällig', () => {
+    const later = berlin(2026, 9, 26, 12, 30).toISOString()
+    expect(routine(berlin(2026, 9, 26, 11, 30))).toBe(true)
+    expect(routine(berlin(2026, 9, 26, 11, 30), { cleanNotBefore: later })).toBe(false)
+    expect(routine(berlin(2026, 9, 26, 12, 30), { cleanNotBefore: later })).toBe(true)
+  })
+
+  it('„heute keine Reinigung" hält die Routine nur heute an', () => {
+    const due = (now: Date, cleanDeclinedOn: string) => isStayoverDue({
+      policy: policyOn, occupied: true, checkedInAt: berlin(2026, 9, 24, 15).toISOString(), guestSignal: 'none',
+      cleanedToday: false, cleanDeclinedOn, now, timeZone: B,
+    })
+    expect(due(berlin(2026, 9, 26, 14), '2026-09-26')).toBe(false)
+    expect(due(berlin(2026, 9, 27, 14), '2026-09-26')).toBe(true) // verfällt um Mitternacht
+    // Kurz nach Mitternacht in Berlin ist es in UTC noch „gestern" — gerechnet wird vor Ort.
+    expect(isDeclinedToday('2026-09-27', berlin(2026, 9, 27, 0, 30), B)).toBe(true)
+  })
+
+  it('bietet die Antworten nur bei belegten Zimmern mit offener Routine oder offenem Wunsch an', () => {
+    const room = { occupied: true, checkoutPending: false, guestSignal: 'none' as const, stayoverDue: true, deferred: false, cleaningFresh: false }
+    expect(canAnswerAtDoor(room)).toBe(true)
+    expect(canAnswerAtDoor({ ...room, stayoverDue: false, guestSignal: 'please_clean' })).toBe(true)
+    expect(canAnswerAtDoor({ ...room, stayoverDue: false })).toBe(false) // nichts offen
+    expect(canAnswerAtDoor({ ...room, occupied: false })).toBe(false)
+    expect(canAnswerAtDoor({ ...room, checkoutPending: true })).toBe(false) // Abreise: kein Gast mehr
+    expect(canAnswerAtDoor({ ...room, guestSignal: 'dnd' })).toBe(false)
+    expect(canAnswerAtDoor({ ...room, cleaningFresh: true })).toBe(false)
+    expect(canAnswerAtDoor({ ...room, deferred: true })).toBe(false) // schon aufgeschoben
+  })
+
+  it('der Aufschub endet auf der vollen Minute', () => {
+    const now = new Date('2026-09-26T09:17:42.500Z')
+    expect(doorDeferUntil(30, now).toISOString()).toBe('2026-09-26T09:47:00.000Z')
+    expect(doorDeferUntil(60, now).toISOString()).toBe('2026-09-26T10:17:00.000Z')
+  })
+
+  describe('Gaststatus', () => {
+    const idle = { guest_signal: 'none' as const, priority: false, cleaning_by: null, cleaning_started_at: null, clean_not_before: null }
+    const base = {
+      state: idle, staleMinutes: 90, policy: policyOn, timeZone: B,
+      checkedInAt: berlin(2026, 9, 25, 15).toISOString(), expectedCheckout: null, lastCleanDoneAt: null,
+    }
+
+    it('„bitte später" nennt die Uhrzeit mit Grund „an der Tür"', () => {
+      const at = berlin(2026, 9, 26, 12, 30)
+      const state = { ...idle, clean_not_before: at.toISOString() }
+      expect(guestCleaningStatus({ ...base, state, now: berlin(2026, 9, 26, 11, 30) }))
+        .toEqual({ kind: 'scheduled_from', at, reason: 'door' })
+    })
+
+    it('„heute keine Reinigung" steht, bis gereinigt wird oder der Gast selbst wünscht', () => {
+      const now = berlin(2026, 9, 26, 13)
+      const skip = { ...idle, clean_declined_on: '2026-09-26' }
+      expect(guestCleaningStatus({ ...base, state: skip, now })).toEqual({ kind: 'declined' })
+      // Doch gereinigt: gereinigt gilt.
+      const done = berlin(2026, 9, 26, 12, 40).toISOString()
+      expect(guestCleaningStatus({ ...base, state: skip, now, lastCleanDoneAt: done }).kind).toBe('done')
+      // Wunsch geht vor (das Portal hebt den Verzicht ohnehin auf).
+      expect(guestCleaningStatus({ ...base, state: { ...skip, guest_signal: 'please_clean' as const }, now }).kind).toBe('scheduled')
+      // Gestern verzichtet zählt heute nicht.
+      expect(guestCleaningStatus({ ...base, state: { ...idle, clean_declined_on: '2026-09-25' }, now }).kind).toBe('scheduled')
+    })
   })
 })

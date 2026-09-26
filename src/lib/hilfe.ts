@@ -104,7 +104,7 @@ export type HilfeThema = {
 
 /** Die Symbole der Rezeptions-Kachel in Kachel-Reihenfolge. */
 const KACHEL_SYMBOLE: LegendeEintrag[] = (
-  ['occupied', 'departure', 'dnd', 'clean', 'deferred', 'routine', 'checkout', 'priority', 'cleaning', 'orders', 'urgent', 'deactivated'] as RoomSymbolId[]
+  ['occupied', 'departure', 'dnd', 'clean', 'deferred', 'declined', 'routine', 'checkout', 'priority', 'cleaning', 'orders', 'urgent', 'deactivated'] as RoomSymbolId[]
 ).map(id => ({ zeichen: { art: 'symbol', id } }))
 
 // ---------------------------------------------------------------------------
@@ -683,7 +683,7 @@ const REINIGUNG: HilfeThema = {
     {
       art: 'legende',
       titel: 'Die Symbole auf der Kachel',
-      eintraege: (['occupied', 'departure', 'dnd', 'clean', 'deferred', 'routine', 'checkout', 'priority', 'cleaning'] as RoomSymbolId[])
+      eintraege: (['occupied', 'departure', 'dnd', 'clean', 'deferred', 'declined', 'routine', 'checkout', 'priority', 'cleaning'] as RoomSymbolId[])
         .map(id => ({ zeichen: { art: 'symbol', id } })),
     },
     {
@@ -710,6 +710,10 @@ const REINIGUNG: HilfeThema = {
         {
           frage: 'Warum ist ein Zimmer ausgegraut?',
           antwort: 'Es ist nicht gesperrt, sondern ohne Auftrag: unbelegt, belegt ohne Wunsch, „Nicht stören" oder ein Wunsch, der erst später gilt („ab 11:00"). Sichtbar bleibt es, damit die Etage vollständig ist. Zur Uhrzeit wechselt ein aufgeschobener Wunsch von selbst nach offen.',
+        },
+        {
+          frage: 'Ich klopfe, der Gast ist da und möchte gerade keine Reinigung.',
+          antwort: 'Zimmer antippen, ohne zu starten: „In 30 Min", „In 1 Std" oder „Heute nicht". Später nimmt das Zimmer bis zur Uhrzeit vom Board — für alle Kolleginnen, niemand klopft zwischendurch noch einmal —, danach ist es von selbst wieder offen. „Heute nicht" erledigt das Zimmer für heute, ohne dass es als Reinigung zählt. Wünscht der Gast doch noch Reinigung, tippt er im Portal; dann ist es wieder offen.',
         },
         {
           frage: 'Der Abschluss wurde vergessen.',

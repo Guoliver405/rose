@@ -74,3 +74,44 @@ RoSe 705 px über zwei Spalten), Handy 375 px ohne Überlauf, keine
 Konsolenfehler. Den zeitlichen Ablauf der Schleife konnte Claude nicht live
 messen — das Browser-Fenster war ausgeblendet, `requestAnimationFrame` lief
 nicht; Knopffolge und Zustände geprüft.
+
+---
+
+# Nachtrag 26.09.2026: „Gast an der Tür" und „Heute keine Reinigung"
+
+Nebenbefund 1 oben ist gebaut. Entscheidungen im Gespräch:
+
+- **Drei Knöpfe an der Tür** im Zimmer-Dialog der Kraft, ohne Start:
+  „In 30 Min", „In 1 Std", „Heute nicht". „Später" setzt `clean_not_before`
+  (gilt jetzt auch für die Routine), das Zimmer ist bis dahin für alle Kräfte
+  nicht offen.
+- **Frage des Users: dem Gast „Heute keine Reinigung" anbieten?** Ja, aber nur
+  bei täglicher Routine. Es ist nicht dasselbe wie „Bitte nicht stören": DND =
+  Privatsphäre, gilt bis zur Rücknahme; Verzicht = nur heute. Daraus folgte
+  der Umbau vom reinen Stich auf **ein Feld für Gast und Kraft**:
+  `room_states.clean_declined_on` (Datum vor Ort, verfällt um Mitternacht).
+- **Papier:** Handout-Satz zeigt auf den neuen Knopf, der permanente Aushang
+  nicht (Policy-abhängig).
+- Migration `2026-09-26_heute_keine_reinigung.sql` (Spalte, zwei Stich-Arten,
+  Audit-Trigger) eingespielt und archiviert.
+
+## Nachweis (lokal gegen die Produktions-DB, Lotsen-Haus)
+
+Testgerüst per Skript: Test-Kraft mit Login-Karte (Anmeldung über
+`/service/auto/<token>`, keine Passwort-Eingabe), zwei Aufenthalte im
+Link-Verfahren seit gestern, Routine vorübergehend sofort fällig.
+
+- 201 „In 30 Min" → Kachel grau „Reinigung ab 02:30", DB `clean_not_before`
+  00:30 UTC, Stich `clean_deferred`; Gastseite „Reinigung heute ab 02:30 Uhr —
+  wie an der Tür besprochen".
+- 202 „Heute nicht" → Kachel grau „Heute keine Reinigung", Etage 1 offen statt 3;
+  Gastseite Karte „Heute keine Reinigung", grüner Knopf aktiv; Gast nimmt zurück,
+  setzt wieder, wünscht dann „Zimmer reinigen" → Board wieder offen.
+- Audit-Trigger: `clean_declined_on` mit Quelle maid/guest protokolliert.
+- **Nicht im Browser geprüft:** Rezeptions-Übersicht und Zimmer-Verlauf
+  (Management-Anmeldung braucht ein Passwort) — gleiche Ableitung, Typecheck
+  und Tests decken sie ab. Bitte beim nächsten Produktionslauf ansehen.
+- Testgerüst restlos entfernt (Aufenthalte, Kraft samt Auth-Konto, Stiche,
+  Verlaufszeilen, Policies des Lotsen-Hauses zurückgesetzt).
+
+`npm run verify` grün.

@@ -26,8 +26,25 @@ export type RoomStateLike = {
   priority: boolean
   cleaning_by: string | null
   cleaning_started_at: string | null
-  /** „Frühestens ab" des Gastes — zählt nur, solange guest_signal = please_clean. */
+  /**
+   * „Frühestens ab" — vom Gast (mit seinem Wunsch) oder seit 26.09.2026 von
+   * der Reinigungskraft an der Tür („bitte später"). Gilt für den Wunsch und
+   * die Routine gleichermaßen, nie für eine Abreise.
+   */
   clean_not_before?: string | null
+  /**
+   * Verzicht für heute (`YYYY-MM-DD` vor Ort): vom Gast im Portal („Heute
+   * keine Reinigung") oder von der Kraft an der Tür („heute nicht"). Gilt nur,
+   * solange das Datum heute ist — verfällt um Mitternacht von selbst.
+   */
+  clean_declined_on?: string | null
+}
+
+/** Verzicht gilt heute? Ein Datum von gestern ist erledigt, nicht gesperrt. */
+export function isDeclinedToday(
+  declinedOn: string | null | undefined, now: Date = new Date(), tz: string = DEFAULT_TIME_ZONE,
+): boolean {
+  return !!declinedOn && declinedOn.slice(0, 10) === zonedDateKey(now, tz)
 }
 
 /** cleaningStaleMinutes aus der Hotel-Policy, geclampt auf 5–24h. */
@@ -74,9 +91,15 @@ type ActiveLike = Pick<RoomStateLike, 'guest_signal' | 'checkout_pending' | 'pri
  * nicht aktiv und zeigt „Reinigung ab HH:MM". Reine Ableitung: kein Cron
  * kippt den Zustand, die Boards lesen ihn beim nächsten Rendern (Realtime
  * plus Poll-Fallback).
+ *
+ * Seit 26.09.2026 setzt auch die Reinigungskraft den Aufschub („Gast an der
+ * Tür: bitte später") — dann meist ohne Wunsch, für die Routine. Deshalb hängt
+ * er nicht mehr am Signal. Ausgenommen ist die Abreise: ein ausgechecktes
+ * Zimmer hat keinen Gast mehr, der „später" sagen könnte.
  */
 export function isCleanDeferred(state: ActiveLike, now: Date = new Date()): boolean {
-  if (state.guest_signal !== 'please_clean' || !state.clean_not_before) return false
+  if (state.checkout_pending || !state.clean_not_before) return false
+  if (state.guest_signal === 'dnd') return false
   return new Date(state.clean_not_before).getTime() > now.getTime()
 }
 
@@ -221,6 +244,10 @@ export function isStayoverDue(args: {
   cleanedToday: boolean
   /** Geplanter Abreisetag (`YYYY-MM-DD`), optional — am Abreisetag keine Routine. */
   expectedCheckout?: string | null
+  /** Aufschub an der Tür („bitte später") — bis dahin nicht fällig. */
+  cleanNotBefore?: string | null
+  /** Verzicht für heute (Gast im Portal oder an der Tür) — heute keine Routine. */
+  cleanDeclinedOn?: string | null
   now?: Date
   /** Zeitzone des Hauses — „heute" und die Uhrzeit gelten vor Ort. */
   timeZone?: string
@@ -235,6 +262,9 @@ export function isStayoverDue(args: {
   const tz = args.timeZone ?? DEFAULT_TIME_ZONE
   if (new Date(checkedInAt) >= zonedTodayStart(now, tz)) return false // erst ab der zweiten Nacht
   if (isDepartureToday(args.expectedCheckout, now, tz)) return false // Abreisetag: erst nach dem Check-out
+
+  if (args.cleanNotBefore && new Date(args.cleanNotBefore).getTime() > now.getTime()) return false
+  if (isDeclinedToday(args.cleanDeclinedOn, now, tz)) return false
 
   const due = stayoverDueTime(policy)
   return now.getTime() >= zonedTimeToday(now, tz, due.hour, due.minute).getTime()
@@ -325,15 +355,20 @@ export type GuestCleaningStatus =
   | { kind: 'in_progress' }
   /** Vorgesehen, das Team kommt — Wunsch, Priorität oder fällige Routine. */
   | { kind: 'scheduled' }
-  /** Vorgesehen ab einer Uhrzeit: „frühestens ab" des Gastes oder Routine vor der Fälligkeit. */
-  | { kind: 'scheduled_from'; at: Date; reason: 'guest' | 'routine' }
+  /**
+   * Vorgesehen ab einer Uhrzeit: „frühestens ab" des Gastes, an der Tür
+   * vereinbart („bitte später") oder Routine vor der Fälligkeit.
+   */
+  | { kind: 'scheduled_from'; at: Date; reason: 'guest' | 'door' | 'routine' }
   | { kind: 'dnd' }
   | { kind: 'done'; at: Date }
+  /** Heute keine Reinigung — vom Gast oder an der Tür, bis er doch noch wünscht. */
+  | { kind: 'declined' }
   /** Heute nichts vorgesehen — mit dem Grund, damit der Text ehrlich bleibt. */
   | { kind: 'none'; reason: 'first_day' | 'departure' | 'no_routine' }
 
 export function guestCleaningStatus(args: {
-  state: Pick<RoomStateLike, 'guest_signal' | 'priority' | 'cleaning_by' | 'cleaning_started_at' | 'clean_not_before'>
+  state: Pick<RoomStateLike, 'guest_signal' | 'priority' | 'cleaning_by' | 'cleaning_started_at' | 'clean_not_before' | 'clean_declined_on'>
   staleMinutes: number
   policy: StayoverPolicy
   checkedInAt: string
@@ -363,6 +398,8 @@ export function guestCleaningStatus(args: {
     const doneAt = new Date(args.lastCleanDoneAt)
     if (doneAt >= todayStart && doneAt >= checkedIn && doneAt <= now) return { kind: 'done', at: doneAt }
   }
+  // Verzicht erst nach „gereinigt": wer heute schon gereinigt wurde, erfährt das.
+  if (isDeclinedToday(state.clean_declined_on, now, tz)) return { kind: 'declined' }
 
   if (!policy.enabled) return { kind: 'none', reason: 'no_routine' }
   if (checkedIn >= todayStart) return { kind: 'none', reason: 'first_day' }
@@ -370,6 +407,43 @@ export function guestCleaningStatus(args: {
 
   const due = stayoverDueTime(policy)
   const dueAt = zonedTimeToday(now, tz, due.hour, due.minute)
+  const doorAt = state.clean_not_before ? new Date(state.clean_not_before) : null
+  if (doorAt && doorAt > now && doorAt >= dueAt) return { kind: 'scheduled_from', at: doorAt, reason: 'door' }
   if (now < dueAt) return { kind: 'scheduled_from', at: dueAt, reason: 'routine' }
   return { kind: 'scheduled' }
+}
+
+// ── Gast an der Tür (26.09.2026) ────────────────────────────────────────────
+//
+// Die Kraft klopft, der Gast ist da und will gerade keine Reinigung. Drei
+// Antworten: später (30 min, 1 h) oder heute nicht. Wann das geht, entscheidet
+// diese Funktion — Dialog und Server-Action fragen dieselbe.
+
+export const DOOR_DEFER_MINUTES = [30, 60] as const
+export type DoorChoice = '30' | '60' | 'today'
+
+/**
+ * Darf die Kraft hier „Gast an der Tür" wählen? Nur bei einem belegten Zimmer
+ * mit offener Routine oder offenem Wunsch — eine Abreise hat keinen Gast mehr,
+ * „Nicht stören" wird ohnehin nicht geklopft, und eine laufende Reinigung
+ * gehört dem Abschluss.
+ */
+export function canAnswerAtDoor(room: {
+  occupied: boolean
+  checkoutPending: boolean
+  guestSignal: 'none' | 'please_clean' | 'dnd'
+  stayoverDue: boolean
+  deferred: boolean
+  cleaningFresh: boolean
+}): boolean {
+  if (!room.occupied || room.checkoutPending || room.cleaningFresh || room.deferred) return false
+  if (room.guestSignal === 'dnd') return false
+  return room.guestSignal === 'please_clean' || room.stayoverDue
+}
+
+/** Zeitpunkt des Aufschubs „in X Minuten" — auf die volle Minute. */
+export function doorDeferUntil(minutes: number, now: Date = new Date()): Date {
+  const t = new Date(now.getTime() + minutes * 60_000)
+  t.setUTCSeconds(0, 0)
+  return t
 }
