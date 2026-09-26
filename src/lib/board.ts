@@ -116,13 +116,120 @@ export function isRoomActive(state: ActiveLike, now: Date = new Date()): boolean
 }
 
 /** Gewichteter Beitrag eines Zimmers zum Etagenscore (0 wenn nicht aktiv). */
-export function roomScore(state: ActiveLike, stayoverDue = false, now: Date = new Date()): number {
+export function roomScore(
+  state: ActiveLike, stayoverDue = false, now: Date = new Date(),
+  /** Gewicht einer Abreise — mit Check-out-Druck `departureWeight(…)`, sonst das Grundgewicht. */
+  departureW: number = SCORE_WEIGHTS.checkoutPending,
+): number {
   let score = 0
   if (state.priority) score += SCORE_WEIGHTS.priority
-  if (state.checkout_pending) score += SCORE_WEIGHTS.checkoutPending
+  if (state.checkout_pending) score += departureW
   if (state.guest_signal === 'please_clean' && !isCleanDeferred(state, now)) score += SCORE_WEIGHTS.pleaseClean
   else if (stayoverDue) score += SCORE_WEIGHTS.stayover // Routine: Gast vielleicht noch da
   return score
+}
+
+// ── Check-out-Druck (26.09.2026, Idee des Users) ─────────────────────────────
+//
+// Abreisen müssen bis zum Check-in bezugsfertig sein. Mit festen Gewichten
+// blieb eine einzelne Abreise hinter einer Etage voller Routine-Zimmer liegen
+// (8 × 1 schlägt 3), am Landing-Vergleich bis zu 3½ Stunden. Deshalb wächst das
+// Gewicht einer Abreise mit dem Druck — und nur dann: An ruhigen Tagen bleibt
+// die gewohnte Etagenlogik, an harten Abreisetagen ziehen Abreisen Kräfte an.
+
+/** Planwert einer Abreise-Reinigung (Minuten) — Grundlage des Drucks. */
+export const DEPARTURE_MINUTES = 30
+
+/**
+ * Druck: benötigte Zeit für die offenen Abreisen ÷ verfügbare Zeit bis zum
+ * Check-in. Unter 0,5 entspannt, um 1 knapp, über 1 nicht mehr zu schaffen.
+ * Relativ zu den Kräften: zehn offene Abreisen sind bei zwanzig Kräften kein
+ * Druck, bei zwei ein Notfall. Ist der Check-in schon da (oder fast), gilt die
+ * Restzeit als eine Viertelstunde — der Druck ist dann hoch, aber endlich.
+ */
+export function departurePressure(openDepartures: number, maidsOnShift: number, minutesToCheckin: number): number {
+  if (openDepartures <= 0) return 0
+  const needed = openDepartures * DEPARTURE_MINUTES
+  return needed / (Math.max(1, maidsOnShift) * Math.max(15, minutesToCheckin))
+}
+
+/** Obergrenze des Drucks für das Gewicht — darüber ändert sich an der Reihenfolge nichts mehr. */
+const PRESSURE_CAP = 2
+
+/**
+ * Gewicht einer offenen Abreise im Etagenscore: wächst exponentiell mit dem
+ * Druck (Grundgewicht × 2^(4 × Druck)): 0 → 3, 0,25 → 6, 0,5 → 12, 1 → 48.
+ * Zum Vergleich: eine Etage mit acht fälligen Routinen wiegt 8.
+ */
+export function departureWeight(pressure: number): number {
+  return SCORE_WEIGHTS.checkoutPending * 2 ** (4 * Math.min(Math.max(pressure, 0), PRESSURE_CAP))
+}
+
+/**
+ * Nach jedem Zimmer: Lohnt der Wechsel auf eine andere Etage? Nur wenn sie
+ * deutlich mehr wiegt als der Rest der eigenen Etage (beide Werte schon durch
+ * die Kräfte vor Ort geteilt) — sonst pendelt eine Kraft zwischen zwei Etagen.
+ * Die Kraft entscheidet, das Board empfiehlt.
+ */
+export const SWITCH_FACTOR = 2
+
+export function shouldSwitchFloor(currentFloorValue: number, bestOtherValue: number): boolean {
+  if (currentFloorValue <= 0) return bestOtherValue > 0
+  return bestOtherValue > SWITCH_FACTOR * currentFloorValue
+}
+
+/** Eine Etage, wie die Empfehlung sie sieht — Summen über die noch offenen Zimmer. */
+export type RecommendFloor = {
+  key: string
+  floor: number
+  building: string
+  /** Summe der Zimmer-Scores (mit Check-out-Druck), laufende Reinigungen nicht mitgezählt. */
+  score: number
+  /** Eingebuchte Kräfte auf der Etage (bei der eigenen Etage einschließlich mir). */
+  maids: number
+  openPriority: boolean
+  openDepartures: number
+}
+
+/** Wert einer fremden Etage: wo schon jemand arbeitet, lohnt der Weg weniger. */
+const otherValue = (f: RecommendFloor) => f.score / (f.maids + 1)
+
+/** Höherer Wert zuerst; bei Gleichstand die untere Etage, dann der Gebäudeteil — die Empfehlung springt nicht. */
+const byValue = (a: RecommendFloor, b: RecommendFloor) =>
+  otherValue(b) - otherValue(a) || a.floor - b.floor || a.building.localeCompare(b.building)
+
+/**
+ * „Als Nächstes" in der Etagen-Übersicht. **Priorität geht vor allem**: Hat
+ * irgendeine Etage ein offenes priorisiertes Zimmer, kommen nur solche Etagen
+ * in Frage — eine Entscheidung der Rezeption überstimmt keine Automatik,
+ * auch nicht der Check-out-Druck (26.09.2026). Sonst die höchste Summe.
+ */
+export function recommendFloor(floors: RecommendFloor[]): string | null {
+  const open = floors.filter(f => f.score > 0)
+  const pool = open.some(f => f.openPriority) ? open.filter(f => f.openPriority) : open
+  return [...pool].sort(byValue)[0]?.key ?? null
+}
+
+export type FloorSwitchHint = { key: string; reason: 'priority' | 'departures' | 'more' }
+
+/**
+ * Hinweis für die eingebuchte Kraft, nach jedem Zimmer neu gerechnet: Lohnt
+ * ein Wechsel? Ja, wenn anderswo eine Priorität offen ist und hier keine —
+ * oder wenn eine andere Etage deutlich mehr wiegt (`shouldSwitchFloor`), was
+ * an ruhigen Tagen kaum, an harten Abreisetagen oft passiert. Die Kraft
+ * entscheidet; das Board empfiehlt.
+ */
+export function floorSwitchHint(myKey: string, floors: RecommendFloor[]): FloorSwitchHint | null {
+  const mine = floors.find(f => f.key === myKey)
+  if (!mine || mine.openPriority) return null
+  const others = floors.filter(f => f.key !== myKey && f.score > 0)
+  const prio = others.filter(f => f.openPriority).sort(byValue)[0]
+  if (prio) return { key: prio.key, reason: 'priority' }
+  const best = [...others].sort(byValue)[0]
+  if (!best) return null
+  const myValue = mine.score / Math.max(1, mine.maids)
+  if (!shouldSwitchFloor(myValue, otherValue(best))) return null
+  return { key: best.key, reason: best.openDepartures > 0 ? 'departures' : 'more' }
 }
 
 // ── „Frühestens ab" — Grenze des Hauses ────────────────────────────────────
@@ -207,6 +314,21 @@ function parseHHMM(raw: unknown, fallbackHour: number, fallbackMinute: number): 
     hour: match ? Math.min(23, Math.max(0, Number(match[1]))) : fallbackHour,
     minute: match ? Math.min(59, Math.max(0, Number(match[2]))) : fallbackMinute,
   }
+}
+
+/**
+ * „Check-in ab" (`policies.checkinFrom`, Vorgabe 15:00, seit 26.09.2026) —
+ * bis dahin sollen die Abreisezimmer bezugsfertig sein; Grundlage des
+ * Check-out-Drucks.
+ */
+export function parseCheckinFrom(policies: Record<string, unknown>): { hour: number; minute: number } {
+  return parseHHMM(policies.checkinFrom, 15, 0)
+}
+
+/** Minuten von `now` bis zum Check-in heute (Ortszeit des Hauses); negativ, wenn er schon war. */
+export function minutesToCheckin(policies: Record<string, unknown>, now: Date, timeZone: string = DEFAULT_TIME_ZONE): number {
+  const { hour, minute } = parseCheckinFrom(policies)
+  return (zonedTimeToday(now, timeZone, hour, minute).getTime() - now.getTime()) / 60_000
 }
 
 export function parseStayoverPolicy(policies: Record<string, unknown>): StayoverPolicy {

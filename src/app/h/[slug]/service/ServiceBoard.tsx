@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  ChevronRight, Flag, Loader2, Siren, SlidersHorizontal, Target, Users, X,
+  ArrowRightLeft, ChevronRight, Flag, Loader2, Siren, SlidersHorizontal, Target, Users, X,
 } from 'lucide-react'
 import RoomSymbol from '@/components/RoomSymbol'
 import SlideAction from '@/components/SlideAction'
@@ -13,7 +13,7 @@ import {
   abortCleaningAction, enterFloorAction, finishCleaningAction, guestAtDoorAction,
   leaveFloorAction, startCleaningAction,
 } from './actions'
-import type { DoorChoice } from '@/lib/board'
+import { floorSwitchHint, recommendFloor, type DoorChoice, type RecommendFloor } from '@/lib/board'
 
 export type BoardRoom = {
   id: string
@@ -102,29 +102,21 @@ function openRooms(f: BoardFloor): BoardRoom[] {
 }
 
 /**
- * Empfohlene Etage: höchste noch offene Dringlichkeit, geteilt durch die
- * Kräfte vor Ort + 1 — wo schon jemand arbeitet, lohnt sich der Weg
- * weniger. Etagen ohne offene Arbeit fallen raus; bei Gleichstand gewinnt
- * die untere Etage, damit die Empfehlung nicht zwischen zwei Etagen springt.
+ * Etage, wie die Empfehlung sie sieht (Regeln in `board.ts`: Priorität zuerst,
+ * sonst höchste offene Dringlichkeit ÷ Kräfte vor Ort + 1; Abreisen wiegen je
+ * nach Check-out-Druck — das steckt schon im Zimmer-Score vom Server).
  */
-function pickRecommendedFloor(floors: BoardFloor[]): string | null {
-  let best: { key: string; weight: number; floor: number; building: string } | null = null
-
-  for (const f of floors) {
-    const open = openRooms(f)
-    if (open.length === 0) continue
-    const weight = open.reduce((sum, r) => sum + r.score, 0) / (f.maids.length + 1)
-    const candidate = { key: floorKey(f), weight, floor: f.floor, building: f.building ?? '' }
-
-    if (!best) { best = candidate; continue }
-    const diff = candidate.weight - best.weight
-    const tie = Math.abs(diff) < 1e-9
-    if (diff > 0 || (tie && (candidate.floor < best.floor ||
-      (candidate.floor === best.floor && candidate.building < best.building)))) {
-      best = candidate
-    }
+function toRecommend(f: BoardFloor): RecommendFloor {
+  const open = openRooms(f)
+  return {
+    key: floorKey(f),
+    floor: f.floor,
+    building: f.building ?? '',
+    score: open.reduce((sum, r) => sum + r.score, 0),
+    maids: f.maids.length,
+    openPriority: hasOpenPriority(f),
+    openDepartures: open.filter(r => r.checkoutPending).length,
   }
-  return best?.key ?? null
 }
 
 export default function ServiceBoard({
@@ -166,7 +158,11 @@ export default function ServiceBoard({
   const inProgressCount = allRooms.filter(r => r.cleaningFresh).length
   // Warn-Lampe: irgendwo im Haus ist ein Prio-Zimmer offen.
   const priorityFloors = floors.filter(hasOpenPriority)
-  const recommendedKey = pickRecommendedFloor(floors)
+  const recommendInput = floors.map(toRecommend)
+  const recommendedKey = recommendFloor(recommendInput)
+  // Nach jedem Zimmer: Lohnt ein Wechsel? Nicht während einer eigenen Reinigung.
+  const switchHint = myFloorKey && shift.onShift && !myCleaningRoomId ? floorSwitchHint(myFloorKey, recommendInput) : null
+  const switchFloor = switchHint ? floors.find(f => floorKey(f) === switchHint.key) ?? null : null
 
   function run(action: () => Promise<{ error?: string }>, closeDialog = false) {
     setError(null)
@@ -294,6 +290,32 @@ export default function ServiceBoard({
               </span>
             )}
           </h2>
+          {switchHint && switchFloor && (
+            <div
+              data-switch-hint={switchHint.reason}
+              className={`mb-3 flex flex-col gap-2 rounded-lg border px-3 py-2 ${
+                switchHint.reason === 'priority' ? 'border-accent-pill-edge bg-accent-tint'
+                  : switchHint.reason === 'departures' ? 'border-caution-tint-edge bg-caution-tint'
+                    : 'border-edge bg-surface-sunken'
+              }`}
+            >
+              <p className="flex items-center gap-2 text-sm font-semibold text-ink">
+                <ArrowRightLeft className="h-4 w-4 shrink-0" />
+                {switchHint.reason === 'priority'
+                  ? `Priorisiertes Zimmer auf ${floorLabel(switchFloor)} – wechseln?`
+                  : switchHint.reason === 'departures'
+                    ? `${toRecommend(switchFloor).openDepartures === 1 ? 'Eine Abreise wartet' : `${toRecommend(switchFloor).openDepartures} Abreisen warten`} auf ${floorLabel(switchFloor)} – der Check-in rückt näher. Wechseln?`
+                    : `Auf ${floorLabel(switchFloor)} ist deutlich mehr zu tun – wechseln?`}
+              </p>
+              <SlideAction
+                label={`Auf ${floorLabel(switchFloor)} wechseln`}
+                variant={switchHint.reason === 'priority' ? 'priority' : 'neutral'}
+                size="compact"
+                disabled={pending}
+                onConfirm={() => run(() => enterFloorAction(switchFloor.building, switchFloor.floor))}
+              />
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {myFloor.rooms.map(room => (
               <RoomTile key={room.id} room={room} onClick={() => { setError(null); setNotice(null); setSelectedId(room.id) }} />

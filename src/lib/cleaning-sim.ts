@@ -17,7 +17,10 @@
  *          „heute nicht" an der Tür stehen sofort für ALLE Kräfte auf dem Board.
  *          Die Etage wählt jede Kraft nach dem Etagenscore (Gewichte aus
  *          `board.ts`: ein Wunsch wiegt doppelt so viel wie eine Routine; geteilt
- *          durch Kräfte vor Ort + 1 wie auf dem Board).
+ *          durch Kräfte vor Ort + 1 wie auf dem Board). Abreisen wiegen je nach
+ *          Check-out-Druck (`departurePressure`/`departureWeight`), und nach
+ *          jedem Zimmer prüft das Board, ob eine andere Etage deutlich mehr wiegt
+ *          (`shouldSwitchFloor`) — dann wechselt die Kraft mitten in der Etage.
  *
  * Die GÄSTE sind in beiden Bildern dieselben (User, 26.09.2026 — „du hast die
  * wesentlichen Eigenschaften von RoSe gar nicht eingebaut"):
@@ -42,7 +45,7 @@
  * Reine Rechenlogik ohne I/O.
  */
 
-import { SCORE_WEIGHTS } from './board'
+import { SCORE_WEIGHTS, departurePressure, departureWeight, shouldSwitchFloor } from './board'
 import { ROI_DEFAULTS } from './roi'
 
 export type Coordination = 'paper' | 'rose'
@@ -306,6 +309,8 @@ export type Segment = {
   jobId?: string
   /** declined/knock: eine andere Kraft hatte hier schon eine Ablehnung bzw. ein „später" gehört. */
   again?: boolean
+  /** walk: Das Board holt die Kraft mitten aus ihrer Etage (Check-out-Druck); von dieser Etage. */
+  pulledFrom?: number
   start: number
   end: number
 }
@@ -426,9 +431,14 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
     }
     // Ein angezeigter Wunsch geht vor — dort geht das Klopfen nicht ins Leere.
     const signaled = (j: Job) => (signalKnown(j, m.i, t) ? 0 : 1)
-    const weightOf = (j: Job) => (j.kind === 'stay' && signalKnown(j, m.i, t) ? SCORE_WEIGHTS.pleaseClean : j.weight)
+    // Check-out-Druck: offene Abreisen, die das Board kennt, gegen die Zeit bis zum Check-in.
+    const openDeps = coord === 'rose' ? openNow.filter(j => j.kind === 'departure' && j.knownAt <= t).length : 0
+    const depWeight = departureWeight(departurePressure(openDeps, maids.filter(o => !o.finished).length, CHECKIN_AT - t))
+    const weightOf = (j: Job) => j.kind === 'departure' && coord === 'rose' ? depWeight
+      : j.kind === 'stay' && signalKnown(j, m.i, t) ? SCORE_WEIGHTS.pleaseClean : j.weight
 
     let pick: Job | undefined
+    let pulledFrom: number | undefined
     const urgent = openNow.filter(j => j.kind === 'complaint' && visible(j))
     if (urgent.length > 0) {
       // Sonderfall geht vor — sobald die Kraft davon weiß.
@@ -444,18 +454,20 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
       const avail = openNow.filter(visible)
       if (avail.length > 0) {
         const byUrgency = (a: Job, b: Job) => weightOf(b) - weightOf(a) || signaled(a) - signaled(b) || a.nr.localeCompare(b.nr)
-        const here = m.pos ? avail.filter(j => j.floor === m.pos!.floor) : []
-        if (here.length > 0) {
+        // Etagenscore ÷ (Kolleginnen vor Ort + 1), bei Gleichstand die untere Etage.
+        const score = new Map<number, number>()
+        for (const j of avail) score.set(j.floor, (score.get(j.floor) ?? 0) + weightOf(j))
+        const crowd = (f: number) => maids.filter(o => o !== m && !o.finished && o.pos?.floor === f).length
+        const value = (f: number) => (score.get(f) ?? 0) / (crowd(f) + 1)
+        const cur = m.pos?.floor
+        const best = [...score.keys()].filter(f => f !== cur).sort((a, b) => value(b) - value(a) || a - b)[0]
+        const here = cur !== undefined ? avail.filter(j => j.floor === cur) : []
+        // Die eigene Etage wird abgearbeitet — außer eine andere wiegt deutlich mehr.
+        if (here.length > 0 && (best === undefined || !shouldSwitchFloor(value(cur!), value(best)))) {
           pick = here.sort(byUrgency)[0]
         } else {
-          // Etagenscore ÷ (Kolleginnen vor Ort + 1), bei Gleichstand die untere Etage.
-          const score = new Map<number, number>()
-          for (const j of avail) score.set(j.floor, (score.get(j.floor) ?? 0) + weightOf(j))
-          const crowd = (f: number) => maids.filter(o => o !== m && !o.finished && o.pos?.floor === f).length
-          const floor = [...score.entries()]
-            .map(([f, s]) => [f, s / (crowd(f) + 1)] as const)
-            .sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0]
-          pick = avail.filter(j => j.floor === floor).sort(byUrgency)[0]
+          pick = avail.filter(j => j.floor === best).sort(byUrgency)[0]
+          if (here.length > 0) pulledFrom = cur
         }
       }
     }
@@ -497,7 +509,7 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
     // Hingehen — Schild, Klopfen, Ablehnung oder Reinigung.
     let now = t
     const w = walkTime(m.pos, pick.floor, pick.nr)
-    if (w > 0) segments.push({ maid: m.i, kind: 'walk', nr: pick.nr, start: now, end: now + w })
+    if (w > 0) segments.push({ maid: m.i, kind: 'walk', nr: pick.nr, start: now, end: now + w, pulledFrom })
     now += w
     m.pos = { floor: pick.floor, nr: pick.nr }
     if (pick.dndUntil > now) {
@@ -588,7 +600,7 @@ export function typicalSeed(days = TYPICAL_DAYS): number {
 }
 
 /** Ergebnis von `typicalSeed()` — der Test hält fest, dass beides übereinstimmt. */
-export const SCENARIO_SEED = 94
+export const SCENARIO_SEED = 10
 export const SCENARIO: Scenario = buildScenario(SCENARIO_SEED)
 
 // ── Zustand zu einem Zeitpunkt (für die Anzeige) ──────────────────────────
@@ -785,6 +797,11 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
     if (firstSignal) {
       out.push({ at: firstSignal.outAt, tone: 'good',
         text: `${firstSignal.nr} tippt beim Gehen „Zimmer reinigen“ – das Board zieht die nächste freie Kraft auf diese Etage.` })
+    }
+    const pull = res.segments.filter(g => g.kind === 'walk' && g.pulledFrom !== undefined).sort((a, b) => a.start - b.start)[0]
+    if (pull) {
+      out.push({ at: pull.start, tone: 'good',
+        text: `Abreisen drängen: Das Board holt Kraft ${MAID_LABELS[pull.maid]} von der ${pull.pulledFrom}. auf die ${floorOf(pull.nr)}. Etage – je enger es bis zum Check-in wird, desto stärker.` })
     }
     const firstLater = res.segments.filter(g => g.kind === 'knock').sort((a, b) => a.start - b.start)[0]
     if (firstLater) {

@@ -211,7 +211,9 @@ function kraefte(s: Board, etage: number): string[] {
 function empfohlen(s: Board): number | null {
   let beste: number | null = null
   let bester = 0
-  for (const e of [...ETAGEN].sort((a, b) => a - b)) {
+  // Wie das echte Board (`recommendFloor`): Ist irgendwo eine Priorität offen, kommen nur solche Etagen in Frage.
+  const mitPrio = ETAGEN.filter(e => s.zimmer.some(r => r.etage === e && r.prio && offen(r)))
+  for (const e of [...(mitPrio.length > 0 ? mitPrio : ETAGEN)].sort((a, b) => a - b)) {
     const summe = s.zimmer.filter(r => r.etage === e).reduce((n, r) => n + gewicht(r), 0)
     if (summe === 0) continue
     const wert = summe / (kraefte(s, e).length + 1)

@@ -5,6 +5,8 @@ import {
   isWithinCleaningWindow, localDateKey, parseCleanDefer, parseCleaningWindow, stayoverDueTime,
   parseStayoverPolicy, PRESENCE_STALE_HOURS, roomScore, staleCleaningCutoff, guestCleaningStatus,
   canAnswerAtDoor, doorDeferUntil, isDeclinedToday, isKnownStayover,
+  SCORE_WEIGHTS, departurePressure, departureWeight, shouldSwitchFloor,
+  recommendFloor, floorSwitchHint, parseCheckinFrom, minutesToCheckin, type RecommendFloor,
 } from './board'
 import { zonedInstant } from './tz'
 
@@ -479,5 +481,72 @@ describe('Routine bei bekanntem Abreisedatum', () => {
       .toEqual({ kind: 'scheduled_from', at: berlin(2026, 9, 26, 9), reason: 'routine' })
     expect(guestCleaningStatus({ ...base, expectedCheckout: null, now: berlin(2026, 9, 26, 8) }))
       .toEqual({ kind: 'scheduled_from', at: berlin(2026, 9, 26, 11), reason: 'routine' })
+  })
+})
+
+describe('Check-out-Druck', () => {
+  it('Druck: benötigte Zeit ÷ verfügbare Zeit, relativ zu den Kräften', () => {
+    expect(departurePressure(0, 5, 300)).toBe(0)
+    expect(departurePressure(10, 5, 120)).toBeCloseTo(0.5) // 300 min Arbeit, 600 min Kapazität
+    expect(departurePressure(10, 20, 120)).toBeCloseTo(0.125)
+    expect(departurePressure(10, 2, 120)).toBeCloseTo(1.25)
+    // Check-in erreicht: hoch, aber endlich
+    expect(Number.isFinite(departurePressure(3, 5, -30))).toBe(true)
+    expect(departurePressure(3, 5, -30)).toBeGreaterThan(departurePressure(3, 5, 60))
+  })
+
+  it('Gewicht wächst exponentiell und ist gedeckelt', () => {
+    expect(departureWeight(0)).toBe(SCORE_WEIGHTS.checkoutPending)
+    expect(departureWeight(0.25)).toBeCloseTo(6)
+    expect(departureWeight(0.5)).toBeCloseTo(12)
+    expect(departureWeight(1)).toBeCloseTo(48)
+    expect(departureWeight(50)).toBe(departureWeight(2))
+  })
+
+  it('Wechsel nur, wenn die andere Etage deutlich mehr wiegt', () => {
+    expect(shouldSwitchFloor(8, 12)).toBe(false)
+    expect(shouldSwitchFloor(8, 17)).toBe(true)
+    expect(shouldSwitchFloor(0, 1)).toBe(true)
+    expect(shouldSwitchFloor(0, 0)).toBe(false)
+  })
+})
+
+describe('Etagen-Empfehlung und Wechselhinweis', () => {
+  const f = (key: string, floor: number, score: number, extra: Partial<RecommendFloor> = {}): RecommendFloor =>
+    ({ key, floor, building: '', score, maids: 0, openPriority: false, openDepartures: 0, ...extra })
+
+  it('Empfehlung: höchster Wert, geteilt durch Kräfte vor Ort + 1; Gleichstand → untere Etage', () => {
+    expect(recommendFloor([f('a', 1, 4), f('b', 2, 6)])).toBe('b')
+    expect(recommendFloor([f('a', 1, 4), f('b', 2, 6, { maids: 1 })])).toBe('a')
+    expect(recommendFloor([f('a', 3, 4), f('b', 2, 4)])).toBe('b')
+    expect(recommendFloor([f('a', 1, 0)])).toBeNull()
+  })
+
+  it('Priorität geht vor — auch vor einer Abreise unter hohem Druck', () => {
+    expect(recommendFloor([f('abreisen', 1, 200, { openDepartures: 4 }), f('prio', 2, 4, { openPriority: true })])).toBe('prio')
+  })
+
+  it('Wechselhinweis: zur Priorität, wenn hier keine ist; sonst nur bei deutlich mehr Gewicht', () => {
+    expect(floorSwitchHint('mine', [f('mine', 1, 8, { maids: 1 }), f('prio', 2, 4, { openPriority: true })]))
+      .toEqual({ key: 'prio', reason: 'priority' })
+    expect(floorSwitchHint('mine', [f('mine', 1, 8, { maids: 1, openPriority: true }), f('prio', 2, 4, { openPriority: true })])).toBeNull()
+    // 12 gegen 8: nicht deutlich genug
+    expect(floorSwitchHint('mine', [f('mine', 1, 8, { maids: 1 }), f('b', 2, 12)])).toBeNull()
+    // Abreisen unter Druck: 48 gegen 8
+    expect(floorSwitchHint('mine', [f('mine', 1, 8, { maids: 1 }), f('b', 2, 48, { openDepartures: 1 })]))
+      .toEqual({ key: 'b', reason: 'departures' })
+    // Eigene Etage leer → jede Arbeit anderswo
+    expect(floorSwitchHint('mine', [f('mine', 1, 0, { maids: 1 }), f('b', 2, 1)])).toEqual({ key: 'b', reason: 'more' })
+  })
+
+  it('Check-in ab: Vorgabe 15:00, Minuten bis dahin in Ortszeit', () => {
+    expect(parseCheckinFrom({})).toEqual({ hour: 15, minute: 0 })
+    expect(parseCheckinFrom({ checkinFrom: '14:30' })).toEqual({ hour: 14, minute: 30 })
+    expect(minutesToCheckin({}, zonedInstant(B, 2026, 9, 26, 13, 0), B)).toBeCloseTo(120)
+    expect(minutesToCheckin({}, zonedInstant(B, 2026, 9, 26, 16, 0), B)).toBeCloseTo(-60)
+  })
+
+  it('roomScore nimmt das Abreise-Gewicht mit Druck', () => {
+    expect(roomScore({ guest_signal: 'none', checkout_pending: true, priority: false }, false, new Date(), 48)).toBe(48)
   })
 })

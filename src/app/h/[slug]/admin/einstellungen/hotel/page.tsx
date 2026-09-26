@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import { getAdminContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import { clampPinLength } from '@/lib/ids'
-import { clampStaleMinutes, parseCleanDefer, parseCleaningWindow, parseStayoverPolicy } from '@/lib/board'
+import { clampStaleMinutes, parseCheckinFrom, parseCleanDefer, parseCleaningWindow, parseStayoverPolicy } from '@/lib/board'
 import { listTimeZones, parseTimeZone } from '@/lib/tz'
 import { parseStaffTracking } from '@/lib/staff-tracking'
 import { logoUrlFor } from '@/utils/logo'
@@ -71,6 +71,7 @@ export default async function HotelSettingsPage({
           stayoverAutoClean: stayover.enabled,
           stayoverAutoCleanTime: `${String(stayover.hour).padStart(2, '0')}:${String(stayover.minute).padStart(2, '0')}`,
           checkoutUntil: `${String(stayover.checkoutHour).padStart(2, '0')}:${String(stayover.checkoutMinute).padStart(2, '0')}`,
+          checkinFrom: hhmm(parseCheckinFrom(policies).hour, parseCheckinFrom(policies).minute),
           cleanDeferEnabled: defer.enabled,
           cleanDeferUntil: hhmm(defer.hour, defer.minute),
           timeZone: parseTimeZone(policies),

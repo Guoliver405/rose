@@ -17,6 +17,8 @@ export type HotelSettingsInitial = {
   stayoverAutoCleanTime: string
   /** Check-out-Frist des Hauses (HH:MM) — Untergrenze der Routine-Reinigung. */
   checkoutUntil: string
+  /** Check-in ab (HH:MM) — bis dahin sollen Abreisen bezugsfertig sein; Grundlage des Check-out-Drucks. */
+  checkinFrom: string
   /** „Frühestens ab" im Gastportal: erlaubt, und bis wann (HH:MM). */
   cleanDeferEnabled: boolean
   cleanDeferUntil: string
@@ -191,6 +193,19 @@ function SettingsForm({ hotelSlug, initial, onDiscard }: {
           Check-out gereinigt und danach noch einmal. Trägt die Rezeption beim Check-in ein
           Abreisedatum ein, gilt an den Tagen davor schon die Routine-Zeit, und am Abreisetag
           setzt die Routine ganz aus.
+        </p>
+        <label data-lotse="regeln.checkin" className="mt-3 flex items-center gap-2 border-t border-edge pt-3 text-xs font-semibold text-ink-muted">
+          Check-in ab
+          <input
+            name="checkinFrom" type="time" required
+            defaultValue={initial.checkinFrom} className={inputClass}
+          />
+          Uhr
+        </label>
+        <p className="mt-1 text-xs text-ink-muted">
+          Bis dahin sollen die Abreisezimmer bezugsfertig sein. Das Reinigungsboard rechnet damit:
+          Je mehr Abreisen noch offen sind und je näher der Check-in rückt, desto stärker zieht es
+          Reinigungskräfte auf die Etagen mit Abreisen — an ruhigen Tagen kaum, an vollen deutlich.
         </p>
       </div>
 

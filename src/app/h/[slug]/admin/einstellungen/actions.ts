@@ -47,6 +47,10 @@ export async function updateSettingsAction(slug: string, formData: FormData): Pr
   if (!/^\d{1,2}:\d{2}$/.test(checkoutRaw)) {
     return { error: 'Check-out-Zeit fehlt (z. B. 11:00).' }
   }
+  const checkinRaw = ((formData.get('checkinFrom') as string) ?? '').trim()
+  if (!/^\d{1,2}:\d{2}$/.test(checkinRaw)) {
+    return { error: 'Check-in-Zeit fehlt (z. B. 15:00).' }
+  }
   const cleanDeferEnabled = formData.get('cleanDeferEnabled') === 'on'
   const deferRaw = ((formData.get('cleanDeferUntil') as string) ?? '').trim()
   if (cleanDeferEnabled && !/^\d{1,2}:\d{2}$/.test(deferRaw)) {
@@ -87,6 +91,7 @@ export async function updateSettingsAction(slug: string, formData: FormData): Pr
     stayoverAutoClean,
     ...(timeRaw ? { stayoverAutoCleanTime: timeRaw } : {}),
     checkoutUntil: checkoutRaw,
+    checkinFrom: checkinRaw,
     cleanDeferEnabled,
     ...(deferRaw ? { cleanDeferUntil: deferRaw } : {}),
     timeZone,

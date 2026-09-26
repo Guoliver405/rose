@@ -375,6 +375,10 @@ const REGELN: HilfeThema = {
           antwort: 'Es ist die Untergrenze der Routine, solange RoSe nicht weiß, ob der Gast heute abreist: Dann wird die Routine nicht vor dieser Zeit fällig — wer danach noch da ist, bleibt. Sonst würde ein Abreisezimmer vor dem Check-out gereinigt und danach noch einmal. Ist beim Aufenthalt ein Abreisedatum eingetragen, gilt an den Tagen davor schon die Routine-Zeit. Das Handout nennt die Zeit ohne Abreisedatum.',
         },
         {
+          frage: 'Wozu dient „Check-in ab"?',
+          antwort: 'Bis dahin sollen die Abreisezimmer bezugsfertig sein. Das Reinigungsboard vergleicht die Arbeit, die in offenen Abreisen steckt, mit der Zeit bis zum Check-in und den Kräften in der Schicht. Je enger es wird, desto stärker empfiehlt es die Etagen mit Abreisen und schlägt auch mitten in einer Etage den Wechsel vor. Eine Priorität der Rezeption geht immer vor.',
+        },
+        {
           frage: '„Frühestens ab" — wie wähle ich die Grenze?',
           antwort: 'Der Gast wünscht Reinigung, aber nicht vor einer Uhrzeit. Er darf volle Stunden zwischen jetzt und Ihrer Grenze wählen. Legen Sie sie so, dass die Reinigung danach noch in die Schicht fällt: Housekeeping bis 15:00 heißt Grenze 13:00. Ausschalten geht auch, dann gibt es im Portal nur „jetzt".',
         },
@@ -696,7 +700,7 @@ const REINIGUNG: HilfeThema = {
         { zeichen: { art: 'pille', text: 'Pause', ton: 'caution' }, label: 'Pause', text: 'Zeitraum innerhalb der Schicht; Reinigungen sind währenddessen nicht möglich. Das Pausenende setzt die Schicht fort.' },
         { zeichen: { art: 'pille', text: 'Sonstige Reinigung', ton: 'attention' }, label: 'Sonstige Reinigung', text: 'Flure, Lobby, Frühstücksraum — Arbeit ohne Zimmer, als Zeitraum. Der Start einer Zimmerreinigung beendet sie von selbst.' },
         { zeichen: { art: 'pille', text: 'Nicht auf Schicht', ton: 'neutral' }, label: 'Nicht auf Schicht', text: 'Vor dem Schichtbeginn und nach dem Schichtende. Das Board zeigt nichts zu tun.' },
-        { zeichen: { art: 'pille', text: 'Als Nächstes', ton: 'action', icon: 'target', blink: true }, label: 'Als Nächstes', text: 'Empfehlung, keine Zuweisung: die Etage mit der höchsten offenen Dringlichkeit, geteilt durch die Kräfte vor Ort plus eins. Bei Gleichstand die untere Etage, damit sie nicht springt.' },
+        { zeichen: { art: 'pille', text: 'Als Nächstes', ton: 'action', icon: 'target', blink: true }, label: 'Als Nächstes', text: 'Empfehlung, keine Zuweisung: zuerst eine Etage mit offener Priorität, sonst die mit der höchsten offenen Dringlichkeit, geteilt durch die Kräfte vor Ort plus eins. Abreisen wiegen mehr, je näher der Check-in rückt. Bei Gleichstand die untere Etage, damit sie nicht springt.' },
         { zeichen: { art: 'pille', text: 'Prio', ton: 'accent', icon: 'flag' }, label: 'Prio an der Etage', text: 'Auf der Etage wartet eine priorisierte Reinigung; die Zeile blinkt violett.' },
         { zeichen: { art: 'pille', text: 'Prio offen', ton: 'accent', icon: 'siren', blink: true }, label: 'Warnlampe in der Statusleiste', text: 'Auf einer anderen Etage ist eine Priorität offen. Reine Anzeige, kein Knopf — die Etage wechselt man über den Slider.' },
         { zeichen: { art: 'icon', id: 'users', ton: 'neutral' }, label: 'Namen an der Etage', text: 'Kolleginnen, die dort eingebucht sind. Wer sich einbucht, steht auch in der Rezeptions-Übersicht.' },
@@ -720,6 +724,10 @@ const REINIGUNG: HilfeThema = {
         {
           frage: 'Der Abschluss wurde vergessen.',
           antwort: 'Nach dem vom Haus eingestellten Zeitlimit (Vorgabe 90 Minuten) geht das Zimmer von selbst wieder auf offen; im Verlauf steht „Reinigung nicht abgeschlossen (Zeitlimit, Name)". Die Reinigung zählt in der Auswertung dann nicht als geleistet — deshalb lohnt der Abschluss-Slider immer.',
+        },
+        {
+          frage: 'Das Board schlägt vor, die Etage zu wechseln — warum?',
+          antwort: 'Nach jedem Zimmer rechnet das Board neu. Es schlägt einen Wechsel vor, wenn anderswo ein priorisiertes Zimmer offen ist, oder wenn eine andere Etage deutlich mehr wiegt als der Rest der eigenen — meist, weil dort Abreisen warten und der Check-in näher rückt. An ruhigen Tagen kommt das selten vor. Entscheiden tut die Kraft: Der Wechsel ist ein Slider, wer bleibt, macht einfach weiter.',
         },
         {
           frage: 'Warum erst eine Etage wählen?',

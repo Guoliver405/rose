@@ -188,6 +188,11 @@ const REGELN: Lotse = {
       body: 'RoSe kennt kein Buchungssystem. Ohne eingetragenes Abreisedatum wird die Routine deshalb nicht vor dieser Zeit fällig: Wer danach noch im Zimmer ist, bleibt. Sonst würde ein Abreisezimmer vor dem Check-out gereinigt — und danach gleich noch einmal. Trägt die Rezeption beim Check-in ein Abreisedatum ein, gilt an den Tagen davor schon die Routine-Zeit.',
     },
     {
+      path: '/einstellungen/hotel', anchor: 'regeln.checkin',
+      title: '„Check-in ab" treibt die Abreisen an',
+      body: 'Bis dahin sollen die Abreisezimmer bezugsfertig sein. Das Reinigungsboard rechnet mit dieser Zeit: Je mehr Abreisen noch offen sind und je näher der Check-in rückt, desto stärker zieht es Kräfte auf die Etagen mit Abreisen — an ruhigen Tagen kaum, an vollen deutlich. Eine Priorität der Rezeption geht trotzdem immer vor.',
+    },
+    {
       path: '/einstellungen/hotel', anchor: 'regeln.aufschub',
       title: '„Frühestens ab" — der Gast schiebt auf',
       body: 'Der Gast wünscht Reinigung, aber nicht vor einer Uhrzeit, weil er ausschlafen will. Bis dahin gilt das Zimmer auf dem Board als nicht offen. Wählen Sie die Grenze so, dass die Reinigung danach noch in die Schicht fällt: Housekeeping bis 15:00 heißt 13:00.',
@@ -514,7 +519,7 @@ const REINIGUNG: Lotse = {
     {
       path: '/hilfe/reinigung', anchor: 'reinigung.naechstes', sim: 'etagen',
       title: '„Als Nächstes" ist eine Empfehlung, keine Zuweisung',
-      body: 'Genau eine Etage trägt das Abzeichen: die höchste noch offene Dringlichkeit, geteilt durch die Zahl der Kräfte vor Ort plus eins. Wo schon jemand arbeitet, lohnt der Weg weniger. Etagen ohne offene Arbeit fallen heraus, bei Gleichstand gewinnt die untere — damit die Empfehlung nicht hin und her springt.',
+      body: 'Genau eine Etage trägt das Abzeichen. Ist irgendwo ein priorisiertes Zimmer offen, ist es diese Etage — eine Entscheidung der Rezeption geht vor. Sonst die höchste noch offene Dringlichkeit, geteilt durch die Zahl der Kräfte vor Ort plus eins; Abreisen wiegen dabei mehr, je näher der Check-in rückt. Wo schon jemand arbeitet, lohnt der Weg weniger. Etagen ohne offene Arbeit fallen heraus, bei Gleichstand gewinnt die untere — damit die Empfehlung nicht hin und her springt.',
     },
     {
       path: '/hilfe/reinigung', anchor: 'reinigung.kacheln', sim: 'zimmer',

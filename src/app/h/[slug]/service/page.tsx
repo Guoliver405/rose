@@ -8,6 +8,7 @@ import { deriveShiftState } from '@/lib/shift'
 import {
   clampStaleMinutes, isCleanDeferred, isCleaningFresh, isDepartureToday, isPresenceFresh, isRoomActive, isStayoverDue,
   parseStayoverPolicy, roomScore, todayStartIso, canAnswerAtDoor, isDeclinedToday,
+  departurePressure, departureWeight, minutesToCheckin,
 } from '@/lib/board'
 import RealtimeListener from '@/components/RealtimeListener'
 import { formatHHMM, parseTimeZone } from '@/lib/tz'
@@ -32,7 +33,7 @@ export default async function ServiceBoardPage({
   // nicht („Kollegin in Zimmer X" braucht aber deren Namen) und stays gar
   // nicht. Auth ist über getMaidContext() bereits geprüft.
   const admin = createAdminClient()
-  const [{ data: rooms }, { data: states }, { data: stays }, { data: maids }, { data: myLog }, { data: cleanedToday }, { data: presence }] =
+  const [{ data: rooms }, { data: states }, { data: stays }, { data: maids }, { data: myLog }, { data: cleanedToday }, { data: presence }, { data: shiftsToday }] =
     await Promise.all([
       // Zimmer außer Betrieb gehören nicht aufs Reinigungsboard.
       admin.from('rooms').select('id, number, floor, building').eq('hotel_id', ctx.hotelId).is('deactivated_at', null),
@@ -56,6 +57,14 @@ export default async function ServiceBoardPage({
         .eq('kind', 'clean_done')
         .gte('at', todayStartIso(new Date(), parseTimeZone(ctx.policies))),
       admin.from('maid_presence').select('profile_id, building, floor, entered_at').eq('hotel_id', ctx.hotelId),
+      // Schichten von heute — für den Check-out-Druck. Gepaart über session_id,
+      // das auch im Team-Modus erhalten bleibt (profile_id kann dort fehlen).
+      admin
+        .from('staff_log')
+        .select('kind, session_id')
+        .eq('hotel_id', ctx.hotelId)
+        .in('kind', ['shift_start', 'shift_end'])
+        .gte('at', todayStartIso(new Date(), parseTimeZone(ctx.policies))),
     ])
 
   const staleMinutes = clampStaleMinutes(ctx.policies.cleaningStaleMinutes)
@@ -72,6 +81,19 @@ export default async function ServiceBoardPage({
   const stateByRoom = new Map((states ?? []).map(s => [s.room_id, s]))
   const stayByRoom = new Map((stays ?? []).map(s => [s.room_id, s]))
   const nameByProfile = new Map((maids ?? []).map(p => [p.id, p.display_name]))
+
+  // Check-out-Druck (26.09.2026): offene Abreisen gegen Kräfte × Zeit bis zum
+  // Check-in. Kräfte = heute begonnene Schichten ohne Ende; mindestens die
+  // gerade eingebuchten (falls ein alter Stich ohne session_id fehlt).
+  const ended = new Set((shiftsToday ?? []).filter(s => s.kind === 'shift_end').map(s => s.session_id))
+  const openShifts = (shiftsToday ?? []).filter(s => s.kind === 'shift_start' && s.session_id && !ended.has(s.session_id)).length
+  const presentNow = (presence ?? []).filter(p => isPresenceFresh(p.entered_at, now)).length
+  const roomIds = new Set((rooms ?? []).map(r => r.id))
+  const openDepartures = (states ?? [])
+    .filter(s => roomIds.has(s.room_id) && s.checkout_pending && !isCleaningFresh(s, staleMinutes, now)).length
+  const departureW = departureWeight(departurePressure(
+    openDepartures, Math.max(openShifts, presentNow), minutesToCheckin(ctx.policies, now, tz),
+  ))
 
   const myCleaningRoomId =
     (states ?? []).find(
@@ -125,7 +147,7 @@ export default async function ServiceBoardPage({
       priority,
       stayoverDue,
       active: isRoomActive(stateLike, now) || stayoverDue,
-      score: roomScore(stateLike, stayoverDue, now),
+      score: roomScore(stateLike, stayoverDue, now, departureW),
       cleaningByName: state?.cleaning_by
         ? (nameByProfile.get(state.cleaning_by) ?? 'Kollegin')
         : null,
