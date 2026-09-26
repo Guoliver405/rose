@@ -10,6 +10,7 @@ import { parseStaffTracking } from '@/lib/staff-tracking'
 import { logoUrlFor } from '@/utils/logo'
 import HotelSettingsForm from '../HotelSettingsForm'
 import LogoForm from '../LogoForm'
+import { UnsavedChanges } from '@/components/unsaved/UnsavedChanges'
 
 export default async function HotelSettingsPage({
   params,
@@ -35,6 +36,7 @@ export default async function HotelSettingsPage({
 
   return (
     <div className="flex max-w-2xl flex-col gap-5">
+      <UnsavedChanges>
       <div className="flex items-center gap-3">
         <Link
           href={`/h/${ctx.hotelSlug}/admin/einstellungen`}
@@ -79,6 +81,7 @@ export default async function HotelSettingsPage({
           cleaningWindowEnd: cleaningWindow.end,
         }}
       />
+      </UnsavedChanges>
     </div>
   )
 }

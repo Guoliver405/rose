@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, DoorOpen, KeyRound, Loader2, QrCode, TriangleAlert } from 'lucide-react'
 import { updateGuestAccessModeAction } from './actions'
 import type { GuestAccessMode } from '@/lib/guest-access'
+import { useUnsavedSection } from '@/components/unsaved/UnsavedChanges'
 
 type Karte = {
   mode: GuestAccessMode
@@ -95,7 +96,7 @@ export default function GastzugangForm({
   bestaetigt: boolean
 }) {
   const router = useRouter()
-  const [pending, startTransition] = useTransition()
+  const [pending, setPending] = useState(false)
   const [gewaehlt, setGewaehlt] = useState<GuestAccessMode>(initial)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -103,12 +104,13 @@ export default function GastzugangForm({
   const geaendert = gewaehlt !== initial
   const speicherbar = geaendert || !bestaetigt
 
-  function speichern() {
+  async function speichern(): Promise<boolean> {
     setError(null)
     setNotice(null)
-    startTransition(async () => {
+    setPending(true)
+    try {
       const res = await updateGuestAccessModeAction(hotelSlug, gewaehlt)
-      if (res.error) { setError(res.error); return }
+      if (res.error) { setError(res.error); return false }
       setNotice(
         !geaendert
           ? 'Verfahren bestätigt — es gilt weiter wie bisher. Der Punkt „Gäste-Zugang" in der Einrichtung ist damit erledigt.'
@@ -117,8 +119,16 @@ export default function GastzugangForm({
           : 'Umgestellt auf feste Zimmer-QR-Codes. Ab dem nächsten Check-in gilt wieder QR im Zimmer plus PIN — die Aushänge finden Sie jetzt unten auf dieser Seite.',
       )
       router.refresh()
-    })
+      return true
+    } finally {
+      setPending(false)
+    }
   }
+
+  // Die Leiste zählt nur echte Änderungen; das bloße Bestätigen der Vorgabe bleibt am Knopf unten.
+  useUnsavedSection('gastzugang', {
+    label: 'Verfahren', dirty: geaendert, save: speichern, discard: () => setGewaehlt(initial),
+  })
 
   return (
     <div className="flex flex-col gap-4">
@@ -255,7 +265,7 @@ export default function GastzugangForm({
       <button
         data-lotse="gastzugang.speichern"
         type="button"
-        onClick={speichern}
+        onClick={() => void speichern()}
         disabled={pending || !speicherbar}
         className="flex w-fit items-center gap-1.5 rounded-lg bg-action px-4 py-2.5 font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
       >

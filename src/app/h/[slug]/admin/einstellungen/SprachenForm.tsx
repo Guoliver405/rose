@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Languages, Loader2 } from 'lucide-react'
 import { GUIDE_LANGS, sheetLanguageLabel, type GuideLang } from '@/lib/guest-guide'
 import { updateSheetLanguagesAction } from './actions'
+import { useUnsavedSection } from '@/components/unsaved/UnsavedChanges'
 
 /**
  * Sprachen der gedruckten Blätter — und der Zugangs-Mail.
@@ -27,7 +28,7 @@ export default function SprachenForm({
   zweite: GuideLang | null
 }) {
   const router = useRouter()
-  const [pending, startTransition] = useTransition()
+  const [pending, setPending] = useState(false)
   const [erste, setErste] = useState<GuideLang>(ersteInitial)
   const [zweite, setZweite] = useState<string>(zweiteInitial ?? '')
   const [error, setError] = useState<string | null>(null)
@@ -35,16 +36,27 @@ export default function SprachenForm({
 
   const geaendert = erste !== ersteInitial || zweite !== (zweiteInitial ?? '')
 
-  function speichern() {
+  async function speichern(): Promise<boolean> {
     setError(null)
     setNotice(null)
-    startTransition(async () => {
+    setPending(true)
+    try {
       const res = await updateSheetLanguagesAction(hotelSlug, erste, zweite)
-      if (res.error) { setError(res.error); return }
+      if (res.error) { setError(res.error); return false }
       setNotice('Gespeichert. Die nächsten Ausdrucke und Mails folgen der neuen Wahl.')
       router.refresh()
-    })
+      return true
+    } finally {
+      setPending(false)
+    }
   }
+
+  useUnsavedSection('sprachen', {
+    label: 'Sprachen',
+    dirty: geaendert,
+    save: speichern,
+    discard: () => { setErste(ersteInitial); setZweite(zweiteInitial ?? '') },
+  })
 
   return (
     <div className="flex flex-col gap-3">
@@ -80,7 +92,7 @@ export default function SprachenForm({
 
         <button
           type="button"
-          onClick={speichern}
+          onClick={() => void speichern()}
           disabled={pending || !geaendert}
           className="flex items-center gap-1.5 rounded-lg bg-action px-4 py-2.5 font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
         >

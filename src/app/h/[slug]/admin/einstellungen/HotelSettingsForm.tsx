@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { CheckCircle2, Loader2, Save } from 'lucide-react'
+import { useUnsavedSection } from '@/components/unsaved/UnsavedChanges'
 import { updateSettingsAction } from './actions'
 
 export type HotelSettingsInitial = {
@@ -30,32 +31,70 @@ export type HotelSettingsInitial = {
   staffTracking: 'person' | 'team'
 }
 
-export default function HotelSettingsForm({ hotelSlug, initial }: { hotelSlug: string; initial: HotelSettingsInitial }) {
-  const [pending, startTransition] = useTransition()
+/** Stand des Formulars als Vergleichswert — auch für ein- und ausgeblendete Felder. */
+function snapshot(form: HTMLFormElement): string {
+  return JSON.stringify([...new FormData(form).entries()].map(([k, v]) => [k, String(v)]))
+}
+
+export default function HotelSettingsForm(props: { hotelSlug: string; initial: HotelSettingsInitial }) {
+  // „Verwerfen" baut das Formular neu aus dem gespeicherten Stand auf — nach
+  // dem Speichern kommt `initial` über revalidatePath frisch vom Server.
+  const [version, setVersion] = useState(0)
+  return <SettingsForm key={version} {...props} onDiscard={() => setVersion(v => v + 1)} />
+}
+
+function SettingsForm({ hotelSlug, initial, onDiscard }: {
+  hotelSlug: string; initial: HotelSettingsInitial; onDiscard: () => void
+}) {
+  const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  const [dirty, setDirty] = useState(false)
   const [stayoverOn, setStayoverOn] = useState(initial.stayoverAutoClean)
   const [deferOn, setDeferOn] = useState(initial.cleanDeferEnabled)
   const [windowOn, setWindowOn] = useState(initial.cleaningWindowEnabled)
   const [slug, setSlug] = useState(initial.slug)
+  const formRef = useRef<HTMLFormElement>(null)
+  const baseline = useRef('')
+  useEffect(() => { if (formRef.current) baseline.current = snapshot(formRef.current) }, [])
 
-  function submitSettings(form: HTMLFormElement) {
-    setError(null)
-    setSaved(false)
-    const formData = new FormData(form)
-    startTransition(async () => {
-      const res = await updateSettingsAction(hotelSlug, formData)
-      if (res.error) { setError(res.error); return }
-      setSaved(true)
+  // Nach dem Rendern vergleichen: ein Häkchen blendet Felder erst im nächsten Commit ein.
+  function checkDirty() {
+    requestAnimationFrame(() => {
+      if (formRef.current) setDirty(snapshot(formRef.current) !== baseline.current)
     })
   }
+
+  async function save(): Promise<boolean> {
+    const form = formRef.current
+    if (!form) return false
+    if (!form.reportValidity()) return false
+    setError(null)
+    setSaved(false)
+    setPending(true)
+    try {
+      const res = await updateSettingsAction(hotelSlug, new FormData(form))
+      if (res?.error) { setError(res.error); return false }
+      baseline.current = snapshot(form)
+      setDirty(false)
+      setSaved(true)
+      return true
+    } finally {
+      setPending(false)
+    }
+  }
+
+  useUnsavedSection('regeln', { label: 'Hotel & Regeln', dirty, save, discard: onDiscard })
 
   const inputClass =
     'rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink placeholder:text-ink-muted focus:border-action focus:outline-none'
 
   return (
     <form
-      onSubmit={e => { e.preventDefault(); submitSettings(e.currentTarget) }}
+      ref={formRef}
+      onSubmit={e => { e.preventDefault(); void save() }}
+      onInput={() => { setSaved(false); checkDirty() }}
+      onChange={checkDirty}
       className="flex flex-col gap-4 rounded-xl border border-edge bg-surface p-4"
     >
       <h2 className="text-sm font-bold text-ink-soft">Hotel &amp; Regeln</h2>

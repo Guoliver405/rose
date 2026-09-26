@@ -7,6 +7,7 @@ import { parseGuestAccessMode } from '@/lib/guest-access'
 import { parseSheetLanguages } from '@/lib/guest-guide'
 import GastzugangForm from '../GastzugangForm'
 import SprachenForm from '../SprachenForm'
+import { UnsavedChanges } from '@/components/unsaved/UnsavedChanges'
 
 /**
  * Gäste-Zugang — welcher Weg führt ins Gäste-Portal?
@@ -39,6 +40,7 @@ export default async function GastzugangPage({
 
   return (
     <div className="flex max-w-4xl flex-col gap-5">
+      <UnsavedChanges>
       <div className="flex items-center gap-3">
         <Link
           href={`/h/${ctx.hotelSlug}/admin/einstellungen`}
@@ -98,6 +100,7 @@ export default async function GastzugangPage({
           nutzt. Sie erscheinen hier wieder, sobald Sie auf feste Zimmer-QR-Codes umstellen.
         </p>
       )}
+      </UnsavedChanges>
     </div>
   )
 }
