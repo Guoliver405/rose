@@ -4,7 +4,7 @@ Stand 26.09.2026 · Entscheidungen des Users in dieser Session · **Phasen 1 bis
 
 > **Wiederaufnahme in einer neuen Session:** Erst `AGENTS.md` lesen (Abschnitte
 > „Landing Page", „Check-out-Druck", „Mail-Versand mit Rückmeldung"), dann diesen
-> Plan. Phasen 1 bis 4 sind gebaut und in Produktion getestet (Abschnitte 11–14), das Ereignis-Protokoll ebenso (Abschnitt 15). Offen: Phase 5. Antworten durchgehend auf **Deutsch** – auch
+> Plan. Phasen 1 bis 4 sind gebaut und in Produktion getestet (Abschnitte 11–14), das Ereignis-Protokoll ebenso (Abschnitt 15). Phase 5 gebaut (Abschnitt 16); offen ist die Entscheidung, ob die Landing Page mit Funk rechnet. Antworten durchgehend auf **Deutsch** – auch
 > Zwischensätze zwischen Werkzeugaufrufen (Rückmeldung des Users).
 
 ---
@@ -409,3 +409,49 @@ Später ein Filter nach Kraft oder Zimmer (große Häuser: tausende Zeilen).
   Begrüßungsschritt nennt den „Weiter"-Knopf.
 - **Umwandlungs-Karte ohne Beträge** (User: Zahlen an dieser Stelle hemmen den Klick),
   mit Link „Preise".
+
+## 16. Phase 5 — Arbeitsweise ohne Software (27.09.2026)
+
+Regeln mit dem User abgestimmt, alles unter „Weitere Annahmen" (für die, die es genau
+wissen wollen). Vorgabe im **Simulator: Funk an**, feste Etagen (User: „Standardmäßig ist
+Funk an"); die **Landing Page** rechnet weiter mit Papierliste (`DEFAULT_CONFIG`) — ob sie
+auf Funk umstellt, ist offen.
+
+- **„Abreisen zuerst" in allen Varianten ohne Software:** Eine bekannte Abreise im eigenen
+  Bereich geht vor dem nächsten Bleibezimmer — so weist jede Hausdame an. Vorher arbeitete
+  die Kraft ab 11 Uhr erst ihre Runde weiter; das Bild ohne Software war bei den Abreisen zu
+  schwach. **Landing Page dadurch verändert** (vom User bestätigt): gezeigter Tag 75 statt
+  46, ohne Steuerung Abreisen 14:52 statt 15:06, Check-in verpasst an 32 statt 72 von 101
+  Tagen, Ersparnis 2,9 h.
+- **Funk** (`baseline.departures = 'radio'`): Die Rezeption meldet jeden Check-out
+  (Verzug 5 min) der zuständigen Kraft (feste Etagen: der Kraft der Etage; freie Wahl: der
+  nächsten), die den Spruch bei ihrer nächsten Entscheidung annimmt (1 min, Abschnitt
+  `radio`); Sonderfall in 5 statt 20 min. Tür-Rückmeldungen bleiben auf der Etagenliste,
+  Gästewünsche am Türanhänger.
+- **Freie Etagenwahl** (`floors = 'free'`, **nur mit Funk** — ohne Funk ein Blindflug,
+  jeder Check-in verpasst; deshalb verteilen solche Häuser fest): Startetage aus der
+  Morgenbesprechung, danach die Etage mit den meisten Abreisen bzw. offenen Zimmern **nach
+  eigenem Wissen** (eigene Arbeit, die Etage, auf der sie steht, gelesene Etagenlisten);
+  vergebene Zimmer erkennt sie erst beim Ankommen (`knowsTaken`). Mit Funk sagt jede ihren
+  Wechsel durch („bin mit der 5 fertig, gehe in die 7", ½ min): belegte Etagen und der Stand
+  der verlassenen Etage sind dann allen bekannt; bei der Suche nach Türanhängern dort, wo
+  laut Durchsagen am längsten niemand war. Die erste Fassung ließ die Kraft ohne Funk
+  wissen, wo Kolleginnen stehen — Einwand des Users, korrigiert.
+- **Kennzahl „Funk"** (Minuten aller Kräfte), zählt zur eingesparten Zeit; Protokoll-Zeilen
+  „Rezeption meldet per Funk: 403 abgereist", „Kraft B nimmt Funkspruch … an",
+  „meldet per Funk den Etagenwechsel"; die Beschreibung des Bildes folgt der Einstellung.
+- **Zahlen** (Landing-Haus, 101 Tage, täglich, Median; ohne Steuerung gegen RoSe 12:37):
+
+  | Ohne Software | Abreisen fertig | Check-in verpasst | Ersparnis mit RoSe |
+  |---|---|---|---|
+  | Papierliste, feste Etagen | 14:52 | 32 | 2,9 h |
+  | Funk, feste Etagen (Vorgabe Simulator) | 12:59 | 0 | 1,7 h |
+  | Funk, freie Etagen | 13:59 | 1 | 2,0 h |
+
+  Mit Funk holt die Seite ohne Software bei den Abreisen fast auf; der Vorsprung von RoSe
+  liegt dann bei „alles fertig" (≈ 35 min), weniger Gängen an die Tür und dem Wegfall der
+  Funk-Unterbrechungen.
+- Tests: Funk (Abreisen vor der Frist, jede Meldung einmal, Sonderfall schneller, RoSe ohne
+  Funk), Papierliste (erst ab Frist, dann Abreisen zuerst), freie Wahl (Startetage,
+  Durchsagen, kein Auftrag doppelt), ungültige Arbeitsweise. Mit der alten Vorgabe
+  (ohne „Abreisen zuerst") war der Umbau bitgleich — Fingerabdruck vorher/nachher.

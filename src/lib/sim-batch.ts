@@ -59,6 +59,8 @@ export type SideSummary = {
   turnedAway: Dist
   /** Minuten aller Kräfte zusammen. */
   walkMinutes: Dist
+  /** Funk ohne Software: Sprüche annehmen, Durchsagen. */
+  radioMinutes: Dist
   doorMinutes: Dist
   idleMinutes: Dist
   /** Anteil der Dienstzeit bis Feierabend, der aufs Reinigen fällt. */
@@ -72,7 +74,7 @@ export type PolicySummary = Record<Coordination, SideSummary> & {
   departureLead: Dist
   /** Abreisen, die mit RoSe zum Check-in mehr fertig sind — die Kennzahl, wenn das Team es nie ganz schafft. */
   departuresReadyMore: Dist
-  /** Eingesparte Minuten aller Kräfte je Tag: Wege und vergebliche Gänge ohne gegen mit RoSe. */
+  /** Eingesparte Minuten aller Kräfte je Tag: Wege, vergebliche Gänge und Funk ohne gegen mit RoSe. */
   savedMinutes: Dist
   /** Anteil der Tage, an denen RoSe mit allem früher fertig ist. */
   roseFinishesEarlier: number
@@ -101,6 +103,7 @@ export function summarize(runs: DayRun[], config: ScenarioConfig): Summary {
       finishedAt: dist(ms.map(m => m.finishedAt)),
       turnedAway: dist(ms.map(m => m.knocks + m.declined + m.skips)),
       walkMinutes: dist(ms.map(m => m.walkMinutes)),
+      radioMinutes: dist(ms.map(m => m.radioMinutes)),
       doorMinutes: dist(ms.map(m => m.doorMinutes)),
       idleMinutes: dist(ms.map(m => m.idleMinutes)),
       cleaningShare: dist(ms.map(m => {
@@ -115,7 +118,10 @@ export function summarize(runs: DayRun[], config: ScenarioConfig): Summary {
     rose: side(p, 'rose'),
     departureLead: dist(runs.map(r => ready(r[p].paper) - ready(r[p].rose))),
     departuresReadyMore: dist(runs.map(r => r[p].paper.departuresOpenAtCheckin - r[p].rose.departuresOpenAtCheckin)),
-    savedMinutes: dist(runs.map(r => (r[p].paper.walkMinutes + r[p].paper.doorMinutes) - (r[p].rose.walkMinutes + r[p].rose.doorMinutes))),
+    savedMinutes: dist(runs.map(r => {
+      const overhead = (x: RunMetrics) => x.walkMinutes + x.doorMinutes + x.radioMinutes
+      return overhead(r[p].paper) - overhead(r[p].rose)
+    })),
     roseFinishesEarlier: runs.filter(r => r[p].rose.finishedAt < r[p].paper.finishedAt).length / Math.max(1, runs.length),
   })
   const typicalSeed = runs.length === 0 ? 1 : middleSeed(runs.map(r => ({

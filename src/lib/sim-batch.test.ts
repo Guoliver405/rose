@@ -31,7 +31,8 @@ describe('Simulator über viele Tage', () => {
     expect(s.onDemand.roseFinishesEarlier).toBe(1)
     expect(s.routine.departureLead.median).toBeGreaterThan(0)
     expect(s.routine.rose.missedCheckin).toBe(0)
-    expect(s.routine.paper.missedCheckin).toBeGreaterThan(0.5)
+    // Mit „Abreisen zuerst“ (27.09.2026) an rund einem Drittel der Tage, vorher 72 von 101.
+    expect(s.routine.paper.missedCheckin).toBeGreaterThan(0.2)
     expect(s.routine.savedMinutes.median).toBeGreaterThan(0)
     for (const p of ['routine', 'onDemand'] as const) {
       for (const c of ['paper', 'rose'] as const) {

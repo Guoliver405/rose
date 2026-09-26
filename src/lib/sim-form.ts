@@ -5,8 +5,8 @@
  */
 
 import {
-  DEFAULT_CONFIG, MIX_KEYS, mixFromShares,
-  type MixKey, type ScenarioConfig, type SimDurations, type SimTimes,
+  DEFAULT_BASELINE, DEFAULT_CONFIG, MIX_KEYS, mixFromShares,
+  type Baseline, type MixKey, type ScenarioConfig, type SimDurations, type SimTimes,
 } from './cleaning-sim'
 
 export type GuestKey = keyof ScenarioConfig['guest']
@@ -22,6 +22,8 @@ export type SimForm = {
   /** Uhrzeiten „HH:MM". */
   times: Record<keyof SimTimes, string>
   duration: SimDurations
+  /** So arbeitet das Haus ohne Software (Phase 5). */
+  baseline: Baseline
   days: number
 }
 
@@ -47,6 +49,7 @@ export function formFromConfig(cfg: ScenarioConfig, days: number): SimForm {
     guest: Object.fromEntries(Object.entries(cfg.guest).map(([k, v]) => [k, pct(v)])) as Record<GuestKey, number>,
     times: Object.fromEntries(Object.entries(cfg.times).map(([k, v]) => [k, toClock(v)])) as Record<keyof SimTimes, string>,
     duration: { ...cfg.duration },
+    baseline: { ...cfg.baseline },
     days,
   }
 }
@@ -76,12 +79,19 @@ export function configFromForm(f: SimForm): { config: ScenarioConfig; errors: st
     })) as ScenarioConfig['guest'],
     times: Object.fromEntries(Object.entries(f.times).map(([k, v]) => [k, fromClock(v)])) as SimTimes,
     duration: { ...f.duration },
+    baseline: { ...f.baseline },
   }
   return { config, errors }
 }
 
 export const DEFAULT_DAYS = 101
-export const DEFAULT_FORM: SimForm = formFromConfig(DEFAULT_CONFIG, DEFAULT_DAYS)
+/**
+ * Vorgabe des Simulators: das Haus der Landing Page — aber mit Funk (User,
+ * 27.09.2026: „Standardmäßig ist Funk an"). Die Landing Page selbst rechnet
+ * weiter mit `DEFAULT_CONFIG` (Papierliste).
+ */
+export const SIM_DEFAULT_BASELINE: Baseline = { departures: 'radio', floors: 'fixed' }
+export const DEFAULT_FORM: SimForm = { ...formFromConfig(DEFAULT_CONFIG, DEFAULT_DAYS), baseline: SIM_DEFAULT_BASELINE }
 
 // ── Wesentliches und Details (26.09.2026) ─────────────────────────────────
 //
@@ -122,6 +132,9 @@ export function changedDetails(f: SimForm): number {
   for (const k of DETAIL_TIMES) if (f.times[k] !== d.times[k]) n++
   for (const k of DETAIL_DURATIONS) if (f.duration[k] !== d.duration[k]) n++
   if (f.days !== d.days) n++
+  if (f.baseline.departures !== d.baseline.departures) n++
+  if (f.baseline.floors !== d.baseline.floors) n++
+  for (const k of RADIO_DURATIONS) if (f.duration[k] !== d.duration[k]) n++
   // Aufteilung der Bleibegäste: nur das Verhältnis zählt, nicht die Menge.
   const ratio = (s: SimForm['shares']) => {
     const sum = STAY_KEYS.reduce((a, k) => a + s[k], 0)
@@ -136,6 +149,7 @@ export const ESSENTIAL_TIMES = ['shiftStart', 'checkoutUntil', 'checkinFrom'] as
 export const DETAIL_TIMES = ['shiftEnd', 'stayRoutineFrom', 'dndGiveUp', 'complaintAt', 'departFrom', 'leaveFrom', 'leaveUntil'] as const
 export const ESSENTIAL_DURATIONS = ['departure', 'stay'] as const
 export const DETAIL_DURATIONS = ['walkFloor', 'walkRoom', 'overview', 'knock', 'skip', 'retry', 'complaint', 'complaintReach'] as const
+export const RADIO_DURATIONS = ['radioDelay', 'radioInterrupt', 'radioComplaintReach', 'radioAnnounce'] as const
 
 // ── Gespeicherte Szenarien (Phase 3) ──────────────────────────────────────
 
@@ -168,6 +182,10 @@ export function formFromSaved(raw: unknown): SimForm {
     guest: pickNums(d.guest, src.guest),
     times: Object.fromEntries(Object.entries(d.times).map(([k, fb]) => [k, str((src.times as Record<string, unknown> | undefined)?.[k], fb)])) as SimForm['times'],
     duration: pickNums(d.duration, src.duration),
+    baseline: {
+      departures: src.baseline?.departures === 'radio' ? 'radio' : DEFAULT_BASELINE.departures,
+      floors: src.baseline?.floors === 'free' ? 'free' : DEFAULT_BASELINE.floors,
+    },
     days: num(src.days, d.days),
   }
 }

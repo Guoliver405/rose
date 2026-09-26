@@ -11,7 +11,7 @@ import { LIMITS, buildScenario, clockLabel, paramsFor, type MixKey, type Policy,
 import { ROI_DEFAULTS, DAYS_PER_MONTH } from '@/lib/roi'
 import { validateRun, workload, type DayRun, type Dist, type SideSummary, type SimMessage, type SimRequest, type Summary } from '@/lib/sim-batch'
 import {
-  DEFAULT_FORM, DETAIL_DURATIONS, ESSENTIAL_DURATIONS, ESSENTIAL_TIMES, changedDetails, configFromForm,
+  DEFAULT_FORM, DETAIL_DURATIONS, ESSENTIAL_DURATIONS, RADIO_DURATIONS, ESSENTIAL_TIMES, changedDetails, configFromForm,
   occupancyOf, sharesTotal, withOccupancy, type GuestKey, type SimForm,
 } from '@/lib/sim-form'
 
@@ -69,6 +69,10 @@ const DURATION_LABEL: Record<keyof SimDurations, [string, string]> = {
   walkFloor: ['Etagenwechsel', 'Mit Wäschewagen und Aufzug.'],
   overview: ['Überblick auf der Etage', 'Ohne Software: beim Ankommen Etagenliste lesen oder mit der Kollegin sprechen.'],
   complaintReach: ['Rezeption erreicht Kraft', 'Ohne Software: anrufen, suchen.'],
+  radioDelay: ['Funk: Meldeverzug', 'Bis die Rezeption einen Check-out durchgibt.'],
+  radioInterrupt: ['Funk: Unterbrechung', 'Je Meldung bei der angefunkten Kraft.'],
+  radioComplaintReach: ['Funk: Sonderfall', 'Bis die Rezeption die Kraft erreicht.'],
+  radioAnnounce: ['Funk: Durchsage', 'Freie Wahl: „bin mit der 5 fertig, gehe in die 7“.'],
 }
 
 const GROUP_TIMES: TimeKey[] = ['shiftEnd', 'stayRoutineFrom', 'dndGiveUp', 'complaintAt']
@@ -271,6 +275,34 @@ export default function SimulatorApp({ initialScenarios = [], convert }: {
               </div>
             </Group>
 
+            <Group title="Ohne Software – so arbeitet Ihr Haus heute" onReset={() => set({ baseline: DEFAULT_FORM.baseline, duration: { ...form.duration, ...pick(DEFAULT_FORM.duration, [...RADIO_DURATIONS]) } })}>
+              <p className="mb-3 text-xs text-ink-muted">
+                Gilt nur für das Bild „ohne Steuerung“. In allen Varianten gilt „Abreisen zuerst“; was an der Tür gesagt wird, steht auf einer Liste je Etage.
+              </p>
+              <div className="flex flex-col gap-3">
+                <Choice label="Abreisen erfährt die Kraft" value={form.baseline.departures}
+                  options={[['radio', 'per Funk oder Telefon der Rezeption'], ['list', 'laut Papierliste, ab der Check-out-Frist']]}
+                  onChange={v => set({ baseline: { departures: v, floors: v === 'list' ? 'fixed' : form.baseline.floors } })} />
+                <Choice label="Etagen" value={form.baseline.floors}
+                  options={[['fixed', 'fest verteilt'], ['free', 'frei gewählt (nur mit Funk)']]}
+                  disabled={form.baseline.departures === 'list' ? ['free'] : []}
+                  onChange={v => set({ baseline: { ...form.baseline, floors: v } })} />
+                {form.baseline.departures === 'list' && (
+                  <p className="text-xs text-ink-muted">
+                    Frei gewählte Etagen ohne Funk wären ein Blindflug: Niemand weiß, wo schon gearbeitet wurde — deshalb verteilen Häuser ohne Funk die Etagen fest.
+                  </p>
+                )}
+              </div>
+              {form.baseline.departures === 'radio' && (
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  {RADIO_DURATIONS.filter(k => k !== 'radioAnnounce' || form.baseline.floors === 'free').map(k => (
+                    <NumberField key={k} label={DURATION_LABEL[k][0]} hint={DURATION_LABEL[k][1]} unit="min" value={form.duration[k]}
+                      onChange={v => set({ duration: { ...form.duration, [k]: v } })} />
+                  ))}
+                </div>
+              )}
+            </Group>
+
             <Group title="Zeiten" onReset={() => set({ times: { ...form.times, ...pick(DEFAULT_FORM.times, GROUP_TIMES) } })}>
               <div className="grid grid-cols-2 gap-3">
                 {GROUP_TIMES.map(k => (
@@ -374,6 +406,29 @@ function NumberField({ label, hint, unit, value, onChange }: { label: string; hi
   )
 }
 
+function Choice<T extends string>({ label, value, options, onChange, disabled = [] }: {
+  label: string
+  value: T
+  options: [T, string][]
+  onChange: (v: T) => void
+  disabled?: T[]
+}) {
+  return (
+    <fieldset>
+      <legend className="text-sm font-semibold text-ink-soft">{label}</legend>
+      <div className="mt-1 flex flex-col gap-1">
+        {options.map(([v, text]) => (
+          <label key={v} className={`flex items-center gap-2 text-sm ${disabled.includes(v) ? 'text-ink-muted' : 'text-ink'}`}>
+            <input type="radio" checked={value === v} disabled={disabled.includes(v)} onChange={() => onChange(v)}
+              className="h-4 w-4 accent-[var(--color-action)]" />
+            {text}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  )
+}
+
 function TimeField({ label, hint, value, onChange }: { label: string; hint?: string; value: string; onChange: (v: string) => void }) {
   return (
     <label className="flex flex-col gap-1">
@@ -421,6 +476,7 @@ function Results({ result, policy, onPolicy }: { result: Result; policy: Policy;
     { label: `Um ${clockLabel(P.horizon, P.shiftStart)} liegen geblieben`, hint: 'Zimmer, die frei gewesen wären', value: x => <DistCell d={x.leftUndone} fmt={v => String(v)} /> },
     { label: 'Wege und Überblick', hint: 'alle Kräfte; Etagen abgehen, Etagenliste lesen', value: x => <DistCell d={x.walkMinutes} fmt={hours} /> },
     { label: 'An der Tür ohne Reinigung', hint: 'alle Kräfte', value: x => <DistCell d={x.doorMinutes} fmt={hours} /> },
+    { label: 'Funk', hint: 'alle Kräfte; Sprüche annehmen, Durchsagen', value: x => <DistCell d={x.radioMinutes} fmt={hours} /> },
     { label: 'Warten ohne Arbeit', hint: 'alle Kräfte', value: x => <DistCell d={x.idleMinutes} fmt={hours} /> },
     { label: 'Anteil Reinigen', hint: 'an der Zeit bis Feierabend', value: x => <DistCell d={x.cleaningShare} fmt={percent} /> },
     { label: 'Sonderfall erledigt nach', value: x => (x.complaintMinutes ? <DistCell d={x.complaintMinutes} fmt={v => `${Math.round(v)} min`} /> : '–') },
@@ -496,7 +552,7 @@ function Results({ result, policy, onPolicy }: { result: Result; policy: Policy;
               sub={`im Median; an 8 von 10 Tagen zwischen ${Math.round(s.departureLead.p10)} und ${Math.round(s.departureLead.p90)} min`} />
           )}
           <Kpi label="Eingesparte Arbeitszeit" value={`${hours(s.savedMinutes.median)} je Tag`}
-            sub={`Wege und vergebliche Gänge; ≈ ${euro.format(savedMonthly)} im Monat bei ${euro.format(ROI_DEFAULTS.hourlyCostCents / 100)} je Stunde`} />
+            sub={`Wege, vergebliche Gänge und Funk; ≈ ${euro.format(savedMonthly)} im Monat bei ${euro.format(ROI_DEFAULTS.hourlyCostCents / 100)} je Stunde`} />
           <Kpi label="Mit RoSe früher fertig" value={percent(s.roseFinishesEarlier)} sub="Anteil der Tage, an denen alles früher erledigt ist" />
         </div>
         <div className="break-inside-avoid rounded-2xl border border-edge bg-surface-elevated p-4">
@@ -529,9 +585,10 @@ function Results({ result, policy, onPolicy }: { result: Result; policy: Policy;
             <p className="text-xs text-ink-muted">
               {rooms} Zimmer auf {config.floors} Etagen, {config.maids} Reinigungskräfte, {days} Tage mit jeweils anderen Gästen.
               Beide Spalten rechnen dieselben Gäste und dieselbe Reinigungspolitik; verglichen wird nur die Koordination. Ohne
-              Software arbeitet jede Kraft zuerst ihre festen Etagen ab und sieht Anhänger und Schilder erst auf der Etage; was
-              andere an der Tür erfahren haben, steht auf einer Liste je Etage, die sie beim Ankommen liest. Mit RoSe wählt sie wie
-              das echte Board. Die Euro-Angabe rechnet die eingesparten Stunden mit den Vollkosten aus dem Nutzenrechner hoch –
+              Software: {config.baseline.departures === 'radio' ? 'Abreisen meldet die Rezeption per Funk' : 'Abreisen laut Papierliste ab der Check-out-Frist'},{' '}
+              {config.baseline.floors === 'free' ? 'Etagen frei gewählt mit Funk-Durchsagen' : 'feste Etagen je Kraft'}, Abreisen zuerst; Anhänger und
+              Schilder sieht eine Kraft erst auf der Etage, was andere an der Tür erfahren haben, steht auf einer Liste je Etage,
+              die sie beim Ankommen liest. Mit RoSe wählt sie wie das echte Board. Die Euro-Angabe rechnet die eingesparten Stunden mit den Vollkosten aus dem Nutzenrechner hoch –
               Geld wird daraus nur, wenn die Einsatzplanung angepasst wird.
             </p>
           </div>

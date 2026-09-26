@@ -329,3 +329,63 @@ describe('Etagenliste ohne Software', () => {
   }, 60000)
 })
 
+describe('Arbeitsweise ohne Software (Phase 5)', () => {
+  const at = (b: ScenarioConfig['baseline']) => buildScenario(9, { ...DEFAULT_CONFIG, baseline: b })
+  const firstDep = (r: ReturnType<typeof simulate>, scn: ReturnType<typeof buildScenario>) =>
+    Math.min(...r.segments.filter(g => g.kind === 'clean' && scn.rooms.some(x => x.nr === g.nr && x.kind === 'departure')).map(g => g.start))
+
+  it('Funk: Abreisen vor der Check-out-Frist, jede Meldung einmal angenommen, Sonderfall schneller', () => {
+    const scn = at({ departures: 'radio', floors: 'fixed' })
+    const r = simulate('paper', 'routine', scn)
+    expect(firstDep(r, scn)).toBeLessThan(CHECKOUT_AT)
+    const radio = r.segments.filter(g => g.kind === 'radio')
+    const deps = scn.rooms.filter(x => x.kind === 'departure').length
+    expect(radio.length).toBeLessThanOrEqual(deps)
+    expect(radio.length).toBeGreaterThan(deps * 0.8)
+    expect(new Set(radio.map(g => g.jobId)).size).toBe(radio.length)
+    expect(r.metrics.radioMinutes).toBe(radio.length * DEFAULT_CONFIG.duration.radioInterrupt)
+    expect(scn.params.complaint.reachDelay).toBe(DEFAULT_CONFIG.duration.radioComplaintReach)
+    // Mit RoSe gibt es keinen Funk.
+    expect(simulate('rose', 'routine', scn).segments.some(g => g.kind === 'radio')).toBe(false)
+  })
+
+  it('Papierliste: Abreisen erst ab der Frist, danach zuerst', () => {
+    const scn = at({ departures: 'list', floors: 'fixed' })
+    const r = simulate('paper', 'routine', scn)
+    expect(firstDep(r, scn)).toBeGreaterThanOrEqual(CHECKOUT_AT)
+    expect(r.segments.some(g => g.kind === 'radio')).toBe(false)
+    // Nach der Frist beginnt jede Kraft, die noch Abreisen im eigenen Bereich hat, mit einer Abreise.
+    for (let m = 0; m < scn.maidFloors.length; m++) {
+      const own = scn.maidFloors[m]
+      const hasDep = scn.rooms.some(x => x.kind === 'departure' && own.includes(x.floor))
+      if (!hasDep) continue
+      const after = r.segments.filter(g => g.maid === m && g.kind === 'clean' && g.start >= CHECKOUT_AT)[0]
+      if (after) expect(scn.rooms.find(x => x.nr === after.nr)?.kind).toBe('departure')
+    }
+  })
+
+  it('freie Wahl mit Funk: Startetage aus der Morgenbesprechung, Durchsagen beim Wechsel, kein Auftrag doppelt', () => {
+    const scn = at({ departures: 'radio', floors: 'free' })
+    const r = simulate('paper', 'routine', scn)
+    for (let m = 0; m < scn.maidFloors.length; m++) {
+      const first = r.segments.find(g => g.maid === m && g.kind === 'clean')
+      if (first) expect(floorOf(first.nr)).toBe(scn.maidFloors[m][0])
+    }
+    expect(r.segments.some(g => g.kind === 'radio' && !g.jobId)).toBe(true)
+    const cleaned = r.segments.filter(g => g.kind === 'clean')
+    expect(new Set(cleaned.map(g => g.jobId)).size).toBe(cleaned.length)
+    expect(r.metrics.cleaned).toBe(simulate('rose', 'routine', scn).metrics.cleaned)
+  })
+
+  it('freie Wahl ohne Funk: keine Durchsagen — wer eine Etage ansteuert, liest dort erst die Liste', () => {
+    const scn = at({ departures: 'list', floors: 'free' })
+    const r = simulate('paper', 'routine', scn)
+    expect(r.segments.some(g => g.kind === 'radio')).toBe(false)
+    expect(r.segments.filter(g => g.kind === 'overview').length).toBeGreaterThan(0)
+  })
+
+  it('Arbeitsweise ungültig: Meldung', () => {
+    expect(validateConfig({ ...DEFAULT_CONFIG, baseline: { departures: 'rauch', floors: 'fixed' } as unknown as ScenarioConfig['baseline'] })).not.toEqual([])
+  })
+})
+

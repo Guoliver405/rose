@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactN
 import { AlertTriangle, Ban, Check, ChevronLeft, ChevronRight, Clock, DoorClosed, Flag, Hand, Leaf, Loader2, Pause, Play, RotateCcw, Timer } from 'lucide-react'
 import {
   ALL_RUNS, GUEST, SCENARIO, clockLabel, highlights, maidLabel, maidsAt, simulate, tilesAt, turnedAwayAt,
-  type Coordination, type Highlight, type Policy, type Scenario, type SimResult, type Tile, type TileState,
+  type Baseline, type Coordination, type Highlight, type Policy, type Scenario, type SimResult, type Tile, type TileState,
 } from '@/lib/cleaning-sim'
 import { eventLog } from '@/lib/sim-log'
 import EventLog from '@/components/simulator/EventLog'
@@ -33,6 +33,14 @@ const LEAD: Record<Coordination, Record<Policy, string>> = {
   },
 }
 const TITLE: Record<Coordination, string> = { paper: 'Ohne Steuerung', rose: 'Mit RoSe' }
+
+/** Sachliche Beschreibung für den Simulator — die Arbeitsweise ohne Software ist dort einstellbar. */
+function leadDetail(c: Coordination, b: Baseline): string {
+  if (c === 'rose') return 'Gemeinsames Board: Check-out, Wünsche, „frühestens ab“, „Nicht stören“ und Rückmeldungen an der Tür für alle Kräfte.'
+  const dep = b.departures === 'radio' ? 'Abreisen meldet die Rezeption per Funk' : 'Abreisen laut Papierliste ab der Check-out-Frist'
+  const fl = b.floors === 'free' ? 'Etagen frei gewählt, Wechsel per Funk angesagt' : 'feste Etagen je Kraft'
+  return `${dep}; ${fl}; Abreisen zuerst. Was an der Tür gesagt wird, steht auf der Etagenliste.`
+}
 
 /** Simulationsminuten je Sekunde. */
 const SPEED = 18
@@ -240,7 +248,7 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption, polic
           const run = shown(c)
           return (
             <div key={c} className="flex min-w-0 flex-col gap-4">
-              <Panel title={TITLE[c]} lead={LEAD[c][policy]} res={run.res} t={t} scn={scn} />
+              <Panel title={TITLE[c]} lead={detailLog ? leadDetail(c, scn.params.baseline) : LEAD[c][policy]} res={run.res} t={t} scn={scn} />
               {/* key: beim Umschalten neue Einträge, keine überblendeten alten */}
               {detailLog
                 ? <EventLog key={run.key} entries={run.log} t={t} clock={clock} onSeek={at => { stop(); setT(at) }} />

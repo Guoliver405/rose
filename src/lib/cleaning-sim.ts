@@ -112,7 +112,37 @@ export const DURATION = {
 export type SimDurations = { [K in keyof typeof DURATION]: number } & {
   /** Sonderfall: so lange braucht die Rezeption ohne Software, um die Kraft zu erreichen. */
   complaintReach: number
+  /** Funk (Phase 5): Verzug, bis die Rezeption einen Check-out meldet. */
+  radioDelay: number
+  /** Funk: Unterbrechung der angefunkten Kraft je Meldung (annehmen, notieren). */
+  radioInterrupt: number
+  /** Funk: Sonderfall — so lange, bis die Rezeption die Kraft erreicht. */
+  radioComplaintReach: number
+  /** Funk bei freier Etagenwahl: Durchsage „ich gehe in die 5." je Etagenwechsel. */
+  radioAnnounce: number
 }
+
+/**
+ * Wie das Haus OHNE Software arbeitet (Simulator Phase 5, 26.09.2026, Regeln
+ * vom User bestätigt). Vorgabe ist das Bild der Landing Page:
+ *  departures — `list`: Papierliste, Abreisen gelten erst ab der Check-out-Frist
+ *               als frei; `radio`: die Rezeption meldet jeden Check-out per
+ *               Funk oder Telefon der zuständigen Kraft (Verzug, Unterbrechung).
+ *               Was an der Tür gesagt wird, steht in beiden Fällen nur auf der
+ *               Etagenliste; Gästewünsche weiter per Türanhänger.
+ *  floors     — `fixed`: jede Kraft hat feste Etagen; `free`: Die Hausdame
+ *               verteilt morgens die Startetagen, danach wählt jede Kraft die
+ *               Etage, auf der NACH IHREM WISSEN am meisten offen ist (eigene
+ *               Arbeit, die Etage, auf der sie steht, gelesene Etagenlisten).
+ *               Wo Kolleginnen sind und was anderswo erledigt ist, weiß sie
+ *               ohne Funk nicht — sie merkt es erst beim Ankommen. Mit Funk
+ *               sagt jede ihren Etagenwechsel durch (`radioAnnounce`), belegte
+ *               Etagen sind dann bekannt (User, 26./27.09.2026).
+ * In allen Varianten ohne Software gilt „Abreisen zuerst": Eine bekannte
+ * Abreise geht vor dem nächsten Bleibezimmer — so weist jede Hausdame an.
+ */
+export type Baseline = { departures: 'list' | 'radio'; floors: 'fixed' | 'free' }
+export const DEFAULT_BASELINE: Baseline = { departures: 'list', floors: 'fixed' }
 
 /** Uhrzeiten als Minuten des Tages (8:00 = 480). */
 export type SimTimes = {
@@ -151,7 +181,9 @@ export const TIMES: SimTimes = {
   shiftEnd: hm(18),
 }
 
-export const DURATIONS: SimDurations = { ...DURATION, complaintReach: COMPLAINT.reachDelay }
+export const DURATIONS: SimDurations = {
+  ...DURATION, complaintReach: COMPLAINT.reachDelay, radioDelay: 5, radioInterrupt: 1, radioComplaintReach: 5, radioAnnounce: 0.5,
+}
 
 /** Was die Rechnung braucht, in Minuten nach Schichtbeginn — steht am Szenario. */
 export type SimParams = {
@@ -166,9 +198,11 @@ export type SimParams = {
   duration: SimDurations
   /** Spätestes Arbeitsende — zugleich die Obergrenze, damit ein nie frei werdendes Zimmer den Lauf nicht festhält. */
   horizon: number
+  /** So arbeitet das Haus ohne Software. */
+  baseline: Baseline
 }
 
-export function paramsFor(times: SimTimes, duration: SimDurations): SimParams {
+export function paramsFor(times: SimTimes, duration: SimDurations, baseline: Baseline = DEFAULT_BASELINE): SimParams {
   const rel = (m: number) => m - times.shiftStart
   return {
     shiftStart: times.shiftStart,
@@ -177,9 +211,10 @@ export function paramsFor(times: SimTimes, duration: SimDurations): SimParams {
     stayRoutineAt: rel(times.stayRoutineFrom),
     dndGiveUp: rel(times.dndGiveUp),
     notBeforeSetAt: rel(times.leaveFrom),
-    complaint: { at: rel(times.complaintAt), reachDelay: duration.complaintReach },
+    complaint: { at: rel(times.complaintAt), reachDelay: baseline.departures === 'radio' ? duration.radioComplaintReach : duration.complaintReach },
     duration,
     horizon: rel(times.shiftEnd),
+    baseline,
   }
 }
 
@@ -278,10 +313,12 @@ export type ScenarioConfig = {
   guest: { [K in keyof typeof GUEST]: number }
   times: SimTimes
   duration: SimDurations
+  baseline: Baseline
 }
 
 export const DEFAULT_CONFIG: ScenarioConfig = {
   floors: FLOORS, roomsPerFloor: ROOMS_PER_FLOOR, maids: MAIDS, mix: MIX, guest: GUEST, times: TIMES, duration: DURATIONS,
+  baseline: DEFAULT_BASELINE,
 }
 
 /**
@@ -368,12 +405,15 @@ export function validateConfig(cfg: ScenarioConfig): string[] {
   }
   if (d.departure < 1 || d.stay < 1 || d.complaint < 1) errs.push('Reinigungsdauern: mindestens 1 Minute.')
   if (d.retry < 1) errs.push('Wieder hin nach frühestens 1 Minute.')
+  if (!['list', 'radio'].includes(cfg.baseline?.departures) || !['fixed', 'free'].includes(cfg.baseline?.floors)) {
+    errs.push('Arbeitsweise ohne Software: unbekannte Einstellung.')
+  }
   return errs
 }
 
 export function buildScenario(seed: number, config: Partial<ScenarioConfig> = {}): Scenario {
   const cfg: ScenarioConfig = { ...DEFAULT_CONFIG, ...config }
-  const P = paramsFor(cfg.times, cfg.duration)
+  const P = paramsFor(cfg.times, cfg.duration, cfg.baseline)
   const T = cfg.times
   const GUEST_ = cfg.guest
   const rand = rng(seed)
@@ -468,7 +508,9 @@ function jobsFor(scn: Scenario, coord: Coordination, policy: Policy): Job[] {
     if (r.kind === 'departure') {
       jobs.push({ ...base, ...none, kind: 'departure', readyAt: r.checkoutAt,
         // Ohne Software: sicher frei erst zur Frist. Mit RoSe: erscheint beim Check-out.
-        knownAt: coord === 'paper' ? Math.max(P.checkoutAt, r.checkoutAt) : r.checkoutAt,
+        knownAt: coord === 'rose' ? r.checkoutAt
+          : P.baseline.departures === 'radio' ? r.checkoutAt + D.radioDelay
+          : Math.max(P.checkoutAt, r.checkoutAt),
         duration: D.departure, weight: SCORE_WEIGHTS.checkoutPending })
       continue
     }
@@ -513,9 +555,10 @@ export type Segment = {
   /**
    * knock = Gast noch da, declined = Gast lehnt ab, skip = Schild „Nicht
    * stören" an der Tür, patrol = Etagen abgehen, overview = ohne Software
-   * beim Ankommen auf einer Etage die Etagenliste lesen.
+   * beim Ankommen auf einer Etage die Etagenliste lesen, radio = Funkspruch
+   * der Rezeption annehmen (`jobId` = die gemeldete Abreise).
    */
-  kind: 'walk' | 'patrol' | 'overview' | 'knock' | 'declined' | 'skip' | 'clean' | 'idle'
+  kind: 'walk' | 'patrol' | 'overview' | 'radio' | 'knock' | 'declined' | 'skip' | 'clean' | 'idle'
   /** Zimmer, an dem die Kraft am Ende des Abschnitts steht. */
   nr: string
   /** Auftrag (bei clean/knock/declined/skip). */
@@ -556,10 +599,11 @@ export type SimResult = {
     complaintDoneAt: number | null
     /** Die letzte Kraft ist fertig. */
     finishedAt: number
-    /** Minuten aller Kräfte: reinigen, gehen (mit Etagen abgehen), an der Tür ohne Reinigung. */
+    /** Minuten aller Kräfte: reinigen, gehen (mit Etagen abgehen), an der Tür ohne Reinigung, Funk. */
     cleanMinutes: number
     walkMinutes: number
     doorMinutes: number
+    radioMinutes: number
     /** Abreisezimmer, die zum Check-in noch nicht fertig sind. */
     departuresOpenAtCheckin: number
     /** Aufträge, die frei gewesen wären und bis zum Arbeitsende liegen geblieben sind. */
@@ -586,12 +630,14 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
     if (list) list.push(j)
     else jobsOnFloor.set(j.floor, [j])
   }
+  /** Ohne Software, freie Etagenwahl: keine eigenen Etagen. */
+  const free = coord === 'paper' && P.baseline.floors === 'free'
   const maids = scn.maidFloors.map((floors, i) => ({
     i,
     t: 0,
     pos: null as Pos,
-    /** Ohne Software: nur die eigenen Etagen. */
-    floors: coord === 'paper' ? new Set(floors) : null,
+    /** Ohne Software mit festen Etagen: nur die eigenen. */
+    floors: coord === 'paper' && !free ? new Set(floors) : null,
     own: floors,
     /** Ohne Software: die laufende Runde. */
     queue: [] as Job[],
@@ -646,6 +692,37 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
   let knocks = 0
   let declined = 0
   let skips = 0
+  /** Wann ein Auftrag übernommen wurde — ab dann steht es auf der Etagenliste. */
+  const takenAt: Record<string, number> = {}
+  /**
+   * Freie Wahl ohne Software: Weiß die Kraft, dass ein Auftrag vergeben ist?
+   * Auf der eigenen Etage sieht sie es, sonst nur über die gelesene Etagenliste.
+   */
+  const knowsTaken = (j: Job, mi: number, pos: Pos) =>
+    doneAt[j.id] !== undefined && (pos?.floor === j.floor || hasRead(mi, j.floor, takenAt[j.id]))
+  const radioOn = coord === 'paper' && P.baseline.departures === 'radio'
+
+  /**
+   * Funk (ohne Software, Phase 5): Jede Abreise meldet die Rezeption der
+   * zuständigen Kraft — bei festen Etagen der Kraft dieser Etage, bei freier
+   * Wahl der, die ihr am nächsten ist. Die Kraft nimmt den Spruch bei ihrer
+   * nächsten Entscheidung an (so lange dauert eine laufende Reinigung eben),
+   * das kostet `radioInterrupt` Minuten. Bekannt ist die Abreise allen ab dem
+   * Funkspruch (`knownAt`).
+   */
+  const radio = coord === 'paper' && P.baseline.departures === 'radio'
+    ? jobs.filter(j => j.kind === 'departure').map(j => ({ job: j, at: j.knownAt, done: false }))
+    : []
+  const radioTarget = (j: Job): number | undefined => {
+    const live = maids.filter(o => !o.finished)
+    if (live.length === 0) return undefined
+    if (!free) {
+      const owner = live.find(o => o.own.includes(j.floor))
+      if (owner) return owner.i
+    }
+    const dist = (o: (typeof maids)[number]) => Math.abs((o.pos?.floor ?? 0) - j.floor)
+    return [...live].sort((a, b) => dist(a) - dist(b) || a.i - b.i)[0].i
+  }
 
   // Ein Auftrag gilt als vergeben, sobald eine Kraft ihn übernommen hat —
   // die Schleife läuft in Zeitreihenfolge, deshalb ist das race-frei.
@@ -656,6 +733,21 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
   for (;;) {
     const m = maids.filter(x => !x.finished).sort((a, b) => a.t - b.t || a.i - b.i)[0]
     if (!m || m.t >= P.horizon) break
+    // Funksprüche, die an diese Kraft gehen, nimmt sie jetzt an.
+    if (radio.length > 0) {
+      let tt = m.t
+      for (const msg of radio) {
+        if (msg.done || msg.at > m.t) continue
+        if (radioTarget(msg.job) !== m.i) continue
+        msg.done = true
+        segments.push({ maid: m.i, kind: 'radio', nr: m.pos?.nr ?? '', jobId: msg.job.id, start: tt, end: tt + D.radioInterrupt })
+        tt += D.radioInterrupt
+      }
+      if (tt > m.t) {
+        m.t = tt
+        continue
+      }
+    }
     const t = m.t
     // Ohne Software: Wer auf einer Etage steht, sieht die Anhänger dort.
     if (m.pos && coord === 'paper') {
@@ -715,6 +807,31 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
     if (urgent.length > 0) {
       // Sonderfall geht vor — sobald die Kraft davon weiß.
       pick = urgent[0]
+    } else if (free) {
+      // Freie Etagenwahl ohne Software. Auf der eigenen Etage sieht sie, was
+      // offen ist; für die Wahl der nächsten Etage zählt nur ihr Wissen.
+      const cur = m.pos?.floor
+      let here = cur !== undefined ? openNow.filter(j => j.floor === cur && visible(j)) : []
+      if (here.length === 0) {
+        const believed = jobs.filter(j => !knowsTaken(j, m.i, m.pos) && !knowsDeclined(j, m.i)
+          && !(j.dndUntil > t && t >= P.dndGiveUp) && visible(j) && j.floor !== cur)
+        let target: number | undefined
+        // Morgenbesprechung: Die Hausdame hat die Startetage verteilt.
+        if (cur === undefined && believed.some(j => j.floor === m.own[0])) target = m.own[0]
+        if (target === undefined && believed.length > 0) {
+          // Mit Funk sind belegte Etagen bekannt (Durchsagen), ohne nicht.
+          const taken = radioOn ? new Set(maids.filter(o => o !== m && !o.finished && o.pos).map(o => o.pos!.floor)) : new Set<number>()
+          const deps = (f: number) => believed.filter(j => j.floor === f && j.kind === 'departure').length
+          const work = (f: number) => believed.filter(j => j.floor === f).length
+          target = [...new Set(believed.map(j => j.floor))]
+            .sort((a, b) => Number(taken.has(a)) - Number(taken.has(b)) || deps(b) - deps(a) || work(b) - work(a)
+              || Math.abs(a - (cur ?? 0)) - Math.abs(b - (cur ?? 0)) || a - b)[0]
+        }
+        if (target !== undefined) here = believed.filter(j => j.floor === target)
+      }
+      // Abreisen zuerst, dann ein angezeigter Wunsch.
+      pick = [...here].sort((a, b) => Number(b.kind === 'departure') - Number(a.kind === 'departure')
+        || signaled(a) - signaled(b) || a.nr.localeCompare(b.nr))[0]
     } else if (coord === 'paper') {
       const openSet = new Set(openNow)
       m.queue = m.queue.filter(j => openSet.has(j) && visible(j))
@@ -725,6 +842,13 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
       const here = cur === undefined ? undefined : m.queue.find(j => j.floor === cur && signaled(j) === 0) ?? m.queue.find(j => j.floor === cur)
       if (here) m.queue = [here, ...m.queue.filter(j => j !== here)]
       pick = m.queue.shift()
+      // Abreisen zuerst: eine bekannte Abreise im eigenen Bereich geht vor dem nächsten Bleibezimmer.
+      if (pick && pick.kind !== 'departure') {
+        const cur2 = m.pos?.floor ?? 0
+        const dep = openNow.filter(j => j.kind === 'departure' && visible(j))
+          .sort((a, b) => Math.abs(a.floor - cur2) - Math.abs(b.floor - cur2) || a.nr.localeCompare(b.nr))[0]
+        if (dep) { m.queue.unshift(pick); m.queue = m.queue.filter(j => j !== dep); pick = dep }
+      }
     } else {
       const avail = openNow.filter(visible)
       if (avail.length > 0) {
@@ -764,9 +888,17 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
         ? openNow.filter(j => j.knownAt === Infinity && mine(j) && j.signalAt <= t && !seenBy[j.id]?.has(m.i))
         : []
       if (unseen.length > 0) {
-        const range = helping ? (helpFloors ? [...helpFloors] : Array.from({ length: scn.floors }, (_, k) => k + 1)) : m.own
+        const all = Array.from({ length: scn.floors }, (_, k) => k + 1)
+        // Freie Wahl mit Funk: Etagen, auf denen laut Durchsage eine Kollegin steht, sieht diese schon.
+        const taken = free && radioOn ? new Set(maids.filter(o => o !== m && !o.finished && o.pos).map(o => o.pos!.floor)) : new Set<number>()
+        const pool = free ? (all.filter(f => !taken.has(f)).length ? all.filter(f => !taken.has(f)) : all) : null
+        const range = pool ?? (helping ? (helpFloors ? [...helpFloors] : all) : m.own)
         const cur = m.pos?.floor ?? 0
-        const nextFloor = range.find(f => f > cur) ?? range[0]
+        // Freie Wahl mit Funk: dort suchen, wo laut Durchsagen am längsten niemand war; sonst der Reihe nach.
+        const seen = (f: number) => readAt[m.i].get(f) ?? -Infinity
+        const nextFloor = free && radioOn
+          ? [...range].filter(f => f !== cur).sort((a, b) => seen(a) - seen(b) || Math.abs(a - cur) - Math.abs(b - cur) || a - b)[0] ?? range[0]
+          : range.find(f => f > cur) ?? range[0]
         const nr = `${nextFloor}01`
         const w = walkTime(D, m.pos, nextFloor, nr)
         segments.push({ maid: m.i, kind: 'patrol', nr, start: t, end: t + w })
@@ -792,12 +924,21 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
 
     // Hingehen — Schild, Klopfen, Ablehnung oder Reinigung.
     let now = t
+    if (free && radioOn && m.pos && m.pos.floor !== pick.floor) {
+      // Durchsage „bin mit der 5 fertig, gehe in die 7": Die anderen kennen
+      // damit den Stand der verlassenen Etage — wie nach dem Lesen ihrer Liste.
+      if (D.radioAnnounce > 0) segments.push({ maid: m.i, kind: 'radio', nr: m.pos.nr, start: now, end: now + D.radioAnnounce })
+      now += D.radioAnnounce
+      for (const o of maids) {
+        if (o !== m) readAt[o.i].set(m.pos.floor, Math.max(readAt[o.i].get(m.pos.floor) ?? -Infinity, now))
+      }
+    }
     const w = walkTime(D, m.pos, pick.floor, pick.nr)
     if (w > 0) segments.push({ maid: m.i, kind: 'walk', nr: pick.nr, start: now, end: now + w, pulledFrom })
     now += w
     now = arrive(m.i, m.pos, pick.floor, pick.nr, now)
     m.pos = { floor: pick.floor, nr: pick.nr }
-    if (coord === 'paper' && (knowsDeclined(pick, m.i) || retryFor(pick, m.i) > now)) {
+    if (coord === 'paper' && (knowsDeclined(pick, m.i) || retryFor(pick, m.i) > now || doneAt[pick.id] !== undefined)) {
       // Auf der Etagenliste steht, dass es hier gerade nichts zu tun gibt — neu entscheiden.
       m.t = now
       continue
@@ -836,6 +977,7 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
       knocks++
     } else {
       segments.push({ maid: m.i, kind: 'clean', nr: pick.nr, jobId: pick.id, start: now, end: now + pick.duration })
+      takenAt[pick.id] = now
       now += pick.duration
       doneAt[pick.id] = now
     }
@@ -870,6 +1012,7 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
       cleanMinutes: minutesOf('clean'),
       walkMinutes: minutesOf('walk', 'patrol', 'overview'),
       doorMinutes: minutesOf('knock', 'declined', 'skip'),
+      radioMinutes: minutesOf('radio'),
       departuresOpenAtCheckin: deps.filter(j => !(doneAt[j.id] <= P.checkinAt)).length,
       leftUndone: jobs.filter(j => doneAt[j.id] === undefined && j.readyAt < P.horizon && !j.declines && !(j.dndUntil >= P.horizon)).length,
     },
@@ -913,7 +1056,7 @@ export function middleSeed(rows: { seed: number; routine: number; onDemand: numb
 }
 
 /** Ergebnis von `typicalSeed()` — der Test hält fest, dass beides übereinstimmt. */
-export const SCENARIO_SEED = 46
+export const SCENARIO_SEED = 75
 export const SCENARIO: Scenario = buildScenario(SCENARIO_SEED)
 
 // ── Zustand zu einem Zeitpunkt (für die Anzeige) ──────────────────────────

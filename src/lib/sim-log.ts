@@ -73,6 +73,11 @@ export function eventLog(res: SimResult, scn: Scenario): LogEntry[] {
       : 'Gast verlässt das Zimmer')
   }
   const c = scn.complaint
+  if (!rose && P.baseline.departures === 'radio') {
+    for (const r of scn.rooms) {
+      if (r.kind === 'departure') house(r.checkoutAt + P.duration.radioDelay, `Rezeption meldet per Funk: ${r.nr} abgereist`)
+    }
+  }
   if (c) {
     guest(c.at, c.nr, 'Sonderfall gemeldet')
     if (rose) house(c.at, `Rezeption priorisiert ${c.nr} auf dem Board`)
@@ -107,6 +112,7 @@ export function eventLog(res: SimResult, scn: Scenario): LogEntry[] {
       }
       case 'patrol': maid(`geht die ${floorName(floor!)} ab (Anhänger prüfen)`); break
       case 'overview': maid(`liest die Etagenliste der ${floorName(floor!)}`); break
+      case 'radio': maid(g.jobId ? `nimmt Funkspruch der Rezeption an: ${g.jobId} abgereist` : 'meldet per Funk den Etagenwechsel', g.start, g.jobId ?? (g.nr || undefined)); break
       case 'knock': maid(`klopft bei ${g.nr} – Gast noch im Zimmer, später erneut`); break
       case 'declined': maid(`klopft bei ${g.nr} – Gast lehnt Reinigung für heute ab`); break
       case 'skip': maid(`an ${g.nr}: „Nicht stören“, später erneut`); break

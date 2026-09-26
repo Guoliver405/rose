@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG } from './cleaning-sim'
-import { DEFAULT_FORM, changedDetails, configFromForm, formFromConfig, formFromSaved, fromClock, occupancyOf, sharesTotal, toClock, toSaved, withOccupancy } from './sim-form'
+import { DEFAULT_FORM, SIM_DEFAULT_BASELINE, changedDetails, configFromForm, formFromConfig, formFromSaved, fromClock, occupancyOf, sharesTotal, toClock, toSaved, withOccupancy } from './sim-form'
 
 describe('Simulator-Formular', () => {
-  it('die Vorgabe des Formulars ist exakt die Konfiguration der Landing Page', () => {
+  it('die Vorgabe des Formulars ist die Konfiguration der Landing Page — nur mit Funk', () => {
     const { config, errors } = configFromForm(DEFAULT_FORM)
     expect(errors).toEqual([])
-    expect(config).toEqual(DEFAULT_CONFIG)
+    expect(config).toEqual({ ...DEFAULT_CONFIG, baseline: SIM_DEFAULT_BASELINE })
+    expect(DEFAULT_CONFIG.baseline).toEqual({ departures: 'list', floors: 'fixed' })
+    expect(SIM_DEFAULT_BASELINE).toEqual({ departures: 'radio', floors: 'fixed' })
     expect(DEFAULT_FORM.times.shiftStart).toBe('08:00')
     expect(DEFAULT_FORM.guest.dndAllDay).toBe(33.3)
   })
