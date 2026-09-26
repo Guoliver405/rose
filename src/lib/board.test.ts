@@ -546,6 +546,13 @@ describe('Etagen-Empfehlung und Wechselhinweis', () => {
     expect(minutesToCheckin({}, zonedInstant(B, 2026, 9, 26, 16, 0), B)).toBeCloseTo(-60)
   })
 
+  it('„Nicht stören" aufgehoben: fällige Routine wiegt wie ein Wunsch, ohne Routine nichts', () => {
+    const base = { guest_signal: 'none' as const, checkout_pending: false, priority: false }
+    expect(roomScore(base, true, new Date(), SCORE_WEIGHTS.checkoutPending, false)).toBe(SCORE_WEIGHTS.stayover)
+    expect(roomScore(base, true, new Date(), SCORE_WEIGHTS.checkoutPending, true)).toBe(SCORE_WEIGHTS.pleaseClean)
+    expect(roomScore(base, false, new Date(), SCORE_WEIGHTS.checkoutPending, true)).toBe(0)
+  })
+
   it('roomScore nimmt das Abreise-Gewicht mit Druck', () => {
     expect(roomScore({ guest_signal: 'none', checkout_pending: true, priority: false }, false, new Date(), 48)).toBe(48)
   })

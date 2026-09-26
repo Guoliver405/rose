@@ -173,10 +173,22 @@ export const MAIDS = 5
  * zufällig verteilt. Check-outs zwischen 7:00 und 11:00 (gehäuft gegen Ende),
  * Bleibegäste gehen gleichverteilt zwischen 7:00 und 11:00.
  */
-export function buildScenario(seed: number): Scenario {
+/** Größe und Gästeverhalten eines Hauses — Vorgabe ist das Haus der Landing Page. */
+export type ScenarioConfig = {
+  floors: number
+  roomsPerFloor: number
+  /** Ohne Software bekommt jede Kraft `floors / maids` feste Etagen (ganzzahlig). */
+  maids: number
+  mix: Record<keyof typeof MIX, number>
+  guest: { [K in keyof typeof GUEST]: number }
+}
+
+export function buildScenario(seed: number, config: Partial<ScenarioConfig> = {}): Scenario {
+  const cfg: ScenarioConfig = { floors: FLOORS, roomsPerFloor: ROOMS_PER_FLOOR, maids: MAIDS, mix: MIX, guest: GUEST, ...config }
+  const GUEST_ = cfg.guest
   const rand = rng(seed)
   const kinds: (keyof typeof MIX)[] = []
-  for (const [k, n] of Object.entries(MIX) as [keyof typeof MIX, number][]) {
+  for (const [k, n] of Object.entries(cfg.mix) as [keyof typeof MIX, number][]) {
     for (let i = 0; i < n; i++) kinds.push(k)
   }
   // Fisher-Yates
@@ -187,21 +199,21 @@ export function buildScenario(seed: number): Scenario {
   const five = (v: number) => Math.round(v / 5) * 5
   const out = (nr: string, floor: number, wants: boolean): SimRoom => {
     const outAt = -60 + five(240 * rand())
-    if (rand() < GUEST.dndMorning) {
-      if (rand() < GUEST.dndAllDay) return { nr, floor, kind: 'stay', presence: 'dnd' }
+    if (rand() < GUEST_.dndMorning) {
+      if (rand() < GUEST_.dndAllDay) return { nr, floor, kind: 'stay', presence: 'dnd' }
       return { nr, floor, kind: 'stay', presence: 'out', outAt, wants, dndUntil: outAt, notBefore: null,
-        signals: wants && rand() < GUEST.dndLiftSignals }
+        signals: wants && rand() < GUEST_.dndLiftSignals }
     }
-    if (wants && rand() < GUEST.notBefore) {
+    if (wants && rand() < GUEST_.notBefore) {
       return { nr, floor, kind: 'stay', presence: 'out', outAt, wants, dndUntil: null,
         notBefore: Math.ceil(outAt / 60) * 60, signals: false }
     }
     return { nr, floor, kind: 'stay', presence: 'out', outAt, wants, dndUntil: null, notBefore: null,
-      signals: wants && rand() < GUEST.signals }
+      signals: wants && rand() < GUEST_.signals }
   }
   const rooms: SimRoom[] = kinds.map((k, i) => {
-    const floor = Math.floor(i / ROOMS_PER_FLOOR) + 1
-    const nr = `${floor}${String((i % ROOMS_PER_FLOOR) + 1).padStart(2, '0')}`
+    const floor = Math.floor(i / cfg.roomsPerFloor) + 1
+    const nr = `${floor}${String((i % cfg.roomsPerFloor) + 1).padStart(2, '0')}`
     switch (k) {
       case 'departure': return { nr, floor, kind: 'departure', checkoutAt: -60 + five(240 * Math.sqrt(rand())) }
       case 'empty': return { nr, floor, kind: 'empty' }
@@ -210,14 +222,14 @@ export function buildScenario(seed: number): Scenario {
       case 'outNoRequest': return out(nr, floor, false)
     }
   })
-  const per = FLOORS / MAIDS
-  const maidFloors = Array.from({ length: MAIDS }, (_, i) => Array.from({ length: per }, (_, k) => i * per + k + 1))
-  const base: Scenario = { complaint: null, floors: FLOORS, roomsPerFloor: ROOMS_PER_FLOOR, maidFloors, rooms }
+  const per = cfg.floors / cfg.maids
+  const maidFloors = Array.from({ length: cfg.maids }, (_, i) => Array.from({ length: per }, (_, k) => i * per + k + 1))
+  const base: Scenario = { complaint: null, floors: cfg.floors, roomsPerFloor: cfg.roomsPerFloor, maidFloors, rooms }
   // Sonderfall: ein Zimmer, das zur Meldung in ALLEN vier Abläufen schon
   // gereinigt ist — sonst hätte eine Seite einen Vorsprung, weil sie das
   // Zimmer ohnehin erst noch reinigt. Bevorzugt im oberen Bereich.
   const runs = ALL_RUNS.map(([c, p]) => simulate(c, p, base))
-  const half = FLOORS / 2
+  const half = cfg.floors / 2
   const cleanedEverywhere = rooms
     .filter(r => runs.every(res => res.doneAt[r.nr] !== undefined && res.doneAt[r.nr] <= COMPLAINT.at - 10))
     .sort((a, b) => Number(b.floor > half) - Number(a.floor > half) || a.nr.localeCompare(b.nr))
@@ -438,7 +450,10 @@ export function simulate(coord: Coordination, policy: Policy, scn: Scenario = SC
     const openDeps = coord === 'rose' ? openNow.filter(j => j.kind === 'departure' && j.knownAt <= t).length : 0
     const depWeight = departureWeight(departurePressure(openDeps, maids.filter(o => !o.finished).length, CHECKIN_AT - t))
     const weightOf = (j: Job) => j.kind === 'departure' && coord === 'rose' ? depWeight
-      : j.kind === 'stay' && signalKnown(j, m.i, t) ? SCORE_WEIGHTS.pleaseClean : j.weight
+      : j.kind === 'stay' && signalKnown(j, m.i, t) ? SCORE_WEIGHTS.pleaseClean
+      // „Nicht stören" aufgehoben: wiegt wie ein Wunsch (wie im Board, `roomScore`) — nur RoSe weiß es.
+      : coord === 'rose' && j.kind === 'stay' && j.dndUntil > 0 && j.dndUntil <= t ? SCORE_WEIGHTS.pleaseClean
+      : j.weight
 
     let pick: Job | undefined
     let pulledFrom: number | undefined
@@ -603,7 +618,7 @@ export function typicalSeed(days = TYPICAL_DAYS): number {
 }
 
 /** Ergebnis von `typicalSeed()` — der Test hält fest, dass beides übereinstimmt. */
-export const SCENARIO_SEED = 22
+export const SCENARIO_SEED = 46
 export const SCENARIO: Scenario = buildScenario(SCENARIO_SEED)
 
 // ── Zustand zu einem Zeitpunkt (für die Anzeige) ──────────────────────────

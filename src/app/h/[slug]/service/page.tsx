@@ -91,9 +91,9 @@ export default async function ServiceBoardPage({
   const nameByProfile = new Map((maids ?? []).map(p => [p.id, p.display_name]))
 
   // „Nicht stören aufgehoben": letzter heutiger Wechsel des Signals war DND →
-  // keine Angabe, und seitdem wurde nicht gereinigt. Nur ein Hinweis für die
-  // Kraft (meist ist der Gast gerade gegangen) — ohne Einfluss auf das Gewicht:
-  // nachgerechnet bringt es der Effizienz nichts und verzögert die Abreisen.
+  // keine Angabe, und seitdem wurde nicht gereinigt. Die Routine wiegt dann wie
+  // ein Wunsch (roomScore): Meist ist der Gast gerade gegangen, und das Fenster
+  // kann sich wieder schließen, wenn er zurückkommt und das Schild aufhängt.
   const lastSignal = new Map<string, { old_value: string | null; new_value: string | null; occurred_at: string }>()
   for (const c of signalChanges ?? []) lastSignal.set(c.room_id, c)
   const lastCleanAt = new Map<string, string>()
@@ -139,6 +139,7 @@ export default async function ServiceBoardPage({
       clean_not_before: state?.clean_not_before ?? null,
     }
     const deferred = isCleanDeferred(stateLike, now)
+    const liftedAt = stay && signal === 'none' ? dndLiftedAt(r.id) : null
 
     // Stale-Timeout: vergessene Abschlüsse gelten als offen (Ableitung im
     // Loader — kein Cron). Die stale Besitzerin wird trotzdem angezeigt.
@@ -169,12 +170,12 @@ export default async function ServiceBoardPage({
       departureToday: isDepartureToday(stay?.expected_checkout, now, tz),
       guestSignal: signal,
       cleanDeferredUntil: deferred ? formatHHMM(new Date(state!.clean_not_before as string), tz) : null,
-      dndLiftedAt: stay && signal === 'none' ? dndLiftedAt(r.id) : null,
+      dndLiftedAt: liftedAt,
       checkoutPending,
       priority,
       stayoverDue,
       active: isRoomActive(stateLike, now) || stayoverDue,
-      score: roomScore(stateLike, stayoverDue, now, departureW),
+      score: roomScore(stateLike, stayoverDue, now, departureW, liftedAt !== null),
       cleaningByName: state?.cleaning_by
         ? (nameByProfile.get(state.cleaning_by) ?? 'Kollegin')
         : null,

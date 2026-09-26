@@ -727,7 +727,7 @@ const REINIGUNG: HilfeThema = {
         },
         {
           frage: 'Was heißt „Nicht stören aufgehoben 9:40"?',
-          antwort: 'Der Gast hat heute um 9:40 sein „Nicht stören" zurückgenommen, und seitdem wurde das Zimmer nicht gereinigt. Meist heißt das: Er ist gerade gegangen — ein guter Moment zu klopfen, wenn man ohnehin auf der Etage ist. Sicher ist es nicht, deshalb ändert der Hinweis nichts an der Empfehlung des Boards.',
+          antwort: 'Der Gast hat heute um 9:40 sein „Nicht stören" zurückgenommen, und seitdem wurde das Zimmer nicht gereinigt. Meist heißt das: Er ist gerade gegangen. Das Board zählt das Zimmer deshalb wie einen Reinigungswunsch — das Fenster kann sich wieder schließen, wenn der Gast zurückkommt und das Schild erneut aufhängt, etwa nach dem Mittagessen.',
         },
         {
           frage: 'Das Board schlägt vor, die Etage zu wechseln — warum?',

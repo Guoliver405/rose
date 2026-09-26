@@ -120,12 +120,20 @@ export function roomScore(
   state: ActiveLike, stayoverDue = false, now: Date = new Date(),
   /** Gewicht einer Abreise — mit Check-out-Druck `departureWeight(…)`, sonst das Grundgewicht. */
   departureW: number = SCORE_WEIGHTS.checkoutPending,
+  /**
+   * Heute „Nicht stören" aufgehoben und seitdem nicht gereinigt: Die Routine
+   * wiegt dann wie ein Wunsch. Das Aufheben öffnet ein Zeitfenster — meist ist
+   * der Gast gerade gegangen —, und niemand weiß, wie lange es offen bleibt:
+   * Kommt er vom Mittagessen zurück und will schlafen, hängt das Schild wieder
+   * (User, 26.09.2026). Nachgerechnet kostet es die Effizienz nichts.
+   */
+  dndLifted = false,
 ): number {
   let score = 0
   if (state.priority) score += SCORE_WEIGHTS.priority
   if (state.checkout_pending) score += departureW
   if (state.guest_signal === 'please_clean' && !isCleanDeferred(state, now)) score += SCORE_WEIGHTS.pleaseClean
-  else if (stayoverDue) score += SCORE_WEIGHTS.stayover // Routine: Gast vielleicht noch da
+  else if (stayoverDue) score += dndLifted ? SCORE_WEIGHTS.pleaseClean : SCORE_WEIGHTS.stayover // Routine: Gast vielleicht noch da
   return score
 }
 
