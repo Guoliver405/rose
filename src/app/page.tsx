@@ -234,8 +234,8 @@ function Formula() {
       </p>
       <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-ink-muted">
         Kein PMS-Projekt, keine Schulung, in wenigen Minuten eingerichtet —{' '}
-        {formatCents(PRICE_PER_ROOM_CENTS)} je Zimmer im Monat, mindestens ein
-        voller Monat frei.
+        {formatCents(PRICE_PER_ROOM_CENTS)} je Zimmer im Monat, einen Monat
+        kostenlos testen.
       </p>
     </section>
   )
