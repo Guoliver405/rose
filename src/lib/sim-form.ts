@@ -25,6 +25,12 @@ export type SimForm = {
   /** So arbeitet das Haus ohne Software (Phase 5). */
   baseline: Baseline
   days: number
+  /**
+   * Nummer des ersten gerechneten Tages (intern der Seed): Tag N hat immer
+   * dieselben Gäste, deshalb bleiben Läufe und gespeicherte Szenarien
+   * vergleichbar. „Andere Tage würfeln“ setzt eine neue Nummer.
+   */
+  firstDay: number
 }
 
 export const toClock = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
@@ -39,7 +45,7 @@ export function fromClock(v: string): number {
 
 const pct = (v: number) => Math.round(v * 1000) / 10
 
-export function formFromConfig(cfg: ScenarioConfig, days: number): SimForm {
+export function formFromConfig(cfg: ScenarioConfig, days: number, firstDay = 1): SimForm {
   const rooms = cfg.floors * cfg.roomsPerFloor
   return {
     floors: cfg.floors,
@@ -51,6 +57,7 @@ export function formFromConfig(cfg: ScenarioConfig, days: number): SimForm {
     duration: { ...cfg.duration },
     baseline: { ...cfg.baseline },
     days,
+    firstDay,
   }
 }
 
@@ -187,5 +194,17 @@ export function formFromSaved(raw: unknown): SimForm {
       floors: src.baseline?.floors === 'free' ? 'free' : DEFAULT_BASELINE.floors,
     },
     days: num(src.days, d.days),
+    firstDay: Math.max(1, Math.round(num(src.firstDay, 1))),
   }
+}
+
+/** Erste Tagesnummer für „Andere Tage würfeln“ — nie die Standardtage ab 1. */
+export function randomFirstDay(rand: () => number = Math.random): number {
+  return 1000 + Math.floor(rand() * 999_000)
+}
+
+/** „Tage 1–101“ bzw. „Tage 12 345–12 445“. */
+export function dayRangeLabel(firstDay: number, days: number): string {
+  const n = new Intl.NumberFormat('de-DE')
+  return days === 1 ? `Tag ${n.format(firstDay)}` : `Tage ${n.format(firstDay)}–${n.format(firstDay + days - 1)}`
 }

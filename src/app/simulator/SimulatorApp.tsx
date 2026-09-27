@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { AlertTriangle, ChevronRight, Leaf, Loader2, Play, Printer, RotateCcw, Square, X } from 'lucide-react'
+import { AlertTriangle, ChevronRight, Dices, Leaf, Loader2, Play, Printer, RotateCcw, Square, X } from 'lucide-react'
 import CleaningSimulation from '@/components/landing/CleaningSimulation'
 import DistributionChart from '@/components/simulator/DistributionChart'
 import type { ScenarioItem } from '@/utils/sim-scenarios'
@@ -12,7 +12,7 @@ import { ROI_DEFAULTS, DAYS_PER_MONTH } from '@/lib/roi'
 import { validateRun, workload, type DayRun, type Dist, type SideSummary, type SimMessage, type SimRequest, type Summary } from '@/lib/sim-batch'
 import {
   DEFAULT_FORM, DETAIL_DURATIONS, ESSENTIAL_DURATIONS, RADIO_DURATIONS, ESSENTIAL_TIMES, changedDetails, configFromForm,
-  occupancyOf, sharesTotal, withOccupancy, type GuestKey, type SimForm,
+  dayRangeLabel, occupancyOf, randomFirstDay, sharesTotal, withOccupancy, type GuestKey, type SimForm,
 } from '@/lib/sim-form'
 
 /**
@@ -83,7 +83,7 @@ const STAY_MIX: MixKey[] = ['declines', 'outWants', 'outNoRequest']
 const field = 'w-full rounded-lg border border-edge bg-surface px-2.5 py-1.5 text-ink tabular-nums outline-none focus:border-active'
 
 type Running = { done: number; total: number; label?: string }
-type Result = { summary: Summary; runs: DayRun[]; config: ScenarioConfig; days: number }
+type Result = { summary: Summary; runs: DayRun[]; config: ScenarioConfig; days: number; firstDay: number }
 type Compared = { name: string; summary: Summary; config: ScenarioConfig; days: number }
 
 export default function SimulatorApp({ initialScenarios = [], convert }: {
@@ -105,7 +105,7 @@ export default function SimulatorApp({ initialScenarios = [], convert }: {
 
   const { config, errors: formErrors } = useMemo(() => configFromForm(form), [form])
   const errors = useMemo(() => [...formErrors, ...validateRun(config, form.days)], [formErrors, config, form.days])
-  const stale = result !== null && (JSON.stringify(result.config) !== JSON.stringify(config) || result.days !== form.days)
+  const stale = result !== null && (JSON.stringify(result.config) !== JSON.stringify(config) || result.days !== form.days || result.firstDay !== form.firstDay)
   const dirty = active !== null && JSON.stringify(active.form) !== JSON.stringify(form)
 
   useEffect(() => () => worker.current?.terminate(), [])
@@ -115,7 +115,7 @@ export default function SimulatorApp({ initialScenarios = [], convert }: {
    * (`terminate`) — ein synchron rechnender Worker nähme eine Nachricht erst
    * nach dem Lauf entgegen.
    */
-  const runJob = (cfg: ScenarioConfig, days: number, onProgress: (done: number, total: number) => void) =>
+  const runJob = (cfg: ScenarioConfig, days: number, firstDay: number, onProgress: (done: number, total: number) => void) =>
     new Promise<{ runs: DayRun[]; summary: Summary }>((resolve, reject) => {
       worker.current?.terminate()
       const id = nextId.current++
@@ -130,7 +130,7 @@ export default function SimulatorApp({ initialScenarios = [], convert }: {
         else { w.terminate(); resolve({ runs: msg.runs, summary: msg.summary }) }
       }
       w.onerror = () => { w.terminate(); reject(new Error('Die Rechnung ist abgebrochen. Bitte erneut versuchen.')) }
-      const req: SimRequest = { type: 'run', id, config: cfg, days }
+      const req: SimRequest = { type: 'run', id, config: cfg, days, firstSeed: firstDay }
       w.postMessage(req)
     })
 
@@ -146,12 +146,12 @@ export default function SimulatorApp({ initialScenarios = [], convert }: {
     if (err instanceof Error && err.message !== 'abgebrochen') setRunErrors([err.message])
   }
 
-  const run = () => {
+  const run = (firstDay = form.firstDay) => {
     if (errors.length > 0) return
-    const snapshot = { config, days: form.days }
+    const snapshot = { config, days: form.days, firstDay }
     setRunErrors([])
     setRunning({ done: 0, total: form.days })
-    runJob(config, form.days, (done, total) => setRunning({ done, total }))
+    runJob(config, form.days, firstDay, (done, total) => setRunning({ done, total }))
       .then(r => setResult({ ...r, ...snapshot }))
       .catch(fail)
       .finally(() => setRunning(null))
@@ -169,7 +169,7 @@ export default function SimulatorApp({ initialScenarios = [], convert }: {
         if (bad.length > 0) throw new Error(`„${item.name}“: ${bad.join(' ')}`)
         const label = `Szenario ${i + 1} von ${items.length}: ${item.name}`
         setRunning({ done: 0, total: item.form.days, label })
-        const r = await runJob(cfg, item.form.days, (done, total) => setRunning({ done, total, label }))
+        const r = await runJob(cfg, item.form.days, item.form.firstDay, (done, total) => setRunning({ done, total, label }))
         out.push({ name: item.name, summary: r.summary, config: cfg, days: item.form.days })
       }
       setCompared(out)
@@ -336,10 +336,25 @@ export default function SimulatorApp({ initialScenarios = [], convert }: {
               <Square className="h-4 w-4" aria-hidden /> Abbrechen
             </button>
           ) : (
-            <button type="button" onClick={run} disabled={errors.length > 0}
-              className="flex items-center gap-1.5 rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50">
-              <Play className="h-4 w-4" aria-hidden /> {result ? 'Neu rechnen' : 'Rechnen'}
-            </button>
+            <>
+              {/* Dieselben Tage mit denselben Einstellungen ergäben dasselbe — dann gibt es nichts zu rechnen. */}
+              <button type="button" onClick={() => run()} disabled={errors.length > 0 || (result !== null && !stale)}
+                title={result !== null && !stale ? 'Das Ergebnis unten gilt für diese Einstellungen und Tage.' : undefined}
+                className="flex items-center gap-1.5 rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50">
+                <Play className="h-4 w-4" aria-hidden /> Rechnen
+              </button>
+              <button type="button" disabled={errors.length > 0}
+                onClick={() => { const f = randomFirstDay(); set({ firstDay: f }); run(f) }}
+                className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-2 text-sm font-semibold text-ink-soft hover:bg-surface-sunken disabled:opacity-50">
+                <Dices className="h-4 w-4" aria-hidden /> Andere Tage würfeln
+              </button>
+              <span className="text-sm text-ink-muted">
+                {dayRangeLabel(form.firstDay, form.days)}
+                {form.firstDay !== 1 && <>{' · '}
+                  <button type="button" onClick={() => set({ firstDay: 1 })} className="font-semibold text-action-strong hover:underline">zurück auf Tag 1</button>
+                </>}
+              </span>
+            </>
           )}
           {running && (
             <div className="flex min-w-48 flex-1 items-center gap-3" role="status">
@@ -535,7 +550,7 @@ function Results({ result, policy, onPolicy }: { result: Result; policy: Policy;
         <div className="mt-3">
           <CleaningSimulation scenario={typical} policy={policy} detailLog caption={
             <p>
-              Tag {summary.typicalSeed} von {days}. {rooms} Zimmer auf {config.floors} Etagen, {config.maids} Reinigungskräfte ab{' '}
+              {result.firstDay === 1 ? `Tag ${summary.typicalSeed} von ${days}` : `Tag ${num.format(summary.typicalSeed)} (gerechnet: ${dayRangeLabel(result.firstDay, days)})`}. {rooms} Zimmer auf {config.floors} Etagen, {config.maids} Reinigungskräfte ab{' '}
               {clockLabel(0, P.shiftStart)}, Check-out bis {clockLabel(P.checkoutAt, P.shiftStart)}, Check-in ab{' '}
               {clockLabel(P.checkinAt, P.shiftStart)}. Modellrechnung.
             </p>

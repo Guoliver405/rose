@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG } from './cleaning-sim'
-import { DEFAULT_FORM, SIM_DEFAULT_BASELINE, changedDetails, configFromForm, formFromConfig, formFromSaved, fromClock, occupancyOf, sharesTotal, toClock, toSaved, withOccupancy } from './sim-form'
+import { DEFAULT_FORM, SIM_DEFAULT_BASELINE, changedDetails, configFromForm, dayRangeLabel, randomFirstDay, formFromConfig, formFromSaved, fromClock, occupancyOf, sharesTotal, toClock, toSaved, withOccupancy } from './sim-form'
 
 describe('Simulator-Formular', () => {
   it('die Vorgabe des Formulars ist die Konfiguration der Landing Page — nur mit Funk', () => {
@@ -69,5 +69,16 @@ describe('Gespeicherte Szenarien', () => {
     expect(partial.guest.signals).toBe(DEFAULT_FORM.guest.signals)
     expect(formFromSaved(null)).toEqual(DEFAULT_FORM)
     expect(formFromSaved('Unsinn')).toEqual(DEFAULT_FORM)
+  })
+})
+
+describe('Tage würfeln', () => {
+  it('gespeicherte Szenarien ohne Tagesnummer rechnen ab Tag 1, gewürfelte nie auf den Standardtagen', () => {
+    expect(formFromSaved({ v: 1, form: { ...DEFAULT_FORM, firstDay: undefined } }).firstDay).toBe(1)
+    expect(formFromSaved(toSaved({ ...DEFAULT_FORM, firstDay: 12345 })).firstDay).toBe(12345)
+    expect(randomFirstDay(() => 0)).toBeGreaterThan(DEFAULT_FORM.days)
+    expect(randomFirstDay(() => 0.999999)).toBeLessThan(1_000_000)
+    expect(dayRangeLabel(1, 101)).toBe('Tage 1–101')
+    expect(dayRangeLabel(12345, 101)).toBe('Tage 12.345–12.445')
   })
 })
