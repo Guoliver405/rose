@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import {
-  BedDouble, BellRing, Check, ClipboardCheck, Clock, Droplets, KeyRound, Leaf,
-  Moon, MousePointerClick, Printer, QrCode, ShieldCheck, Smartphone, Sparkles,
+  BedDouble, BellRing, Check, ClipboardCheck, Clock, Droplets, Equal, KeyRound, Leaf,
+  Moon, MousePointerClick, Plus, Printer, QrCode, ShieldCheck, Smartphone, Sparkles,
   User,
 } from 'lucide-react'
 import { formatCents } from '@/lib/money'
@@ -47,6 +47,7 @@ export default function LandingPage() {
       <main className="flex-1">
         <Hero />
         <PainPoints />
+        <Formula />
         <Sustainability />
         <ProductPreview />
         <Flow />
@@ -134,11 +135,6 @@ function Hero() {
           Produkt Demo
         </a>
       </div>
-      <p className="mt-5 text-sm text-ink-muted">
-        {formatCents(PRICE_PER_ROOM_CENTS)} je Zimmer und Monat · mindestens ein
-        voller Monat frei · läuft im Browser auf jedem Gerät · in wenigen Minuten
-        eingerichtet
-      </p>
     </section>
   )
 }
@@ -168,6 +164,79 @@ function PainPoints() {
           </div>
         ))}
       </div>
+    </section>
+  )
+}
+
+/* ── RoSe-Formel: der Nutzen auf einen Blick ────────────────────── */
+
+/**
+ * Die drei Verkaufsargumente als Gleichung (User, 27.09.2026): oben das
+ * Mittel, unten die Wirkung. Jede Kachel springt auf den Abschnitt, der das
+ * Versprechen belegt. Bewusst drei Glieder — die Einstiegshürde ist kein
+ * weiterer Nutzen, sondern der Grund, es auszuprobieren, und steht darunter.
+ * Farbe nur als Linie und Tönung (Farbsprache der Boards).
+ */
+function Formula() {
+  const terms = [
+    {
+      href: '#produkt',
+      icon: Smartphone,
+      means: 'Mobiles Gästeportal',
+      effect: 'bessere Servicequalität',
+      box: 'border-fresh-tint-edge bg-fresh-tint hover:border-fresh-bar',
+      tone: 'text-fresh-deep',
+    },
+    {
+      href: '#vergleich',
+      icon: Sparkles,
+      means: 'Gesteuerte Zimmerreinigung',
+      effect: 'spart Kosten, schont die Umwelt',
+      box: 'border-positive-tint-edge bg-positive-tint hover:border-positive-bar',
+      tone: 'text-positive-deep',
+    },
+    {
+      href: '#ablauf',
+      icon: ClipboardCheck,
+      means: 'Digitaler Informationsfluss',
+      effect: 'Übersicht und Nachvollziehbarkeit',
+      box: 'border-accent-tint-edge bg-accent-tint hover:border-accent-bar',
+      tone: 'text-accent-deep',
+    },
+  ]
+  return (
+    <section id="formel" className="mx-auto w-full max-w-5xl scroll-mt-20 px-4 pt-16">
+      <h2 className="text-center text-sm font-bold uppercase tracking-widest text-ink-muted">
+        Die RoSe-Formel
+      </h2>
+      <div className="mt-6 flex flex-col items-stretch gap-2 md:flex-row md:items-center">
+        {terms.map((t, i) => (
+          <div key={t.href} className="contents">
+            {i > 0 && (
+              <Plus aria-hidden className="mx-auto h-7 w-7 shrink-0 text-ink-muted md:mx-1" strokeWidth={2.5} />
+            )}
+            <a
+              href={t.href}
+              className={`flex flex-1 flex-col items-center rounded-2xl border-2 p-5 text-center transition-colors ${t.box}`}
+            >
+              <t.icon aria-hidden className={`h-8 w-8 ${t.tone}`} />
+              <span className="mt-3 font-black text-ink">{t.means}</span>
+              <span className={`mt-3 w-full border-t border-edge pt-3 text-sm font-semibold ${t.tone}`}>
+                {t.effect}
+              </span>
+            </a>
+          </div>
+        ))}
+      </div>
+      <p className="mt-6 flex items-center justify-center gap-3 text-2xl font-black text-ink">
+        <Equal aria-hidden className="h-7 w-7 text-ink-muted" strokeWidth={2.5} />
+        <Brand />
+      </p>
+      <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-ink-muted">
+        Kein PMS-Projekt, keine Schulung, in wenigen Minuten eingerichtet —{' '}
+        {formatCents(PRICE_PER_ROOM_CENTS)} je Zimmer im Monat, mindestens ein
+        voller Monat frei.
+      </p>
     </section>
   )
 }
