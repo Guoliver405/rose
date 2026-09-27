@@ -1138,7 +1138,29 @@ export type TileState =
   | 'cleaning'
   | 'done'
 
-export type Tile = { nr: string; floor: number; state: TileState; knock: 'present' | 'declined' | 'dnd' | null; priority: boolean }
+export type Tile = {
+  nr: string
+  floor: number
+  state: TileState
+  knock: 'present' | 'declined' | 'dnd' | null
+  /** Das Klopfen läuft, obwohl eine Kollegin hier eben „später“ bzw. die Ablehnung gehört hat. */
+  repeat: boolean
+  /**
+   * Nach einem Klopfen bei anwesendem Gast: „später“, bis wann es gilt und wer
+   * davon weiß — mit RoSe alle (`null`), ohne Software die Kraft, die geklopft hat.
+   */
+  later: { until: number; by: number | null } | null
+  priority: boolean
+}
+
+/** Die Kraft, die vor `g` an dieser Tür „später“ bzw. die Ablehnung gehört hat — Grundlage für „klopft erneut“. */
+export function toldBefore(res: SimResult, g: Segment): Segment | undefined {
+  if (!g.again || (g.kind !== 'knock' && g.kind !== 'declined')) return undefined
+  // `again` entsteht auch nach einem „Nicht stören“-Schild — gezählt wird nur ein echtes Klopfen der Kollegin.
+  return res.segments
+    .filter(o => o.kind === g.kind && o.nr === g.nr && o.maid !== g.maid && o.end <= g.start)
+    .sort((a, b) => b.end - a.end)[0]
+}
 
 export function tilesAt(res: SimResult, t: number, scn: Scenario = SCENARIO): Tile[] {
   const current = res.segments.filter(g => g.start <= t && t < g.end)
@@ -1147,6 +1169,11 @@ export function tilesAt(res: SimResult, t: number, scn: Scenario = SCENARIO): Ti
   return scn.rooms.map(r => {
     const kinds = current.filter(g => g.nr === r.nr).map(g => g.kind)
     const knock = kinds.includes('knock') ? 'present' : kinds.includes('declined') ? 'declined' : kinds.includes('skip') ? 'dnd' : null
+    const repeat = current.some(g => g.nr === r.nr && !!toldBefore(res, g))
+    const lastKnock = res.segments
+      .filter(g => g.kind === 'knock' && g.nr === r.nr && g.end <= t)
+      .sort((a, b) => b.end - a.end)[0]
+    const laterUntil = lastKnock ? lastKnock.end + scn.params.duration.retry : -Infinity
     const done = res.doneAt[r.nr] !== undefined && res.doneAt[r.nr] <= t
     const refused = res.declinedAt[r.nr] !== undefined && res.declinedAt[r.nr] <= t
     let state: TileState
@@ -1161,7 +1188,10 @@ export function tilesAt(res: SimResult, t: number, scn: Scenario = SCENARIO): Ti
     else if (r.presence === 'declines') state = 'occupied'
     else if (r.notBefore !== null && t >= scn.params.notBeforeSetAt && t < r.notBefore) state = res.coord === 'rose' ? 'deferred' : 'dnd'
     else state = t >= r.outAt ? 'wants' : 'occupied'
-    return { nr: r.nr, floor: r.floor, state, knock, priority: complaintOpen && c!.nr === r.nr }
+    const later = (state === 'occupied' || state === 'wants') && t < laterUntil
+      ? { until: laterUntil, by: res.coord === 'rose' ? null : lastKnock!.maid }
+      : null
+    return { nr: r.nr, floor: r.floor, state, knock, repeat, later, priority: complaintOpen && c!.nr === r.nr }
   })
 }
 
@@ -1172,6 +1202,38 @@ export function maidsAt(res: SimResult, t: number): (string | null)[] {
     if (g.start <= t && g.nr) at[g.maid] = g.nr
   }
   return at
+}
+
+export type MaidActivity = 'clean' | 'door' | 'walk' | 'search' | 'radio' | 'idle' | 'done' | 'off'
+
+/**
+ * Was jede Kraft zum Zeitpunkt t tut — erklärt, warum morgens viel Treiben
+ * ist, ohne dass etwas gereinigt wird. `walk` = Wege und Etagenliste lesen,
+ * `search` = ohne Software Etagen abgehen und nach Anhängern suchen;
+ * `off` = noch nicht unterwegs, `done` = fertig.
+ */
+export function maidActivityAt(res: SimResult, t: number): MaidActivity[] {
+  const out: MaidActivity[] = Array.from({ length: res.maids }, () => 'off')
+  const lastEnd: number[] = Array.from({ length: res.maids }, () => -Infinity)
+  for (const g of res.segments) {
+    if (g.kind !== 'idle') lastEnd[g.maid] = Math.max(lastEnd[g.maid], g.end)
+    if (g.start > t) continue
+    if (t >= g.end) { if (out[g.maid] === 'off') out[g.maid] = 'done'; continue }
+    out[g.maid] = g.kind === 'clean' ? 'clean'
+      : g.kind === 'knock' || g.kind === 'declined' || g.kind === 'skip' ? 'door'
+        : g.kind === 'radio' ? 'radio'
+          : g.kind === 'idle' ? 'idle'
+            : g.kind === 'patrol' ? 'search' : 'walk'
+  }
+  // Zwischen zwei Abschnitten (Übergang in derselben Minute) gilt die Kraft als unterwegs, danach als fertig.
+  return out.map((a, i) => (a === 'done' && t < lastEnd[i] ? 'walk' : a))
+}
+
+/** Bis t aufgelaufene Minuten je Tätigkeit, über alle Kräfte. */
+export function minutesUntil(res: SimResult, t: number, ...kinds: Segment['kind'][]): number {
+  return res.segments
+    .filter(g => kinds.includes(g.kind) && g.start < t)
+    .reduce((sum, g) => sum + Math.min(g.end, t) - g.start, 0)
 }
 
 /** Vergeblich an der Tür bis t: Gast noch da, lehnt ab oder „Nicht stören" — in beiden Bildern gleich gezählt. */

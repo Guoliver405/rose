@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   ALL_RUNS, CHECKIN_AT, CHECKOUT_AT, COMPLAINT, DEFAULT_CONFIG, MAIDS, MIX, SCENARIO, SCENARIO_SEED,
-  assignFloors, buildScenario, clockLabel, floorOf, highlights, maidLabel, maidsAt, mixFromShares, simulate, tilesAt,
-  turnedAwayAt, typicalSeed, validateConfig, type ScenarioConfig,
+  assignFloors, buildScenario, clockLabel, floorOf, highlights, maidActivityAt, maidLabel, maidsAt, minutesUntil, mixFromShares, simulate, tilesAt,
+  toldBefore, turnedAwayAt, typicalSeed, validateConfig, type ScenarioConfig,
   type Coordination, type Policy, type SimResult,
 } from './cleaning-sim'
 
@@ -212,6 +212,39 @@ describe('Reinigungs-Simulation', () => {
     }
     const od = run['rose-onDemand']
     expect(tilesAt(od, od.metrics.finishedAt).filter(x => decliners.includes(x.nr)).every(x => x.state === 'skipped')).toBe(true)
+  })
+})
+
+describe('Anzeige: „später“, erneutes Klopfen, Tätigkeiten', () => {
+  const run = Object.fromEntries(ALL_RUNS.map(([c, p]) => [`${c}-${p}`, simulate(c, p)])) as Record<`${Coordination}-${Policy}`, SimResult>
+
+  it('nach einem Klopfen bei anwesendem Gast steht „später“ an der Kachel — mit RoSe für alle, ohne Software mit der Kraft', () => {
+    for (const c of ['paper', 'rose'] as const) {
+      const r = run[`${c}-routine`]
+      const k = r.segments.find(g => g.kind === 'knock')!
+      const tile = tilesAt(r, k.end + 1).find(x => x.nr === k.nr)!
+      expect(tile.later).toEqual({ until: k.end + SCENARIO.params.duration.retry, by: c === 'rose' ? null : k.maid })
+      expect(tilesAt(r, k.end + SCENARIO.params.duration.retry).find(x => x.nr === k.nr)!.later?.until ?? 0).not.toBe(k.end + SCENARIO.params.duration.retry)
+    }
+  })
+
+  it('erneutes Klopfen gibt es nur ohne Software, und es nennt die Kollegin', () => {
+    const again = (r: SimResult) => r.segments.filter(g => toldBefore(r, g))
+    expect(again(run['rose-routine'])).toEqual([])
+    for (const r of Object.values(run)) {
+      for (const g of again(r)) {
+        expect(toldBefore(r, g)!.maid).not.toBe(g.maid)
+        expect(tilesAt(r, g.start).find(x => x.nr === g.nr)!.repeat).toBe(true)
+      }
+    }
+  })
+
+  it('Tätigkeiten: vor 8:00 niemand, am Ende alle fertig, gewartete Minuten wie in den Kennzahlen', () => {
+    for (const r of Object.values(run)) {
+      expect(maidActivityAt(r, -1).every(a => a === 'off')).toBe(true)
+      expect(maidActivityAt(r, r.metrics.finishedAt).every(a => a === 'done')).toBe(true)
+      expect(minutesUntil(r, r.metrics.finishedAt, 'idle')).toBe(r.metrics.idleMinutes)
+    }
   })
 })
 

@@ -12,7 +12,7 @@
  * Rechnung ohne I/O.
  */
 
-import { clockLabel, floorOf, maidLabel, type Scenario, type SimResult } from './cleaning-sim'
+import { clockLabel, floorOf, maidLabel, toldBefore, type Scenario, type SimResult } from './cleaning-sim'
 
 export type LogKind = 'house' | 'guest' | 'maid'
 
@@ -117,8 +117,20 @@ export function eventLog(res: SimResult, scn: Scenario): LogEntry[] {
         else if (g.radio === 'announce') maid(`meldet per Funk: ${floorName(floor!)} fertig`)
         else maid(`hört Funk mit – ${g.count === 1 ? 'eine Durchsage' : `${g.count} Durchsagen`}, nicht für sie`, g.start, undefined)
         break
-      case 'knock': maid(`klopft bei ${g.nr} – Gast noch im Zimmer, später erneut`); break
-      case 'declined': maid(`klopft bei ${g.nr} – Gast lehnt Reinigung für heute ab`); break
+      case 'knock': {
+        const told = toldBefore(res, g)
+        maid(told
+          ? `klopft erneut bei ${g.nr}, obwohl Kraft ${maidLabel(told.maid)} dort um ${clock(told.end)} „später“ gehört hat – Gast noch im Zimmer`
+          : `klopft bei ${g.nr} – Gast noch im Zimmer, später erneut`)
+        break
+      }
+      case 'declined': {
+        const told = toldBefore(res, g)
+        maid(told
+          ? `klopft erneut bei ${g.nr}, obwohl der Gast um ${clock(told.end)} bei Kraft ${maidLabel(told.maid)} abgelehnt hat`
+          : `klopft bei ${g.nr} – Gast lehnt Reinigung für heute ab`)
+        break
+      }
       case 'skip': maid(`an ${g.nr}: „Nicht stören“, später erneut`); break
       case 'clean': {
         const what = g.jobId?.endsWith('!') ? 'Sonderfall' : kindOf.get(g.nr) === 'departure' ? 'Abreise' : 'Bleibe'

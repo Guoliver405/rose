@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
-import { AlertTriangle, Ban, Check, ChevronLeft, ChevronRight, Clock, DoorClosed, Flag, Hand, Leaf, Loader2, Pause, Play, RotateCcw, Timer } from 'lucide-react'
+import { AlertTriangle, Ban, Check, ChevronLeft, ChevronRight, Clock, Coffee, DoorClosed, Flag, Footprints, Hand, Leaf, Loader2, Pause, Play, RotateCcw, Timer } from 'lucide-react'
 import {
-  ALL_RUNS, GUEST, SCENARIO, clockLabel, highlights, maidLabel, maidsAt, simulate, tilesAt, turnedAwayAt,
-  type Baseline, type Coordination, type Highlight, type Policy, type Scenario, type SimResult, type Tile, type TileState,
+  ALL_RUNS, GUEST, SCENARIO, clockLabel, highlights, maidActivityAt, maidLabel, maidsAt, minutesUntil, simulate, tilesAt, turnedAwayAt,
+  type Baseline, type MaidActivity, type Coordination, type Highlight, type Policy, type Scenario, type SimResult, type Tile, type TileState,
 } from '@/lib/cleaning-sim'
 import { eventLog } from '@/lib/sim-log'
 import EventLog from '@/components/simulator/EventLog'
@@ -76,11 +76,18 @@ const BAR: Partial<Record<TileState, string>> = {
   cleaning: 'bg-positive',
 }
 
+/**
+ * „Später“ an der Tür: neutral grau wie der Tür-Aufschub auf dem echten Board —
+ * überlagert „Gast im Zimmer“ bzw. „Gast weg“, solange es gilt.
+ */
+const LATER_TILE = 'border-edge-strong bg-surface-muted text-ink'
+
 const LEGEND: { state: TileState; label: string }[] = [
   { state: 'occupied', label: 'Gast im Zimmer' },
   { state: 'departed', label: 'ausgecheckt' },
   { state: 'wants', label: 'Gast weg, Reinigung offen' },
-  { state: 'dnd', label: 'Bitte nicht stören / abgelehnt' },
+  { state: 'dnd', label: 'Bitte nicht stören' },
+  { state: 'declined', label: 'abgelehnt – heute keine Reinigung' },
   { state: 'deferred', label: '„frühestens ab“ – mit RoSe als Uhrzeit bekannt' },
   { state: 'skipped', label: 'keine Reinigung gewünscht' },
   { state: 'empty', label: 'leer' },
@@ -264,15 +271,36 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption, polic
             <span className={`relative inline-block h-3 w-3 overflow-hidden rounded border ${TILE[l.state]}`} aria-hidden>
               {BAR[l.state] && <span className={`absolute inset-x-0 bottom-0 h-1 ${BAR[l.state]}`} />}
             </span>
+            <LegendIcon state={l.state} />
             {l.label}
           </li>
         ))}
+        <li className="flex items-center gap-1.5">
+          <span className={`inline-block h-3 w-3 rounded border ${LATER_TILE}`} aria-hidden />
+          <DoorClosed className="-ml-1 h-3 w-3" aria-hidden />
+          Gast noch da – „später“ (ohne Software weiß es nur, wer geklopft hat)
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span className="inline-block h-3 w-3 rounded border-2 border-critical" aria-hidden /> klopft erneut, obwohl eine Kollegin es schon gehört hat
+        </li>
         <li className="flex items-center gap-1.5">
           <span className="inline-block h-3 w-3 rounded border-2 border-accent" aria-hidden /> Sonderfall (priorisiert)
         </li>
         <li className="flex items-center gap-1.5">
           <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-edge bg-surface-elevated text-[8px] font-black text-ink" aria-hidden>A</span>
           Reinigungskraft {maids === 1 ? 'A' : `A–${maidLabel(maids - 1)}`}
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span className="flex h-3.5 items-center gap-px rounded-full border border-edge bg-surface-sunken px-0.5 text-[8px] font-black text-ink-muted" aria-hidden>
+            <Coffee className="h-2 w-2" />A
+          </span>
+          wartet – gerade nichts zu tun
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span className="flex h-3.5 items-center gap-px rounded-full border border-edge bg-surface-elevated px-0.5 text-[8px] font-black text-ink" aria-hidden>
+            <Footprints className="h-2 w-2" />A
+          </span>
+          geht Etagen ab und sucht Arbeit
         </li>
       </ul>
 
@@ -304,6 +332,7 @@ function Panel({ title, lead, res, t, scn }: { title: string; lead: string; res:
   const clock = (min: number) => clockLabel(min, scn.params.shiftStart)
   const tiles = tilesAt(res, t, scn)
   const maids = maidsAt(res, t)
+  const acts = maidActivityAt(res, t)
   /** Große Häuser: Kacheln ohne Nummer, damit eine Etage in eine Zeile passt. */
   const compact = scn.roomsPerFloor > 12
   const floors = [...new Set(tiles.map(x => x.floor))].sort((a, b) => b - a)
@@ -325,7 +354,7 @@ function Panel({ title, lead, res, t, scn }: { title: string; lead: string; res:
               {f}<span className="hidden lg:inline">. OG</span>
             </span>
             {tiles.filter(x => x.floor === f).map(x => (
-              <RoomTile key={x.nr} tile={x} compact={compact} maidsHere={maids.flatMap((nr, i) => (nr === x.nr ? [i] : []))} />
+              <RoomTile key={x.nr} tile={x} compact={compact} acts={acts} maidsHere={maids.flatMap((nr, i) => (nr === x.nr ? [i] : []))} />
             ))}
           </div>
         ))}
@@ -350,6 +379,7 @@ function Panel({ title, lead, res, t, scn }: { title: string; lead: string; res:
         </div>
         {depsDone && <span className="text-2xl font-black tabular-nums text-ink">{clock(deps!)}</span>}
       </div>
+      <Activity acts={acts} res={res} t={t} />
     </div>
   )
 }
@@ -387,31 +417,96 @@ function Log({ notes, t, clock }: { notes: Highlight[]; t: number; clock: (min: 
   )
 }
 
-function RoomTile({ tile, maidsHere, compact }: { tile: Tile; maidsHere: number[]; compact: boolean }) {
-  const ring = tile.knock ? 'ring-2 ring-critical' : tile.priority ? 'ring-2 ring-accent' : ''
+const ACTIVITY_LABEL: Record<Exclude<MaidActivity, 'off'>, string> = {
+  clean: 'reinigen',
+  door: 'an der Tür',
+  walk: 'unterwegs',
+  search: 'suchen Arbeit',
+  radio: 'am Funk',
+  idle: 'warten',
+  done: 'fertig',
+}
+const ACTIVITY_ORDER: Exclude<MaidActivity, 'off'>[] = ['clean', 'door', 'walk', 'search', 'radio', 'idle', 'done']
+
+/**
+ * Was die Kräfte gerade tun, dazu die bis jetzt aufgelaufenen Minuten an der
+ * Tür und im Warten — erklärt das morgendliche Treiben, bei dem kaum gereinigt
+ * wird, weil die Gäste noch da sind (User, 27.09.2026).
+ */
+function Activity({ acts, res, t }: { acts: MaidActivity[]; res: SimResult; t: number }) {
+  const counts = ACTIVITY_ORDER.map(a => [a, acts.filter(x => x === a).length] as const).filter(([, n]) => n > 0)
+  const door = Math.round(minutesUntil(res, t, 'knock', 'declined', 'skip'))
+  const idle = Math.round(minutesUntil(res, t, 'idle'))
+  const search = Math.round(minutesUntil(res, t, 'patrol'))
+  return (
+    <div className="mt-2 px-1 text-xs text-ink-soft">
+      <div>
+        <span className="font-semibold text-ink">Jetzt: </span>
+        {counts.length === 0 ? 'noch niemand unterwegs'
+          : counts.map(([a, n], i) => <span key={a}>{i > 0 && ' · '}<span className="font-semibold tabular-nums text-ink">{n}</span> {ACTIVITY_LABEL[a]}</span>)}
+      </div>
+      <div className="mt-0.5">
+        Bisher an der Tür <span className="font-semibold tabular-nums text-ink">{door} min</span>
+        {' · '}gewartet <span className="font-semibold tabular-nums text-ink">{idle} min</span>
+        {search > 0 && <>{' · '}Etagen abgesucht <span className="font-semibold tabular-nums text-ink">{search} min</span></>}
+      </div>
+    </div>
+  )
+}
+
+/** Symbol je Zustand in der Kachel — „abgelehnt“ bewusst anders als „Nicht stören“. */
+const STATE_ICON: Partial<Record<TileState, typeof Ban>> = {
+  dnd: Ban,
+  declined: Hand,
+  deferred: Timer,
+  skipped: Leaf,
+}
+
+function LegendIcon({ state }: { state: TileState }) {
+  const I = STATE_ICON[state]
+  return I ? <I className="-ml-1 h-3 w-3" aria-hidden /> : null
+}
+
+function RoomTile({ tile, maidsHere, acts, compact }: { tile: Tile; maidsHere: number[]; acts: MaidActivity[]; compact: boolean }) {
+  const ring = tile.repeat ? 'ring-2 ring-critical blink-ring-overdue'
+    : tile.knock ? 'ring-2 ring-critical' : tile.priority ? 'ring-2 ring-accent' : ''
+  const look = tile.later ? LATER_TILE : TILE[tile.state]
+  const bar = tile.later ? 'bg-edge-strong' : BAR[tile.state]
+  const StateIcon = STATE_ICON[tile.state]
+  const idle = maidsHere.length > 0 && maidsHere.every(i => acts[i] === 'idle')
+  const search = maidsHere.some(i => acts[i] === 'search')
   // Bei 10 Kacheln je Zeile ist für Symbole erst ab `lg` Platz; die Farbe trägt den Zustand.
   const icon = 'hidden h-2.5 w-2.5 shrink-0 lg:inline'
   return (
-    <div title={compact ? tile.nr : undefined}
-      className={`relative flex min-w-0 flex-1 items-center justify-center gap-px rounded border text-[9px] font-bold tabular-nums sm:text-[10px] ${compact ? 'h-4' : 'h-7'} ${TILE[tile.state]} ${ring}`}>
-      {BAR[tile.state] && <span className={`absolute inset-x-0 bottom-0 ${compact ? 'h-0.5' : 'h-1'} rounded-b-[3px] ${BAR[tile.state]}`} aria-hidden />}
+    <div title={laterTitle(tile, compact)}
+      className={`relative flex min-w-0 flex-1 items-center justify-center gap-px rounded border text-[9px] font-bold tabular-nums sm:text-[10px] ${compact ? 'h-4' : 'h-7'} ${look} ${ring}`}>
+      {bar && <span className={`absolute inset-x-0 bottom-0 ${compact ? 'h-0.5' : 'h-1'} rounded-b-[3px] ${bar}`} aria-hidden />}
       {!compact && <>
       <span className="lg:hidden">{tile.nr.slice(-2)}</span>
       <span className="hidden lg:inline">{tile.nr}</span>
-      {(tile.state === 'dnd' || tile.state === 'declined') && <Ban className={icon} aria-hidden />}
-      {tile.state === 'deferred' && <Timer className={icon} aria-hidden />}
-      {tile.state === 'skipped' && <Leaf className={icon} aria-hidden />}
+      {tile.later
+        ? <><DoorClosed className={icon} aria-hidden />{tile.later.by !== null && <span className="hidden text-[7px] text-ink-muted lg:inline">{maidLabel(tile.later.by)}</span>}</>
+        : StateIcon && <StateIcon className={icon} aria-hidden />}
       {tile.state === 'cleaning' && <Loader2 className={`${icon} animate-spin`} aria-hidden />}
       {tile.priority && tile.state !== 'cleaning' && <Flag className={`${icon} text-accent`} aria-hidden />}
       </>}
       {maidsHere.length > 0 && (
-        <span className="absolute -right-1 -top-1.5 z-10 flex h-4 min-w-4 items-center justify-center rounded-full border border-edge bg-surface-elevated px-0.5 shadow">
+        <span className={`absolute -right-1 -top-1.5 z-10 flex h-4 min-w-4 items-center justify-center gap-px rounded-full border border-edge px-0.5 shadow ${idle ? 'bg-surface-sunken' : 'bg-surface-elevated'}`}>
           {tile.knock === 'present' && <DoorClosed className="h-2.5 w-2.5 text-critical-strong" aria-hidden />}
           {tile.knock === 'declined' && <Hand className="h-2.5 w-2.5 text-critical-strong" aria-hidden />}
           {tile.knock === 'dnd' && <Ban className="h-2.5 w-2.5 text-critical-strong" aria-hidden />}
-          {!tile.knock && <span className="text-[8px] font-black text-ink">{maidsHere.map(maidLabel).join('')}</span>}
+          {!tile.knock && idle && <Coffee className="h-2 w-2 text-ink-muted" aria-hidden />}
+          {!tile.knock && !idle && search && <Footprints className="h-2 w-2 text-ink-soft" aria-hidden />}
+          {!tile.knock && <span className={`text-[8px] font-black ${idle ? 'text-ink-muted' : 'text-ink'}`}>{maidsHere.map(maidLabel).join('')}</span>}
         </span>
       )}
     </div>
   )
+}
+
+function laterTitle(tile: Tile, compact: boolean): string | undefined {
+  const base = compact ? tile.nr : undefined
+  if (!tile.later) return base
+  const who = tile.later.by === null ? 'alle wissen es' : `nur Kraft ${maidLabel(tile.later.by)} weiß es`
+  return `${tile.nr}: Gast noch da, „später“ – ${who}`
 }
