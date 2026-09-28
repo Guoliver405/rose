@@ -39,6 +39,10 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
       Funk als ein Kanal für alle, freie Etagen, „Abreisen zuerst", Vorgabewerte.
       Stand und Regeln: [Simulator-Plan-2026-09-26.md](Sessions/Simulator-Plan-2026-09-26.md), Abschnitte 16–17.
 - [ ] **Ergänzungen nach ausgiebigem Testen** — vom User angekündigt.
+- [ ] **Nachträge vom 27.09. in Produktion prüfen** (User, 28.09.): „später“/„abgelehnt“/
+      erneutes Klopfen an den Kacheln, Tätigkeitszeile, wartende Kräfte; „Rechnen“
+      ausgegraut, „Andere Tage würfeln“ inkl. Speichern und Vergleich. Checkliste:
+      [Simulator-Plan-2026-09-26.md](Sessions/Simulator-Plan-2026-09-26.md), Abschnitt 18.
 - [ ] **GUI-Fall L17** in Produktion ([GUI-Testkatalog](Sessions/GUI-Testkatalog.md)).
 - [ ] **Werbe-Mails mit Abmeldelink**, falls sie gebaut werden (Datenschutz Abschnitt 7).
 - [ ] **Rechtstexte des Simulators** anwaltlich prüfen lassen (mit den AGB).

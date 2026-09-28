@@ -515,3 +515,54 @@ User. Varianten über 101 Tage vergleichen, bevor man sie dem User vorlegt.
 Sichtprüfung der angemeldeten Seiten lokal über eine vorübergehende Freischaltung
 von `/simulator` (vor dem Commit entfernen) — der Testzugang aus den Protokollen hat
 ein veraltetes Passwort.
+
+## 18. Nachträge vom 27.09.2026 (Tag) — Transparenz im Tagesbild, Tage würfeln
+
+Anlass: erster Testtag des Users. Alles in Produktion (Commits `db9b075`,
+`0b2dcf7`), Unit-Tests grün; **Sichtprüfung im Browser steht aus** — der
+Vorschau-Browser zeichnete nicht, der Simulator braucht eine Anmeldung. Der User
+testet am 28.09.
+
+**Tür-Ereignisse sichtbar** (`tilesAt` in [cleaning-sim.ts](../src/lib/cleaning-sim.ts)):
+- **„Später“ bleibt an der Kachel**, solange es gilt (Klopfen + `duration.retry`):
+  neutral grau mit Tür-Symbol wie der Tür-Aufschub auf dem echten Board, überlagert
+  „Gast im Zimmer“/„Gast weg“. `Tile.later = { until, by }` — mit RoSe `by = null`
+  (alle wissen es), ohne Software die Kraft, die geklopft hat (Buchstabe in der
+  Kachel, Tooltip).
+- **Erneutes Klopfen** (`toldBefore(res, g)`: eine andere Kraft hat hier zuvor
+  „später“ bzw. die Ablehnung gehört; nach einem „Nicht stören“-Schild zählt es
+  nicht) blinkt rot (`Tile.repeat`) und steht im Ereignis-Protokoll mit der
+  Kollegin und der Uhrzeit ([sim-log.ts](../src/lib/sim-log.ts)).
+  **Befund:** Mit Etagenliste tritt das in den Vorgaben praktisch nie auf — 101 Tage
+  × drei Arbeitsweisen ohne Software: null Fälle. Der Nachteil ohne Software ist
+  die Zeit an den Türen, nicht das doppelte Klopfen. Die Markierung bleibt für
+  geänderte Annahmen.
+- **„Abgelehnt“** hat ein eigenes Symbol (Hand) statt dasselbe wie „Nicht stören“.
+
+**Was die Kräfte tun** (`maidActivityAt`, `minutesUntil`): Unter jedem Bild
+„Jetzt: 3 reinigen · 2 an der Tür · 1 wartet“ und die bis zur Uhrzeit aufgelaufenen
+Minuten an der Tür, im Warten und beim Absuchen der Etagen. Erklärt das morgendliche
+Treiben ohne Reinigung (Gäste noch da). Wartende Kräfte grau mit Tasse, Etagen
+absuchende mit Fußspuren; beides in der Legende. Gilt auch für die Landing Page.
+
+**Tage würfeln** ([sim-form.ts](../src/lib/sim-form.ts), [SimulatorApp.tsx](../src/app/simulator/SimulatorApp.tsx)):
+Der User hielt „Neu rechnen“ für einen neuen Zufallslauf — es rechnete dieselben
+Tage 1…N (Seed-Verfahren, Tag N hat immer dieselben Gäste). Bewusst beibehalten
+(Vergleichbarkeit zwischen Einstellungen und gespeicherten Szenarien), aber
+ehrlich beschriftet: **„Rechnen“** ist ausgegraut, solange das Ergebnis zu
+Einstellungen und Tagen passt; **„Andere Tage würfeln“** setzt `SimForm.firstDay`
+(`randomFirstDay`, 1 000 … 999 999, nie die Standardtage) und rechnet sofort;
+daneben „Tage 1–101“ bzw. „zurück auf Tag 1“. `firstDay` wird mit dem Szenario
+gespeichert (fehlt er, gilt 1 — keine Versionserhöhung nötig), der Vergleich rechnet
+jedes Szenario auf seinen Tagen. In der Oberfläche heißt es nie „Seed“.
+
+**Landing Page, gleicher Tag:** „RoSe-Formel“ unter dem Einwände-Balken
+(Gästeportal + Reinigungssteuerung + Informationsfluss = RoSe, Kacheln springen zu
+`#produkt`/`#vergleich`/`#ablauf`), darunter die Einstiegszeile „… 0,50 € je Zimmer
+im Monat, einen Monat kostenlos testen“ (aus dem Hero dorthin verlegt; der Rest der
+Seite sagt weiter „mindestens ein voller Monat frei“, vom User so akzeptiert).
+
+**Zu prüfen am 28.09. (User):** Symbole der Kacheln (Tür, Hand, Tasse, Fußspuren)
+in beiden Bildern und im Dunkelmodus; Tätigkeitszeile morgens; „Rechnen“ ausgegraut
+nach einem Lauf; Würfeln, Speichern, Laden und Vergleich eines gewürfelten
+Szenarios; „zurück auf Tag 1“.
