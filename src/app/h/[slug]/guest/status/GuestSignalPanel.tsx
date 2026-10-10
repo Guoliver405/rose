@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Clock, Leaf, Moon, Sparkles } from 'lucide-react'
 import { setGuestSignalAction, setSkipTodayAction } from '@/app/guest/actions'
+import { format, type GuestMessages } from '@/lib/i18n'
+import Rich from '@/components/i18n/Rich'
 
 type Signal = 'none' | 'please_clean' | 'dnd'
 
@@ -18,6 +20,7 @@ export default function GuestSignalPanel({
   cleanNotBefore,
   offerSkip,
   skipToday,
+  m,
 }: {
   signal: Signal
   /** Reinigungs-Zeitfenster der Hotel-Policy — null, wenn die Regel aus ist. */
@@ -33,6 +36,7 @@ export default function GuestSignalPanel({
   offerSkip: boolean
   /** Verzicht für heute ist gesetzt. */
   skipToday: boolean
+  m: GuestMessages['signal']
 }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
@@ -96,17 +100,17 @@ export default function GuestSignalPanel({
       >
         <Sparkles className="h-6 w-6 shrink-0" />
         <span>
-          <span className="block text-lg font-bold">Zimmer reinigen</span>
+          <span className="block text-lg font-bold">{m.clean.label}</span>
           <span className={`block text-sm ${signal === 'please_clean' ? '' : 'text-ink-muted'}`}>
             {signal === 'please_clean'
               ? cleanNotBefore
-                ? `Wunsch ist aktiv — frühestens ab ${cleanNotBefore} Uhr. Erneut tippen zum Zurücknehmen`
-                : 'Wunsch ist aktiv — erneut tippen zum Zurücknehmen'
+                ? format(m.clean.activeFrom, { time: cleanNotBefore })
+                : m.clean.active
               : cleanBlocked
-                ? 'Zurzeit nicht möglich'
+                ? m.clean.blocked
                 : defer
-                  ? `Der Reinigungsdienst kommt frühestens ab ${deferOptions.find(o => o.iso === defer)?.label ?? ''} Uhr`
-                  : 'Der Reinigungsdienst wird informiert'}
+                  ? format(m.clean.idleFrom, { time: deferOptions.find(o => o.iso === defer)?.label ?? '' })
+                  : m.clean.idle}
           </span>
         </span>
       </button>
@@ -116,12 +120,12 @@ export default function GuestSignalPanel({
       {signal !== 'please_clean' && !cleanBlocked && deferLimit && (
         <div className="rounded-xl border border-edge bg-surface-sunken px-4 py-3">
           <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink">
-            <Clock className="h-4 w-4 text-ink-muted" /> Frühestens ab
+            <Clock className="h-4 w-4 text-ink-muted" /> {m.defer.title}
           </p>
           {deferOptions.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               <button type="button" disabled={pending} className={chip(defer === null)} onClick={() => setDefer(null)}>
-                jetzt
+                {m.defer.now}
               </button>
               {deferOptions.map(o => (
                 <button key={o.iso} type="button" disabled={pending} className={chip(defer === o.iso)} onClick={() => setDefer(o.iso)}>
@@ -130,11 +134,10 @@ export default function GuestSignalPanel({
               ))}
             </div>
           ) : (
-            <p className="text-sm text-ink-soft">Heute nur noch sofort möglich.</p>
+            <p className="text-sm text-ink-soft">{m.defer.onlyNow}</p>
           )}
           <p className="mt-2 text-xs text-ink-muted">
-            Du kannst die Reinigung bis spätestens <strong className="font-bold text-ink-soft">{deferLimit} Uhr</strong> aufschieben —
-            vorher kommt niemand. Diese Grenze legt das Haus fest, damit die Reinigung noch am selben Tag stattfinden kann.
+            <Rich text={m.defer.limit} vars={{ limit: deferLimit }} tags={{ b: c => <strong className="font-bold text-ink-soft">{c}</strong> }} />
           </p>
         </div>
       )}
@@ -143,10 +146,11 @@ export default function GuestSignalPanel({
         <p className="flex items-start gap-2 rounded-xl border border-edge bg-surface-sunken px-4 py-3 text-sm text-ink-soft">
           <Clock className="mt-0.5 h-5 w-5 shrink-0 text-ink-muted" />
           <span>
-            Reinigungswünsche nehmen wir täglich zwischen{' '}
-            <strong className="font-bold text-ink">{cleaningWindow.start}</strong> und{' '}
-            <strong className="font-bold text-ink">{cleaningWindow.end}</strong> Uhr entgegen.
-            Bitte melde dich in diesem Zeitraum noch einmal — oder wende dich an die Rezeption.
+            <Rich
+              text={m.window}
+              vars={{ start: cleaningWindow.start, end: cleaningWindow.end }}
+              tags={{ b: c => <strong className="font-bold text-ink">{c}</strong> }}
+            />
           </span>
         </p>
       )}
@@ -164,11 +168,9 @@ export default function GuestSignalPanel({
         >
           <Leaf className="h-6 w-6 shrink-0" />
           <span>
-            <span className="block text-lg font-bold">Heute keine Reinigung</span>
+            <span className="block text-lg font-bold">{m.skip.label}</span>
             <span className={`block text-sm ${skipToday ? '' : 'text-ink-muted'}`}>
-              {skipToday
-                ? 'Danke! Gilt nur für heute — erneut tippen zum Zurücknehmen'
-                : 'Spart Wasser und Waschmittel. Morgen wird wieder gereinigt'}
+              {skipToday ? m.skip.active : m.skip.idle}
             </span>
           </span>
         </button>
@@ -186,11 +188,9 @@ export default function GuestSignalPanel({
       >
         <Moon className="h-6 w-6 shrink-0" />
         <span>
-          <span className="block text-lg font-bold">Bitte nicht stören</span>
+          <span className="block text-lg font-bold">{m.dnd.label}</span>
           <span className={`block text-sm ${signal === 'dnd' ? '' : 'text-ink-muted'}`}>
-            {signal === 'dnd'
-              ? 'Aktiv — erneut tippen zum Zurücknehmen'
-              : 'Niemand klopft, keine Reinigung'}
+            {signal === 'dnd' ? m.dnd.active : m.dnd.idle}
           </span>
         </span>
       </button>

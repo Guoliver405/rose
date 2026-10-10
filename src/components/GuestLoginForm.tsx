@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { guestLoginAction } from '@/app/guest/actions'
+import { format, type GuestMessages } from '@/lib/i18n'
 
 type Props = {
   /**
@@ -13,9 +14,10 @@ type Props = {
   roomToken?: string
   /** Anzeige-Nummer beim Deep-Link (rein informativ). */
   roomNumber?: string
+  m: GuestMessages['login']
 }
 
-export default function GuestLoginForm({ hotelSlug, roomToken, roomNumber }: Props) {
+export default function GuestLoginForm({ hotelSlug, roomToken, roomNumber, m }: Props) {
   const [number, setNumber] = useState('')
   const [pin, setPin] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -36,25 +38,25 @@ export default function GuestLoginForm({ hotelSlug, roomToken, roomNumber }: Pro
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {roomToken ? (
         <p className="rounded-xl border border-edge bg-surface-elevated px-4 py-3 text-center font-bold text-ink">
-          Zimmer {roomNumber}
+          {format(m.room, { number: roomNumber ?? '' })}
         </p>
       ) : (
         <label className="flex flex-col gap-1">
-          <span className="text-sm font-semibold text-ink-soft">Zimmernummer</span>
+          <span className="text-sm font-semibold text-ink-soft">{m.roomNumber}</span>
           <input
             type="text"
             required
             autoComplete="off"
             value={number}
             onChange={e => setNumber(e.target.value)}
-            placeholder="z. B. 101"
+            placeholder={m.roomNumberPlaceholder}
             className="rounded-xl border border-edge bg-surface-elevated px-4 py-3 text-lg text-ink outline-none focus:border-active"
           />
         </label>
       )}
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-semibold text-ink-soft">PIN</span>
+        <span className="text-sm font-semibold text-ink-soft">{m.pin}</span>
         <input
           type="password"
           required
@@ -80,11 +82,11 @@ export default function GuestLoginForm({ hotelSlug, roomToken, roomNumber }: Pro
         disabled={pending || pin.length < 4}
         className="rounded-xl bg-action px-4 py-3.5 text-lg font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
       >
-        {pending ? 'Anmelden …' : 'Anmelden'}
+        {pending ? m.submitting : m.submit}
       </button>
 
       <p className="text-center text-xs text-ink-muted">
-        Die PIN erhältst du beim Check-in an der Rezeption.
+        {m.pinHint}
       </p>
     </form>
   )

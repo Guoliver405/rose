@@ -26,6 +26,13 @@ Meldung ans Haus, Aufstellung, außer Betrieb, Zugang beenden.
 | 12 | Fachjargon | **„Stich“ → „Eintrag“** („ältere Einträge ohne Dauer“, „Tätigkeitseinträge mit Zeitpunkt“). **„Slider“ → „Schieber“.** **„Reinigungsboard“ bleibt**, „Board“ allein, wo der Zusammenhang klar ist; „Services-Board“ → „Anfragen“ (siehe 5). **„Lotse“ bleibt**, im Hilfe-Bereich einmal erklärt als „geführter Rundgang über die echte Seite“; Englisch frei, z. B. *guided tour*. | „Stich“ (33, Hilfe, Lotsen, Auswertung, Datenschutz), „Slider“ (11, Hilfe, Lotsen) |
 | 13 | Typografie | **Anführungszeichen „…“** durchgehend (186 Stellen schließen heute mit geradem "); andere Sprachen mit ihren eigenen Zeichen. **Gedankenstrich „ – “** (Halbgeviert mit Leerzeichen) statt „ — “ (579 Stellen); Bis-Strich ohne Leerzeichen bleibt („10–12 Uhr“). **„E-Mail“** durchgehend, auch in Zusammensetzungen („E-Mail-Versand“). Auslassungspunkte „…“ sind schon richtig. | siehe Entscheidung |
 
+## Umsetzung
+
+| Bereich | Stand |
+|---|---|
+| Gästeportal | **umgesetzt 10.10.2026** — `src/lib/i18n/de/guest.ts`, Wächter-Test `src/lib/i18n/guest.test.ts` |
+| Reinigungsboard, Druckblätter, Mails, Rezeption, Konto, Simulator, Fließtexte | offen |
+
 ## Nächster Schritt
 
 Alle 13 Punkte entschieden (10.10.2026). **Schritt 2:** Texte aus dem Code in eine Sprachdatei auslagern (Schlüssel je Text, zerstückelte Sätze mit Platzhaltern zusammenführen) und dabei diese Entscheidungen einarbeiten. **Schritt 3:** daraus die vollständige Liste zum Gegenlesen erzeugen; lange Fließtexte (Landing, Rechtstexte, Hilfe, Lotsen, Mails) als ganze Abschnitte.

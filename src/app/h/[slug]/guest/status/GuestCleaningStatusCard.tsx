@@ -1,5 +1,6 @@
 import { Ban, CheckCircle2, Clock, Leaf, Loader2, Luggage, Sparkles } from 'lucide-react'
 import type { GuestCleaningStatus } from '@/lib/board'
+import { format, type GuestMessages } from '@/lib/i18n'
 import { formatHHMM } from '@/lib/tz'
 
 /**
@@ -14,12 +15,14 @@ export default function GuestCleaningStatusCard({
   status,
   routineTime,
   timeZone,
+  m,
 }: {
   status: GuestCleaningStatus
   /** Fälligkeit der Routine des Hauses („11:00"), null ohne Routine — für den Hinweis am Anreisetag. */
   routineTime: string | null
   /** Zeitzone des Hauses — Uhrzeiten gelten vor Ort. */
   timeZone: string
+  m: GuestMessages['status']
 }) {
   const box = (tone: 'positive' | 'attention' | 'blocked' | 'neutral') =>
     `flex items-start gap-3 rounded-2xl border px-4 py-3 ${
@@ -41,8 +44,8 @@ export default function GuestCleaningStatusCard({
         <div className={box('positive')} data-status="in_progress">
           <Loader2 className={`${icon} animate-spin`} />
           <span>
-            <span className={title}>Dein Zimmer wird gerade gereinigt.</span>
-            <span className={sub}>Das Reinigungsteam ist im Zimmer.</span>
+            <span className={title}>{m.inProgress.title}</span>
+            <span className={sub}>{m.inProgress.text}</span>
           </span>
         </div>
       )
@@ -51,8 +54,8 @@ export default function GuestCleaningStatusCard({
         <div className={box('attention')} data-status="scheduled">
           <Sparkles className={icon} />
           <span>
-            <span className={title}>Reinigung ist vorgesehen.</span>
-            <span className={sub}>Das Reinigungsteam kommt heute vorbei.</span>
+            <span className={title}>{m.scheduled.title}</span>
+            <span className={sub}>{m.scheduled.text}</span>
           </span>
         </div>
       )
@@ -61,14 +64,14 @@ export default function GuestCleaningStatusCard({
         <div className={box('neutral')} data-status="scheduled_from">
           <Clock className={`${icon} text-ink-muted`} />
           <span>
-            <span className={title}>Reinigung heute ab {formatHHMM(status.at, timeZone)} Uhr.</span>
+            <span className={title}>{format(m.scheduledFrom.title, { time: formatHHMM(status.at, timeZone) })}</span>
             <span className={`${sub} text-ink-soft`}>
+              {/* Beim offenen Wunsch kann die Uhrzeit vom Gast oder von der Tür stammen — neutral bleiben. */}
               {status.reason === 'guest'
-                // Beim offenen Wunsch kann die Uhrzeit vom Gast oder von der Tür stammen — neutral bleiben.
-                ? 'Dein Wunsch ist angekommen — vorher kommt niemand.'
+                ? m.scheduledFrom.guest
                 : status.reason === 'door'
-                  ? 'Wie an der Tür besprochen — vorher kommt niemand.'
-                  : 'Das Haus reinigt täglich. Wenn du das heute nicht brauchst, tippe auf „Heute keine Reinigung".'}
+                  ? m.scheduledFrom.door
+                  : m.scheduledFrom.daily}
             </span>
           </span>
         </div>
@@ -78,8 +81,8 @@ export default function GuestCleaningStatusCard({
         <div className={box('blocked')} data-status="dnd">
           <Ban className={icon} />
           <span>
-            <span className={title}>Keine Reinigung — du möchtest nicht gestört werden.</span>
-            <span className={sub}>Nimm „Bitte nicht stören&quot; zurück, wenn dein Zimmer doch gereinigt werden soll.</span>
+            <span className={title}>{m.dnd.title}</span>
+            <span className={sub}>{m.dnd.text}</span>
           </span>
         </div>
       )
@@ -88,8 +91,8 @@ export default function GuestCleaningStatusCard({
         <div className={box('positive')} data-status="done">
           <CheckCircle2 className={icon} />
           <span>
-            <span className={title}>Dein Zimmer wurde heute um {formatHHMM(status.at, timeZone)} Uhr gereinigt.</span>
-            <span className={sub}>Brauchst du noch etwas? Dann tippe auf „Zimmer reinigen&quot;.</span>
+            <span className={title}>{format(m.done.title, { time: formatHHMM(status.at, timeZone) })}</span>
+            <span className={sub}>{m.done.text}</span>
           </span>
         </div>
       )
@@ -98,8 +101,8 @@ export default function GuestCleaningStatusCard({
         <div className={box('neutral')} data-status="declined">
           <Leaf className={`${icon} text-ink-muted`} />
           <span>
-            <span className={title}>Heute keine Reinigung.</span>
-            <span className={`${sub} text-ink-soft`}>Danke — das spart Wasser und Waschmittel. Anders überlegt? Dann tippe auf „Zimmer reinigen&quot;.</span>
+            <span className={title}>{m.declined.title}</span>
+            <span className={`${sub} text-ink-soft`}>{m.declined.text}</span>
           </span>
         </div>
       )
@@ -109,8 +112,8 @@ export default function GuestCleaningStatusCard({
           <div className={box('neutral')} data-status="none">
             <Luggage className={`${icon} text-ink-muted`} />
             <span>
-              <span className={title}>Heute ist dein Abreisetag.</span>
-              <span className={`${sub} text-ink-soft`}>Das Zimmer wird nach dem Check-out gereinigt. Brauchst du vorher etwas, tippe auf „Zimmer reinigen&quot;.</span>
+              <span className={title}>{m.departure.title}</span>
+              <span className={`${sub} text-ink-soft`}>{m.departure.text}</span>
             </span>
           </div>
         )
@@ -119,11 +122,11 @@ export default function GuestCleaningStatusCard({
         <div className={box('neutral')} data-status="none">
           <Sparkles className={`${icon} text-ink-muted`} />
           <span>
-            <span className={title}>Heute ist keine Reinigung vorgesehen.</span>
+            <span className={title}>{m.none.title}</span>
             <span className={`${sub} text-ink-soft`}>
               {status.reason === 'first_day' && routineTime
-                ? `Ab morgen reinigt das Haus täglich ab ${routineTime} Uhr. Wenn du heute etwas brauchst, tippe auf „Zimmer reinigen".`
-                : 'Dieses Haus reinigt auf Wunsch — tippe auf „Zimmer reinigen", wenn du es möchtest.'}
+                ? format(m.none.firstDay, { time: routineTime })
+                : m.none.onRequest}
             </span>
           </span>
         </div>

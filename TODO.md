@@ -291,8 +291,13 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       **Vorbereitung 03.–10.10.2026:** Bestand erhoben (rund 3.800 Textstellen,
       31.000 Wörter, 578 zerstückelte Sätze — [Glossar-Oberflaeche-2026-10-03.xlsx](Sessions/Glossar-Oberflaeche-2026-10-03.xlsx)),
       Begriffe und Anrede mit dem User entschieden ([Begriffe-Entscheidungen.md](Sessions/Begriffe-Entscheidungen.md)).
-      Nächster Schritt: Texte in eine Sprachdatei auslagern und die
-      Entscheidungen dabei einarbeiten; danach die Liste zum Gegenlesen daraus erzeugen.
+      **10.10.: Gästeportal ausgelagert** (`src/lib/i18n/`, eigene Lösung ohne
+      Bibliothek, siehe AGENTS „Texte in Sprachdateien“), Entscheidungen dort umgesetzt.
+      Weiter in dieser Reihenfolge: Reinigungsboard → Druckblätter und Mails
+      (`guest-guide.ts`, Legende soll aus der Sprachdatei kommen) → Rezeption →
+      Konto → Simulator; Fließtexte (Hilfe, Lotsen, Landing, Rechtstexte) als
+      Abschnitte zuletzt. Danach: Sprachwahl des Gastes in `getLocale()` und erste
+      Übersetzung (Englisch) des Gästeportals.
 - [ ] **Thailändisch als Belastungsprobe** — probehalber implementieren, um zu
       sehen, wie weit das Sprach-System trägt: nicht-lateinische Schrift,
       andere Zeilenumbruch-Regeln (keine Leerzeichen zwischen Wörtern),

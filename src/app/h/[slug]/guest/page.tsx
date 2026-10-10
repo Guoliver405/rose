@@ -3,6 +3,8 @@ import { requireHotelBySlug } from '@/utils/hotel'
 import { getGuestContext } from '@/utils/guest'
 import GuestLoginForm from '@/components/GuestLoginForm'
 import { parseGuestAccessMode } from '@/lib/guest-access'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /**
  * Baseline-Einstieg des Gastes: Hotel-URL + Zimmernummer + PIN.
@@ -23,6 +25,7 @@ export default async function GuestEntryPage({
   // sich dort anmelden können (der Login ersetzt dann das Cookie).
   const ctx = await getGuestContext()
   if (ctx?.hotelId === hotel.id) redirect(`/h/${hotel.slug}/guest/status`)
+  const m = getMessages(await getLocale()).guest
 
   return (
     <main className="flex flex-1 flex-col justify-center gap-8">
@@ -30,7 +33,7 @@ export default async function GuestEntryPage({
         <h1 className="text-3xl font-black text-ink">
           Ro<span className="text-blocked">Se</span>
         </h1>
-        <p className="mt-1 text-sm text-ink-muted">Zimmerservice — Anmeldung</p>
+        <p className="mt-1 text-sm text-ink-muted">{m.brand.signIn}</p>
         <p className="mt-3 font-semibold text-ink-soft">{hotel.name}</p>
       </div>
       {/* Arbeitet das Haus mit persönlichen Zugängen, führt dieses Formular
@@ -39,13 +42,11 @@ export default async function GuestEntryPage({
           begonnen haben, brauchen es weiterhin. */}
       {parseGuestAccessMode((hotel.policies ?? {}) as Record<string, unknown>) === 'link' && (
         <p className="rounded-xl border border-attention-tint-edge bg-attention-tint px-4 py-3 text-sm font-semibold text-attention-deepest">
-          Dieses Haus arbeitet mit persönlichen Zugängen: Bitte scannen Sie den QR-Code
-          von Ihrem Check-in-Beleg oder öffnen Sie den Link aus Ihrer E-Mail. Das Formular
-          unten gilt nur, wenn Sie beim Check-in eine PIN erhalten haben.
+          {m.login.linkModeHint}
         </p>
       )}
 
-      <GuestLoginForm hotelSlug={hotel.slug} />
+      <GuestLoginForm hotelSlug={hotel.slug} m={m.login} />
     </main>
   )
 }

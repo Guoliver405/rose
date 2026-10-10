@@ -8,6 +8,8 @@ import {
 } from '@/lib/board'
 import { formatHHMM, parseTimeZone } from '@/lib/tz'
 import { guestLogoutAction } from '@/app/guest/actions'
+import { format, getMessages, intlLocale } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 import GuestSignalPanel from './GuestSignalPanel'
 import GuestCleaningStatusCard from './GuestCleaningStatusCard'
 import GuestServicesPanel, { type GuestLink, type GuestOrder, type GuestService } from './GuestServicesPanel'
@@ -23,8 +25,9 @@ export default async function GuestStatusPage({
   // Origin, das Gast-Cookie gilt also auch unter fremden Slugs. Ohne diesen
   // Abgleich sähe ein Gast unter /h/fremdes-hotel/guest/status sein eigenes
   // Zimmer unter falschem Hotelnamen. Haus und Sitzung sind unabhängig → parallel.
-  const [hotel, ctx] = await Promise.all([requireHotelBySlug(slug), getGuestContext()])
+  const [hotel, ctx, locale] = await Promise.all([requireHotelBySlug(slug), getGuestContext(), getLocale()])
   if (!ctx || ctx.hotelId !== hotel.id) redirect(`/h/${hotel.slug}/guest`)
+  const m = getMessages(locale).guest
 
   const cleaningWindow = parseCleaningWindow(ctx.policies)
   const tz = parseTimeZone(ctx.policies)
@@ -44,7 +47,7 @@ export default async function GuestStatusPage({
   const [{ data: services }, { data: items }, { data: orders }, { data: lastDone }] = await Promise.all([
     admin
       .from('service_definitions')
-      .select('id, name, description, archived_at, link_url')
+      .select('id, name, description, archived_at, link_url, maintenance')
       .eq('hotel_id', ctx.hotelId)
       .order('name'),
     admin
@@ -106,6 +109,7 @@ export default async function GuestStatusPage({
       id: s.id,
       name: s.name,
       description: s.description,
+      maintenance: Boolean(s.maintenance),
       items: itemsByService.get(s.id) ?? [],
     }))
   // Verweise: Kacheln, die nach außen öffnen (Trinkgeld-App, Lieferdienst) —
@@ -117,7 +121,7 @@ export default async function GuestStatusPage({
   const serviceNameById = new Map((services ?? []).map(s => [s.id, s.name]))
   const guestOrders: GuestOrder[] = (orders ?? []).map(o => ({
     id: o.id,
-    serviceName: serviceNameById.get(o.service_id) ?? 'Service',
+    serviceName: serviceNameById.get(o.service_id) ?? m.services.fallbackName,
     itemLabels: ((o.items_snapshot ?? []) as { label: string }[]).map(i => i.label),
     status: o.status as GuestOrder['status'],
     createdAt: o.created_at,
@@ -127,13 +131,14 @@ export default async function GuestStatusPage({
     <main className="flex flex-1 flex-col gap-6 py-4">
       <header className="text-center">
         <p className="text-sm text-ink-muted">{ctx.hotelName}</p>
-        <h1 className="text-2xl font-black text-ink">Zimmer {ctx.roomNumber}</h1>
+        <h1 className="text-2xl font-black text-ink">{format(m.status.room, { number: ctx.roomNumber })}</h1>
       </header>
 
       <GuestCleaningStatusCard
         status={status}
         routineTime={stayover.enabled ? hhmm(due.hour, due.minute) : null}
         timeZone={tz}
+        m={m.status}
       />
 
       <GuestSignalPanel
@@ -152,9 +157,16 @@ export default async function GuestStatusPage({
         // bereits der Verzicht.
         offerSkip={stayover.enabled}
         skipToday={isDeclinedToday(ctx.cleanDeclinedOn, now, tz)}
+        m={m.signal}
       />
 
-      <GuestServicesPanel services={guestServices} links={guestLinks} orders={guestOrders} />
+      <GuestServicesPanel
+        services={guestServices}
+        links={guestLinks}
+        orders={guestOrders}
+        m={m.services}
+        intlLocale={intlLocale(locale)}
+      />
 
       <div className="mt-auto pt-6 text-center">
         <form action={guestLogoutAction}>
@@ -162,7 +174,7 @@ export default async function GuestStatusPage({
             type="submit"
             className="text-sm font-semibold text-ink-muted underline hover:text-ink"
           >
-            Abmelden
+            {m.status.signOut}
           </button>
         </form>
       </div>

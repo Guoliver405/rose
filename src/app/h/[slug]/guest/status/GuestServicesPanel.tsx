@@ -4,11 +4,14 @@ import { useState, useTransition } from 'react'
 import { Check, CheckCircle2, ChevronDown, Clock, ExternalLink, XCircle } from 'lucide-react'
 import { formatCents } from '@/lib/money'
 import { placeOrderAction } from '@/app/guest/actions'
+import { format, type GuestMessages } from '@/lib/i18n'
 
 export type GuestService = {
   id: string
   name: string
   description: string | null
+  /** Meldung ans Haus (Defekt) statt bestellbarer Leistung — der Knopf heißt dann „Melden“. */
+  maintenance: boolean
   items: { id: string; label: string; priceCents: number | null }[]
 }
 
@@ -32,10 +35,15 @@ export default function GuestServicesPanel({
   services,
   links,
   orders,
+  m,
+  intlLocale,
 }: {
   services: GuestService[]
   links: GuestLink[]
   orders: GuestOrder[]
+  m: GuestMessages['services']
+  /** Sprach-Tag für die Uhrzeit der Anfragen („de-DE“). */
+  intlLocale: string
 }) {
   const [openId, setOpenId] = useState<string | null>(null)
 
@@ -45,7 +53,7 @@ export default function GuestServicesPanel({
     <div className="flex flex-col gap-3">
       {services.length > 0 && (
         <h2 className="mt-2 text-sm font-bold uppercase tracking-wider text-ink-muted">
-          Service bestellen
+          {m.heading}
         </h2>
       )}
       {services.map(s => (
@@ -53,6 +61,7 @@ export default function GuestServicesPanel({
           key={s.id}
           service={s}
           open={openId === s.id}
+          m={m}
           onToggle={() => setOpenId(openId === s.id ? null : s.id)}
         />
       ))}
@@ -63,7 +72,7 @@ export default function GuestServicesPanel({
       {links.length > 0 && (
         <>
           <h2 className="mt-2 text-sm font-bold uppercase tracking-wider text-ink-muted">
-            Angebote
+            {m.links}
           </h2>
           {links.map(l => (
             <a
@@ -76,7 +85,7 @@ export default function GuestServicesPanel({
               <span className="min-w-0 flex-1">
                 <span className="block text-lg font-bold text-ink">{l.name}</span>
                 {l.description && <span className="block text-sm text-ink-muted">{l.description}</span>}
-                <span className="mt-0.5 block truncate text-xs text-ink-muted">{hostOf(l.url)} · öffnet in einem neuen Fenster</span>
+                <span className="mt-0.5 block truncate text-xs text-ink-muted">{format(m.opensExternally, { host: hostOf(l.url) })}</span>
               </span>
               <ExternalLink className="h-5 w-5 shrink-0 text-ink-muted" />
             </a>
@@ -87,7 +96,7 @@ export default function GuestServicesPanel({
       {orders.length > 0 && (
         <>
           <h2 className="mt-2 text-sm font-bold uppercase tracking-wider text-ink-muted">
-            Deine Bestellungen
+            {m.orders}
           </h2>
           <ul className="flex flex-col gap-2">
             {orders.map(o => (
@@ -108,11 +117,9 @@ export default function GuestServicesPanel({
                     )}
                   </span>
                   <span className="block text-xs text-ink-muted">
-                    {new Date(o.createdAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(o.createdAt).toLocaleTimeString(intlLocale, { hour: '2-digit', minute: '2-digit' })}
                     {' · '}
-                    {o.status === 'done'
-                      ? 'erledigt'
-                      : o.status === 'cancelled' ? 'nicht erbracht' : 'in Bearbeitung'}
+                    {m.orderStatus[o.status]}
                   </span>
                 </span>
               </li>
@@ -137,10 +144,12 @@ function ServiceCard({
   service,
   open,
   onToggle,
+  m,
 }: {
   service: GuestService
   open: boolean
   onToggle: () => void
+  m: GuestMessages['services']
 }) {
   const [pending, startTransition] = useTransition()
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -219,7 +228,7 @@ function ServiceCard({
             onChange={e => setNote(e.target.value)}
             maxLength={500}
             rows={2}
-            placeholder="Anmerkung (optional)"
+            placeholder={m.notePlaceholder}
             className="w-full rounded-xl border border-edge bg-surface px-4 py-3 text-sm text-ink placeholder:text-ink-muted focus:border-action focus:outline-none"
           />
 
@@ -230,7 +239,7 @@ function ServiceCard({
           )}
           {success && (
             <p className="flex items-center gap-2 rounded-xl border border-positive-pill-edge bg-positive-pill px-4 py-3 text-sm font-bold text-positive-deepest">
-              <CheckCircle2 className="h-5 w-5 shrink-0" /> Bestellung ist bei der Rezeption.
+              <CheckCircle2 className="h-5 w-5 shrink-0" /> {m.sent}
             </p>
           )}
 
@@ -240,7 +249,7 @@ function ServiceCard({
             onClick={submit}
             className="rounded-xl bg-action px-4 py-3 font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
           >
-            {pending ? 'Wird gesendet …' : 'Bestellen'}
+            {pending ? m.sending : service.maintenance ? m.report : m.order}
           </button>
         </div>
       )}

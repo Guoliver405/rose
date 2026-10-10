@@ -184,7 +184,7 @@ describe('guestLoginAction — Rate-Limit je Aufenthalt', () => {
 
     // Gesperrt: auch die RICHTIGE PIN kommt nicht mehr durch.
     const gesperrt = await guestLoginAction({ hotelSlug: world.alpha.a1.slug, roomNumber: '101', pin: PIN.a101 })
-    expect(gesperrt.error).toMatch(/Zu viele Fehlversuche — bitte in \d+ Min\./)
+    expect(gesperrt.error).toMatch(/Zu viele Fehlversuche – bitte in \d+ Min\./)
     const a101 = await stayZeile(world.alpha.a1.rooms['101'])
     expect(a101.pin_locked_until).not.toBeNull()
     expect(a101.pin_attempts).toBe(0)

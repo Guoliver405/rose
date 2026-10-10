@@ -84,7 +84,3 @@ export function evaluateThrottle(
   const liftsAt = pivot + windowMs
   return { blocked: true, retryAfterMinutes: Math.max(1, Math.ceil((liftsAt - nowMs) / 60_000)) }
 }
-
-export function throttleMessage(retryAfterMinutes: number): string {
-  return `Zu viele Fehlversuche aus diesem Netz — bitte in ${retryAfterMinutes} Min. erneut versuchen.`
-}

@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/utils/supabase/service'
 import { getGuestContext } from '@/utils/guest'
 import GuestLoginForm from '@/components/GuestLoginForm'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /**
  * QR-Deep-Link: der statische Zimmer-Token (klebt im Zimmer) bestimmt das
@@ -40,6 +42,7 @@ export default async function GuestRoomEntryPage({
   const ctx = await getGuestContext()
   if (ctx && tokenRow?.room_id === ctx.roomId) redirect(`/h/${ctx.hotelSlug}/guest/status`)
 
+  const m = getMessages(await getLocale()).guest
   const hotelSlug = (room?.hotels as unknown as { slug: string } | null)?.slug ?? null
 
   return (
@@ -48,7 +51,7 @@ export default async function GuestRoomEntryPage({
         <h1 className="text-3xl font-black text-ink">
           Ro<span className="text-blocked">Se</span>
         </h1>
-        <p className="mt-1 text-sm text-ink-muted">Zimmerservice — Anmeldung</p>
+        <p className="mt-1 text-sm text-ink-muted">{m.brand.signIn}</p>
       </div>
 
       {room ? (
@@ -56,13 +59,13 @@ export default async function GuestRoomEntryPage({
           roomToken={token}
           roomNumber={room.number}
           hotelSlug={hotelSlug ?? undefined}
+          m={m.login}
         />
       ) : (
         <div className="rounded-xl border border-critical-pill-edge bg-critical-pill px-4 py-3 text-center">
-          <p className="font-bold text-critical-deepest">Dieser Link ist ungültig.</p>
+          <p className="font-bold text-critical-deepest">{m.login.invalidLink}</p>
           <p className="mt-1 text-sm text-critical-deepest">
-            Bitte melde dich an der Rezeption — oder nutze die Anmeldung mit
-            Zimmernummer und PIN.
+            {m.login.invalidLinkHint}
           </p>
         </div>
       )}

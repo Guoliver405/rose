@@ -11,7 +11,8 @@ import {
   cleanDeferLimit, isWithinCleaningWindow, parseCleanDefer, parseCleaningWindow, parseStayoverPolicy,
 } from '@/lib/board'
 import { formatHHMM, parseTimeZone, zonedDateKey } from '@/lib/tz'
-import { throttleMessage } from '@/lib/login-throttle'
+import { format, getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /*
  * Server-Actions des Gast-Portals. Liegen bewusst hier und nicht unter
@@ -23,8 +24,10 @@ import { throttleMessage } from '@/lib/login-throttle'
 const MAX_ATTEMPTS = 5
 const LOCK_MINUTES = 15
 
-/** Generische Fehlermeldung — verrät nicht, ob Zimmer existiert/belegt ist. */
-const FAIL = { error: 'Anmeldung fehlgeschlagen — Zimmernummer oder PIN falsch.' }
+/** Meldungen des Gästeportals in der Sprache der Anfrage. */
+async function messages() {
+  return getMessages(await getLocale()).guest.errors
+}
 
 export type GuestLoginInput = {
   /** Mandant aus der URL — Pflicht beim Weg über die Zimmernummer. */
@@ -35,8 +38,11 @@ export type GuestLoginInput = {
 }
 
 export async function guestLoginAction(input: GuestLoginInput): Promise<{ error?: string }> {
+  const e = await messages()
+  // Generische Fehlermeldung — verrät nicht, ob das Zimmer existiert oder belegt ist.
+  const FAIL = { error: e.loginFailed }
   const pin = (input.pin ?? '').trim()
-  if (!/^\d{4,8}$/.test(pin)) return { error: 'Bitte die PIN eingeben (nur Ziffern).' }
+  if (!/^\d{4,8}$/.test(pin)) return { error: e.pinFormat }
 
   const admin = createAdminClient()
 
@@ -49,7 +55,7 @@ export async function guestLoginAction(input: GuestLoginInput): Promise<{ error?
   // ein Durchprobieren der Nummern ausnutzt.
   const ipHash = await currentIpHash()
   const throttle = await checkIpThrottle(admin, ipHash)
-  if (throttle.blocked) return { error: throttleMessage(throttle.retryAfterMinutes) }
+  if (throttle.blocked) return { error: format(e.tooManyFromNetwork, { minutes: throttle.retryAfterMinutes }) }
 
   let hotelId: string | null = null
   const fail = async (message: string = FAIL.error) => {
@@ -106,7 +112,7 @@ export async function guestLoginAction(input: GuestLoginInput): Promise<{ error?
   if (unlocked.length === 0) {
     const latest = Math.max(...candidates.map(s => new Date(s.pin_locked_until!).getTime()))
     const mins = Math.max(1, Math.ceil((latest - nowMs) / 60000))
-    return fail(`Zu viele Fehlversuche — bitte in ${mins} Min. erneut versuchen.`)
+    return fail(format(e.tooManyAttempts, { minutes: mins }))
   }
 
   const stay = unlocked.find(s => s.pin === pin)
@@ -154,10 +160,11 @@ export async function setGuestSignalAction(
   signal: 'none' | 'please_clean' | 'dnd',
   notBefore: string | null = null,
 ): Promise<{ error?: string }> {
-  if (!['none', 'please_clean', 'dnd'].includes(signal)) return { error: 'Ungültiges Signal.' }
+  const e = await messages()
+  if (!['none', 'please_clean', 'dnd'].includes(signal)) return { error: e.invalidSignal }
 
   const ctx = await getGuestContext()
-  if (!ctx) return { error: 'Sitzung abgelaufen — bitte neu anmelden.' }
+  if (!ctx) return { error: e.sessionExpired }
   const tz = parseTimeZone(ctx.policies)
   const now = new Date()
 
@@ -167,18 +174,16 @@ export async function setGuestSignalAction(
   if (signal === 'please_clean') {
     const window = parseCleaningWindow(ctx.policies)
     if (!isWithinCleaningWindow(window, now, tz)) {
-      return {
-        error: `Reinigungswünsche sind nur zwischen ${window.start} und ${window.end} Uhr möglich.`,
-      }
+      return { error: format(e.outsideWindow, { start: window.start, end: window.end }) }
     }
     if (notBefore) {
       const defer = parseCleanDefer(ctx.policies)
       const at = new Date(notBefore)
-      if (!defer.enabled || Number.isNaN(at.getTime())) return { error: 'Aufschieben ist hier nicht möglich.' }
+      if (!defer.enabled || Number.isNaN(at.getTime())) return { error: e.deferNotAllowed }
       const limit = cleanDeferLimit(defer, now, tz)
-      if (at.getTime() <= now.getTime()) return { error: 'Die gewählte Uhrzeit ist schon vorbei.' }
+      if (at.getTime() <= now.getTime()) return { error: e.deferPast }
       if (at.getTime() > limit.getTime()) {
-        return { error: `Aufschieben ist nur bis ${formatHHMM(limit, tz)} Uhr möglich.` }
+        return { error: format(e.deferTooLate, { time: formatHHMM(limit, tz) }) }
       }
       cleanNotBefore = at.toISOString()
     }
@@ -198,7 +203,7 @@ export async function setGuestSignalAction(
     })
     .eq('hotel_id', ctx.hotelId)
     .eq('room_id', ctx.roomId)
-  if (error) return { error: 'Speichern fehlgeschlagen — bitte erneut versuchen.' }
+  if (error) return { error: e.saveFailed }
 
   revalidatePath(`/h/${ctx.hotelSlug}/guest/status`)
   return {}
@@ -214,8 +219,9 @@ export async function placeOrderAction(
   itemIds: string[],
   note: string,
 ): Promise<{ error?: string }> {
+  const e = await messages()
   const ctx = await getGuestContext()
-  if (!ctx) return { error: 'Sitzung abgelaufen — bitte neu anmelden.' }
+  if (!ctx) return { error: e.sessionExpired }
 
   const admin = createAdminClient()
 
@@ -225,12 +231,12 @@ export async function placeOrderAction(
     .eq('id', serviceId)
     .maybeSingle()
   if (!service || service.hotel_id !== ctx.hotelId || service.archived_at) {
-    return { error: 'Dieser Service ist nicht mehr verfügbar.' }
+    return { error: e.serviceUnavailable }
   }
   // Ein Verweis ist eine Kachel mit Link, keine Leistung des Hauses — er
   // erzeugt nie eine Anfrage (die Oberfläche bietet es nicht an, aber die
   // Service-ID kommt aus dem Browser).
-  if (service.link_url) return { error: 'Dieser Eintrag ist ein Link und kann nicht bestellt werden.' }
+  if (service.link_url) return { error: e.serviceIsLink }
 
   const { data: activeItems } = await admin
     .from('service_items')
@@ -241,7 +247,7 @@ export async function placeOrderAction(
   const hasItems = (activeItems ?? []).length > 0
   const chosen = (activeItems ?? []).filter(i => itemIds.includes(i.id))
   if (hasItems && chosen.length === 0) {
-    return { error: 'Bitte mindestens eine Option auswählen.' }
+    return { error: e.pickOption }
   }
 
   const trimmedNote = note.trim().slice(0, 500)
@@ -256,7 +262,7 @@ export async function placeOrderAction(
     items_snapshot: chosen.map(i => ({ label: i.label, price_cents: i.price_cents })),
     note: trimmedNote || null,
   })
-  if (error) return { error: 'Bestellung fehlgeschlagen — bitte erneut versuchen.' }
+  if (error) return { error: e.sendFailed }
 
   revalidatePath(`/h/${ctx.hotelSlug}/guest/status`)
   return {}
@@ -280,9 +286,10 @@ export async function guestLogoutAction(): Promise<void> {
  * Ein offener Reinigungswunsch wird dabei zurückgenommen.
  */
 export async function setSkipTodayAction(skip: boolean): Promise<{ error?: string }> {
+  const e = await messages()
   const ctx = await getGuestContext()
-  if (!ctx) return { error: 'Sitzung abgelaufen — bitte neu anmelden.' }
-  if (!parseStayoverPolicy(ctx.policies).enabled) return { error: 'Dieses Haus reinigt nur auf Wunsch.' }
+  if (!ctx) return { error: e.sessionExpired }
+  if (!parseStayoverPolicy(ctx.policies).enabled) return { error: e.onRequestOnly }
   const tz = parseTimeZone(ctx.policies)
 
   const admin = createAdminClient()
@@ -297,7 +304,7 @@ export async function setSkipTodayAction(skip: boolean): Promise<{ error?: strin
     })
     .eq('hotel_id', ctx.hotelId)
     .eq('room_id', ctx.roomId)
-  if (error) return { error: 'Speichern fehlgeschlagen — bitte erneut versuchen.' }
+  if (error) return { error: e.saveFailed }
 
   revalidatePath(`/h/${ctx.hotelSlug}/guest/status`)
   return {}
