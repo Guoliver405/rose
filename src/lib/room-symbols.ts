@@ -19,6 +19,11 @@
  * Routine, Orange = ausgecheckt, Grün = bereit bzw. in Arbeit, Blau = belegt.
  */
 
+// Beschriftungen und Legendentexte stehen seit 11.10.2026 in der Sprachdatei.
+// Vorerst fest Deutsch: Boards und Legende lesen diese Tabellen direkt; die
+// Umstellung auf die Sprache der Anfrage folgt mit der Hilfe.
+import { symbols as T } from './i18n/de/symbols'
+
 export type RoomSymbolId =
   | 'deactivated' | 'occupied' | 'departure' | 'dnd' | 'clean' | 'deferred' | 'declined'
   | 'routine' | 'checkout' | 'priority' | 'cleaning' | 'orders' | 'urgent'
@@ -42,69 +47,56 @@ export type RoomSymbol = {
  */
 export const ROOM_SYMBOLS: Record<RoomSymbolId, RoomSymbol> = {
   deactivated: {
-    label: 'Außer Betrieb',
-    text: 'Das Zimmer nimmt keinen Check-in an und steht auf keinem Reinigungsboard. Es behält seine Historie und kommt unter Zimmer & Etagen wieder in Betrieb.',
+    ...T.symbols.deactivated,
     className: 'text-ink-muted',
   },
   occupied: {
-    label: 'Belegt',
-    text: 'Ein Aufenthalt läuft. Der Gast hat eine PIN oder einen Link und kann im Portal Reinigung wünschen, „Nicht stören" setzen und bestellen.',
+    ...T.symbols.occupied,
     className: 'text-active-strong',
   },
   departure: {
-    label: 'Abreise heute',
-    text: 'Das beim Check-in oder später eingetragene Abreisedatum ist heute. Die Routine-Reinigung setzt an diesem Tag aus — gereinigt wird nach dem Check-out.',
+    ...T.symbols.departure,
     className: 'text-ink-soft',
   },
   dnd: {
-    label: 'Bitte nicht stören',
-    text: 'Der Gast hat es im Portal gesetzt. Niemand klopft, die Routine setzt aus, das Zimmer ist auf dem Reinigungsboard ausgegraut. Nur der Gast nimmt es zurück.',
+    ...T.symbols.dnd,
     className: 'text-blocked-strong',
   },
   clean: {
-    label: 'Gast wünscht Reinigung',
-    text: 'Ein Tipp im Portal. Das Zimmer steht sofort als offen auf dem Reinigungsboard — ohne Termin, das Housekeeping kommt, wenn es in die Runde passt.',
+    ...T.symbols.clean,
     className: 'text-attention-strong',
   },
   deferred: {
-    label: 'Reinigung ab HH:MM',
-    text: 'Nicht vor einer Uhrzeit: Der Gast hat es beim Reinigungswunsch so gewählt, oder er hat der Reinigungskraft an der Tür „bitte später" gesagt. Bis dahin gilt das Zimmer als nicht offen, für alle Kräfte; zur Uhrzeit ist es von selbst wieder offen.',
+    ...T.symbols.deferred,
     className: 'text-ink-soft',
   },
   declined: {
-    label: 'Heute keine Reinigung',
-    text: 'Der Gast verzichtet heute — per Knopf im Portal oder an der Tür zur Reinigungskraft gesagt. Die Routine setzt heute aus, als Reinigung gezählt wird es nicht; morgen gilt sie wieder. Tippt der Gast doch „Zimmer reinigen", ist das Zimmer sofort wieder offen.',
+    ...T.symbols.declined,
     className: 'text-ink-soft',
   },
   routine: {
-    label: 'Routine-Reinigung fällig',
-    text: 'Nur mit eingeschalteter Routine (Hotel & Regeln): ab der zweiten Nacht und ab der eingestellten Uhrzeit — ohne eingetragenes Abreisedatum frühestens zur Check-out-Frist —, solange heute noch nicht gereinigt wurde und kein „Nicht stören" anliegt.',
+    ...T.symbols.routine,
     className: 'text-attention-strong',
   },
   checkout: {
-    label: 'Ausgecheckt — Reinigung offen',
-    text: 'Der Check-out ist erfolgt, das Zimmer ist noch nicht gereinigt. Es bleibt so lange offen, bis eine Reinigungskraft abschließt oder die Rezeption es als gereinigt markiert.',
+    ...T.symbols.checkout,
     className: 'text-caution-strong',
   },
   priority: {
-    label: 'Priorisiert',
-    text: 'Von der Rezeption von Hand gesetzt — für Beschwerden und Sonderfälle. Das Zimmer rückt auf dem Reinigungsboard nach vorn und die Etage trägt eine violette Warnlampe. Kein Automatismus.',
+    ...T.symbols.priority,
     className: 'text-accent-strong',
   },
   cleaning: {
-    label: 'Reinigung läuft',
-    text: 'Eine Reinigungskraft hat den Start-Slider gezogen; ihr Name steht im Zimmer. Wird der Abschluss vergessen, geht das Zimmer nach dem Zeitlimit von selbst wieder auf offen.',
+    ...T.symbols.cleaning,
     className: 'text-positive-strong',
     spin: true,
   },
   orders: {
-    label: 'Offene Service-Anfrage',
-    text: 'Der Gast hat etwas bestellt, das noch niemand abgehakt hat. Die Anfragen liegen unter „Services"; abgehakt wird dort oder im Zimmer-Dialog.',
+    ...T.symbols.orders,
     className: 'text-action',
   },
   urgent: {
-    label: 'Dringende Service-Anfrage',
-    text: 'Mindestens eine offene Anfrage betrifft einen Service, der im Baukasten als „dringend" markiert ist. Glocke, Ring und die Zahl in der Navigation blinken rot, bis sie abgehakt ist.',
+    ...T.symbols.urgent,
     className: 'blink-icon text-critical-strong',
   },
 }
@@ -136,48 +128,39 @@ export type RoomBar = {
  */
 export const ROOM_BARS: Record<RoomBarId, RoomBar> = {
   priority: {
-    label: 'Priorisiert',
-    text: 'Gewinnt gegen alles andere. Solange die Priorität steht, ist der Balken violett — auch bei ausgechecktem Zimmer.',
+    ...T.bars.priority,
     className: 'bg-accent',
   },
   working: {
-    label: 'In Arbeit',
-    text: 'Nur auf dem Reinigungsboard: Eine Kollegin ist gerade im Zimmer. In der Rezeption zeigt das nur der Spinner, der Balken behält seine Farbe.',
+    ...T.bars.working,
     className: 'bg-positive-soft',
   },
   checkout: {
-    label: 'Ausgecheckt',
-    text: 'Reinigung nach Check-out offen.',
+    ...T.bars.checkout,
     className: 'bg-caution',
   },
   wanted: {
-    label: 'Reinigung gewünscht oder Routine fällig',
-    text: 'Der Gast hat getippt, oder die Routine des Hauses ist fällig. Ein aufgeschobener Wunsch („ab HH:MM") färbt den Balken erst zur Uhrzeit.',
+    ...T.bars.wanted,
     className: 'bg-attention',
   },
   dnd: {
-    label: '„Bitte nicht stören"',
-    text: 'Belegt, und der Gast will nicht gestört werden.',
+    ...T.bars.dnd,
     className: 'bg-blocked',
   },
   occupied: {
-    label: 'Belegt',
-    text: 'Aufenthalt läuft, nichts zu tun.',
+    ...T.bars.occupied,
     className: 'bg-fresh',
   },
   ready: {
-    label: 'Frei & bereit',
-    text: 'Unbelegt und gereinigt — der Check-in ist ein Klick.',
+    ...T.bars.ready,
     className: 'bg-positive',
   },
   neutral: {
-    label: 'Ohne Auftrag',
-    text: 'Nur auf dem Reinigungsboard: unbelegt, belegt ohne Wunsch, „Nicht stören" oder ein Wunsch, der erst später gilt. Sichtbar, aber ausgegraut — nicht gesperrt.',
+    ...T.bars.neutral,
     className: 'bg-edge',
   },
   deactivated: {
-    label: 'Außer Betrieb',
-    text: 'Gestrichelter Rahmen, blasse Kachel. Kein Check-in möglich.',
+    ...T.bars.deactivated,
     className: 'bg-edge-strong',
   },
 }
@@ -200,13 +183,11 @@ export type RoomRing = {
  */
 export const ROOM_RINGS: Record<RoomRingId, RoomRing> = {
   urgent: {
-    label: 'Rot blinkender Rahmen',
-    text: 'Dringende Service-Anfrage. Gewinnt gegen den violetten Ring; die Priorität bleibt über Balken und Flagge erkennbar.',
+    ...T.rings.urgent,
     className: 'border-critical blink-ring-overdue',
   },
   priority: {
-    label: 'Violett blinkender Rahmen',
-    text: 'Priorisierte Reinigung, solange keine dringende Anfrage anliegt.',
+    ...T.rings.priority,
     className: 'border-accent blink-ring-priority',
   },
 }

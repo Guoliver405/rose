@@ -8,6 +8,9 @@ import { parseSheetLanguages } from '@/lib/guest-guide'
 import GastzugangForm from '../GastzugangForm'
 import SprachenForm from '../SprachenForm'
 import { UnsavedChanges } from '@/components/unsaved/UnsavedChanges'
+import Rich from '@/components/i18n/Rich'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /**
  * Gäste-Zugang — welcher Weg führt ins Gäste-Portal?
@@ -29,6 +32,7 @@ export default async function GastzugangPage({
   const { slug } = await params
   const ctx = await getAdminContext(slug)
   if (!ctx) redirect(`/h/${slug}/admin/einstellungen`)
+  const m = getMessages(await getLocale()).admin.settings
 
   const supabase = await createClient()
   const { data: hotel } = await supabase
@@ -46,37 +50,32 @@ export default async function GastzugangPage({
           href={`/h/${ctx.hotelSlug}/admin/einstellungen`}
           className="flex items-center gap-1 text-sm font-semibold text-ink-muted hover:text-ink"
         >
-          <ArrowLeft className="h-4 w-4" /> Einstellungen
+          <ArrowLeft className="h-4 w-4" /> {m.title}
         </Link>
-        <h1 className="text-xl font-black text-ink">Gäste-Zugang</h1>
+        <h1 className="text-xl font-black text-ink">{m.guestAccess.title}</h1>
       </div>
 
       <GastzugangForm
         hotelSlug={ctx.hotelSlug}
         initial={mode}
         bestaetigt={policies.guestAccessMode !== undefined}
+        m={m.guestAccess}
       />
 
       {/* Gilt für BEIDE Verfahren: Ein Handout entsteht so oder so, und die
           Mail folgt derselben ersten Sprache. */}
       <section data-lotse="gastzugang.sprachen" className="flex flex-col gap-3 border-t border-edge pt-5">
-        <h2 className="text-base font-black text-ink">Sprachen der Ausdrucke</h2>
+        <h2 className="text-base font-black text-ink">{m.guestAccess.languagesSection.heading}</h2>
         <p className="text-sm text-ink-soft">
-          Die gedruckten Blätter erklären das Portal mit Piktogrammen seiner Knöpfe — dazu Text
-          in einer Hauptsprache und wahlweise einer zweiten. Die <strong>erste</strong> Sprache
-          ist zugleich die der Zugangs-Mail.
+          <Rich text={m.guestAccess.languagesSection.intro} />
         </p>
-        <SprachenForm hotelSlug={ctx.hotelSlug} erste={erste} zweite={zweite ?? null} />
+        <SprachenForm hotelSlug={ctx.hotelSlug} erste={erste} zweite={zweite ?? null} m={m.languages} />
       </section>
 
       {mode === 'pin' ? (
         <section data-lotse="gastzugang.aushang" className="flex flex-col gap-3 border-t border-edge pt-5">
-          <h2 className="text-base font-black text-ink">QR-Aushänge für die Zimmer</h2>
-          <p className="text-sm text-ink-soft">
-            Im Verfahren mit festem Zimmer-QR braucht jedes Zimmer seinen Aushang. Die Codes
-            werden einmal gedruckt und bleiben gültig — bis Sie einen Code erneuern, etwa wenn
-            ein Aushang abhandenkommt.
-          </p>
+          <h2 className="text-base font-black text-ink">{m.guestAccess.noticesSection.heading}</h2>
+          <p className="text-sm text-ink-soft">{m.guestAccess.noticesSection.intro}</p>
           <Link
             href={`/h/${ctx.hotelSlug}/admin/zimmer/aushang`}
             className="flex items-center gap-4 rounded-xl border border-edge bg-surface p-4 hover:border-edge-strong"
@@ -85,10 +84,9 @@ export default async function GastzugangPage({
               <QrCode className="h-5 w-5" />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-sm font-bold text-ink">QR-Aushänge ansehen und drucken</span>
+              <span className="block text-sm font-bold text-ink">{m.guestAccess.noticesSection.linkTitle}</span>
               <span className="block text-xs text-ink-muted">
-                DIN A4 je Zimmer oder vier kompakte Karten je Seite — fehlende Codes erzeugen,
-                einzelne erneuern
+                {m.guestAccess.noticesSection.linkDescription}
               </span>
             </span>
             <ChevronRight className="h-4 w-4 shrink-0 text-ink-muted" />
@@ -96,8 +94,7 @@ export default async function GastzugangPage({
         </section>
       ) : (
         <p className="border-t border-edge pt-5 text-xs text-ink-muted">
-          Die QR-Aushänge für die Zimmer sind ausgeblendet, weil dieses Haus individuelle Zugänge
-          nutzt. Sie erscheinen hier wieder, sobald Sie auf feste Zimmer-QR-Codes umstellen.
+          {m.guestAccess.noticesSection.hidden}
         </p>
       )}
       </UnsavedChanges>

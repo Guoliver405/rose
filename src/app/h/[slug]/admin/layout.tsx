@@ -9,6 +9,8 @@ import RealtimeListener from '@/components/RealtimeListener'
 import HilfeKnopf from '@/components/hilfe/HilfeKnopf'
 import HilfeLeiste from '@/components/hilfe/HilfeLeiste'
 import LotsePilot from '@/components/lotse/LotsePilot'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 export default async function AdminLayout({
   children,
@@ -21,6 +23,7 @@ export default async function AdminLayout({
   if (!ctx) redirect('/admin')
 
   const base = `/h/${ctx.hotelSlug}/admin`
+  const t = getMessages(await getLocale()).admin.overview.nav
 
   // Offene Service-Anfragen als Nav-Badge — Realtime-Refresh + revalidatePath
   // halten den Zähler aktuell. urgent kommt aus der Service-Definition; bei
@@ -64,9 +67,9 @@ export default async function AdminLayout({
               nicht mehr im Hub. Nur für Inhaber und Manager — die Seite
               selbst prüft über getAdminContext. */}
           <nav className="flex items-center gap-4 text-sm font-semibold text-ink-soft">
-            <Link href={base} className="hover:text-ink">Übersicht</Link>
+            <Link href={base} className="hover:text-ink">{t.overview}</Link>
             <Link href={`${base}/bestellungen`} className="flex items-center gap-1.5 hover:text-ink">
-              Services
+              {t.services}
               {openOrders > 0 && (
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs font-bold ${
@@ -80,15 +83,15 @@ export default async function AdminLayout({
               )}
             </Link>
             {ctx.role !== 'reception' && (
-              <Link href={`${base}/auswertung`} className="hover:text-ink">Auswertung</Link>
+              <Link href={`${base}/auswertung`} className="hover:text-ink">{t.evaluation}</Link>
             )}
-            <Link href={`${base}/einstellungen`} className="hover:text-ink">Einstellungen</Link>
+            <Link href={`${base}/einstellungen`} className="hover:text-ink">{t.settings}</Link>
             {/* Die Lotsen stehen in der Nav und nicht im Einstellungen-Hub:
                 Wer Hilfe sucht, sucht sie oben — und die Rezeption erreicht
                 den Hub-Bereich ohnehin nur zum Teil. */}
             <Link href={`${base}/hilfe`} className="flex items-center gap-1.5 hover:text-ink">
               <LifeBuoy className="h-4 w-4" />
-              Hilfe
+              {t.help}
             </Link>
           </nav>
 
@@ -110,7 +113,7 @@ export default async function AdminLayout({
                 className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink"
               >
                 <Building2 className="h-4 w-4" />
-                <span className="hidden sm:inline">Häuser</span>
+                <span className="hidden sm:inline">{t.houses}</span>
               </Link>
             )}
             <span className="hidden text-sm text-ink-muted sm:inline">{ctx.displayName}</span>
@@ -120,7 +123,7 @@ export default async function AdminLayout({
                 className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink"
               >
                 <LogOut className="h-4 w-4" />
-                Abmelden
+                {t.logout}
               </button>
             </form>
           </div>

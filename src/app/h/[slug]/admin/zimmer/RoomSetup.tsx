@@ -5,6 +5,9 @@ import {
   BedDouble, Building2, Layers, Pencil, PowerOff, RotateCcw, SlidersHorizontal, Trash2, X,
 } from 'lucide-react'
 import { formatCents } from '@/lib/money'
+import { format, plural } from '@/lib/i18n/format'
+import type { AdminMessages } from '@/lib/i18n'
+import Rich from '@/components/i18n/Rich'
 import {
   createRoomsAction, deleteScopeAction, editScopeAction, getDeletionImpactAction,
   setScopeActiveAction, type DeletionImpact, type RoomScope,
@@ -54,6 +57,9 @@ function expandFloors(input: string): number[] {
   return [...new Set(floors)]
 }
 
+type M = AdminMessages['rooms']
+type Common = AdminMessages['common']
+
 type Mode = 'individual' | 'identical'
 
 type FloorGroup = { building: string | null; floor: number; rooms: SetupRoom[] }
@@ -70,7 +76,17 @@ type DialogTarget = {
 const inputClass =
   'rounded-lg border border-edge bg-surface px-3 py-2 text-ink outline-none focus:border-active'
 
-export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; rooms: SetupRoom[] }) {
+export default function RoomSetup({
+  hotelSlug, rooms, m, common, intlLocale,
+}: {
+  hotelSlug: string
+  rooms: SetupRoom[]
+  m: M
+  common: Common
+  intlLocale: string
+}) {
+  const c = m.create
+  const l = m.list
   const [mode, setMode] = useState<Mode>('individual')
   const [building, setBuilding] = useState('')
   const [floor, setFloor] = useState('1')
@@ -127,12 +143,14 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
     e.preventDefault()
     setMessage(null)
     setError(null)
-    if (planned.length === 0) { setError('Bitte gültige Etage(n) angeben.'); return }
+    if (planned.length === 0) { setError(c.errors.invalidFloors); return }
     startTransition(async () => {
       const res = await createRoomsAction(hotelSlug, building || null, planned)
       if (res.error) { setError(res.error); return }
       setMessage(
-        `${res.created} Zimmer angelegt${res.skipped ? `, ${res.skipped} übersprungen (Nummer existierte bereits)` : ''}.`,
+        res.skipped
+          ? plural(intlLocale, res.created ?? 0, c.createdSkipped, { skipped: res.skipped })
+          : plural(intlLocale, res.created ?? 0, c.created),
       )
       setNumbersInput('')
     })
@@ -147,12 +165,12 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
       floors.get(key)!.rooms.push(r)
     }
     for (const g of floors.values()) {
-      g.rooms.sort((a, b) => a.number.localeCompare(b.number, 'de', { numeric: true }))
+      g.rooms.sort((a, b) => a.number.localeCompare(b.number, intlLocale, { numeric: true }))
     }
     const sortedFloors = [...floors.values()].sort((a, b) => {
       const ba = a.building ?? ''
       const bb = b.building ?? ''
-      if (ba !== bb) return ba.localeCompare(bb, 'de')
+      if (ba !== bb) return ba.localeCompare(bb, intlLocale)
       return b.floor - a.floor
     })
     const out: BuildingGroup[] = []
@@ -166,7 +184,7 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
       }
     }
     return out
-  }, [rooms])
+  }, [rooms, intlLocale])
 
   /**
    * Die Gebäude-Ebene erscheint nur, wenn sie etwas unterscheidet. Bei einem
@@ -189,13 +207,13 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
         onSubmit={handleCreate}
         className="flex flex-col gap-3 rounded-xl border border-edge bg-surface p-4"
       >
-        <h2 className="font-bold text-ink">Zimmer anlegen</h2>
+        <h2 className="font-bold text-ink">{c.heading}</h2>
 
         {/* Modus-Switch */}
-        <div data-lotse="zimmer.modus" className="flex w-fit rounded-lg border border-edge p-0.5" role="radiogroup" aria-label="Anlege-Modus">
+        <div data-lotse="zimmer.modus" className="flex w-fit rounded-lg border border-edge p-0.5" role="radiogroup" aria-label={c.modeAria}>
           {([
-            ['individual', 'Etagen individuell'],
-            ['identical', 'Etagen identisch'],
+            ['individual', c.modeIndividual],
+            ['identical', c.modeIdentical],
           ] as const).map(([value, label]) => (
             <button
               key={value}
@@ -215,24 +233,24 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
         </div>
         <p className="text-xs text-ink-muted">
           {mode === 'individual'
-            ? 'Zimmernummern gelten für die eine angegebene Etage.'
-            : 'Derselbe Nummernkreis wird auf jeder angegebenen Etage angelegt.'}
+            ? c.modeIndividualHint
+            : c.modeIdenticalHint}
         </p>
 
         <div data-lotse="zimmer.bereich" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1">
-            <span className="text-sm font-semibold text-ink-soft">Gebäudeteil (optional)</span>
+            <span className="text-sm font-semibold text-ink-soft">{c.buildingLabel}</span>
             <input
               type="text"
               value={building}
               onChange={e => setBuilding(e.target.value)}
-              placeholder="z. B. Haupthaus"
+              placeholder={c.buildingPlaceholder}
               className={inputClass}
             />
           </label>
           {mode === 'individual' ? (
             <label className="flex flex-col gap-1">
-              <span className="text-sm font-semibold text-ink-soft">Etage</span>
+              <span className="text-sm font-semibold text-ink-soft">{c.floorLabel}</span>
               <input
                 type="number"
                 required
@@ -244,14 +262,14 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
           ) : (
             <label className="flex flex-col gap-1">
               <span className="text-sm font-semibold text-ink-soft">
-                Etagen — Komma-Liste oder Bereich
+                {c.floorsLabel}
               </span>
               <input
                 type="text"
                 required
                 value={floorsInput}
                 onChange={e => setFloorsInput(e.target.value)}
-                placeholder="z. B. 1-3"
+                placeholder={c.floorsPlaceholder}
                 className={`${inputClass} font-mono`}
               />
             </label>
@@ -261,15 +279,15 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
         <label data-lotse="zimmer.nummern" className="flex flex-col gap-1">
           <span className="text-sm font-semibold text-ink-soft">
             {mode === 'individual'
-              ? 'Zimmernummern — einzeln, Komma-Liste oder Bereich'
-              : 'Zimmernummern je Etage — einzeln, Komma-Liste oder Bereich'}
+              ? c.numbersLabelIndividual
+              : c.numbersLabelIdentical}
           </span>
           <input
             type="text"
             required
             value={numbersInput}
             onChange={e => setNumbersInput(e.target.value)}
-            placeholder={mode === 'individual' ? 'z. B. 101-110 oder 201, 202, 205' : 'z. B. 01-10'}
+            placeholder={mode === 'individual' ? c.numbersPlaceholderIndividual : c.numbersPlaceholderIdentical}
             className={`${inputClass} font-mono`}
           />
         </label>
@@ -282,22 +300,23 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
             className="h-4 w-4 accent-[var(--color-action-bar)]"
           />
           <span className="text-sm font-semibold text-ink-soft">
-            Etagennummer voranstellen (Etage 2 + &bdquo;05&ldquo; &rarr; &bdquo;205&ldquo;)
+            {c.prefixFloor}
           </span>
         </label>
 
         {collisionWarning && (
           <p className="rounded-lg border border-attention-tint-edge bg-attention-tint px-3 py-2 text-sm font-semibold text-attention-deepest">
-            Ohne vorangestellte Etagennummer ist dieselbe Nummer auf mehreren
-            Etagen nicht möglich — Zimmernummern sind je Gebäudeteil eindeutig.
-            Nur die erste Etage würde angelegt.
+            {c.collisionWarning}
           </p>
         )}
 
         {plannedFlat.length > 0 && (
           <p className="text-xs text-ink-muted">
-            {plannedFlat.length} Zimmer werden angelegt: {plannedFlat.slice(0, 12).join(', ')}
-            {plannedFlat.length > 12 ? ` … (+${plannedFlat.length - 12})` : ''}
+            {plural(intlLocale, plannedFlat.length, c.planned, {
+              list: plannedFlat.length > 12
+                ? format(c.plannedMore, { list: plannedFlat.slice(0, 12).join(', '), more: plannedFlat.length - 12 })
+                : plannedFlat.join(', '),
+            })}
           </p>
         )}
         {message && (
@@ -316,20 +335,20 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
           disabled={pending || plannedFlat.length === 0}
           className="self-start rounded-lg bg-action px-4 py-2.5 font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
         >
-          {pending ? 'Anlegen …' : 'Anlegen'}
+          {pending ? c.submitting : c.submit}
         </button>
       </form>
 
       {/* Bestand */}
       {rooms.length === 0 ? (
-        <p data-lotse="zimmer.bestand" className="text-sm text-ink-muted">Noch keine Zimmer vorhanden.</p>
+        <p data-lotse="zimmer.bestand" className="text-sm text-ink-muted">{l.empty}</p>
       ) : (
         <div data-lotse="zimmer.bestand" className="flex flex-col gap-3">
           <p className="text-xs text-ink-muted">
-            Zimmer, Etage oder Gebäudeteil anklicken, um sie zu <strong className="font-semibold text-ink-soft">bearbeiten</strong>,{' '}
-            <strong className="font-semibold text-ink-soft">außer Betrieb zu nehmen</strong> oder{' '}
-            <strong className="font-semibold text-ink-soft">zu löschen</strong>. Verschrieben?
-            Bearbeiten ändert Nummer, Etage und Gebäudeteil, ohne dass etwas verloren geht.
+            <Rich
+              text={l.intro}
+              tags={{ b: t => <strong className="font-semibold text-ink-soft">{t}</strong> }}
+            />
           </p>
 
           {notice && (
@@ -345,15 +364,15 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
                   type="button"
                   onClick={() => openDialog({
                     scope: { kind: 'building', building: b.name },
-                    title: b.name ?? 'Ohne Gebäudeteil',
-                    subtitle: `${b.rooms.length} Zimmer auf ${b.floors.length} Etage${b.floors.length === 1 ? '' : 'n'}`,
+                    title: b.name ?? l.noBuilding,
+                    subtitle: plural(intlLocale, b.floors.length, l.buildingSubtitle, { rooms: b.rooms.length }),
                     rooms: b.rooms,
                   })}
                   className="flex items-center gap-2 rounded-lg px-1 py-1 text-left text-sm font-black text-ink hover:bg-surface-muted"
                 >
                   <Building2 className="h-4 w-4 text-ink-muted" />
-                  {b.name ?? 'Ohne Gebäudeteil'}
-                  <span className="font-normal text-ink-muted">{b.rooms.length} Zimmer</span>
+                  {b.name ?? l.noBuilding}
+                  <span className="font-normal text-ink-muted">{plural(intlLocale, b.rooms.length, l.roomCount)}</span>
                   <SlidersHorizontal className="h-3.5 w-3.5 text-ink-muted" />
                 </button>
               )}
@@ -369,17 +388,17 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
                       type="button"
                       onClick={() => openDialog({
                         scope: { kind: 'floor', building: group.building, floor: group.floor },
-                        title: `Etage ${group.floor}`,
-                        subtitle: `${group.building ? `${group.building} · ` : ''}${group.rooms.length} Zimmer`,
+                        title: format(l.floor, { floor: group.floor }),
+                        subtitle: `${group.building ? `${group.building}${l.separator}` : ''}${plural(intlLocale, group.rooms.length, l.roomCount)}`,
                         rooms: group.rooms,
                       })}
                       className="mb-2 flex w-full items-center gap-2 rounded-lg px-1 py-0.5 text-left text-sm font-bold text-ink-soft hover:bg-surface-muted"
                     >
                       <Layers className="h-4 w-4 text-ink-muted" />
-                      Etage {group.floor}
+                      {format(l.floor, { floor: group.floor })}
                       <span className="font-normal text-ink-muted">
-                        {group.rooms.length} Zimmer
-                        {deactivated > 0 && ` · ${deactivated} außer Betrieb`}
+                        {plural(intlLocale, group.rooms.length, l.roomCount)}
+                        {deactivated > 0 && `${l.separator}${format(l.deactivatedCount, { count: deactivated })}`}
                       </span>
                       <SlidersHorizontal className="ml-auto h-3.5 w-3.5 text-ink-muted" />
                     </button>
@@ -390,8 +409,8 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
                           type="button"
                           onClick={() => openDialog({
                             scope: { kind: 'room', roomId: room.id },
-                            title: `Zimmer ${room.number}`,
-                            subtitle: `${room.building ? `${room.building} · ` : ''}Etage ${room.floor}`,
+                            title: format(l.room, { number: room.number }),
+                            subtitle: `${room.building ? `${room.building}${l.separator}` : ''}${format(l.floor, { floor: room.floor })}`,
                             rooms: [room],
                           })}
                           className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm font-semibold hover:border-edge-strong ${
@@ -399,14 +418,14 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
                               ? 'border-dashed border-edge-strong bg-surface-muted text-ink-muted'
                               : 'border-edge bg-surface-elevated text-ink'
                           }`}
-                          title={room.deactivated ? 'Außer Betrieb' : undefined}
+                          title={room.deactivated ? l.deactivatedTitle : undefined}
                         >
                           {room.number}
                           {room.occupied && (
-                            <BedDouble className="h-3.5 w-3.5 text-active-strong" aria-label="belegt" />
+                            <BedDouble className="h-3.5 w-3.5 text-active-strong" aria-label={l.occupiedAria} />
                           )}
                           {room.deactivated && (
-                            <PowerOff className="h-3.5 w-3.5" aria-label="außer Betrieb" />
+                            <PowerOff className="h-3.5 w-3.5" aria-label={l.deactivatedAria} />
                           )}
                         </button>
                       ))}
@@ -424,6 +443,9 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
           key={JSON.stringify(dialog.scope)}
           hotelSlug={hotelSlug}
           target={dialog}
+          m={m}
+          common={common}
+          intlLocale={intlLocale}
           onClose={() => setDialog(null)}
           onDone={text => { setDialog(null); setNotice(text) }}
         />
@@ -439,14 +461,19 @@ export default function RoomSetup({ hotelSlug, rooms }: { hotelSlug: string; roo
  * Ebene an derselben Stelle stehen und ihren Namen tragen.
  */
 function ScopeDialog({
-  hotelSlug, target, onClose, onDone,
+  hotelSlug, target, onClose, onDone, m, common, intlLocale,
 }: {
   hotelSlug: string
   target: DialogTarget
+  m: M
+  common: Common
+  intlLocale: string
   onClose: () => void
   onDone: (message: string) => void
 }) {
   const { scope, title, subtitle, rooms } = target
+  const d = m.dialog
+  const l = m.list
   const [view, setView] = useState<'menu' | 'edit' | 'delete'>('menu')
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -481,13 +508,13 @@ function ScopeDialog({
     startTransition(async () => {
       const res = await setScopeActiveAction(hotelSlug, scope, next)
       if (res.error) { setError(res.error); return }
-      const skipped = res.skippedOccupied
-        ? `, ${res.skippedOccupied} belegte übersprungen`
-        : ''
+      const changed = res.changed ?? 0
       onDone(
         next
-          ? `${res.changed} Zimmer wieder in Betrieb.`
-          : `${res.changed} Zimmer außer Betrieb${skipped} — Historie bleibt erhalten.`,
+          ? plural(intlLocale, changed, d.reactivated)
+          : res.skippedOccupied
+            ? plural(intlLocale, changed, d.deactivatedSkipped, { skipped: res.skippedOccupied })
+            : plural(intlLocale, changed, d.deactivated),
       )
     })
   }
@@ -499,7 +526,7 @@ function ScopeDialog({
     if (scope.kind === 'room') patch.number = editNumber
     if (scope.kind !== 'building') {
       const parsed = parseInt(editFloor, 10)
-      if (!Number.isInteger(parsed)) { setError('Bitte eine gültige Etage angeben.'); return }
+      if (!Number.isInteger(parsed)) { setError(d.errors.invalidFloor); return }
       patch.floor = parsed
     }
     patch.building = editBuilding.trim() || null
@@ -509,8 +536,8 @@ function ScopeDialog({
       if (res.error) { setError(res.error); return }
       onDone(
         res.changed === 0
-          ? 'Keine Änderung — alles war bereits so eingetragen.'
-          : `${res.changed} Zimmer geändert.`,
+          ? d.noChange
+          : plural(intlLocale, res.changed ?? 0, d.edited),
       )
     })
   }
@@ -520,7 +547,7 @@ function ScopeDialog({
     startTransition(async () => {
       const res = await deleteScopeAction(hotelSlug, scope, confirmInput)
       if (res.error) { setError(res.error); return }
-      onDone(`${res.label} gelöscht (${res.deleted} Zimmer).`)
+      onDone(plural(intlLocale, res.deleted ?? 0, d.deleted, { label: res.label ?? '' }))
     })
   }
 
@@ -545,7 +572,7 @@ function ScopeDialog({
             type="button"
             onClick={onClose}
             className="rounded-lg p-1.5 text-ink-muted hover:bg-surface-muted hover:text-ink"
-            aria-label="Schließen"
+            aria-label={common.close}
           >
             <X className="h-5 w-5" />
           </button>
@@ -560,9 +587,9 @@ function ScopeDialog({
         {view === 'menu' && (
           <div className="flex flex-col gap-2">
             <p className="mb-1 text-sm text-ink-soft">
-              {rooms.length} Zimmer
-              {occupied > 0 && ` · ${occupied} belegt`}
-              {deactivated > 0 && ` · ${deactivated} außer Betrieb`}
+              {plural(intlLocale, rooms.length, l.roomCount)}
+              {occupied > 0 && `${l.separator}${format(l.occupiedCount, { count: occupied })}`}
+              {deactivated > 0 && `${l.separator}${format(l.deactivatedCount, { count: deactivated })}`}
             </p>
 
             <button
@@ -572,14 +599,13 @@ function ScopeDialog({
             >
               <Pencil className="h-5 w-5 shrink-0 text-ink-soft" />
               <span>
-                <span className="block text-sm font-bold text-ink">Bearbeiten</span>
+                <span className="block text-sm font-bold text-ink">{common.edit}</span>
                 <span className="block text-xs text-ink-muted">
                   {scope.kind === 'room'
-                    ? 'Nummer, Etage oder Gebäudeteil korrigieren'
+                    ? d.editHintRoom
                     : scope.kind === 'floor'
-                      ? 'Etage verschieben oder Gebäudeteil wechseln'
-                      : 'Gebäudeteil umbenennen'}
-                  {' '}— nichts geht verloren
+                      ? d.editHintFloor
+                      : d.editHintBuilding}
                 </span>
               </span>
             </button>
@@ -593,9 +619,9 @@ function ScopeDialog({
               >
                 <PowerOff className="h-5 w-5 shrink-0 text-caution-deepest" />
                 <span>
-                  <span className="block text-sm font-bold text-ink">Außer Betrieb nehmen</span>
+                  <span className="block text-sm font-bold text-ink">{d.deactivate}</span>
                   <span className="block text-xs text-ink-muted">
-                    Verschwindet von Boards und Aushängen, Historie bleibt vollständig
+                    {d.deactivateHint}
                   </span>
                 </span>
               </button>
@@ -610,9 +636,9 @@ function ScopeDialog({
               >
                 <RotateCcw className="h-5 w-5 shrink-0 text-positive-deep" />
                 <span>
-                  <span className="block text-sm font-bold text-ink">Wieder in Betrieb nehmen</span>
+                  <span className="block text-sm font-bold text-ink">{d.reactivate}</span>
                   <span className="block text-xs text-ink-muted">
-                    {deactivated} Zimmer zurückholen
+                    {plural(intlLocale, deactivated, d.reactivateHint)}
                   </span>
                 </span>
               </button>
@@ -625,9 +651,9 @@ function ScopeDialog({
             >
               <Trash2 className="h-5 w-5 shrink-0 text-critical-strong" />
               <span>
-                <span className="block text-sm font-bold text-critical-strong">Endgültig löschen</span>
+                <span className="block text-sm font-bold text-critical-strong">{d.deleteForever}</span>
                 <span className="block text-xs text-critical-strong">
-                  Mit allen Aufenthalten und Vorgängen — nicht rückgängig zu machen
+                  {d.deleteHint}
                 </span>
               </span>
             </button>
@@ -638,7 +664,7 @@ function ScopeDialog({
           <form onSubmit={runEdit} className="flex flex-col gap-3">
             {scope.kind === 'room' && (
               <label className="flex flex-col gap-1">
-                <span className="text-sm font-semibold text-ink-soft">Zimmernummer</span>
+                <span className="text-sm font-semibold text-ink-soft">{d.roomNumber}</span>
                 <input
                   type="text"
                   required
@@ -650,7 +676,7 @@ function ScopeDialog({
             )}
             {scope.kind !== 'building' && (
               <label className="flex flex-col gap-1">
-                <span className="text-sm font-semibold text-ink-soft">Etage</span>
+                <span className="text-sm font-semibold text-ink-soft">{d.floor}</span>
                 <input
                   type="number"
                   required
@@ -661,27 +687,25 @@ function ScopeDialog({
               </label>
             )}
             <label className="flex flex-col gap-1">
-              <span className="text-sm font-semibold text-ink-soft">Gebäudeteil (leer = ohne)</span>
+              <span className="text-sm font-semibold text-ink-soft">{d.buildingOrNone}</span>
               <input
                 type="text"
                 value={editBuilding}
                 onChange={e => setEditBuilding(e.target.value)}
-                placeholder="z. B. Haupthaus"
+                placeholder={d.buildingPlaceholder}
                 className={inputClass}
               />
             </label>
 
             {scope.kind !== 'room' && (
               <p className="text-xs text-ink-muted">
-                Gilt für alle {rooms.length} Zimmer dieses Bereichs.
+                {plural(intlLocale, rooms.length, d.appliesToAll)}
               </p>
             )}
 
             {(numberChanged || buildingChanged) && (
               <p className="rounded-lg border border-attention-tint-edge bg-attention-tint px-3 py-2 text-xs font-semibold text-attention-deepest">
-                Die QR-Codes bleiben gültig — sie hängen am Zimmer, nicht an der
-                Nummer. Bereits <strong>gedruckte</strong> Aushänge und Handouts
-                tragen aber die alte Beschriftung und sollten neu gedruckt werden.
+                <Rich text={d.reprintWarning} />
               </p>
             )}
 
@@ -691,14 +715,14 @@ function ScopeDialog({
                 disabled={pending}
                 className="rounded-lg bg-action px-4 py-2.5 font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
               >
-                {pending ? 'Speichern …' : 'Speichern'}
+                {pending ? common.saving : common.save}
               </button>
               <button
                 type="button"
                 onClick={() => { setError(null); setView('menu') }}
                 className="rounded-lg border border-edge px-4 py-2.5 font-semibold text-ink-soft hover:text-ink"
               >
-                Zurück
+                {common.back}
               </button>
             </div>
           </form>
@@ -706,24 +730,22 @@ function ScopeDialog({
 
         {view === 'delete' && (
           <div className="flex flex-col gap-3">
-            {!impact && !error && <p className="text-sm text-ink-muted">Auswirkungen werden geprüft …</p>}
+            {!impact && !error && <p className="text-sm text-ink-muted">{d.checkingImpact}</p>}
 
             {impact && (
               <>
-                <ImpactList impact={impact} />
+                <ImpactList impact={impact} m={m.impact} intlLocale={intlLocale} />
 
                 {impact.occupied > 0 ? (
                   <p className="rounded-lg border border-critical-tint-edge bg-critical-tint px-3 py-2 text-sm font-semibold text-critical-strong">
-                    {impact.occupied === 1
-                      ? 'Das Zimmer ist belegt und lässt sich nicht löschen — bitte zuerst auschecken.'
-                      : `${impact.occupied} Zimmer sind belegt und lassen sich nicht löschen — bitte zuerst auschecken.`}
+                    {plural(intlLocale, impact.occupied, d.occupiedBlocks)}
                   </p>
                 ) : (
                   <>
                     {impact.requiresPhrase && (
                       <label className="flex flex-col gap-1">
                         <span className="text-sm font-semibold text-ink-soft">
-                          Zum Bestätigen &bdquo;{impact.confirmPhrase}&ldquo; eingeben
+                          {format(d.confirmLabel, { phrase: impact.confirmPhrase })}
                         </span>
                         <input
                           type="text"
@@ -740,7 +762,7 @@ function ScopeDialog({
                       disabled={pending || (impact.requiresPhrase && confirmInput.trim() !== impact.confirmPhrase)}
                       className="rounded-lg bg-critical px-4 py-2.5 font-bold text-critical-foreground hover:opacity-90 disabled:opacity-50"
                     >
-                      {pending ? 'Löschen …' : `Endgültig löschen`}
+                      {pending ? d.deleting : d.deleteForever}
                     </button>
                     {impact.requiresPhrase && (
                       <button
@@ -749,7 +771,7 @@ function ScopeDialog({
                         disabled={pending}
                         className="rounded-lg border border-edge px-4 py-2.5 text-sm font-semibold text-ink-soft hover:text-ink disabled:opacity-50"
                       >
-                        Lieber außer Betrieb nehmen — Belege bleiben erhalten
+                        {d.deactivateInstead}
                       </button>
                     )}
                   </>
@@ -762,7 +784,7 @@ function ScopeDialog({
               onClick={() => { setError(null); setView('menu') }}
               className="self-start text-sm font-semibold text-ink-muted hover:text-ink"
             >
-              Zurück
+              {common.back}
             </button>
           </div>
         )}
@@ -771,51 +793,39 @@ function ScopeDialog({
   )
 }
 
-/** „1 Aufenthalt" statt „1 Aufenthalte" — der Dialog soll Vertrauen tragen. */
-function plural(n: number, one: string, many: string): string {
-  return `${n} ${n === 1 ? one : many}`
-}
-
 /** Was das Löschen kostet, in Zahlen statt in Warnsätzen. */
-function ImpactList({ impact }: { impact: DeletionImpact }) {
+function ImpactList({ impact, m, intlLocale }: { impact: DeletionImpact; m: M['impact']; intlLocale: string }) {
   const lost: string[] = []
-  if (impact.rooms > 1) lost.push(`${impact.rooms} Zimmer`)
-  if (impact.stays > 0) lost.push(plural(impact.stays, 'Aufenthalt', 'Aufenthalte'))
-  if (impact.ordersOpen > 0) {
-    lost.push(plural(impact.ordersOpen, 'offene Service-Anfrage', 'offene Service-Anfragen'))
-  }
+  if (impact.rooms > 1) lost.push(plural(intlLocale, impact.rooms, m.rooms))
+  if (impact.stays > 0) lost.push(plural(intlLocale, impact.stays, m.stays))
+  if (impact.ordersOpen > 0) lost.push(plural(intlLocale, impact.ordersOpen, m.ordersOpen))
   if (impact.ordersDone > 0) {
     lost.push(
-      plural(impact.ordersDone, 'abgeschlossene Service-Anfrage', 'abgeschlossene Service-Anfragen') +
-        (impact.ordersDoneCents > 0 ? ` (${formatCents(impact.ordersDoneCents)})` : ''),
+      impact.ordersDoneCents > 0
+        ? plural(intlLocale, impact.ordersDone, m.ordersDoneAmount, { amount: formatCents(impact.ordersDoneCents) })
+        : plural(intlLocale, impact.ordersDone, m.ordersDone),
     )
   }
-  if (impact.transitions > 0) {
-    lost.push(plural(impact.transitions, 'Eintrag im Zimmer-Verlauf', 'Einträge im Zimmer-Verlauf'))
-  }
-  if (impact.qrPosters > 0) {
-    lost.push(`${plural(impact.qrPosters, 'QR-Code', 'QR-Codes')} — gedruckte Aushänge werden ungültig`)
-  }
+  if (impact.transitions > 0) lost.push(plural(intlLocale, impact.transitions, m.transitions))
+  if (impact.qrPosters > 0) lost.push(plural(intlLocale, impact.qrPosters, m.qrPosters))
 
   if (lost.length === 0) {
     return (
       <p className="rounded-lg border border-positive-tint-edge bg-positive-tint px-3 py-2 text-sm font-semibold text-positive-deep">
-        Noch nie benutzt — beim Löschen gehen keine Daten verloren.
+        {m.neverUsed}
       </p>
     )
   }
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-sm font-bold text-ink">Das wird endgültig mitgelöscht:</p>
+      <p className="text-sm font-bold text-ink">{m.willBeDeleted}</p>
       <ul className="list-disc pl-5 text-sm text-ink-soft">
         {lost.map(item => <li key={item}>{item}</li>)}
       </ul>
       {impact.cleaningLogs > 0 && (
         <p className="text-xs text-ink-muted">
-          {plural(impact.cleaningLogs, 'Reinigungs-Stich bleibt', 'Reinigungs-Stiche bleiben')}{' '}
-          <strong>erhalten</strong> — die Arbeitszeiten in der Auswertung verlieren nur den
-          Zimmerbezug.
+          <Rich text={plural(intlLocale, impact.cleaningLogs, m.cleaningLogsKept)} />
         </p>
       )}
     </div>

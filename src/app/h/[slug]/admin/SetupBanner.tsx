@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { ArrowRight, ListChecks } from 'lucide-react'
 import { offeneEinrichtung, type SetupKonfig } from '@/lib/lotsen'
+import { format, type AdminMessages } from '@/lib/i18n'
+import Rich from '@/components/i18n/Rich'
 
 /**
  * Schmales Band auf der Übersicht, solange die Einrichtung unfertig ist.
@@ -26,10 +28,12 @@ import { offeneEinrichtung, type SetupKonfig } from '@/lib/lotsen'
 export default function SetupBanner({
   base,
   konfig,
+  m,
 }: {
   /** `/h/<slug>/admin` */
   base: string
   konfig: SetupKonfig
+  m: AdminMessages['overview']['setup']
 }) {
   const offen = offeneEinrichtung(konfig)
   if (offen.length === 0) return null
@@ -41,11 +45,11 @@ export default function SetupBanner({
     <section className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-attention-tint-edge bg-attention-tint px-4 py-2.5 text-sm print:hidden">
       <ListChecks className="h-4 w-4 shrink-0 text-attention-deepest" />
       <span className="font-bold text-attention-deepest">
-        Einrichtung: noch {offen.length} von {gesamt} Schritten
+        {format(m.progress, { count: offen.length, total: gesamt })}
       </span>
       <span className="min-w-0 text-attention-deepest">
-        Als Nächstes: <strong className="font-semibold">{naechster.todo}</strong>
-        <span className="hidden text-xs sm:inline"> — {naechster.hint}</span>
+        <Rich text={m.next} vars={{ todo: naechster.todo }} tags={{ b: c => <strong className="font-semibold">{c}</strong> }} />
+        <span className="hidden text-xs sm:inline">{format(m.hint, { hint: naechster.hint })}</span>
       </span>
 
       <span className="ml-auto flex shrink-0 items-center gap-3">
@@ -53,7 +57,7 @@ export default function SetupBanner({
           href={`${base}/hilfe`}
           className="text-xs font-semibold text-attention-deepest underline hover:no-underline"
         >
-          Alle Schritte
+          {m.allSteps}
         </Link>
         <Link
           href={
@@ -63,7 +67,7 @@ export default function SetupBanner({
           }
           className="flex items-center gap-1.5 rounded-lg bg-action px-3 py-1.5 text-xs font-bold text-action-foreground hover:bg-action-strong"
         >
-          Weiter einrichten <ArrowRight className="h-3.5 w-3.5" />
+          {m.continue} <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </span>
     </section>

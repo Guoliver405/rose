@@ -13,6 +13,36 @@
  * einzutragen ist. Regionen sind eine Lesehilfe, keine Sperre.
  */
 
+/**
+ * Texte der Vorlagen aus der Sprachdatei (`admin.services.linkTemplates`).
+ * Sie kommen als Parameter herein statt per Import: Der Konfigurator ist eine
+ * Client-Komponente, und ein Import der Sprachdatei legte die deutsche
+ * Fassung fest ins Browser-Bundle. Strukturell beschrieben, damit diese Datei
+ * nichts aus `@/lib/i18n` braucht.
+ */
+export type ServiceLinkTemplateTexts = {
+  names: Record<TemplateKind, string>
+  descriptions: Record<TemplateKind, string>
+  regions: Record<TemplateRegion, string>
+  hints: Record<TemplateId, string>
+}
+
+type TemplateKind = 'tip' | 'food'
+type TemplateRegion = 'everywhere' | 'germany' | 'germanyNordicsJapan' | 'worldwide' | 'southeastAsia' | 'asia'
+type TemplateId = 'tip' | 'lieferando' | 'wolt' | 'ubereats' | 'grab' | 'foodpanda'
+
+/** Daten einer Vorlage — Markenname und Adresse werden nicht übersetzt. */
+type TemplateData = {
+  id: TemplateId
+  kind: TemplateKind
+  /** Name des Dienstes; null bei der Trinkgeld-Vorlage (je Haus eine andere App). */
+  brand: string | null
+  /** Startadresse; leer, wenn das Haus sie zwingend selbst kennt (Trinkgeld-App). */
+  url: string
+  /** Wo der Dienst üblich ist — nur zur Orientierung im Konfigurator. */
+  region: TemplateRegion
+}
+
 export type ServiceLinkTemplate = {
   id: string
   name: string
@@ -25,56 +55,31 @@ export type ServiceLinkTemplate = {
   hinweis: string
 }
 
-export const SERVICE_LINK_TEMPLATES: ServiceLinkTemplate[] = [
-  {
-    id: 'tip',
-    name: 'Trinkgeld fürs Housekeeping',
-    description: 'Bargeldlos Danke sagen — das Trinkgeld geht an das Reinigungsteam.',
-    url: '',
-    region: 'überall',
-    hinweis: 'Die Adresse aus Ihrer Trinkgeld-App eintragen (der QR-Code der App enthält genau diesen Link). Ein Link für das ganze Team — das Gastportal nennt keine Namen.',
-  },
-  {
-    id: 'lieferando',
-    name: 'Essen bestellen — Lieferando',
-    description: 'Restaurants in der Nähe liefern direkt ans Hotel.',
-    url: 'https://www.lieferando.de/',
-    region: 'Deutschland',
-    hinweis: 'Besser als die Startseite: die Adresse Ihrer Straße oder Postleitzahl aus der Lieferando-Suche einsetzen, dann sieht der Gast sofort die Restaurants, die zu Ihnen liefern.',
-  },
-  {
-    id: 'wolt',
-    name: 'Essen bestellen — Wolt',
-    description: 'Restaurants in der Nähe liefern direkt ans Hotel.',
-    url: 'https://wolt.com/',
-    region: 'Deutschland, Nordeuropa, Japan',
-    hinweis: 'Stadtseite von Wolt einsetzen (z. B. …/de/deu/berlin), dann landet der Gast nicht auf der Länderauswahl.',
-  },
-  {
-    id: 'ubereats',
-    name: 'Essen bestellen — Uber Eats',
-    description: 'Restaurants in der Nähe liefern direkt ans Hotel.',
-    url: 'https://www.ubereats.com/',
-    region: 'weltweit',
-    hinweis: 'Die Adresse mit Ihrer Stadt aus der Uber-Eats-Suche einsetzen.',
-  },
-  {
-    id: 'grab',
-    name: 'Essen bestellen — GrabFood',
-    description: 'Restaurants in der Nähe liefern direkt ans Hotel.',
-    url: 'https://food.grab.com/',
-    region: 'Südostasien',
-    hinweis: 'Landes- oder Stadtseite von GrabFood einsetzen.',
-  },
-  {
-    id: 'foodpanda',
-    name: 'Essen bestellen — foodpanda',
-    description: 'Restaurants in der Nähe liefern direkt ans Hotel.',
-    url: 'https://www.foodpanda.com/',
-    region: 'Asien',
-    hinweis: 'Landesseite von foodpanda einsetzen.',
-  },
+const TEMPLATE_DATA: TemplateData[] = [
+  { id: 'tip', kind: 'tip', brand: null, url: '', region: 'everywhere' },
+  { id: 'lieferando', kind: 'food', brand: 'Lieferando', url: 'https://www.lieferando.de/', region: 'germany' },
+  { id: 'wolt', kind: 'food', brand: 'Wolt', url: 'https://wolt.com/', region: 'germanyNordicsJapan' },
+  { id: 'ubereats', kind: 'food', brand: 'Uber Eats', url: 'https://www.ubereats.com/', region: 'worldwide' },
+  { id: 'grab', kind: 'food', brand: 'GrabFood', url: 'https://food.grab.com/', region: 'southeastAsia' },
+  { id: 'foodpanda', kind: 'food', brand: 'foodpanda', url: 'https://www.foodpanda.com/', region: 'asia' },
 ]
+
+/** Platzhalter `{brand}` einsetzen — bewusst ohne Import aus `@/lib/i18n`. */
+function withBrand(text: string, brand: string | null): string {
+  return brand ? text.replace(/\{brand\}/g, brand) : text
+}
+
+/** Vorlagen in der Sprache der Texte. */
+export function serviceLinkTemplates(texts: ServiceLinkTemplateTexts): ServiceLinkTemplate[] {
+  return TEMPLATE_DATA.map(t => ({
+    id: t.id,
+    name: withBrand(texts.names[t.kind], t.brand),
+    description: withBrand(texts.descriptions[t.kind], t.brand),
+    url: t.url,
+    region: texts.regions[t.region],
+    hinweis: withBrand(texts.hints[t.id], t.brand),
+  }))
+}
 
 /**
  * Gültige Adresse für einen Verweis: absolut, http oder https, nichts anderes.

@@ -6,16 +6,10 @@ import { Check, DoorOpen, KeyRound, Loader2, QrCode, TriangleAlert } from 'lucid
 import { updateGuestAccessModeAction } from './actions'
 import type { GuestAccessMode } from '@/lib/guest-access'
 import { useUnsavedSection } from '@/components/unsaved/UnsavedChanges'
+import Rich from '@/components/i18n/Rich'
+import type { AdminMessages } from '@/lib/i18n'
 
-type Karte = {
-  mode: GuestAccessMode
-  titel: string
-  untertitel: string
-  ablauf: string[]
-  dafuer: string[]
-  dagegen: string[]
-  passt: string[]
-}
+type Messages = AdminMessages['settings']['guestAccess']
 
 /**
  * Die Erläuterung ist hier kein Beiwerk, sondern der Zweck der Seite: Die Wahl
@@ -23,66 +17,10 @@ type Karte = {
  * dann selten ändert. Wer sie trifft, muss die Abwägung kennen — vor allem den
  * fehlenden zweiten Faktor beim individuellen Verfahren.
  */
-const KARTEN: Karte[] = [
-  {
-    mode: 'pin',
-    titel: 'Fester QR-Code je Zimmer',
-    untertitel: 'Standard — QR hängt im Zimmer, Gast tippt seine PIN',
-    ablauf: [
-      'Jedes Zimmer bekommt einmalig einen QR-Code zum Aushängen oder Aufstellen.',
-      'Beim Check-in erhält der Gast eine PIN — ausgedruckt oder mündlich.',
-      'Der Gast scannt den QR im Zimmer und gibt die PIN ein.',
-      'Danach bleibt er auf seinem Gerät angemeldet und muss nichts mehr eingeben.',
-    ],
-    dafuer: [
-      'Der Zugang hängt im Zimmer und geht nicht verloren — auch wenn der Gast seinen Zettel wegwirft.',
-      'Es muss nichts gedruckt werden: Die PIN kann auch mündlich genannt werden.',
-      'Die QR-Codes werden einmal gedruckt und bleiben dauerhaft gültig.',
-      'Jedes Gerät einer Reisegruppe meldet sich selbst an.',
-    ],
-    dagegen: [
-      'Der Gast muss eine PIN eintippen — ein Schritt mehr.',
-      'Die PIN muss bei jedem Check-in mitgeteilt werden.',
-      'Die Aushänge müssen einmalig ins Zimmer.',
-    ],
-    passt: [
-      'Sie haben Aushänge oder Aufsteller im Zimmer — oder möchten welche.',
-      'Ihre Rezeption soll zügig abfertigen können, ohne zu drucken.',
-      'Sie haben viele Kurzaufenthalte oder wechselnde Belegung.',
-    ],
-  },
-  {
-    mode: 'link',
-    titel: 'Individueller Zugang je Aufenthalt',
-    untertitel: 'QR-Code oder Link beim Check-in — ohne PIN',
-    ablauf: [
-      'Beim Check-in entsteht ein persönlicher Zugang für genau diesen Aufenthalt.',
-      'Der Gast bekommt ihn ausgedruckt oder per E-Mail zugeschickt.',
-      'Scannen oder antippen genügt — es gibt keine PIN.',
-      'Mit dem Check-out erlischt der Zugang von selbst.',
-    ],
-    dafuer: [
-      'Ein Schritt weniger für den Gast: nichts eintippen.',
-      'Im Zimmer muss kein QR-Code hängen — hilft, wo Aushänge stören.',
-      'Der Zugang endet automatisch mit dem Check-out.',
-      'Per E-Mail zustellbar: Der Gast hat ihn auf dem Handy, bevor er das Zimmer betritt.',
-    ],
-    dagegen: [
-      'Der Zugang IST der Link — wer ihn sieht, kann den Zimmerservice dieses Zimmers bedienen, bis ausgecheckt wird. Ein liegengelassener Ausdruck ist ein offener Zugang.',
-      'Der Gast braucht Zettel oder Mail. Verliert er beides, muss die Rezeption neu ausgeben.',
-      'Bei jedem Check-in muss etwas ausgehändigt werden.',
-      'Ohne E-Mail-Adresse des Gastes bleibt nur der Ausdruck.',
-    ],
-    passt: [
-      'Sie möchten keine QR-Codes in den Zimmern — wegen Optik, Denkmalschutz oder häufiger Renovierung.',
-      'Ihre Gäste bekommen beim Check-in ohnehin Unterlagen ausgehändigt.',
-      'Ihnen ist der bequemste Weg für den Gast wichtiger als der zweite Faktor.',
-    ],
-  },
-]
+const KARTEN: GuestAccessMode[] = ['pin', 'link']
 
 export default function GastzugangForm({
-  hotelSlug, initial, bestaetigt,
+  hotelSlug, initial, bestaetigt, m,
 }: {
   hotelSlug: string
   initial: GuestAccessMode
@@ -94,6 +32,7 @@ export default function GastzugangForm({
    * gesetzten Schlüssel liest) forderte den Punkt endlos ein (22.09.2026).
    */
   bestaetigt: boolean
+  m: Messages
 }) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
@@ -113,10 +52,10 @@ export default function GastzugangForm({
       if (res.error) { setError(res.error); return false }
       setNotice(
         !geaendert
-          ? 'Verfahren bestätigt — es gilt weiter wie bisher. Der Punkt „Gäste-Zugang" in der Einrichtung ist damit erledigt.'
+          ? m.notices.confirmed
           : gewaehlt === 'link'
-          ? 'Umgestellt auf individuelle Zugänge. Ab dem nächsten Check-in bekommt jeder Gast seinen eigenen QR-Code — bitte die Aushänge aus den Zimmern nehmen.'
-          : 'Umgestellt auf feste Zimmer-QR-Codes. Ab dem nächsten Check-in gilt wieder QR im Zimmer plus PIN — die Aushänge finden Sie jetzt unten auf dieser Seite.',
+          ? m.notices.switchedToLink
+          : m.notices.switchedToPin,
       )
       router.refresh()
       return true
@@ -127,26 +66,25 @@ export default function GastzugangForm({
 
   // Die Leiste zählt nur echte Änderungen; das bloße Bestätigen der Vorgabe bleibt am Knopf unten.
   useUnsavedSection('gastzugang', {
-    label: 'Verfahren', dirty: geaendert, save: speichern, discard: () => setGewaehlt(initial),
+    label: m.unsavedLabel, dirty: geaendert, save: speichern, discard: () => setGewaehlt(initial),
   })
 
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-ink-soft">
-        Wie kommt Ihr Gast ins Gäste-Portal? Es gibt zwei Wege. Die Wahl gilt
-        <strong> nur für dieses Haus</strong> — ein Konto mit mehreren Häusern kann sie
-        unterschiedlich treffen.
+        <Rich text={m.intro} />
       </p>
 
       <div data-lotse="gastzugang.wahl" className="grid gap-3 lg:grid-cols-2">
-        {KARTEN.map(k => {
-          const aktiv = gewaehlt === k.mode
-          const istAktuell = initial === k.mode
+        {KARTEN.map(mode => {
+          const k = m.modes[mode]
+          const aktiv = gewaehlt === mode
+          const istAktuell = initial === mode
           return (
             <button
-              key={k.mode}
+              key={mode}
               type="button"
-              onClick={() => setGewaehlt(k.mode)}
+              onClick={() => setGewaehlt(mode)}
               className={`flex flex-col gap-3 rounded-xl border-2 bg-surface p-4 text-left ${
                 aktiv
                   // Kein Tint-Hintergrund: die Tints sind nur für Light
@@ -162,47 +100,47 @@ export default function GastzugangForm({
                     aktiv ? 'bg-action text-action-foreground' : 'bg-surface-muted text-ink-soft'
                   }`}
                 >
-                  {k.mode === 'pin' ? <QrCode className="h-5 w-5" /> : <DoorOpen className="h-5 w-5" />}
+                  {mode === 'pin' ? <QrCode className="h-5 w-5" /> : <DoorOpen className="h-5 w-5" />}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-black text-ink">{k.titel}</span>
+                    <span className="text-sm font-black text-ink">{k.title}</span>
                     {istAktuell && (
                       <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs font-semibold text-ink-muted">
-                        {bestaetigt ? 'derzeit aktiv' : 'Vorgabe'}
+                        {bestaetigt ? m.badgeActive : m.badgeDefault}
                       </span>
                     )}
                   </span>
-                  <span className="mt-0.5 block text-xs text-ink-muted">{k.untertitel}</span>
+                  <span className="mt-0.5 block text-xs text-ink-muted">{k.subtitle}</span>
                 </span>
                 {aktiv && <Check className="h-5 w-5 shrink-0 text-action" />}
               </div>
 
               <div>
-                <p className="text-xs font-bold text-ink-soft">So läuft es</p>
+                <p className="text-xs font-bold text-ink-soft">{m.howItWorks}</p>
                 <ol className="mt-1 list-decimal pl-5 text-xs leading-relaxed text-ink-soft">
-                  {k.ablauf.map(z => <li key={z}>{z}</li>)}
+                  {k.steps.map(z => <li key={z}>{z}</li>)}
                 </ol>
               </div>
 
               <div>
-                <p className="text-xs font-bold text-positive-deep">Dafür spricht</p>
+                <p className="text-xs font-bold text-positive-deep">{m.pros}</p>
                 <ul className="mt-1 list-disc pl-5 text-xs leading-relaxed text-ink-soft">
-                  {k.dafuer.map(z => <li key={z}>{z}</li>)}
+                  {k.pros.map(z => <li key={z}>{z}</li>)}
                 </ul>
               </div>
 
               <div>
-                <p className="text-xs font-bold text-caution-deepest">Dagegen spricht</p>
+                <p className="text-xs font-bold text-caution-deepest">{m.cons}</p>
                 <ul className="mt-1 list-disc pl-5 text-xs leading-relaxed text-ink-soft">
-                  {k.dagegen.map(z => <li key={z}>{z}</li>)}
+                  {k.cons.map(z => <li key={z}>{z}</li>)}
                 </ul>
               </div>
 
               <div className="rounded-lg bg-surface-muted p-3">
-                <p className="text-xs font-bold text-ink-soft">Passt zu Ihnen, wenn …</p>
+                <p className="text-xs font-bold text-ink-soft">{m.fits}</p>
                 <ul className="mt-1 list-disc pl-5 text-xs leading-relaxed text-ink-soft">
-                  {k.passt.map(z => <li key={z}>{z}</li>)}
+                  {k.fits.map(z => <li key={z}>{z}</li>)}
                 </ul>
               </div>
             </button>
@@ -212,34 +150,19 @@ export default function GastzugangForm({
 
       <div className="rounded-xl border border-edge bg-surface p-4">
         <p className="flex items-center gap-1.5 text-sm font-bold text-ink-soft">
-          <KeyRound className="h-4 w-4" /> Was beim Umstellen passiert
+          <KeyRound className="h-4 w-4" /> {m.switching.heading}
         </p>
         <ul className="mt-2 list-disc pl-5 text-sm leading-relaxed text-ink-soft">
-          <li>
-            <strong>Laufende Aufenthalte bleiben unberührt.</strong> Wer bereits eingecheckt
-            ist, behält seinen ausgegebenen Zugang bis zum Check-out. Erst der nächste
-            Check-in folgt dem neuen Verfahren.
-          </li>
-          <li>
-            Beim Wechsel auf <strong>individuelle Zugänge</strong> sollten die Aushänge aus den
-            Zimmern verschwinden — sie führen sonst auf eine PIN-Eingabe, die niemand mehr
-            bedienen kann.
-          </li>
-          <li>
-            Beim Wechsel auf <strong>feste Zimmer-QR-Codes</strong> brauchen Sie die Aushänge im
-            Zimmer. Sie erscheinen dann unten auf dieser Seite.
-          </li>
+          <li><Rich text={m.switching.running} /></li>
+          <li><Rich text={m.switching.toLink} /></li>
+          <li><Rich text={m.switching.toPin} /></li>
         </ul>
       </div>
 
       {gewaehlt === 'link' && (
         <p className="flex items-start gap-2 rounded-xl border border-attention-tint-edge bg-attention-tint px-4 py-3 text-sm font-semibold text-attention-deepest">
           <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>
-            Beim individuellen Zugang gibt es keinen zweiten Faktor: Der Link ist der
-            Schlüssel. Weisen Sie Ihre Gäste darauf hin, den Zettel wie einen Zimmerschlüssel
-            zu behandeln.
-          </span>
+          <span>{m.linkWarning}</span>
         </p>
       )}
 
@@ -255,11 +178,7 @@ export default function GastzugangForm({
       )}
 
       {!bestaetigt && !notice && (
-        <p className="text-sm text-ink-soft">
-          Bisher gilt die Vorgabe (fester QR-Code je Zimmer). Bestätigen Sie die Wahl
-          einmal — auch wenn Sie dabei bleiben. Erst dann hält das Haus das Verfahren
-          fest, und der Punkt gilt in der Einrichtung als erledigt.
-        </p>
+        <p className="text-sm text-ink-soft">{m.confirmHint}</p>
       )}
 
       <button
@@ -270,7 +189,7 @@ export default function GastzugangForm({
         className="flex w-fit items-center gap-1.5 rounded-lg bg-action px-4 py-2.5 font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-        {geaendert ? 'Verfahren umstellen' : bestaetigt ? 'Bereits eingestellt' : 'Verfahren bestätigen'}
+        {geaendert ? m.buttons.switch : bestaetigt ? m.buttons.alreadySet : m.buttons.confirm}
       </button>
     </div>
   )

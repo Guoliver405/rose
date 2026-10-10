@@ -11,6 +11,9 @@ import {
 import { formatHHMM, parseTimeZone } from '@/lib/tz'
 import RoomGrid, { type FloorGroup, type RoomTileData } from './RoomGrid'
 import SetupBanner from './SetupBanner'
+import { format, getMessages, intlLocale } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
+import Rich from '@/components/i18n/Rich'
 
 export default async function AdminOverviewPage({
   params,
@@ -20,6 +23,8 @@ export default async function AdminOverviewPage({
   const { slug } = await params
   const ctx = await getManagementContext(slug)
   if (!ctx) redirect('/admin')
+  const locale = await getLocale()
+  const m = getMessages(locale).admin.overview
 
   const supabase = await createClient()
 
@@ -115,7 +120,7 @@ export default async function AdminOverviewPage({
   for (const p of (presence ?? []).filter(p => isPresenceFresh(p.entered_at, now))) {
     const key = `${p.building ?? ''}#${p.floor}`
     const list = maidsByFloor.get(key) ?? []
-    list.push(nameByProfile.get(p.profile_id) ?? 'Reinigungskraft')
+    list.push(nameByProfile.get(p.profile_id) ?? m.page.maidFallback)
     maidsByFloor.set(key, list)
   }
 
@@ -171,42 +176,47 @@ export default async function AdminOverviewPage({
           beim Scrollen die Kacheln sauber abdeckt. */}
       <div className="sticky top-[57px] z-30 -mx-4 -mt-4 bg-surface-sunken px-4 pb-2 pt-4">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-xl font-black text-ink">Zimmer-Übersicht</h1>
+          <h1 className="text-xl font-black text-ink">{m.page.title}</h1>
           <div data-lotse="uebersicht.kpi" className="ml-auto flex flex-wrap gap-2 text-sm">
-            <Kpi label="Zimmer" value={total} />
-            <Kpi label="belegt" value={occupied} tone={occupied > 0 ? 'fresh' : undefined} />
-            <Kpi label="bereit" value={ready} tone={ready > 0 ? 'positive' : undefined} />
-            <Kpi label="zu reinigen" value={toClean} tone={toClean > 0 ? 'attention' : 'positive'} />
-            <Kpi label="DND" value={dnd} tone={dnd > 0 ? 'blocked' : undefined} />
-            <Kpi label="in Arbeit" value={inProgress} tone={inProgress > 0 ? 'positive' : undefined} />
-            {deactivated > 0 && <Kpi label="außer Betrieb" value={deactivated} />}
+            <Kpi text={format(m.page.kpi.rooms, { count: total })} />
+            <Kpi text={format(m.page.kpi.occupied, { count: occupied })} tone={occupied > 0 ? 'fresh' : undefined} />
+            <Kpi text={format(m.page.kpi.ready, { count: ready })} tone={ready > 0 ? 'positive' : undefined} />
+            <Kpi text={format(m.page.kpi.toClean, { count: toClean })} tone={toClean > 0 ? 'attention' : 'positive'} />
+            <Kpi text={format(m.page.kpi.dnd, { count: dnd })} tone={dnd > 0 ? 'blocked' : undefined} />
+            <Kpi text={format(m.page.kpi.inProgress, { count: inProgress })} tone={inProgress > 0 ? 'positive' : undefined} />
+            {deactivated > 0 && <Kpi text={format(m.page.kpi.deactivated, { count: deactivated })} />}
           </div>
         </div>
       </div>
 
       {ctx.role !== 'reception' && (
-        <SetupBanner base={`/h/${ctx.hotelSlug}/admin`} konfig={konfig} />
+        <SetupBanner base={`/h/${ctx.hotelSlug}/admin`} konfig={konfig} m={m.setup} />
       )}
 
       {total === 0 ? (
         <div className="rounded-xl border border-edge bg-surface p-8 text-center">
-          <p className="font-semibold text-ink">Noch keine Zimmer angelegt.</p>
+          <p className="font-semibold text-ink">{m.page.noRooms}</p>
           <p className="mt-1 text-sm text-ink-muted">
-            Lege unter{' '}
-            <Link href={`/h/${ctx.hotelSlug}/admin/zimmer`} className="font-semibold text-action underline">
-              Zimmer
-            </Link>{' '}
-            die Zimmer deines Hauses an — Nummer, Etage, optional Gebäudeteil.
+            <Rich
+              text={m.page.noRoomsHint}
+              tags={{
+                link: c => (
+                  <Link href={`/h/${ctx.hotelSlug}/admin/zimmer`} className="font-semibold text-action underline">
+                    {c}
+                  </Link>
+                ),
+              }}
+            />
           </p>
         </div>
       ) : (
-        <RoomGrid hotelSlug={ctx.hotelSlug} floorGroups={floorGroups} timeZone={tz} />
+        <RoomGrid hotelSlug={ctx.hotelSlug} floorGroups={floorGroups} timeZone={tz} m={m} common={getMessages(locale).admin.common} intlLocale={intlLocale(locale)} />
       )}
     </div>
   )
 }
 
-function Kpi({ label, value, tone }: { label: string; value: number; tone?: 'fresh' | 'attention' | 'blocked' | 'positive' }) {
+function Kpi({ text, tone }: { text: string; tone?: 'fresh' | 'attention' | 'blocked' | 'positive' }) {
   const toneClass =
     tone === 'fresh' ? 'text-fresh-deep bg-fresh-pill' :
     tone === 'attention' ? 'text-attention-deepest bg-attention-pill' :
@@ -215,7 +225,7 @@ function Kpi({ label, value, tone }: { label: string; value: number; tone?: 'fre
     'text-ink-soft bg-surface-muted'
   return (
     <span className={`rounded-full px-3 py-1 font-semibold ${toneClass}`}>
-      {value} {label}
+      {text}
     </span>
   )
 }

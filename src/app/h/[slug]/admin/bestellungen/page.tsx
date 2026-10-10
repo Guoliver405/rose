@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { getManagementContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import OrdersBoard, { type OrderRow } from './OrdersBoard'
+import { getMessages, intlLocale } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 export default async function BestellungenPage({
   params,
@@ -11,6 +13,8 @@ export default async function BestellungenPage({
   const { slug } = await params
   const ctx = await getManagementContext(slug)
   if (!ctx) redirect('/login')
+  const locale = await getLocale()
+  const m = getMessages(locale).admin.overview.orders
 
   const supabase = await createClient()
   const [{ data: orders }, { data: services }, { data: rooms }, { data: profiles }] =
@@ -37,7 +41,7 @@ export default async function BestellungenPage({
       roomNumber: roomById.get(o.room_id) ?? '?',
       // Snapshot vor Join: Eine Umbenennung im Baukasten soll alte Anfragen
       // nicht umschreiben.
-      serviceName: o.service_name ?? service?.name ?? 'Service',
+      serviceName: o.service_name ?? service?.name ?? m.fallbackService,
       urgent: service?.urgent ?? false,
       items: ((o.items_snapshot ?? []) as { label: string; price_cents: number | null }[]),
       note: o.note,
@@ -59,5 +63,5 @@ export default async function BestellungenPage({
     .slice(0, 20)
     .map(toRow)
 
-  return <OrdersBoard hotelSlug={ctx.hotelSlug} open={open} done={done} />
+  return <OrdersBoard hotelSlug={ctx.hotelSlug} open={open} done={done} m={m} intlLocale={intlLocale(locale)} />
 }

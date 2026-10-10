@@ -4,6 +4,10 @@ import { useState, useTransition } from 'react'
 import { Check, ChevronDown, ClipboardList, Siren } from 'lucide-react'
 import { formatCents } from '@/lib/money'
 import { markOrderDoneAction } from './actions'
+import { format } from '@/lib/i18n/format'
+import type { AdminMessages } from '@/lib/i18n'
+
+type M = AdminMessages['overview']['orders']
 
 export type OrderRow = {
   id: string
@@ -19,16 +23,20 @@ export type OrderRow = {
   notDone: boolean
 }
 
-function ageLabel(iso: string): string {
+function ageLabel(iso: string, m: M, intlLocale: string): string {
   const mins = Math.floor((Date.now() - new Date(iso).getTime()) / 60_000)
-  if (mins < 1) return 'gerade eben'
-  if (mins < 60) return `vor ${mins} Min.`
+  if (mins < 1) return m.justNow
+  if (mins < 60) return format(m.minutesAgo, { count: mins })
   const hours = Math.floor(mins / 60)
-  if (hours < 24) return `vor ${hours} Std.`
-  return new Date(iso).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+  if (hours < 24) return format(m.hoursAgo, { count: hours })
+  return new Date(iso).toLocaleString(intlLocale, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
-export default function OrdersBoard({ hotelSlug, open, done }: { hotelSlug: string; open: OrderRow[]; done: OrderRow[] }) {
+export default function OrdersBoard({
+  hotelSlug, open, done, m, intlLocale,
+}: {
+  hotelSlug: string; open: OrderRow[]; done: OrderRow[]; m: M; intlLocale: string
+}) {
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [showDone, setShowDone] = useState(false)
@@ -44,11 +52,11 @@ export default function OrdersBoard({ hotelSlug, open, done }: { hotelSlug: stri
   return (
     <div className="flex flex-col gap-5">
       <div data-lotse="anfragen.zaehler" className="flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-black text-ink">Services</h1>
+        <h1 className="text-xl font-black text-ink">{m.title}</h1>
         <span className={`rounded-full px-3 py-1 text-sm font-semibold ${
           open.length > 0 ? 'bg-attention-pill text-attention-deepest' : 'bg-positive-pill text-positive-deepest'
         }`}>
-          {open.length} offen
+          {format(m.openCount, { count: open.length })}
         </span>
       </div>
 
@@ -61,9 +69,9 @@ export default function OrdersBoard({ hotelSlug, open, done }: { hotelSlug: stri
       {open.length === 0 ? (
         <div data-lotse="anfragen.liste" className="rounded-xl border border-edge bg-surface p-8 text-center">
           <ClipboardList className="mx-auto mb-2 h-8 w-8 text-ink-muted" />
-          <p className="font-semibold text-ink">Keine offenen Service-Anfragen.</p>
+          <p className="font-semibold text-ink">{m.empty}</p>
           <p className="mt-1 text-sm text-ink-muted">
-            Neue Anfragen aus dem Gast-Portal erscheinen hier sofort.
+            {m.emptyHint}
           </p>
         </div>
       ) : (
@@ -84,7 +92,7 @@ export default function OrdersBoard({ hotelSlug, open, done }: { hotelSlug: stri
                     {o.serviceName}
                     {o.urgent && (
                       <span className="flex items-center gap-1 rounded-full bg-critical-pill px-2 py-0.5 text-xs font-bold text-critical-deepest">
-                        <Siren className="h-3.5 w-3.5" /> dringend
+                        <Siren className="h-3.5 w-3.5" /> {m.urgent}
                       </span>
                     )}
                   </p>
@@ -97,7 +105,7 @@ export default function OrdersBoard({ hotelSlug, open, done }: { hotelSlug: stri
                   )}
                   {o.note && <p className="mt-0.5 text-sm italic text-ink-muted">&bdquo;{o.note}&ldquo;</p>}
                 </div>
-                <span className="text-sm text-ink-muted">{ageLabel(o.createdAt)}</span>
+                <span className="text-sm text-ink-muted">{ageLabel(o.createdAt, m, intlLocale)}</span>
                 <button
                   type="button"
                   data-lotse={i === 0 ? 'anfragen.erledigt' : undefined}
@@ -105,7 +113,7 @@ export default function OrdersBoard({ hotelSlug, open, done }: { hotelSlug: stri
                   onClick={() => runDone(o.id)}
                   className="flex items-center gap-1.5 rounded-lg bg-positive px-4 py-2 font-bold text-positive-foreground hover:opacity-90 disabled:opacity-50"
                 >
-                  <Check className="h-4 w-4" /> Erledigt
+                  <Check className="h-4 w-4" /> {m.done}
                 </button>
               </div>
             </div>
@@ -121,7 +129,7 @@ export default function OrdersBoard({ hotelSlug, open, done }: { hotelSlug: stri
             className="flex items-center gap-1.5 text-sm font-semibold text-ink-muted hover:text-ink"
           >
             <ChevronDown className={`h-4 w-4 transition-transform ${showDone ? 'rotate-180' : ''}`} />
-            Zuletzt abgeschlossen ({done.length})
+            {format(m.recentlyClosed, { count: done.length })}
           </button>
           {showDone && (
             <ul className="mt-2 flex flex-col gap-1.5">
@@ -137,11 +145,11 @@ export default function OrdersBoard({ hotelSlug, open, done }: { hotelSlug: stri
                   )}
                   {o.notDone && (
                     <span className="rounded-full border border-edge-strong px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-ink-muted">
-                      nicht erbracht
+                      {m.notProvided}
                     </span>
                   )}
                   <span className="ml-auto text-ink-muted">
-                    {o.doneAt ? ageLabel(o.doneAt) : ''}{o.doneBy ? ` · ${o.doneBy}` : ''}
+                    {o.doneAt ? ageLabel(o.doneAt, m, intlLocale) : ''}{o.doneBy ? ` · ${o.doneBy}` : ''}
                   </span>
                 </li>
               ))}

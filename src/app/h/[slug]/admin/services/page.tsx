@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
 import { getAdminContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
+import { getMessages, intlLocale } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 import ServicesManager, { type ServiceRow } from './ServicesManager'
 
 export default async function ServicesPage({
@@ -13,6 +15,8 @@ export default async function ServicesPage({
   const ctx = await getAdminContext(slug)
   if (!ctx) redirect('/admin')
 
+  const locale = await getLocale()
+  const admin = getMessages(locale).admin
   const supabase = await createClient()
   const [{ data: services }, { data: items }] = await Promise.all([
     supabase
@@ -49,5 +53,13 @@ export default async function ServicesPage({
     items: itemsByService.get(s.id) ?? [],
   }))
 
-  return <ServicesManager hotelSlug={ctx.hotelSlug} services={rows} />
+  return (
+    <ServicesManager
+      hotelSlug={ctx.hotelSlug}
+      services={rows}
+      m={admin.services}
+      common={admin.common}
+      intlLocale={intlLocale(locale)}
+    />
+  )
 }

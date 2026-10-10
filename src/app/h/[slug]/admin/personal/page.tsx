@@ -3,6 +3,8 @@ import { getManagementContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/service'
 import { testzugaengeErlaubt } from '@/lib/test-accounts'
+import { getMessages, intlLocale } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 import PersonalManager, { type MaidRow, type ManagerRow, type ReceptionRow } from './PersonalManager'
 
 export default async function PersonalPage({
@@ -13,6 +15,8 @@ export default async function PersonalPage({
   const { slug } = await params
   const ctx = await getManagementContext(slug)
   if (!ctx) redirect('/admin')
+  const locale = await getLocale()
+  const messages = getMessages(locale).admin
 
   const supabase = await createClient()
   const [{ data: profiles }, { data: cards }, { data: cleanings }, { data: recProfiles }] =
@@ -128,7 +132,7 @@ export default async function PersonalPage({
     )
 
     const nachName = (a: ManagerRow, b: ManagerRow) =>
-      a.displayName.localeCompare(b.displayName, 'de')
+      a.displayName.localeCompare(b.displayName, intlLocale(locale))
     managers.sort(nachName)
     verfuegbareManager.sort(nachName)
   }
@@ -143,6 +147,9 @@ export default async function PersonalPage({
       canManage={ctx.role !== 'reception'}
       testAccounts={testzugaengeErlaubt()}
       isOwner={ctx.isOwner}
+      m={messages.staff.personal}
+      c={messages.common}
+      intlLocale={intlLocale(locale)}
     />
   )
 }

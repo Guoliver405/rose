@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { CheckCircle2, CircleDot, Loader2, RotateCcw, Save } from 'lucide-react'
+import { useClientMessages } from '@/components/i18n/MessagesProvider'
 
 /**
  * Ungespeicherte Änderungen auf langen Einstellungsseiten (26.09.2026).
@@ -38,9 +39,9 @@ type Registry = {
 
 const Ctx = createContext<Registry | null>(null)
 
-const LEAVE_QUESTION = 'Es gibt ungespeicherte Änderungen. Seite trotzdem verlassen?'
-
 export function UnsavedChanges({ children }: { children: ReactNode }) {
+  const t = useClientMessages().unsaved
+  const leaveQuestion = t.leaveQuestion
   const [sections, setSections] = useState<Record<string, UnsavedSection>>({})
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -78,7 +79,7 @@ export function UnsavedChanges({ children }: { children: ReactNode }) {
       if (!a || a.target === '_blank' || a.hasAttribute('download')) return
       const url = new URL(a.href, location.href)
       if (url.origin === location.origin && url.pathname === location.pathname && url.search === location.search) return
-      if (window.confirm(LEAVE_QUESTION)) return
+      if (window.confirm(leaveQuestion)) return
       e.preventDefault()
       e.stopPropagation()
     }
@@ -88,7 +89,7 @@ export function UnsavedChanges({ children }: { children: ReactNode }) {
       window.removeEventListener('beforeunload', onBeforeUnload)
       document.removeEventListener('click', onClick, true)
     }
-  }, [])
+  }, [leaveQuestion])
 
   // „Gespeichert" kurz stehen lassen, dann verschwindet die Leiste.
   useEffect(() => {
@@ -127,20 +128,20 @@ export function UnsavedChanges({ children }: { children: ReactNode }) {
           >
             {saved && !anyDirty ? (
               <p className="flex items-center gap-1.5 text-sm font-bold text-positive-deep">
-                <CheckCircle2 className="h-4 w-4" /> Gespeichert.
+                <CheckCircle2 className="h-4 w-4" /> {t.saved}
               </p>
             ) : (
               <>
                 <p className="flex min-w-0 flex-1 items-center gap-1.5 text-sm font-bold text-ink">
                   <CircleDot className="h-4 w-4 shrink-0 text-attention" />
                   <span>
-                    Ungespeicherte Änderungen
+                    {t.title}
                     {dirty.length > 0 && (
                       <span className="font-semibold text-ink-muted"> · {dirty.map(s => s.label).join(', ')}</span>
                     )}
                     {failed && (
                       <span className="block text-xs font-semibold text-critical-strong">
-                        Nicht gespeichert — der Hinweis steht beim Abschnitt.
+                        {t.failed}
                       </span>
                     )}
                   </span>
@@ -151,7 +152,7 @@ export function UnsavedChanges({ children }: { children: ReactNode }) {
                   disabled={saving}
                   className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-2 text-sm font-semibold text-ink-soft hover:bg-surface-sunken disabled:opacity-50"
                 >
-                  <RotateCcw className="h-4 w-4" /> Verwerfen
+                  <RotateCcw className="h-4 w-4" /> {t.discard}
                 </button>
                 <button
                   type="button"
@@ -160,7 +161,7 @@ export function UnsavedChanges({ children }: { children: ReactNode }) {
                   className="flex items-center gap-1.5 rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
                 >
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  Speichern
+                  {t.save}
                 </button>
               </>
             )}

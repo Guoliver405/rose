@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { CheckCircle2, Loader2, Save } from 'lucide-react'
 import { useUnsavedSection } from '@/components/unsaved/UnsavedChanges'
+import Rich from '@/components/i18n/Rich'
+import type { AdminMessages } from '@/lib/i18n'
 import { updateSettingsAction } from './actions'
 
 export type HotelSettingsInitial = {
@@ -38,15 +40,17 @@ function snapshot(form: HTMLFormElement): string {
   return JSON.stringify([...new FormData(form).entries()].map(([k, v]) => [k, String(v)]))
 }
 
-export default function HotelSettingsForm(props: { hotelSlug: string; initial: HotelSettingsInitial }) {
+type Messages = AdminMessages['settings']['house']
+
+export default function HotelSettingsForm(props: { hotelSlug: string; initial: HotelSettingsInitial; m: Messages }) {
   // „Verwerfen" baut das Formular neu aus dem gespeicherten Stand auf — nach
   // dem Speichern kommt `initial` über revalidatePath frisch vom Server.
   const [version, setVersion] = useState(0)
   return <SettingsForm key={version} {...props} onDiscard={() => setVersion(v => v + 1)} />
 }
 
-function SettingsForm({ hotelSlug, initial, onDiscard }: {
-  hotelSlug: string; initial: HotelSettingsInitial; onDiscard: () => void
+function SettingsForm({ hotelSlug, initial, m, onDiscard }: {
+  hotelSlug: string; initial: HotelSettingsInitial; m: Messages; onDiscard: () => void
 }) {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -86,7 +90,7 @@ function SettingsForm({ hotelSlug, initial, onDiscard }: {
     }
   }
 
-  useUnsavedSection('regeln', { label: 'Hotel & Regeln', dirty, save, discard: onDiscard })
+  useUnsavedSection('regeln', { label: m.unsavedLabel, dirty, save, discard: onDiscard })
 
   const inputClass =
     'rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink placeholder:text-ink-muted focus:border-action focus:outline-none'
@@ -99,16 +103,16 @@ function SettingsForm({ hotelSlug, initial, onDiscard }: {
       onChange={checkDirty}
       className="flex flex-col gap-4 rounded-xl border border-edge bg-surface p-4"
     >
-      <h2 className="text-sm font-bold text-ink-soft">Hotel &amp; Regeln</h2>
+      <h2 className="text-sm font-bold text-ink-soft">{m.title}</h2>
 
       <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-        Hotelname
+        {m.name}
         <input name="hotelName" required minLength={2} defaultValue={initial.hotelName} className={`${inputClass} w-72`} />
       </label>
 
       <div data-lotse="regeln.adresse" className="rounded-lg border border-edge bg-surface-sunken p-3">
         <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-          Adresse des Hauses (nur Kleinbuchstaben, Ziffern, Bindestriche)
+          {m.slug.label}
           <input
             name="slug"
             required
@@ -118,34 +122,29 @@ function SettingsForm({ hotelSlug, initial, onDiscard }: {
           />
         </label>
         <p className="mt-2 text-xs text-ink-muted">
-          Gastportal:{' '}
+          {m.slug.guestPortal}{' '}
           <span className="break-all font-mono text-ink-soft">
             {initial.portalOrigin}/h/{slug || '…'}/guest
           </span>
           <br />
-          Reinigung:{' '}
+          {m.slug.cleaning}{' '}
           <span className="break-all font-mono text-ink-soft">
             {initial.portalOrigin}/h/{slug || '…'}/service/login
           </span>
         </p>
-        <p className="mt-2 text-xs text-ink-muted">
-          Zimmernummern und Benutzernamen sind nur innerhalb des Hauses eindeutig —
-          deshalb steht die Adresse in beiden Anmeldungen. Gedruckte QR-Codes
-          (Zimmer-Aushang, Zugangskarte) bleiben bei einer Änderung gültig; nur die
-          abgetippte Adresse auf älteren Handouts stimmt dann nicht mehr.
-        </p>
+        <p className="mt-2 text-xs text-ink-muted">{m.slug.hint}</p>
       </div>
 
       <div data-lotse="regeln.pin" className="flex flex-wrap gap-4">
         <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-          Gast-PIN-Länge (4–8)
+          {m.pinLength}
           <input
             name="pinLength" type="number" min={4} max={8} required
             defaultValue={initial.pinLength} className={`${inputClass} w-28`}
           />
         </label>
         <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-          Reinigung gilt als verwaist nach (Minuten)
+          {m.staleMinutes}
           <input
             name="cleaningStaleMinutes" type="number" min={5} max={1440} required
             defaultValue={initial.cleaningStaleMinutes} className={`${inputClass} w-28`}
@@ -162,51 +161,37 @@ function SettingsForm({ hotelSlug, initial, onDiscard }: {
             onChange={e => setStayoverOn(e.target.checked)}
             className="h-4 w-4 accent-current"
           />
-          Tägliche Routine-Reinigung für belegte Zimmer
+          {m.daily.label}
         </label>
-        <p className="mt-1 text-xs text-ink-muted">
-          Ab der zweiten Nacht erscheinen belegte Zimmer (ohne &bdquo;Nicht stören&ldquo;) ab der
-          gewählten Uhrzeit automatisch auf dem Reinigungsboard — bis sie an dem Tag
-          gereinigt wurden.
-        </p>
+        <p className="mt-1 text-xs text-ink-muted">{m.daily.hint}</p>
         {stayoverOn && (
           <label className="mt-2 flex items-center gap-2 text-xs font-semibold text-ink-muted">
-            täglich ab
-            <input
-              name="stayoverAutoCleanTime" type="time" required
-              defaultValue={initial.stayoverAutoCleanTime} className={inputClass}
-            />
-            Uhr
+            <Rich text={m.daily.from} tags={{ time: () => (
+              <input
+                name="stayoverAutoCleanTime" type="time" required
+                defaultValue={initial.stayoverAutoCleanTime} className={inputClass}
+              />
+            ) }} />
           </label>
         )}
         <label data-lotse="regeln.checkout" className="mt-3 flex items-center gap-2 border-t border-edge pt-3 text-xs font-semibold text-ink-muted">
-          Check-out bis
-          <input
-            name="checkoutUntil" type="time" required
-            defaultValue={initial.checkoutUntil} className={inputClass}
-          />
-          Uhr
+          <Rich text={m.checkoutUntil.label} tags={{ time: () => (
+            <input
+              name="checkoutUntil" type="time" required
+              defaultValue={initial.checkoutUntil} className={inputClass}
+            />
+          ) }} />
         </label>
-        <p className="mt-1 text-xs text-ink-muted">
-          Ohne bekanntes Abreisedatum wird die Routine-Reinigung nicht vor dieser Zeit fällig —
-          wer danach noch im Zimmer ist, bleibt. So wird ein Abreisezimmer nicht vor dem
-          Check-out gereinigt und danach noch einmal. Trägt die Rezeption beim Check-in ein
-          Abreisedatum ein, gilt an den Tagen davor schon die Routine-Zeit, und am Abreisetag
-          setzt die Routine ganz aus.
-        </p>
+        <p className="mt-1 text-xs text-ink-muted">{m.checkoutUntil.hint}</p>
         <label data-lotse="regeln.checkin" className="mt-3 flex items-center gap-2 border-t border-edge pt-3 text-xs font-semibold text-ink-muted">
-          Check-in ab
-          <input
-            name="checkinFrom" type="time" required
-            defaultValue={initial.checkinFrom} className={inputClass}
-          />
-          Uhr
+          <Rich text={m.checkinFrom.label} tags={{ time: () => (
+            <input
+              name="checkinFrom" type="time" required
+              defaultValue={initial.checkinFrom} className={inputClass}
+            />
+          ) }} />
         </label>
-        <p className="mt-1 text-xs text-ink-muted">
-          Bis dahin sollen die Abreisezimmer bezugsfertig sein. Das Reinigungsboard rechnet damit:
-          Je mehr Abreisen noch offen sind und je näher der Check-in rückt, desto stärker zieht es
-          Reinigungskräfte auf die Etagen mit Abreisen — an ruhigen Tagen kaum, an vollen deutlich.
-        </p>
+        <p className="mt-1 text-xs text-ink-muted">{m.checkinFrom.hint}</p>
       </div>
 
       <div data-lotse="regeln.aufschub" className="rounded-lg border border-edge bg-surface-sunken p-3">
@@ -218,79 +203,54 @@ function SettingsForm({ hotelSlug, initial, onDiscard }: {
             onChange={e => setDeferOn(e.target.checked)}
             className="h-4 w-4 accent-current"
           />
-          Gäste dürfen die Reinigung aufschieben (&bdquo;frühestens ab&ldquo;)
+          {m.defer.label}
         </label>
-        <p className="mt-1 text-xs text-ink-muted">
-          Der Gast wünscht Reinigung, aber nicht vor einer Uhrzeit — etwa, weil er ausschlafen
-          will. Bis dahin gilt das Zimmer auf dem Board als nicht offen. Eine Einschränkung,
-          kein Termin: Das Housekeeping kommt danach, wann es passt.
-        </p>
+        <p className="mt-1 text-xs text-ink-muted">{m.defer.hint}</p>
         {deferOn && (
           <>
             <label className="mt-2 flex items-center gap-2 text-xs font-semibold text-ink-muted">
-              aufschieben bis spätestens
-              <input
-                name="cleanDeferUntil" type="time" required
-                defaultValue={initial.cleanDeferUntil} className={inputClass}
-              />
-              Uhr
+              <Rich text={m.defer.until} tags={{ time: () => (
+                <input
+                  name="cleanDeferUntil" type="time" required
+                  defaultValue={initial.cleanDeferUntil} className={inputClass}
+                />
+              ) }} />
             </label>
-            <p className="mt-1 text-xs text-ink-muted">
-              So wählen, dass die Reinigung danach noch in der Schicht liegt: Arbeitet das
-              Housekeeping bis 15:00, ist 13:00 ein guter Wert. Der Gast sieht diese Grenze im
-              Portal.
-            </p>
+            <p className="mt-1 text-xs text-ink-muted">{m.defer.untilHint}</p>
           </>
         )}
       </div>
 
       <div data-lotse="regeln.zeitzone" className="rounded-lg border border-edge bg-surface-sunken p-3">
         <label className="flex flex-col gap-1 text-sm font-semibold text-ink">
-          Zeitzone des Hauses
+          {m.timeZone.label}
           <select name="timeZone" defaultValue={initial.timeZone} className={inputClass}>
             {initial.timeZones.map(z => <option key={z} value={z}>{z}</option>)}
           </select>
         </label>
-        <p className="mt-1 text-xs text-ink-muted">
-          Alle Uhrzeiten dieser Seite — Routine, Check-out-Frist, Zeitfenster, Aufschieb-Grenze —
-          und die Tagesgrenzen der Auswertung gelten in dieser Zeitzone. Die Server laufen in
-          UTC; ohne diese Angabe lägen die Regeln um ein bis zwei Stunden daneben.
-        </p>
+        <p className="mt-1 text-xs text-ink-muted">{m.timeZone.hint}</p>
       </div>
 
       {/* Team-Modus (16.09.2026): Tätigkeiten ohne Personenbezug. */}
       <div data-lotse="regeln.personenbezug" className="rounded-lg border border-edge bg-surface-sunken p-3">
-        <p className="text-xs font-semibold text-ink-muted">Tätigkeiten der Reinigung</p>
+        <p className="text-xs font-semibold text-ink-muted">{m.tracking.heading}</p>
         <div className="mt-2 flex flex-col gap-2">
           <label className="flex items-start gap-2 text-sm text-ink">
             <input type="radio" name="staffTracking" value="person" defaultChecked={initial.staffTracking === 'person'} className="mt-1 h-4 w-4 accent-current" />
             <span>
-              <span className="font-semibold">Je Kraft</span>
-              <span className="block text-xs text-ink-muted">
-                Auswertung mit Tabelle und Tagesprotokoll je Reinigungskraft, Namen im Zimmer-Verlauf. Vorgabe.
-              </span>
+              <span className="font-semibold">{m.tracking.person.label}</span>
+              <span className="block text-xs text-ink-muted">{m.tracking.person.hint}</span>
             </span>
           </label>
           <label className="flex items-start gap-2 text-sm text-ink">
             <input type="radio" name="staffTracking" value="team" defaultChecked={initial.staffTracking === 'team'} className="mt-1 h-4 w-4 accent-current" />
             <span>
-              <span className="font-semibold">Nur als Team</span>
-              <span className="block text-xs text-ink-muted">
-                Das Haus sieht weiterhin, wann welches Zimmer gereinigt wurde und wie viel das Team leistet —
-                aber nicht, wer. Keine Tabelle je Kraft, kein Tagesprotokoll, im Zimmer-Verlauf steht „Reinigungsteam&quot;.
-                Die Stiche verlieren ihre Person beim Schichtende, spätestens nach 24 Stunden; das gilt auch für den
-                Bestand und ist nicht umkehrbar. Für Länder und Betriebe, in denen die Arbeit einzelner Kräfte nicht
-                gemessen werden darf oder soll.
-              </span>
+              <span className="font-semibold">{m.tracking.team.label}</span>
+              <span className="block text-xs text-ink-muted">{m.tracking.team.hint}</span>
             </span>
           </label>
         </div>
-        <p className="mt-2 text-xs text-ink-muted">
-          Unverändert bleiben die Live-Anzeigen zur Koordination (wer gerade auf welcher Etage ist, wer gerade ein
-          Zimmer reinigt) — sie sind mit der Schicht weg. Ehrlich gesagt: Ist nur eine Kraft im Dienst, lässt sich
-          „Zimmer 204 um 10:30 gereinigt&quot; ihr zuordnen wie ein Dienstplan auf Papier. Das kann keine Einstellung
-          verstecken, ohne den Betriebswert zu zerstören.
-        </p>
+        <p className="mt-2 text-xs text-ink-muted">{m.tracking.note}</p>
       </div>
 
       <div data-lotse="regeln.fenster" className="rounded-lg border border-edge bg-surface-sunken p-3">
@@ -302,26 +262,25 @@ function SettingsForm({ hotelSlug, initial, onDiscard }: {
             onChange={e => setWindowOn(e.target.checked)}
             className="h-4 w-4 accent-current"
           />
-          Reinigungswunsch nur innerhalb fester Zeiten
+          {m.window.label}
         </label>
-        <p className="mt-1 text-xs text-ink-muted">
-          Außerhalb des Zeitfensters können Gäste im Portal keinen Reinigungswunsch mehr
-          absetzen — sie sehen stattdessen einen Hinweis mit den Reinigungszeiten.
-          &bdquo;Nicht stören&ldquo; und das Zurücknehmen eines Wunsches bleiben jederzeit möglich.
-        </p>
+        <p className="mt-1 text-xs text-ink-muted">{m.window.hint}</p>
         {windowOn && (
           <label className="mt-2 flex flex-wrap items-center gap-2 text-xs font-semibold text-ink-muted">
-            von
-            <input
-              name="cleaningWindowStart" type="time" required
-              defaultValue={initial.cleaningWindowStart} className={inputClass}
-            />
-            bis
-            <input
-              name="cleaningWindowEnd" type="time" required
-              defaultValue={initial.cleaningWindowEnd} className={inputClass}
-            />
-            Uhr
+            <Rich text={m.window.range} tags={{
+              start: () => (
+                <input
+                  name="cleaningWindowStart" type="time" required
+                  defaultValue={initial.cleaningWindowStart} className={inputClass}
+                />
+              ),
+              end: () => (
+                <input
+                  name="cleaningWindowEnd" type="time" required
+                  defaultValue={initial.cleaningWindowEnd} className={inputClass}
+                />
+              ),
+            }} />
           </label>
         )}
       </div>
@@ -333,7 +292,7 @@ function SettingsForm({ hotelSlug, initial, onDiscard }: {
       )}
       {saved && !error && (
         <p className="flex items-center gap-1.5 rounded-lg border border-positive-pill-edge bg-positive-tint px-3 py-2 text-sm font-semibold text-positive-deep">
-          <CheckCircle2 className="h-4 w-4" /> Gespeichert.
+          <CheckCircle2 className="h-4 w-4" /> {m.saved}
         </p>
       )}
 
@@ -344,7 +303,7 @@ function SettingsForm({ hotelSlug, initial, onDiscard }: {
         className="flex items-center gap-1.5 self-start rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-        Speichern
+        {m.save}
       </button>
     </form>
   )

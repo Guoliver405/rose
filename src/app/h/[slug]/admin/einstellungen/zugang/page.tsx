@@ -4,6 +4,8 @@ import { ArrowLeft } from 'lucide-react'
 import { getManagementContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import ZugangForm from '../ZugangForm'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /**
  * „Mein Zugang" — Anzeigename und Passwort der angemeldeten Person.
@@ -16,11 +18,6 @@ import ZugangForm from '../ZugangForm'
  *
  * Für jede Rolle zugänglich — es geht um den eigenen Zugang, nicht um das Haus.
  */
-const ROLLEN_TEXT = {
-  admin: 'Inhaber',
-  manager: 'Manager',
-  reception: 'Rezeption',
-} as const
 
 export default async function ZugangPage({
   params,
@@ -30,6 +27,7 @@ export default async function ZugangPage({
   const { slug } = await params
   const ctx = await getManagementContext(slug)
   if (!ctx) redirect('/login')
+  const m = getMessages(await getLocale()).admin.settings
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -41,16 +39,17 @@ export default async function ZugangPage({
           href={`/h/${ctx.hotelSlug}/admin/einstellungen`}
           className="flex items-center gap-1 text-sm font-semibold text-ink-muted hover:text-ink"
         >
-          <ArrowLeft className="h-4 w-4" /> Einstellungen
+          <ArrowLeft className="h-4 w-4" /> {m.title}
         </Link>
-        <h1 className="text-xl font-black text-ink">Mein Zugang</h1>
+        <h1 className="text-xl font-black text-ink">{m.myAccess.title}</h1>
       </div>
 
       <ZugangForm
         hotelSlug={ctx.hotelSlug}
         displayName={ctx.displayName}
         email={user?.email ?? '—'}
-        rolle={ROLLEN_TEXT[ctx.role]}
+        rolle={m.myAccess.roles[ctx.role]}
+        m={m.myAccess}
       />
     </div>
   )

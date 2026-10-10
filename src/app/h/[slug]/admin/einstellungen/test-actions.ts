@@ -15,6 +15,14 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/utils/supabase/service'
 import { getAdminContext } from '@/utils/auth'
 import { generatePin, generateToken, clampPinLength } from '@/lib/ids'
+import { format, getMessages, intlLocale, plural } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
+
+async function messages() {
+  const locale = await getLocale()
+  const { common, settings } = getMessages(locale).admin
+  return { e: { ...common.errors, ...settings.errors }, notes: settings.testScenario.notes, intl: intlLocale(locale) }
+}
 
 export type SeedInput = {
   seed: number
@@ -115,8 +123,9 @@ async function resetScenario(admin: SupabaseClient, hotelId: string, userId: str
 
 /** Nur aufräumen — deckt das „Testreste beseitigen" aus dem Testplan ab. */
 export async function resetTestScenarioAction(slug: string): Promise<{ error?: string }> {
+  const { e } = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
 
   await resetScenario(createAdminClient(), ctx.hotelId, ctx.userId)
 
@@ -150,8 +159,9 @@ export type PurgeSummary = {
 export async function purgeTestDataAction(
   slug: string,
 ): Promise<{ summary?: PurgeSummary; error?: string }> {
+  const { e } = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
   const admin = createAdminClient()
 
   // Reihenfolge egal (alles hängt am Hotel), aber room_states erst danach
@@ -163,7 +173,7 @@ export async function purgeTestDataAction(
     admin.from('maid_presence').delete().eq('hotel_id', ctx.hotelId),
   ])
   for (const res of [orders, stays, staffLog, presence]) {
-    if (res.error) return { error: `Aufräumen fehlgeschlagen: ${res.error.message}` }
+    if (res.error) return { error: format(e.cleanupFailed, { message: res.error.message }) }
   }
 
   const { error: stateErr } = await admin
@@ -177,12 +187,12 @@ export async function purgeTestDataAction(
       ...auditFields(ctx.userId),
     })
     .eq('hotel_id', ctx.hotelId)
-  if (stateErr) return { error: `Zimmerstatus zurücksetzen fehlgeschlagen: ${stateErr.message}` }
+  if (stateErr) return { error: format(e.resetStatesFailed, { message: stateErr.message }) }
 
   // Zum Schluss, damit die Touches von eben nicht als Verlauf zurückbleiben.
   const { count: transitionCount, error: transErr } = await admin
     .from('room_state_transitions').delete({ count: 'exact' }).eq('hotel_id', ctx.hotelId)
-  if (transErr) return { error: `Verlauf löschen fehlgeschlagen: ${transErr.message}` }
+  if (transErr) return { error: format(e.deleteHistoryFailed, { message: transErr.message }) }
 
   revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
   revalidatePath(`/h/${ctx.hotelSlug}/service`)
@@ -205,8 +215,9 @@ export async function seedTestScenarioAction(
   slug: string,
   input: SeedInput,
 ): Promise<{ summary?: SeedSummary; error?: string }> {
+  const { e, notes: n, intl } = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
   const admin = createAdminClient()
   const notes: string[] = []
   const rng = mulberry32(Math.floor(Number(input.seed)) || 1)
@@ -218,7 +229,7 @@ export async function seedTestScenarioAction(
     .is('deactivated_at', null)
     .order('floor')
     .order('number')
-  if (!roomRows || roomRows.length === 0) return { error: 'Keine Zimmer angelegt.' }
+  if (!roomRows || roomRows.length === 0) return { error: e.noRooms }
 
   await resetScenario(admin, ctx.hotelId, ctx.userId)
 
@@ -237,7 +248,7 @@ export async function seedTestScenarioAction(
   )
   const ordersCount = toCount(input.orders, occupiedCount)
   if (toCount(input.orders, 999) > occupiedCount) {
-    notes.push(`Nur ${occupiedCount} belegte Zimmer — Bestellungen auf ${ordersCount} gekappt.`)
+    notes.push(plural(intl, occupiedCount, n.ordersCapped, { orders: ordersCount }))
   }
 
   const occupiedRooms = shuffled.slice(0, occupiedCount)
@@ -300,7 +311,7 @@ export async function seedTestScenarioAction(
   let insertedStays: { id: string; room_id: string }[] = []
   if (stayRows.length > 0) {
     const { data, error } = await admin.from('stays').insert(stayRows).select('id, room_id')
-    if (error) return { error: `Stays anlegen fehlgeschlagen: ${error.message}` }
+    if (error) return { error: format(e.createStaysFailed, { message: error.message }) }
     insertedStays = data ?? []
   }
 
@@ -333,7 +344,7 @@ export async function seedTestScenarioAction(
       .update({ ...target, ...auditFields(ctx.userId) })
       .in('room_id', ids)
       .eq('hotel_id', ctx.hotelId)
-    if (error) return { error: `Zimmerstatus setzen fehlgeschlagen: ${error.message}` }
+    if (error) return { error: format(e.setStatesFailed, { message: error.message }) }
   }
 
   // Bestellungen: erster aktiver Service mit seinen Optionen als Vorlage,
@@ -349,7 +360,7 @@ export async function seedTestScenarioAction(
       .limit(1)
       .maybeSingle()
     if (!service) {
-      notes.push('Keine Services definiert — Bestellungen übersprungen.')
+      notes.push(n.noServices)
     } else {
       const { data: items } = await admin
         .from('service_items')
@@ -369,7 +380,7 @@ export async function seedTestScenarioAction(
         note: 'Testbestellung (Szenario-Seed)',
       }))
       const { error } = await admin.from('service_orders').insert(orderRows)
-      if (error) notes.push(`Bestellungen fehlgeschlagen: ${error.message}`)
+      if (error) notes.push(format(n.ordersFailed, { message: error.message }))
       else placedOrders = orderRows.length
     }
   }

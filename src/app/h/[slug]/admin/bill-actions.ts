@@ -11,6 +11,8 @@ import { createAdminClient } from '@/utils/supabase/service'
 import { getManagementContext } from '@/utils/auth'
 import { loadStayBill } from '@/utils/stay-bill'
 import type { StayBill } from '@/lib/stay-bill'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 export type RoomBillResult = { stayId?: string; bill?: StayBill; error?: string }
 
@@ -18,7 +20,7 @@ export type RoomBillResult = { stayId?: string; bill?: StayBill; error?: string 
 export async function getRoomBillAction(slug: string, roomId: string): Promise<RoomBillResult> {
   // Tagesgeschäft am Tresen — jede Rolle mit Zugang zum Haus, auch die Rezeption.
   const ctx = await getManagementContext(slug)
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!ctx) return { error: getMessages(await getLocale()).admin.common.errors.notSignedIn }
   const admin = createAdminClient()
 
   const { data: stay } = await admin

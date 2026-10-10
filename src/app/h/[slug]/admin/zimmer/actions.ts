@@ -5,6 +5,25 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { createAdminClient } from '@/utils/supabase/service'
 import { getAdminContext } from '@/utils/auth'
 import { ensureBillingSnapshots } from '@/utils/billing'
+import { format, getMessages, intlLocale, plural } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
+
+/**
+ * Texte der Meldungen: eigene plus die gemeinsamen (`noPermission`,
+ * `roomNotFound`), dazu die Bezeichnungen der Bereiche und der Sprach-Tag
+ * für Pluralformen.
+ */
+async function messages() {
+  const locale = await getLocale()
+  const admin = getMessages(locale).admin
+  return {
+    e: { ...admin.common.errors, ...admin.rooms.errors },
+    scope: admin.rooms.scope,
+    intl: intlLocale(locale),
+  }
+}
+
+type ScopeTexts = Awaited<ReturnType<typeof messages>>
 
 export type CreateRoomsResult = { created?: number; skipped?: number; error?: string }
 
@@ -19,11 +38,12 @@ export async function createRoomsAction(
   building: string | null,
   groups: { floor: number; numbers: string[] }[],
 ): Promise<CreateRoomsResult> {
+  const { e } = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
 
   if (!Array.isArray(groups) || groups.length === 0) {
-    return { error: 'Keine Zimmernummern angegeben.' }
+    return { error: e.noRoomNumbers }
   }
   // Über alle Etagen deduplizieren (Nummern sind je Gebäudeteil unique,
   // ein Aufruf betrifft genau einen Gebäudeteil) — erste Etage gewinnt,
@@ -32,7 +52,7 @@ export async function createRoomsAction(
   const rows: { floor: number; number: string }[] = []
   let requested = 0
   for (const g of groups) {
-    if (!Number.isInteger(g.floor)) return { error: 'Ungültige Etage.' }
+    if (!Number.isInteger(g.floor)) return { error: e.invalidFloor }
     for (const raw of g.numbers) {
       const number = raw.trim()
       if (!number) continue
@@ -42,8 +62,8 @@ export async function createRoomsAction(
       rows.push({ floor: g.floor, number })
     }
   }
-  if (requested === 0) return { error: 'Keine Zimmernummern angegeben.' }
-  if (requested > 500) return { error: 'Maximal 500 Zimmer pro Vorgang.' }
+  if (requested === 0) return { error: e.noRoomNumbers }
+  if (requested > 500) return { error: format(e.tooMany, { max: 500 }) }
 
   const admin = createAdminClient()
   const trimmedBuilding = building?.trim() || null
@@ -60,7 +80,7 @@ export async function createRoomsAction(
       { onConflict: 'hotel_id,building,number', ignoreDuplicates: true },
     )
     .select('id')
-  if (insErr) return { error: `Anlegen fehlgeschlagen: ${insErr.message}` }
+  if (insErr) return { error: format(e.createFailed, { message: insErr.message }) }
 
   const created = inserted?.length ?? 0
   if (created > 0) {
@@ -70,7 +90,7 @@ export async function createRoomsAction(
         inserted!.map(r => ({ room_id: r.id, hotel_id: ctx.hotelId })),
         { onConflict: 'room_id', ignoreDuplicates: true },
       )
-    if (stateErr) return { error: `room_states-Anlage fehlgeschlagen: ${stateErr.message}` }
+    if (stateErr) return { error: format(e.roomStatesFailed, { message: stateErr.message }) }
   }
 
   revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
@@ -102,8 +122,10 @@ type ResolvedScope = {
   confirmPhrase: string
 }
 
-function floorLabel(building: string | null, floor: number): string {
-  return `${building ? `${building} · ` : ''}Etage ${floor}`
+function floorLabel(t: ScopeTexts, building: string | null, floor: number): string {
+  return building
+    ? format(t.scope.floorInBuilding, { building, floor })
+    : format(t.scope.floor, { floor })
 }
 
 /**
@@ -114,27 +136,29 @@ async function resolveScope(
   admin: SupabaseClient,
   hotelId: string,
   scope: RoomScope,
+  t: ScopeTexts,
 ): Promise<{ scope?: ResolvedScope; error?: string }> {
+  const { e } = t
   if (scope.kind === 'room') {
     const { data: room } = await admin
       .from('rooms').select('id, hotel_id, number').eq('id', scope.roomId).maybeSingle()
-    if (!room || room.hotel_id !== hotelId) return { error: 'Zimmer nicht gefunden.' }
-    return { scope: { ids: [room.id], label: `Zimmer ${room.number}`, confirmPhrase: room.number } }
+    if (!room || room.hotel_id !== hotelId) return { error: e.roomNotFound }
+    return { scope: { ids: [room.id], label: format(t.scope.room, { number: room.number }), confirmPhrase: room.number } }
   }
 
   if (scope.kind === 'floor') {
-    if (!Number.isInteger(scope.floor)) return { error: 'Ungültige Etage.' }
+    if (!Number.isInteger(scope.floor)) return { error: e.invalidFloor }
     const base = admin
       .from('rooms').select('id').eq('hotel_id', hotelId).eq('floor', scope.floor)
     const { data, error } = scope.building === null
       ? await base.is('building', null)
       : await base.eq('building', scope.building)
-    if (error) return { error: `Laden fehlgeschlagen: ${error.message}` }
+    if (error) return { error: format(e.loadFailed, { message: error.message }) }
     return {
       scope: {
         ids: (data ?? []).map(r => r.id),
-        label: floorLabel(scope.building, scope.floor),
-        confirmPhrase: `Etage ${scope.floor}`,
+        label: floorLabel(t, scope.building, scope.floor),
+        confirmPhrase: format(t.scope.confirmFloor, { floor: scope.floor }),
       },
     }
   }
@@ -143,13 +167,13 @@ async function resolveScope(
   const { data, error } = scope.building === null
     ? await base.is('building', null)
     : await base.eq('building', scope.building)
-  if (error) return { error: `Laden fehlgeschlagen: ${error.message}` }
+  if (error) return { error: format(e.loadFailed, { message: error.message }) }
   return {
     scope: {
       ids: (data ?? []).map(r => r.id),
-      label: scope.building ?? 'Zimmer ohne Gebäudeteil',
+      label: scope.building ?? t.scope.unnamedBuilding,
       // Der namenlose Gebäudeteil hat keine Bezeichnung zum Abtippen.
-      confirmPhrase: scope.building ?? 'LÖSCHEN',
+      confirmPhrase: scope.building ?? t.scope.confirmUnnamedBuilding,
     },
   }
 }
@@ -188,11 +212,13 @@ export async function setScopeActiveAction(
   scope: RoomScope,
   active: boolean,
 ): Promise<ScopeActiveResult> {
+  const t = await messages()
+  const { e } = t
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
   const admin = createAdminClient()
 
-  const resolved = await resolveScope(admin, ctx.hotelId, scope)
+  const resolved = await resolveScope(admin, ctx.hotelId, scope, t)
   if (!resolved.scope) return { error: resolved.error }
   const { ids } = resolved.scope
   if (ids.length === 0) return { changed: 0, skippedOccupied: 0 }
@@ -204,7 +230,7 @@ export async function setScopeActiveAction(
     skippedOccupied = occupied.size
     targets = ids.filter(id => !occupied.has(id))
     if (targets.length === 0 && ids.length === 1) {
-      return { error: 'Zimmer ist belegt — bitte zuerst auschecken.' }
+      return { error: e.roomOccupied }
     }
   }
   if (targets.length === 0) return { changed: 0, skippedOccupied }
@@ -270,43 +296,45 @@ export async function editScopeAction(
   scope: RoomScope,
   patch: ScopePatch,
 ): Promise<EditScopeResult> {
+  const t = await messages()
+  const { e } = t
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
   const admin = createAdminClient()
 
-  const resolved = await resolveScope(admin, ctx.hotelId, scope)
+  const resolved = await resolveScope(admin, ctx.hotelId, scope, t)
   if (!resolved.scope) return { error: resolved.error }
   const { ids, label } = resolved.scope
-  if (ids.length === 0) return { error: `${label}: keine Zimmer gefunden.` }
+  if (ids.length === 0) return { error: format(e.noRoomsFound, { label }) }
 
   const nextNumber = patch.number === undefined ? undefined : patch.number.trim()
   if (nextNumber !== undefined && !nextNumber) {
-    return { error: 'Zimmernummer darf nicht leer sein.' }
+    return { error: e.numberEmpty }
   }
   if (nextNumber !== undefined && nextNumber.length > 20) {
-    return { error: 'Zimmernummer ist zu lang (maximal 20 Zeichen).' }
+    return { error: format(e.numberTooLong, { max: 20 }) }
   }
   if (nextNumber !== undefined && ids.length > 1) {
-    return { error: 'Eine Zimmernummer lässt sich nur einzeln vergeben.' }
+    return { error: e.numberSingleOnly }
   }
   if (patch.floor !== undefined && !Number.isInteger(patch.floor)) {
-    return { error: 'Ungültige Etage.' }
+    return { error: e.invalidFloor }
   }
   // `undefined` = unverändert, `null` = ausdrücklich ohne Gebäudeteil.
   const nextBuilding =
     patch.building === undefined ? undefined : (patch.building?.trim() || null)
   if (typeof nextBuilding === 'string' && nextBuilding.length > 60) {
-    return { error: 'Bezeichnung des Gebäudeteils ist zu lang (maximal 60 Zeichen).' }
+    return { error: format(e.buildingTooLong, { max: 60 }) }
   }
   if (nextNumber === undefined && patch.floor === undefined && nextBuilding === undefined) {
-    return { error: 'Nichts zu ändern.' }
+    return { error: e.nothingToChange }
   }
 
   // Alle Zimmer des Hauses laden: die betroffenen für den Zielzustand, die
   // übrigen als Kollisionspartner.
   const { data: allRooms, error: loadErr } = await admin
     .from('rooms').select('id, number, floor, building').eq('hotel_id', ctx.hotelId)
-  if (loadErr) return { error: `Laden fehlgeschlagen: ${loadErr.message}` }
+  if (loadErr) return { error: format(e.loadFailed, { message: loadErr.message }) }
 
   const idSet = new Set(ids)
   const targets = (allRooms ?? []).filter(r => idSet.has(r.id))
@@ -334,14 +362,14 @@ export async function editScopeAction(
     const blocker = taken.get(key)
     if (blocker) {
       return {
-        error: `Zimmernummer ${target.number} ist ${
-          target.building ? `im Gebäudeteil „${target.building}“` : 'ohne Gebäudeteil'
-        } bereits vergeben (Etage ${blocker.floor}).`,
+        error: target.building
+          ? format(e.numberTakenInBuilding, { number: target.number, building: target.building, floor: blocker.floor })
+          : format(e.numberTakenNoBuilding, { number: target.number, floor: blocker.floor }),
       }
     }
     if (planned.has(key)) {
       return {
-        error: `Zimmernummer ${target.number} käme dabei doppelt vor — Nummern sind je Gebäudeteil eindeutig.`,
+        error: format(e.numberDuplicate, { number: target.number }),
       }
     }
     planned.add(key)
@@ -356,7 +384,7 @@ export async function editScopeAction(
       .update({ number: u.number, floor: u.floor, building: u.building })
       .eq('id', u.id)
       .eq('hotel_id', ctx.hotelId)
-    if (error) return { error: `Ändern fehlgeschlagen: ${error.message}` }
+    if (error) return { error: format(e.editFailed, { message: error.message }) }
   }
 
   revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
@@ -476,13 +504,15 @@ export async function getDeletionImpactAction(
   slug: string,
   scope: RoomScope,
 ): Promise<{ impact?: DeletionImpact; error?: string }> {
+  const t = await messages()
+  const { e } = t
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
   const admin = createAdminClient()
 
-  const resolved = await resolveScope(admin, ctx.hotelId, scope)
+  const resolved = await resolveScope(admin, ctx.hotelId, scope, t)
   if (!resolved.scope) return { error: resolved.error }
-  if (resolved.scope.ids.length === 0) return { error: 'Keine Zimmer in diesem Bereich.' }
+  if (resolved.scope.ids.length === 0) return { error: e.noRoomsInScope }
 
   return { impact: await buildImpact(admin, resolved.scope) }
 }
@@ -509,25 +539,27 @@ export async function deleteScopeAction(
   scope: RoomScope,
   confirmPhrase: string,
 ): Promise<DeleteScopeResult> {
+  const t = await messages()
+  const { e } = t
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
   const admin = createAdminClient()
 
-  const resolved = await resolveScope(admin, ctx.hotelId, scope)
+  const resolved = await resolveScope(admin, ctx.hotelId, scope, t)
   if (!resolved.scope) return { error: resolved.error }
   const { ids, label } = resolved.scope
-  if (ids.length === 0) return { error: 'Keine Zimmer in diesem Bereich.' }
+  if (ids.length === 0) return { error: e.noRoomsInScope }
 
   const impact = await buildImpact(admin, resolved.scope)
   if (impact.occupied > 0) {
     return {
       error: impact.rooms === 1
-        ? 'Zimmer ist belegt — bitte zuerst auschecken.'
-        : `${impact.occupied} Zimmer sind belegt — bitte zuerst auschecken.`,
+        ? e.roomOccupied
+        : plural(t.intl, impact.occupied, e.roomsOccupied),
     }
   }
   if (impact.requiresPhrase && confirmPhrase.trim() !== impact.confirmPhrase) {
-    return { error: `Bitte „${impact.confirmPhrase}“ zur Bestätigung eingeben.` }
+    return { error: format(e.confirmMismatch, { phrase: impact.confirmPhrase }) }
   }
 
   // Abrechnungsstand festschreiben, BEVOR die Grundlage verschwindet: die
@@ -536,17 +568,17 @@ export async function deleteScopeAction(
   // nicht gelöscht — ein Beleg, der erst nach dem Löschen entsteht, ist keiner.
   const snap = await ensureBillingSnapshots(ctx.accountId)
   if (snap.error) {
-    return { error: `Abrechnungsstand konnte nicht gesichert werden: ${snap.error}` }
+    return { error: format(e.snapshotFailed, { message: snap.error }) }
   }
 
   // Ohne Fremdschlüssel gibt es hier keine Kaskade — von Hand, vor den Zimmern.
   const { error: transErr } = await admin
     .from('room_state_transitions').delete().in('room_id', ids).eq('hotel_id', ctx.hotelId)
-  if (transErr) return { error: `Verlauf löschen fehlgeschlagen: ${transErr.message}` }
+  if (transErr) return { error: format(e.historyDeleteFailed, { message: transErr.message }) }
 
   const { error } = await admin
     .from('rooms').delete().in('id', ids).eq('hotel_id', ctx.hotelId)
-  if (error) return { error: `Löschen fehlgeschlagen: ${error.message}` }
+  if (error) return { error: format(e.deleteFailed, { message: error.message }) }
 
   revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
   return { deleted: ids.length, label }

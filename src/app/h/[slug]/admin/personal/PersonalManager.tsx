@@ -17,6 +17,12 @@ import {
 import {
   auswegButton, beginFrom, InviteLinkBox, MailStatusLine, sendLabel, useMailDispatch, type MailDispatch,
 } from '@/components/mail/MailDispatch'
+import Rich from '@/components/i18n/Rich'
+import { format, plural } from '@/lib/i18n/format'
+import type { AdminMessages } from '@/lib/i18n'
+
+type Msg = AdminMessages['staff']['personal']
+type Common = AdminMessages['common']
 
 export type MaidRow = {
   id: string
@@ -46,11 +52,6 @@ export type ManagerRow = {
   /** Eingeladen, aber noch nicht angenommen. */
   pending: boolean
   deactivatedAt: string | null
-}
-
-/** „das übrige Haus bleibt" / „die übrigen 3 Häuser bleiben" — Singular zählt nicht mit. */
-function uebrigeHaeuser(n: number): string {
-  return n === 1 ? 'das übrige Haus bleibt' : `die übrigen ${n} Häuser bleiben`
 }
 
 /**
@@ -86,6 +87,9 @@ export default function PersonalManager({
   canManage,
   testAccounts,
   isOwner,
+  m,
+  c,
+  intlLocale,
 }: {
   hotelSlug: string
   maids: MaidRow[]
@@ -103,7 +107,11 @@ export default function PersonalManager({
   testAccounts: boolean
   /** Nur der Kontoinhaber verwaltet Manager — sonst wäre es Rechteausweitung. */
   isOwner: boolean
+  m: Msg
+  c: Common
+  intlLocale: string
 }) {
+  const n = m.notices
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -148,17 +156,17 @@ export default function PersonalManager({
     setDeleteTarget(null)
   }
 
-  const maidEntries: Entry[] = maids.map(m => ({
-    id: m.id, kind: 'maid', displayName: m.displayName, sub: `Benutzername: ${m.username}`,
-    deactivatedAt: m.deactivatedAt, username: m.username, pin: m.pin, cleaningRoom: m.cleaningRoom,
+  const maidEntries: Entry[] = maids.map(x => ({
+    id: x.id, kind: 'maid', displayName: x.displayName, sub: format(m.usernameSub, { username: x.username }),
+    deactivatedAt: x.deactivatedAt, username: x.username, pin: x.pin, cleaningRoom: x.cleaningRoom,
   }))
   const recEntries: Entry[] = receptionists.map(r => ({
     id: r.id, kind: 'reception', displayName: r.displayName, sub: r.email,
     deactivatedAt: r.deactivatedAt, pending: r.pending,
   }))
-  const mgrEntries: Entry[] = managers.map(m => ({
-    id: m.id, kind: 'manager', displayName: m.displayName, sub: m.email,
-    deactivatedAt: m.deactivatedAt, pending: m.pending, hotelCount: m.hotelCount,
+  const mgrEntries: Entry[] = managers.map(x => ({
+    id: x.id, kind: 'manager', displayName: x.displayName, sub: x.email,
+    deactivatedAt: x.deactivatedAt, pending: x.pending, hotelCount: x.hotelCount,
   }))
 
   // ─── Vorgänge ─────────────────────────────────────────────────────────────
@@ -172,16 +180,14 @@ export default function PersonalManager({
       closePanels()
       if (active) {
         setNotice(
-          e.kind === 'maid'
-            ? `${e.displayName} ist wieder aktiv — der alte Zugang (PIN + Karte) gilt erneut.`
-            : `${e.displayName} ist wieder aktiv — der Zugriff auf dieses Haus gilt sofort.`,
+          format(e.kind === 'maid' ? n.reactivatedMaid : n.reactivated, { name: e.displayName }),
         )
       } else {
         const rest = res.otherHotels ?? 0
         setNotice(
           e.kind === 'manager' && rest > 0
-            ? `Zugang von ${e.displayName} für dieses Haus beendet — ${uebrigeHaeuser(rest)} unberührt.`
-            : `Zugang von ${e.displayName} beendet — Anmeldung gesperrt, alle Daten bleiben erhalten.`,
+            ? plural(intlLocale, rest, n.endedHere, { name: e.displayName })
+            : format(n.ended, { name: e.displayName }),
         )
       }
       router.refresh()
@@ -196,7 +202,7 @@ export default function PersonalManager({
     setEndId(null)
     startTransition(async () => {
       const res = await getStaffDeletionImpactAction(hotelSlug, e.id)
-      if (!res.impact) { setError(res.error ?? 'Konnte nicht geladen werden.'); return }
+      if (!res.impact) { setError(res.error ?? n.loadFailed); return }
       setDeleteTarget({ ...res.impact, id: e.id })
     })
   }
@@ -211,15 +217,14 @@ export default function PersonalManager({
       const res = await deleteStaffAction(hotelSlug, deleteTarget.id, confirmInput)
       if (res.error) { setError(res.error); return }
       setDeleteTarget(null)
-      setNotice(
+      setNotice(format(
         res.accountKept
-          ? `${name} entfernt. Das Anmeldekonto bleibt bestehen, weil Vorgänge daran hängen${
-              (res.otherHotels ?? 0) > 0 ? ' bzw. die Person noch andere Häuser betreut' : ''
-            }.`
+          ? (res.otherHotels ?? 0) > 0 ? n.deletedAccountKeptOther : n.deletedAccountKept
           : kind === 'maid'
-            ? `${name} endgültig gelöscht.`
-            : `${name} entfernt — das Anmeldekonto wurde vollständig gelöscht.`,
-      )
+            ? n.deletedMaid
+            : n.deletedAccount,
+        { name },
+      ))
       router.refresh()
     })
   }
@@ -233,8 +238,8 @@ export default function PersonalManager({
       setEditId(null)
       setNotice(
         patch.username
-          ? `Geändert: ${patch.displayName} (@${patch.username}). Gedruckte Karten tragen noch den alten Namen.`
-          : `Geändert: ${patch.displayName}.`,
+          ? format(n.renamedWithUsername, { name: patch.displayName, username: patch.username })
+          : format(n.renamed, { name: patch.displayName }),
       )
       router.refresh()
     })
@@ -248,7 +253,7 @@ export default function PersonalManager({
       const res = await createMaidAction(hotelSlug, formData)
       if (res.error) { setError(res.error); return }
       form.reset()
-      setNotice(`${res.card!.displayName} angelegt — Karte kann jetzt gedruckt werden.`)
+      setNotice(format(n.created, { name: res.card!.displayName }))
       router.refresh()
     })
   }
@@ -259,7 +264,7 @@ export default function PersonalManager({
     startTransition(async () => {
       const res = await issueMaidLoginCardAction(hotelSlug, profileId)
       if (res.error) { setError(res.error); return }
-      setNotice(`Neue Karte für ${name} erzeugt — die alte Karte (PIN + QR) ist ab sofort ungültig.`)
+      setNotice(format(n.cardIssued, { name }))
       router.refresh()
     })
   }
@@ -303,12 +308,12 @@ export default function PersonalManager({
     setNotice(null)
     setMgrEinladung(null)
     const userId = String(new FormData(form).get('userId') ?? '')
-    if (!userId) { setError('Bitte einen Manager auswählen.'); return }
+    if (!userId) { setError(n.chooseManager); return }
     startTransition(async () => {
       const res = await attachManagerAction(hotelSlug, userId)
       if (res.error) { setError(res.error); return }
       form.reset()
-      setNotice('Manager diesem Haus zugeordnet — der Zugriff gilt sofort.')
+      setNotice(n.managerAttached)
       router.refresh()
     })
   }
@@ -334,7 +339,7 @@ export default function PersonalManager({
     setError(null)
     startTransition(async () => {
       const res = await inviteLinkAction(hotelSlug, userId)
-      if (res.error || !res.url) { setError(res.error ?? 'Link konnte nicht erzeugt werden.'); return }
+      if (res.error || !res.url) { setError(res.error ?? n.linkFailed); return }
       setInviteLink({ userId, url: res.url })
     })
   }
@@ -356,7 +361,7 @@ export default function PersonalManager({
             onClick={() => runResend(userId, { release: true, into: mail })}
             className={`${auswegButton} text-critical-strong`}
           >
-            <RotateCw className="h-3.5 w-3.5" /> Adresse freigeben und erneut senden
+            <RotateCw className="h-3.5 w-3.5" /> {m.releaseAndResend}
           </button>
         )}
         <button
@@ -365,7 +370,7 @@ export default function PersonalManager({
           onClick={() => runInviteLink(userId)}
           className={`${auswegButton} text-critical-strong`}
         >
-          <Link2 className="h-3.5 w-3.5" /> Einladungslink anzeigen
+          <Link2 className="h-3.5 w-3.5" /> {m.showInviteLink}
         </button>
       </>
     )
@@ -386,11 +391,9 @@ export default function PersonalManager({
         className="mt-0.5 h-4 w-4 accent-[var(--color-attention-bar)]"
       />
       <span className="text-xs font-semibold text-attention-deepest">
-        Ohne E-Mail anlegen (Testbetrieb)
+        {m.testNoMail}
         <span className="mt-0.5 block font-normal">
-          Keine Einladung — der Zugang entsteht sofort, das Passwort wird genau einmal
-          angezeigt. Damit sind auch nicht zustellbare Adressen wie
-          <code className="mx-1 font-mono">tester@rose.local</code> brauchbar.
+          <Rich text={m.testNoMailHint} tags={{ code: t => <code className="font-mono">{t}</code> }} />
         </span>
       </span>
     </label>
@@ -419,23 +422,23 @@ export default function PersonalManager({
 
           {beendet && (
             <span className="rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-semibold text-ink-muted">
-              beendet seit {new Date(e.deactivatedAt!).toLocaleDateString('de-DE')}
+              {format(m.endedSince, { date: new Date(e.deactivatedAt!).toLocaleDateString(intlLocale) })}
             </span>
           )}
           {!beendet && e.cleaningRoom && (
             <span className="flex items-center gap-1 rounded-full bg-positive-pill px-3 py-1 text-xs font-semibold text-positive-deepest">
-              <Sparkles className="h-3.5 w-3.5" /> reinigt Zimmer {e.cleaningRoom}
+              <Sparkles className="h-3.5 w-3.5" /> {format(m.cleaningRoom, { room: e.cleaningRoom })}
             </span>
           )}
           {!beendet && (e.hotelCount ?? 0) > 1 && (
             <span className="rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-semibold text-ink-muted">
-              betreut {e.hotelCount} Häuser
+              {plural(intlLocale, e.hotelCount ?? 0, m.hotelCount)}
             </span>
           )}
           {!beendet && e.pending && (
             <>
               <span className="rounded-full bg-attention-pill px-2.5 py-0.5 text-xs font-semibold text-attention-deepest">
-                Einladung offen
+                {m.invitePending}
               </span>
               {canManage && (
                 <button
@@ -445,7 +448,7 @@ export default function PersonalManager({
                   className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-xs font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
                 >
                   <Send className="h-3.5 w-3.5" />
-                  {resendTarget === e.id ? sendLabel('Erneut senden', resendMail) : 'Erneut senden'}
+                  {resendTarget === e.id ? sendLabel(m.resend, resendMail) : m.resend}
                 </button>
               )}
             </>
@@ -457,12 +460,12 @@ export default function PersonalManager({
               e.pin ? (
                 <span
                   className="rounded-lg bg-surface-muted px-3 py-1.5 font-mono text-sm font-bold tracking-[0.2em] text-ink-soft"
-                  title="Aktuelle PIN"
+                  title={m.currentPin}
                 >
                   {e.pin}
                 </span>
               ) : (
-                <span className="text-xs text-ink-muted">keine Karte</span>
+                <span className="text-xs text-ink-muted">{m.noCard}</span>
               )
             )}
             {e.kind === 'maid' && !beendet && e.pin && (
@@ -471,7 +474,7 @@ export default function PersonalManager({
                 data-lotse={i === 0 ? 'aushang.login' : undefined}
                 className={flachButton}
               >
-                <Printer className="h-4 w-4" /> Karte drucken
+                <Printer className="h-4 w-4" /> {m.printCard}
               </Link>
             )}
             {e.kind === 'maid' && !beendet && canManage && (
@@ -479,10 +482,10 @@ export default function PersonalManager({
                 type="button"
                 disabled={pending}
                 onClick={() => runIssueCard(e.id, e.displayName)}
-                title="Neue PIN + neuer QR-Code — alte Karte wird ungültig"
+                title={m.newCardTitle}
                 className={flachButton}
               >
-                <IdCard className="h-4 w-4" /> Neue Karte
+                <IdCard className="h-4 w-4" /> {m.newCard}
               </button>
             )}
 
@@ -493,12 +496,10 @@ export default function PersonalManager({
                   type="button"
                   disabled={pending}
                   onClick={() => { closePanels(); setEditId(editId === e.id ? null : e.id) }}
-                  title={e.kind === 'maid'
-                    ? 'Anzeigename oder Benutzername korrigieren'
-                    : 'Anzeigename korrigieren'}
+                  title={e.kind === 'maid' ? m.editTitleMaid : m.editTitle}
                   className={flachButton}
                 >
-                  <Pencil className="h-4 w-4" /> Bearbeiten
+                  <Pencil className="h-4 w-4" /> {c.edit}
                 </button>
 
                 {beendet ? (
@@ -508,17 +509,17 @@ export default function PersonalManager({
                     onClick={() => runSetActive(e, true)}
                     className={flachButton}
                   >
-                    <UserCheck className="h-4 w-4" /> Wieder aktivieren
+                    <UserCheck className="h-4 w-4" /> {m.reactivate}
                   </button>
                 ) : (
                   <button
                     type="button"
                     disabled={pending}
                     onClick={() => { closePanels(); setEndId(e.id) }}
-                    title="Anmeldung sperren, alle Daten behalten"
+                    title={m.endAccessTitle}
                     className={flachButton}
                   >
-                    <UserMinus className="h-4 w-4" /> Zugang beenden
+                    <UserMinus className="h-4 w-4" /> {m.endAccess}
                   </button>
                 )}
 
@@ -527,8 +528,8 @@ export default function PersonalManager({
                   disabled={pending}
                   onClick={() => openDelete(e)}
                   className="rounded-lg border border-critical-pill-edge p-1.5 text-critical-strong hover:bg-critical-tint disabled:opacity-50"
-                  aria-label={`${e.displayName} endgültig löschen`}
-                  title="Endgültig löschen"
+                  aria-label={format(m.deleteAria, { name: e.displayName })}
+                  title={m.deleteTitle}
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -551,8 +552,10 @@ export default function PersonalManager({
             username={e.kind === 'maid' ? e.username : undefined}
             pending={pending}
             hint={e.kind === 'manager' && (e.hotelCount ?? 0) > 1
-              ? `Gilt für alle ${e.hotelCount} Häuser dieser Person — der Name gehört zur Person, nicht zum Haus.`
+              ? format(m.editHintManager, { count: e.hotelCount ?? 0 })
               : undefined}
+            m={m}
+            c={c}
             onCancel={() => setEditId(null)}
             onSave={patch => runRename(e.id, patch)}
           />
@@ -561,13 +564,9 @@ export default function PersonalManager({
         {endId === e.id && (
           <div className="mt-3 rounded-lg border border-edge bg-surface-sunken p-3">
             <p className="text-sm font-semibold text-ink">
-              Zugang von {e.displayName} beenden?{' '}
-              {e.kind === 'maid'
-                ? 'Login per PIN und QR-Karte werden sofort gesperrt.'
-                : 'Die Anmeldung für dieses Haus wird sofort ungültig.'}
-              {' '}Alle Daten bleiben erhalten, und eine Wieder-Aktivierung stellt den Zugang her.
+              {format(e.kind === 'maid' ? m.endConfirmMaid : m.endConfirm, { name: e.displayName })}
               {e.kind === 'manager' && (e.hotelCount ?? 0) > 1
-                ? ` ${uebrigeHaeuser((e.hotelCount ?? 1) - 1).replace(/^./, c => c.toUpperCase())} unberührt.`
+                ? ` ${plural(intlLocale, (e.hotelCount ?? 1) - 1, m.otherHotelsUntouched)}`
                 : ''}
             </p>
             <div className="mt-2 flex gap-2">
@@ -577,14 +576,14 @@ export default function PersonalManager({
                 onClick={() => runSetActive(e, false)}
                 className="rounded-lg bg-action px-3 py-1.5 text-sm font-bold text-action-foreground disabled:opacity-50"
               >
-                {pending ? 'Beenden …' : 'Ja, Zugang beenden'}
+                {pending ? m.ending : m.confirmEnd}
               </button>
               <button
                 type="button"
                 onClick={() => setEndId(null)}
                 className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft"
               >
-                Abbrechen
+                {c.cancel}
               </button>
             </div>
           </div>
@@ -599,6 +598,9 @@ export default function PersonalManager({
             onCancel={() => setDeleteTarget(null)}
             onDelete={runDelete}
             onEnd={beendet ? undefined : () => runSetActive(e, false)}
+            m={m}
+            c={c}
+            intlLocale={intlLocale}
           />
         )}
       </div>
@@ -616,9 +618,9 @@ export default function PersonalManager({
         {beendet.length > 0 && (
           <>
             <p className="mt-2 text-sm font-bold text-ink-soft">
-              Beendete Zugänge
+              {m.endedHeading}
               <span className="ml-2 font-normal text-ink-muted">
-                keine Anmeldung — Daten und Nachweise bleiben erhalten
+                {m.endedHint}
               </span>
             </p>
             {beendet.map(zeile)}
@@ -633,20 +635,15 @@ export default function PersonalManager({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-black text-ink">Personal — Reinigungskräfte</h1>
+        <h1 className="text-xl font-black text-ink">{m.headingMaids}</h1>
         <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-semibold text-ink-soft">
-          {aktiveMaids} {aktiveMaids === 1 ? 'Kraft' : 'Kräfte'}
+          {plural(intlLocale, aktiveMaids, m.maidCount)}
         </span>
       </div>
 
       {canManage && (
         <p data-lotse="personal.liste" className="text-xs text-ink-muted">
-          Für alle Zugänge gilt dasselbe:{' '}
-          <strong className="font-semibold text-ink-soft">Bearbeiten</strong> korrigiert den Namen,{' '}
-          <strong className="font-semibold text-ink-soft">Zugang beenden</strong> sperrt die
-          Anmeldung und lässt sich zurücknehmen,{' '}
-          <strong className="font-semibold text-ink-soft">Löschen</strong> entfernt die Person —
-          mit Anzeige dessen, was dabei verloren geht.
+          <Rich text={m.intro} tags={{ b: t => <strong className="font-semibold text-ink-soft">{t}</strong> }} />
         </p>
       )}
 
@@ -657,28 +654,28 @@ export default function PersonalManager({
           onSubmit={e => { e.preventDefault(); runCreate(e.currentTarget) }}
           className="rounded-xl border border-edge bg-surface p-4"
         >
-          <h2 className="mb-3 text-sm font-bold text-ink-soft">Neue Reinigungskraft anlegen</h2>
+          <h2 className="mb-3 text-sm font-bold text-ink-soft">{m.createMaid}</h2>
           <div className="flex flex-wrap items-end gap-3">
             <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-              Anzeigename
+              {m.displayName}
               <input
                 name="displayName"
                 required
                 minLength={2}
-                placeholder="z. B. Maria K."
+                placeholder={m.maidNamePlaceholder}
                 className={`${panelInput} w-48`}
               />
             </label>
             <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-              Benutzername (Login)
+              {m.username}
               <input
                 name="username"
                 required
                 minLength={2}
                 autoCapitalize="none"
-                placeholder="z. B. maria"
+                placeholder={m.usernamePlaceholder}
                 pattern="[a-zA-Z0-9._\-]+"
-                title="Nur Buchstaben, Ziffern, Punkt, Unterstrich, Bindestrich"
+                title={m.usernamePatternTitle}
                 className={`${panelInput} w-40`}
               />
             </label>
@@ -688,14 +685,11 @@ export default function PersonalManager({
               className="flex items-center gap-1.5 rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
             >
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Anlegen
+              {m.create}
             </button>
           </div>
           <p data-lotse="personal.karte" className="mt-2 text-xs text-ink-muted">
-            Mit dem <strong>Benutzernamen</strong> und der PIN meldet sich die Kraft an —
-            nicht mit dem Anzeigenamen, der steht nur auf Board und Karte. PIN (6 Ziffern)
-            und QR-Login-Karte werden automatisch erzeugt — danach über
-            &bdquo;Karte drucken&ldquo; aushändigen.
+            <Rich text={m.maidHint} />
           </p>
         </form>
       )}
@@ -717,24 +711,23 @@ export default function PersonalManager({
       {zugang && (
         <div className="rounded-xl border border-attention-tint-edge bg-attention-tint p-4">
           <p className="flex items-center gap-1.5 text-sm font-bold text-attention-deepest">
-            <KeyRound className="h-4 w-4" /> Testzugang für {zugang.displayName} angelegt
+            <KeyRound className="h-4 w-4" /> {format(m.testAccessCreated, { name: zugang.displayName })}
           </p>
           <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-            <dt className="font-semibold text-attention-deepest">E-Mail</dt>
+            <dt className="font-semibold text-attention-deepest">{m.emailLabel}</dt>
             <dd className="font-mono text-attention-deepest">{zugang.email}</dd>
-            <dt className="font-semibold text-attention-deepest">Passwort</dt>
+            <dt className="font-semibold text-attention-deepest">{m.passwordLabel}</dt>
             <dd className="font-mono text-lg font-black text-attention-deepest">{zugang.password}</dd>
           </dl>
           <p className="mt-3 text-xs text-attention-deepest">
-            Jetzt notieren — das Passwort steht <strong>nur hier</strong> und lässt sich später
-            nicht mehr anzeigen. Es wurde keine E-Mail verschickt.
+            <Rich text={m.testAccessNote} />
           </p>
           <button
             type="button"
             onClick={() => setZugang(null)}
             className="mt-3 rounded-lg border border-attention-tint-edge px-3 py-1.5 text-sm font-bold text-attention-deepest hover:bg-surface"
           >
-            Notiert — ausblenden
+            {m.testAccessDismiss}
           </button>
         </div>
       )}
@@ -743,9 +736,9 @@ export default function PersonalManager({
         maidEntries,
         <div className="rounded-xl border border-edge bg-surface p-8 text-center">
           <UserRound className="mx-auto mb-2 h-8 w-8 text-ink-muted" />
-          <p className="font-semibold text-ink">Noch keine Reinigungskräfte angelegt.</p>
+          <p className="font-semibold text-ink">{m.emptyMaids}</p>
           <p className="mt-1 text-sm text-ink-muted">
-            Jede Kraft bekommt einen eigenen Zugang mit PIN und QR-Login-Karte fürs Reinigungsboard.
+            {m.emptyMaidsHint}
           </p>
         </div>,
       )}
@@ -754,10 +747,9 @@ export default function PersonalManager({
       {canManage && (
         <>
           <div data-lotse="personal.rezeption" className="mt-2 flex flex-wrap items-center gap-3">
-            <h2 className="text-xl font-black text-ink">Personal — Rezeption</h2>
+            <h2 className="text-xl font-black text-ink">{m.headingReception}</h2>
             <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-semibold text-ink-soft">
-              {recEntries.filter(e => !e.deactivatedAt).length}{' '}
-              {recEntries.filter(e => !e.deactivatedAt).length === 1 ? 'Zugang' : 'Zugänge'}
+              {plural(intlLocale, recEntries.filter(e => !e.deactivatedAt).length, m.accessCount)}
             </span>
           </div>
 
@@ -765,25 +757,25 @@ export default function PersonalManager({
             onSubmit={e => { e.preventDefault(); runCreateReception(e.currentTarget) }}
             className="rounded-xl border border-edge bg-surface p-4"
           >
-            <h3 className="mb-3 text-sm font-bold text-ink-soft">Neuen Rezeptions-Zugang anlegen</h3>
+            <h3 className="mb-3 text-sm font-bold text-ink-soft">{m.createReception}</h3>
             <div className="flex flex-wrap items-end gap-3">
               <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-                Anzeigename
+                {m.displayName}
                 <input
                   name="displayName"
                   required
                   minLength={2}
-                  placeholder="z. B. Front Desk Früh"
+                  placeholder={m.receptionNamePlaceholder}
                   className={`${panelInput} w-48`}
                 />
               </label>
               <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-                E-Mail (Login)
+                {m.email}
                 <input
                   name="email"
                   type="email"
                   required
-                  placeholder="z. B. rezeption@meinhotel.de"
+                  placeholder={m.receptionEmailPlaceholder}
                   className={`${panelInput} w-64`}
                 />
               </label>
@@ -793,38 +785,33 @@ export default function PersonalManager({
                 className="flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
               >
                 {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                {sendLabel('Anlegen', recMail)}
+                {sendLabel(m.create, recMail)}
               </button>
             </div>
             {testHaken}
             <p className="mt-2 text-xs text-ink-muted">
-              Rezeptions-Zugänge bedienen das Tagesgeschäft (Check-in/-out, Bestellungen,
-              Drucken) — Einstellungen, Zimmer-Setup und Services bleiben der Verwaltung
-              vorbehalten. Die Person bekommt eine Einladung per E-Mail und vergibt ihr Passwort
-              selbst.
+              {m.receptionHint}
             </p>
           </form>
 
           {recEinladung && (
             <div className="rounded-xl border border-edge bg-surface p-4">
               <p className="flex items-center gap-1.5 text-sm font-bold text-ink">
-                <MailCheck className="h-4 w-4" /> Zugang für {recEinladung.displayName} angelegt
+                <MailCheck className="h-4 w-4" /> {format(m.accessCreated, { name: recEinladung.displayName })}
               </p>
               <MailStatusLine mail={recMail} className="mt-2">{auswege(recEinladung.userId, recMail)}</MailStatusLine>
               {inviteLink?.userId === recEinladung.userId && (
                 <InviteLinkBox url={inviteLink.url} onClose={() => setInviteLink(null)} />
               )}
               <p className="mt-2 text-xs text-ink-muted">
-                Sobald die Einladung angenommen ist, verschwindet der Hinweis
-                &bdquo;Einladung offen&ldquo; aus der Liste. Kommt die Mail nicht an, hilft
-                &bdquo;Erneut senden&ldquo; an der Zeile.
+                {m.receptionInviteHint}
               </p>
             </div>
           )}
 
           {liste(
             recEntries,
-            <p className="text-sm text-ink-muted">Noch keine Rezeptions-Zugänge angelegt.</p>,
+            <p className="text-sm text-ink-muted">{m.emptyReception}</p>,
           )}
         </>
       )}
@@ -836,10 +823,9 @@ export default function PersonalManager({
       {isOwner && (
         <>
           <div data-lotse="personal.manager" className="mt-2 flex flex-wrap items-center gap-3">
-            <h2 className="text-xl font-black text-ink">Personal — Manager</h2>
+            <h2 className="text-xl font-black text-ink">{m.headingManagers}</h2>
             <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-semibold text-ink-soft">
-              {mgrEntries.filter(e => !e.deactivatedAt).length}{' '}
-              {mgrEntries.filter(e => !e.deactivatedAt).length === 1 ? 'Zugang' : 'Zugänge'}
+              {plural(intlLocale, mgrEntries.filter(e => !e.deactivatedAt).length, m.accessCount)}
             </span>
           </div>
 
@@ -847,25 +833,25 @@ export default function PersonalManager({
             onSubmit={e => { e.preventDefault(); runCreateManager(e.currentTarget) }}
             className="rounded-xl border border-edge bg-surface p-4"
           >
-            <h3 className="mb-3 text-sm font-bold text-ink-soft">Neuen Manager anlegen</h3>
+            <h3 className="mb-3 text-sm font-bold text-ink-soft">{m.createManager}</h3>
             <div className="flex flex-wrap items-end gap-3">
               <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-                Anzeigename
+                {m.displayName}
                 <input
                   name="displayName"
                   required
                   minLength={2}
-                  placeholder="z. B. Nina Berg"
+                  placeholder={m.managerNamePlaceholder}
                   className={`${panelInput} w-48`}
                 />
               </label>
               <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-                E-Mail (Login)
+                {m.email}
                 <input
                   name="email"
                   type="email"
                   required
-                  placeholder="z. B. nina@meinhotel.de"
+                  placeholder={m.managerEmailPlaceholder}
                   className={`${panelInput} w-64`}
                 />
               </label>
@@ -875,13 +861,12 @@ export default function PersonalManager({
                 className="flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
               >
                 {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                {sendLabel('Anlegen', mgrMail)}
+                {sendLabel(m.create, mgrMail)}
               </button>
             </div>
             {testHaken}
             <p className="mt-2 text-xs text-ink-muted">
-              Manager haben im Haus dieselben Rechte wie der Inhaber — ohne Zugriff auf das Konto.
-              Die Person bekommt eine Einladung per E-Mail und vergibt ihr Passwort selbst.
+              {m.managerHint}
             </p>
           </form>
 
@@ -891,16 +876,16 @@ export default function PersonalManager({
               className="rounded-xl border border-edge bg-surface p-4"
             >
               <h3 className="mb-3 flex items-center gap-1.5 text-sm font-bold text-ink-soft">
-                <Building2 className="h-4 w-4" /> Vorhandenen Manager hinzufügen
+                <Building2 className="h-4 w-4" /> {m.attachTitle}
               </h3>
               <div className="flex flex-wrap items-end gap-3">
                 <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-                  Manager des Kontos
+                  {m.attachLabel}
                   <select name="userId" className={`${panelInput} w-64`} defaultValue="">
-                    <option value="" disabled>Bitte wählen …</option>
-                    {verfuegbareManager.map(m => (
-                      <option key={m.id} value={m.id}>
-                        {m.displayName} ({m.email})
+                    <option value="" disabled>{m.attachChoose}</option>
+                    {verfuegbareManager.map(x => (
+                      <option key={x.id} value={x.id}>
+                        {format(m.attachOption, { name: x.displayName, email: x.email })}
                       </option>
                     ))}
                   </select>
@@ -911,11 +896,11 @@ export default function PersonalManager({
                   className="flex items-center gap-1.5 rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
                 >
                   {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                  Hinzufügen
+                  {m.attach}
                 </button>
               </div>
               <p className="mt-2 text-xs text-ink-muted">
-                Kein neuer Zugang — dieselbe Person betreut dann ein Haus mehr.
+                {m.attachHint}
               </p>
             </form>
           )}
@@ -923,21 +908,21 @@ export default function PersonalManager({
           {mgrEinladung && (
             <div className="rounded-xl border border-edge bg-surface p-4">
               <p className="flex items-center gap-1.5 text-sm font-bold text-ink">
-                <MailCheck className="h-4 w-4" /> Zugang für {mgrEinladung.displayName} angelegt
+                <MailCheck className="h-4 w-4" /> {format(m.accessCreated, { name: mgrEinladung.displayName })}
               </p>
               <MailStatusLine mail={mgrMail} className="mt-2">{auswege(mgrEinladung.userId, mgrMail)}</MailStatusLine>
               {inviteLink?.userId === mgrEinladung.userId && (
                 <InviteLinkBox url={inviteLink.url} onClose={() => setInviteLink(null)} />
               )}
               <p className="mt-2 text-xs text-ink-muted">
-                Kommt die Mail nicht an, hilft &bdquo;Erneut senden&ldquo; an der Zeile.
+                {m.managerInviteHint}
               </p>
             </div>
           )}
 
           {liste(
             mgrEntries,
-            <p className="text-sm text-ink-muted">Für dieses Haus ist noch kein Manager eingetragen.</p>,
+            <p className="text-sm text-ink-muted">{m.emptyManagers}</p>,
           )}
         </>
       )}
@@ -950,12 +935,14 @@ export default function PersonalManager({
  * es einen gibt (Reinigung) — Rezeption und Manager melden sich per E-Mail an.
  */
 function StaffEditPanel({
-  displayName, username, pending, hint, onSave, onCancel,
+  displayName, username, pending, hint, onSave, onCancel, m, c,
 }: {
   displayName: string
   username?: string
   pending: boolean
   hint?: string
+  m: Msg
+  c: Common
   onSave: (patch: { displayName: string; username?: string }) => void
   onCancel: () => void
 }) {
@@ -972,7 +959,7 @@ function StaffEditPanel({
     >
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-          Anzeigename
+          {m.displayName}
           <input
             value={name}
             onChange={e => setName(e.target.value)}
@@ -983,7 +970,7 @@ function StaffEditPanel({
         </label>
         {username !== undefined && (
           <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-            Benutzername (Login)
+            {m.username}
             <input
               value={user}
               onChange={e => setUser(e.target.value)}
@@ -991,7 +978,7 @@ function StaffEditPanel({
               minLength={2}
               autoCapitalize="none"
               pattern="[a-zA-Z0-9._\-]+"
-              title="Nur Buchstaben, Ziffern, Punkt, Unterstrich, Bindestrich"
+              title={m.usernamePatternTitle}
               className={`${panelInput} w-40 font-mono`}
             />
           </label>
@@ -1001,22 +988,20 @@ function StaffEditPanel({
           disabled={pending}
           className="rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
         >
-          {pending ? 'Speichern …' : 'Speichern'}
+          {pending ? c.saving : c.save}
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="rounded-lg border border-edge px-3 py-2 text-sm font-semibold text-ink-soft"
         >
-          Abbrechen
+          {c.cancel}
         </button>
       </div>
       {hint && <p className="mt-2 text-xs text-ink-muted">{hint}</p>}
       {username !== undefined && user !== username && (
         <p className="mt-2 rounded-lg border border-attention-tint-edge bg-attention-tint px-3 py-2 text-xs font-semibold text-attention-deepest">
-          Der QR-Code der Karte bleibt gültig, die PIN ebenfalls. Auf der
-          <strong> gedruckten</strong> Karte steht aber noch der alte Benutzername —
-          für die Anmeldung von Hand also neu drucken.
+          <Rich text={m.usernameChangedHint} />
         </p>
       )}
     </form>
@@ -1031,7 +1016,7 @@ function StaffEditPanel({
  * bisher entschied die Anwendung das still, jetzt steht es vorher da.
  */
 function StaffDeletePanel({
-  impact, confirmInput, setConfirmInput, pending, onDelete, onCancel, onEnd,
+  impact, confirmInput, setConfirmInput, pending, onDelete, onCancel, onEnd, m, c, intlLocale,
 }: {
   impact: StaffDeletionImpact
   confirmInput: string
@@ -1041,68 +1026,69 @@ function StaffDeletePanel({
   onCancel: () => void
   /** Nur solange der Zugang noch aktiv ist — der schonende Ausweg. */
   onEnd?: () => void
+  m: Msg
+  c: Common
+  intlLocale: string
 }) {
-  const datum = (iso: string) => new Date(iso).toLocaleDateString('de-DE')
+  const d = m.deletePanel
+  const datum = (iso: string) => new Date(iso).toLocaleDateString(intlLocale)
   const zeitraum =
     impact.firstAt && impact.lastAt
       ? impact.firstAt === impact.lastAt
-        ? ` (${datum(impact.firstAt)})`
-        : ` (${datum(impact.firstAt)} bis ${datum(impact.lastAt)})`
+        ? format(d.periodOne, { date: datum(impact.firstAt) })
+        : format(d.periodRange, { from: datum(impact.firstAt), to: datum(impact.lastAt) })
       : ''
 
   const bleibt: string[] = []
-  if (impact.checkIns > 0) bleibt.push(`${impact.checkIns} Check-ins`)
-  if (impact.ordersDone > 0) bleibt.push(`${impact.ordersDone} erledigte Service-Anfragen`)
+  if (impact.checkIns > 0) bleibt.push(plural(intlLocale, impact.checkIns, d.checkIns))
+  if (impact.ordersDone > 0) bleibt.push(plural(intlLocale, impact.ordersDone, d.ordersDone))
   if (impact.kind !== 'maid' && impact.logEntries > 0) {
-    bleibt.push(`${impact.logEntries} Einträge im Tätigkeits-Protokoll`)
+    bleibt.push(plural(intlLocale, impact.logEntries, d.logEntries))
   }
 
   return (
     <div className="mt-3 rounded-lg border border-critical-tint-edge bg-critical-tint p-3">
       {impact.cleaningRoom ? (
         <p className="text-sm font-semibold text-critical-strong">
-          {impact.displayName} reinigt gerade Zimmer {impact.cleaningRoom} und lässt sich nicht
-          löschen — erst die Reinigung abschließen.
+          {format(d.cleaningNow, { name: impact.displayName, room: impact.cleaningRoom })}
         </p>
       ) : impact.kind === 'maid' ? (
         impact.logEntries === 0 ? (
           <p className="text-sm font-semibold text-ink">
-            {impact.displayName} hat noch keinen einzigen Eintrag im Tätigkeits-Protokoll —
-            beim Löschen geht nichts verloren.
+            {format(d.nothingLost, { name: impact.displayName })}
           </p>
         ) : (
           <>
-            <p className="text-sm font-bold text-critical-strong">Das wird endgültig mitgelöscht:</p>
+            <p className="text-sm font-bold text-critical-strong">{d.willBeDeleted}</p>
             <ul className="mt-1 list-disc pl-5 text-sm text-ink-soft">
-              <li>
-                {impact.logEntries} Einträge im Tätigkeits-Protokoll{zeitraum} — Schichten, Pausen
-                und Reinigungen verschwinden damit aus der Auswertung
-              </li>
-              {impact.cleanings > 0 && <li>{impact.cleanings} abgeschlossene Zimmerreinigungen</li>}
-              {impact.hasCard && <li>die Login-Karte (gedruckte Karte wird ungültig)</li>}
+              <li>{plural(intlLocale, impact.logEntries, d.logEntriesLost, { period: zeitraum })}</li>
+              {impact.cleanings > 0 && <li>{plural(intlLocale, impact.cleanings, d.cleaningsLost)}</li>}
+              {impact.hasCard && <li>{d.cardLost}</li>}
             </ul>
           </>
         )
       ) : (
         <>
           <p className="text-sm font-semibold text-ink">
-            {impact.displayName} aus diesem Haus entfernen? Der Zugriff endet sofort.
+            {format(d.removeFromHouse, { name: impact.displayName })}
             {impact.otherHotels > 0
-              ? ` ${uebrigeHaeuser(impact.otherHotels).replace(/^./, c => c.toUpperCase())} unberührt.`
+              ? ` ${plural(intlLocale, impact.otherHotels, m.otherHotelsUntouched)}`
               : ''}
           </p>
           <p className="mt-2 text-xs text-ink-muted">
             {impact.accountKept
-              ? 'Das Anmeldekonto bleibt bestehen — daran hängen Vorgänge, die sonst ihre Zuordnung verlören.'
-              : 'An diesem Zugang hängt nichts, das Anmeldekonto wird deshalb vollständig gelöscht.'}
+              ? d.accountKept
+              : d.accountDeleted}
           </p>
         </>
       )}
 
       {bleibt.length > 0 && !impact.cleaningRoom && (
         <p className="mt-2 text-xs text-ink-muted">
-          {bleibt.join(' und ')} <strong>bleiben erhalten</strong>
-          {impact.kind === 'maid' ? ' — sie verlieren nur den Namen.' : '.'}
+          <Rich
+            text={impact.kind === 'maid' ? d.keptMaid : d.kept}
+            vars={{ list: new Intl.ListFormat(intlLocale, { type: 'conjunction' }).format(bleibt) }}
+          />
         </p>
       )}
 
@@ -1110,7 +1096,7 @@ function StaffDeletePanel({
         <>
           {impact.requiresPhrase && (
             <label className="mt-3 flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-              Zum Bestätigen &bdquo;{impact.confirmPhrase}&ldquo; eingeben
+              {format(d.confirmPrompt, { phrase: impact.confirmPhrase })}
               <input
                 value={confirmInput}
                 onChange={e => setConfirmInput(e.target.value)}
@@ -1126,7 +1112,7 @@ function StaffDeletePanel({
               onClick={onDelete}
               className="rounded-lg bg-critical px-3 py-1.5 text-sm font-bold text-critical-foreground disabled:opacity-50"
             >
-              {pending ? 'Löschen …' : 'Ja, endgültig löschen'}
+              {pending ? d.deleting : d.confirmDelete}
             </button>
             {onEnd && impact.requiresPhrase && (
               <button
@@ -1135,7 +1121,7 @@ function StaffDeletePanel({
                 onClick={onEnd}
                 className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:text-ink disabled:opacity-50"
               >
-                Lieber Zugang beenden — Arbeitsnachweis bleibt
+                {d.endInstead}
               </button>
             )}
             <button
@@ -1143,7 +1129,7 @@ function StaffDeletePanel({
               onClick={onCancel}
               className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft"
             >
-              Abbrechen
+              {c.cancel}
             </button>
           </div>
         </>
@@ -1154,7 +1140,7 @@ function StaffDeletePanel({
           onClick={onCancel}
           className="mt-3 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft"
         >
-          Schließen
+          {c.close}
         </button>
       )}
     </div>

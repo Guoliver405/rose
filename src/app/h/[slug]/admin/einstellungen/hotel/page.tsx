@@ -11,6 +11,8 @@ import { logoUrlFor } from '@/utils/logo'
 import HotelSettingsForm from '../HotelSettingsForm'
 import LogoForm from '../LogoForm'
 import { UnsavedChanges } from '@/components/unsaved/UnsavedChanges'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 export default async function HotelSettingsPage({
   params,
@@ -20,6 +22,7 @@ export default async function HotelSettingsPage({
   const { slug } = await params
   const ctx = await getAdminContext(slug)
   if (!ctx) redirect(`/h/${slug}/admin/einstellungen`)
+  const m = getMessages(await getLocale()).admin.settings
 
   const supabase = await createClient()
   const { data: hotel } = await supabase
@@ -42,26 +45,25 @@ export default async function HotelSettingsPage({
           href={`/h/${ctx.hotelSlug}/admin/einstellungen`}
           className="flex items-center gap-1 text-sm font-semibold text-ink-muted hover:text-ink"
         >
-          <ArrowLeft className="h-4 w-4" /> Einstellungen
+          <ArrowLeft className="h-4 w-4" /> {m.title}
         </Link>
-        <h1 className="text-xl font-black text-ink">Hotel &amp; Regeln</h1>
+        <h1 className="text-xl font-black text-ink">{m.house.title}</h1>
       </div>
 
       <section data-lotse="regeln.logo" className="flex flex-col gap-3">
-        <h2 className="text-sm font-bold text-ink-soft">Logo</h2>
-        <p className="text-sm text-ink-soft">
-          Ihr Logo steht im Kopf der gedruckten Blätter — Zimmer-Aushang und Gast-Handout.
-          Ohne Logo steht dort der Name des Hauses.
-        </p>
+        <h2 className="text-sm font-bold text-ink-soft">{m.house.logo.heading}</h2>
+        <p className="text-sm text-ink-soft">{m.house.logo.intro}</p>
         <LogoForm
           hotelSlug={ctx.hotelSlug}
           hotelName={ctx.hotelName}
           logoUrl={logoUrlFor(ctx.logoPath)}
+          m={m.logo}
         />
       </section>
 
       <HotelSettingsForm
         hotelSlug={ctx.hotelSlug}
+        m={m.house}
         initial={{
           hotelName: hotel?.name ?? '',
           slug: hotel?.slug ?? '',

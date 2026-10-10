@@ -4,6 +4,8 @@ import { ArrowLeft } from 'lucide-react'
 import { getAdminContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import TestScenarioPanel from '../TestScenarioPanel'
+import { getMessages, intlLocale } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 // VORÜBERGEHEND — Test-Szenario-Seeding, siehe ../test-actions.ts.
 export default async function TestScenarioPage({
@@ -14,6 +16,8 @@ export default async function TestScenarioPage({
   const { slug } = await params
   const ctx = await getAdminContext(slug)
   if (!ctx) redirect(`/h/${slug}/admin/einstellungen`)
+  const locale = await getLocale()
+  const m = getMessages(locale).admin.settings
 
   const supabase = await createClient()
   const { count: roomCount } = await supabase
@@ -29,12 +33,17 @@ export default async function TestScenarioPage({
           href={`/h/${ctx.hotelSlug}/admin/einstellungen`}
           className="flex items-center gap-1 text-sm font-semibold text-ink-muted hover:text-ink"
         >
-          <ArrowLeft className="h-4 w-4" /> Einstellungen
+          <ArrowLeft className="h-4 w-4" /> {m.title}
         </Link>
-        <h1 className="text-xl font-black text-ink">Test-Szenario</h1>
+        <h1 className="text-xl font-black text-ink">{m.testScenario.title}</h1>
       </div>
 
-      <TestScenarioPanel hotelSlug={ctx.hotelSlug} roomCount={roomCount ?? 0} />
+      <TestScenarioPanel
+        hotelSlug={ctx.hotelSlug}
+        roomCount={roomCount ?? 0}
+        m={m.testScenario}
+        intlLocale={intlLocale(locale)}
+      />
     </div>
   )
 }

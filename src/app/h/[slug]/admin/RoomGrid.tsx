@@ -16,6 +16,12 @@ import {
 import { getRoomBillAction } from './bill-actions'
 import { markOrderDoneAction } from './bestellungen/actions'
 import { getRoomHistoryAction, type RoomHistoryEvent } from './history-actions'
+import { format, plural } from '@/lib/i18n/format'
+import type { AdminMessages } from '@/lib/i18n'
+import Rich from '@/components/i18n/Rich'
+
+type M = AdminMessages['overview']
+type C = AdminMessages['common']
 
 export type RoomTileData = {
   id: string
@@ -80,8 +86,8 @@ const HISTORY_DOT: Record<string, string> = {
 }
 
 /** `YYYY-MM-DD` → „Sa., 07.09." — kurz genug für die Status-Zeile. */
-function formatDateKey(key: string): string {
-  return new Date(`${key}T00:00:00`).toLocaleDateString('de-DE', {
+function formatDateKey(key: string, intlLocale: string): string {
+  return new Date(`${key}T00:00:00`).toLocaleDateString(intlLocale, {
     weekday: 'short', day: '2-digit', month: '2-digit',
   })
 }
@@ -115,19 +121,21 @@ const chip = (active: boolean) =>
   }`
 
 function DepartureChooser({
-  value, onChange, disabled, tz,
+  value, onChange, disabled, tz, m, intlLocale,
 }: {
   value: DepartureChoice
   onChange: (c: DepartureChoice) => void
   disabled?: boolean
   tz: string
+  m: M['departure']
+  intlLocale: string
 }) {
   const nights = [1, 2, 3]
   return (
     <div>
       <div className="flex flex-wrap gap-1.5">
         <button type="button" disabled={disabled} className={chip(value.kind === 'open')} onClick={() => onChange({ kind: 'open' })}>
-          offen
+          {m.open}
         </button>
         {nights.map(n => (
           <button
@@ -135,14 +143,14 @@ function DepartureChooser({
             className={chip(value.kind === 'nights' && value.nights === n)}
             onClick={() => onChange({ kind: 'nights', nights: n })}
           >
-            {n} {n === 1 ? 'Nacht' : 'Nächte'}
+            {plural(intlLocale, n, m.nights)}
           </button>
         ))}
         <button
           type="button" disabled={disabled} className={chip(value.kind === 'date')}
           onClick={() => onChange({ kind: 'date', value: value.kind === 'date' ? value.value : dateKeyAfterNights(new Date(), 1, tz) })}
         >
-          Datum
+          {m.date}
         </button>
       </div>
       {value.kind === 'date' && (
@@ -154,54 +162,53 @@ function DepartureChooser({
         />
       )}
       {value.kind === 'nights' && (
-        <p className="mt-1.5 text-xs text-ink-muted">Abreise am {formatDateKey(departureKey(value, tz)!)}</p>
+        <p className="mt-1.5 text-xs text-ink-muted">{format(m.on, { date: formatDateKey(departureKey(value, tz)!, intlLocale) })}</p>
       )}
     </div>
   )
 }
 
-function historyTime(at: string): string {
-  return new Date(at).toLocaleString('de-DE', {
+function historyTime(at: string, intlLocale: string): string {
+  return new Date(at).toLocaleString(intlLocale, {
     weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
   })
 }
 
-function statusLabel(t: RoomTileData): string {
-  if (t.deactivated) return 'Außer Betrieb'
+function statusLabel(t: RoomTileData, m: M['status'], intlLocale: string): string {
+  if (t.deactivated) return m.deactivated
   const ready = !t.occupied && !t.checkoutPending && !t.priority && !t.cleaningActive
   const parts: string[] = []
-  parts.push(t.occupied ? 'Belegt' : ready ? 'Frei & bereit' : 'Frei')
-  if (t.occupied && t.departureToday) parts.push('Abreise heute')
-  else if (t.occupied && t.expectedCheckout) parts.push(`Abreise am ${formatDateKey(t.expectedCheckout)}`)
-  if (t.priority) parts.push('priorisierte Reinigung')
-  if (t.cleaningActive) parts.push('Reinigung läuft')
-  if (t.checkoutPending) parts.push('Reinigung nach Check-out offen')
+  parts.push(t.occupied ? m.occupied : ready ? m.freeReady : m.free)
+  if (t.occupied && t.departureToday) parts.push(m.departureToday)
+  else if (t.occupied && t.expectedCheckout) parts.push(format(m.departureOn, { date: formatDateKey(t.expectedCheckout, intlLocale) }))
+  if (t.priority) parts.push(m.priority)
+  if (t.cleaningActive) parts.push(m.cleaning)
+  if (t.checkoutPending) parts.push(m.checkoutPending)
   if (t.guestSignal === 'please_clean') {
     // Die Uhrzeit kann das „Frühestens ab" des Gastes oder „bitte später" an der Tür sein — der Verlauf sagt, was es war.
-    parts.push(t.cleanDeferredUntil ? `Gast wünscht Reinigung, frühestens ab ${t.cleanDeferredUntil}` : 'Gast wünscht Reinigung')
+    parts.push(t.cleanDeferredUntil ? format(m.wantsCleanFrom, { time: t.cleanDeferredUntil }) : m.wantsClean)
   } else if (t.cleanDeferredUntil) {
-    parts.push(`Reinigung ab ${t.cleanDeferredUntil} (an der Tür vereinbart)`)
+    parts.push(format(m.deferredAtDoor, { time: t.cleanDeferredUntil }))
   }
-  if (t.stayoverDue) parts.push('Routine-Reinigung fällig')
-  if (t.declinedToday) parts.push('Gast möchte heute keine Reinigung')
-  if (t.guestSignal === 'dnd') parts.push('Bitte nicht stören')
+  if (t.stayoverDue) parts.push(m.dailyDue)
+  if (t.declinedToday) parts.push(m.declined)
+  if (t.guestSignal === 'dnd') parts.push(m.dnd)
   if (t.openOrders > 0) {
-    parts.push(
-      t.urgentOrders
-        ? 'DRINGENDE Service-Anfrage'
-        : t.openOrders === 1 ? 'offene Service-Anfrage' : `${t.openOrders} offene Service-Anfragen`,
-    )
+    parts.push(t.urgentOrders ? m.urgentOrder : plural(intlLocale, t.openOrders, m.openOrders))
   }
   return parts.join(' · ')
 }
 
 export default function RoomGrid({
-  hotelSlug, floorGroups, timeZone,
+  hotelSlug, floorGroups, timeZone, m, common, intlLocale,
 }: {
   hotelSlug: string
   floorGroups: FloorGroup[]
   /** Zeitzone des Hauses — „heute" für die Abreise-Chips. */
   timeZone: string
+  m: M
+  common: C
+  intlLocale: string
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
@@ -230,12 +237,12 @@ export default function RoomGrid({
       className="rounded-xl border border-edge bg-surface px-4 py-2"
     >
       <h3 className="mb-1.5 flex items-center text-sm font-bold text-ink-soft">
-        Etage {group.floor}
-        <span className="ml-2 font-normal text-ink-muted">{group.rooms.length} Zimmer</span>
+        {format(m.grid.floor, { floor: group.floor })}
+        <span className="ml-2 font-normal text-ink-muted">{plural(intlLocale, group.rooms.length, m.grid.roomCount)}</span>
         {group.maids.length > 0 && (
           <span
             className="ml-3 flex items-center gap-1 rounded-full bg-positive-pill px-2.5 py-0.5 text-xs font-semibold text-positive-deepest"
-            title="Reinigungskräfte auf dieser Etage"
+            title={m.grid.maidsOnFloor}
           >
             <Users className="h-3 w-3" /> {group.maids.join(', ')}
           </span>
@@ -246,6 +253,8 @@ export default function RoomGrid({
           <RoomTile
             key={room.id}
             room={room}
+            m={m.status}
+            intlLocale={intlLocale}
             anchor={group === ersteEtage && i === 0 ? 'uebersicht.kachel' : undefined}
             onClick={() => setSelectedId(room.id)}
           />
@@ -263,10 +272,10 @@ export default function RoomGrid({
                   See" neben dem Hotelnamen in der Kopfzeile sonst wie ein
                   falsch zugeordnetes Haus gelesen wird (Rückmeldung 22.09.2026). */}
               <h2 className="mt-1 flex items-center gap-2 text-base font-black text-ink">
-                <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Gebäudeteil</span>
-                {b.name ?? 'ohne Namen'}
+                <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">{m.grid.building}</span>
+                {b.name ?? m.grid.unnamedBuilding}
                 <span className="text-xs font-semibold text-ink-muted">
-                  {b.groups.reduce((n, g) => n + g.rooms.length, 0)} Zimmer
+                  {plural(intlLocale, b.groups.reduce((n, g) => n + g.rooms.length, 0), m.grid.roomCount)}
                 </span>
               </h2>
               {b.groups.map(floorSection)}
@@ -275,19 +284,23 @@ export default function RoomGrid({
         : floorGroups.map(floorSection)}
 
       {selected && (
-        <RoomDialog tz={timeZone} key={selected.id} hotelSlug={hotelSlug} room={selected} onClose={() => setSelectedId(null)} />
+        <RoomDialog tz={timeZone} key={selected.id} hotelSlug={hotelSlug} room={selected} onClose={() => setSelectedId(null)} m={m} common={common} intlLocale={intlLocale} />
       )}
     </div>
   )
 }
 
-function RoomTile({ room, onClick, anchor }: { room: RoomTileData; onClick: () => void; anchor?: string }) {
+function RoomTile({
+  room, onClick, anchor, m, intlLocale,
+}: {
+  room: RoomTileData; onClick: () => void; anchor?: string; m: M['status']; intlLocale: string
+}) {
   return (
     <button
       type="button"
       data-lotse={anchor}
       onClick={onClick}
-      title={statusLabel(room)}
+      title={statusLabel(room, m, intlLocale)}
       className={`flex w-20 flex-col overflow-hidden rounded-lg border text-left shadow-sm hover:border-edge-strong ${
         // Nur ein Ring kann blinken: Rot (dringender Service) schlägt
         // Violett (Prio) — die Prio bleibt über Balken + Flagge sichtbar.
@@ -329,10 +342,11 @@ function RoomTile({ room, onClick, anchor }: { room: RoomTileData; onClick: () =
 }
 
 function RoomDialog({
-  hotelSlug, room, onClose, tz,
+  hotelSlug, room, onClose, tz, m, common, intlLocale,
 }: {
-  hotelSlug: string; room: RoomTileData; onClose: () => void; tz: string
+  hotelSlug: string; room: RoomTileData; onClose: () => void; tz: string; m: M; common: C; intlLocale: string
 }) {
+  const d = m.dialog
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [warning, setWarning] = useState<string[] | null>(null)
@@ -444,7 +458,7 @@ function RoomDialog({
   }
 
   const checkedInLabel = room.checkedInAt
-    ? new Date(room.checkedInAt).toLocaleString('de-DE', {
+    ? new Date(room.checkedInAt).toLocaleString(intlLocale, {
         day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
       })
     : null
@@ -455,19 +469,20 @@ function RoomDialog({
   // gebraucht wird.
   if (checkedOut) {
     const done = checkedOut.bill
+    const c = m.checkedOut
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onClick={onClose}>
         <div
           className="w-full max-w-md rounded-2xl border border-edge bg-surface-elevated p-5 shadow-xl"
           onClick={e => e.stopPropagation()}
         >
-          <h3 className="text-xl font-black text-ink">Check-out — Zimmer {room.number}</h3>
-          <p className="mt-1 text-sm text-ink-muted">Der Gast-Zugang ist beendet.</p>
+          <h3 className="text-xl font-black text-ink">{format(c.title, { number: room.number })}</h3>
+          <p className="mt-1 text-sm text-ink-muted">{c.accessEnded}</p>
 
           {done && done.totalCents > 0 ? (
             <div className="mt-4 rounded-xl border-2 border-attention bg-attention-tint p-4 text-center">
               <p className="text-xs font-black uppercase tracking-wider text-attention-deepest">
-                Zu kassieren
+                {c.toCollect}
               </p>
               <p className="mt-1 text-4xl font-black text-attention-deepest">
                 {formatCents(done.totalCents)}
@@ -475,30 +490,23 @@ function RoomDialog({
             </div>
           ) : (
             <p className="mt-4 rounded-xl border border-edge bg-surface-sunken px-4 py-3 text-sm font-semibold text-ink-soft">
-              Keine kostenpflichtigen Zusatzleistungen — es ist nichts zu kassieren.
+              {c.nothingToCollect}
             </p>
           )}
 
           {done && done.openMaintenanceCount > 0 && (
             <p className="mt-3 rounded-lg border border-attention-tint-edge bg-attention-tint px-3 py-2 text-xs text-attention-deepest">
-              {done.openMaintenanceCount === 1
-                ? 'Eine Meldung ans Haus ist weiterhin offen'
-                : `${done.openMaintenanceCount} Meldungen ans Haus sind weiterhin offen`}
-              {' '}— das Zimmer trägt sie bis zur Erledigung, und der nächste Check-in warnt.
+              {plural(intlLocale, done.openMaintenanceCount, c.maintenanceStillOpen)}
             </p>
           )}
           {done && done.openFreeCount > 0 && (
             <p className="mt-3 rounded-lg border border-edge bg-surface-sunken px-3 py-2 text-xs text-ink-soft">
-              {done.openFreeCount === 1
-                ? 'Eine kostenfreie Anfrage wurde'
-                : `${done.openFreeCount} kostenfreie Anfragen wurden`}
-              {' '}mitgeschlossen.
+              {plural(intlLocale, done.openFreeCount, c.freeClosed)}
             </p>
           )}
           {done && done.openCount > 0 && (
             <p className="mt-3 rounded-lg border border-edge bg-surface-sunken px-3 py-2 text-xs text-ink-soft">
-              {done.openCount === 1 ? 'Eine offene Anfrage wurde' : `${done.openCount} offene Anfragen wurden`}
-              {' '}als „nicht erbracht“ geschlossen und {done.openCount === 1 ? 'ist' : 'sind'} nicht berechnet.
+              {plural(intlLocale, done.openCount, c.openClosed)}
             </p>
           )}
 
@@ -508,7 +516,7 @@ function RoomDialog({
                 href={`/h/${hotelSlug}/admin/aufstellung/${checkedOut.stayId}`}
                 className="flex items-center justify-center gap-2 rounded-xl bg-action px-4 py-3 font-bold text-action-foreground hover:bg-action-strong"
               >
-                <ReceiptText className="h-4 w-4" /> Details — Aufstellung drucken
+                <ReceiptText className="h-4 w-4" /> {c.printBill}
               </Link>
             )}
             <button
@@ -516,7 +524,7 @@ function RoomDialog({
               onClick={onClose}
               className="rounded-xl border border-edge px-4 py-3 font-semibold text-ink-soft hover:bg-surface-muted"
             >
-              Schließen
+              {common.close}
             </button>
           </div>
         </div>
@@ -535,22 +543,24 @@ function RoomDialog({
       >
         <div className="mb-1 flex items-start justify-between">
           <div>
-            <h3 className="text-xl font-black text-ink">Zimmer {room.number}</h3>
+            <h3 className="text-xl font-black text-ink">{format(d.title, { number: room.number })}</h3>
             <p className="text-xs text-ink-muted">
-              {room.building ? `${room.building} · ` : ''}Etage {room.floor}
+              {room.building
+                ? format(d.locationInBuilding, { building: room.building, floor: room.floor })
+                : format(d.location, { floor: room.floor })}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="rounded-lg p-1.5 text-ink-muted hover:bg-surface-muted hover:text-ink"
-            aria-label="Schließen"
+            aria-label={common.close}
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <p className="mb-4 text-sm font-semibold text-ink-soft">{statusLabel(room)}</p>
+        <p className="mb-4 text-sm font-semibold text-ink-soft">{statusLabel(room, m.status, intlLocale)}</p>
 
         {/* Gast-Zugang nach frischem Check-in ODER für belegtes Zimmer.
             Was hier steht, hängt am Verfahren DIESES Aufenthalts: beim
@@ -562,27 +572,27 @@ function RoomDialog({
             {(freshMode ?? room.accessMode) === 'link' ? (
               <>
                 <p className="text-xs font-semibold tracking-wide text-action-deep">
-                  {freshMode ? 'CHECK-IN ERFOLGREICH — ZUGANG AUSHÄNDIGEN' : 'INDIVIDUELLER ZUGANG'}
+                  {freshMode ? d.link.headingFresh : d.link.heading}
                 </p>
                 <p className="mt-2 text-sm font-bold text-action-deep">
-                  Dieser Aufenthalt hat einen eigenen QR-Code — ohne PIN.
+                  {d.link.lead}
                 </p>
                 <p className="mt-1 text-xs text-action-deep">
-                  Bitte ausdrucken oder per E-Mail schicken. Der Zugang endet mit dem Check-out.
-                  {checkedInLabel && !freshMode ? ` Eingecheckt am ${checkedInLabel}.` : ''}
+                  {d.link.hint}
+                  {checkedInLabel && !freshMode ? ` ${format(d.checkedInAt, { date: checkedInLabel })}` : ''}
                 </p>
               </>
             ) : (
               <>
                 <p className="text-xs font-semibold tracking-wide text-action-deep">
-                  {freshMode ? 'CHECK-IN ERFOLGREICH — GAST-PIN' : 'GAST-PIN'}
+                  {freshMode ? d.pin.headingFresh : d.pin.heading}
                 </p>
                 <p className="mt-1 font-mono text-4xl font-black tracking-[0.3em] text-action-deep">
                   {freshPin ?? room.pin}
                 </p>
                 <p className="mt-2 text-xs text-action-deep">
-                  Dem Gast mitteilen — Anmeldung mit Zimmernummer + PIN im Gäste-Portal.
-                  {checkedInLabel && !freshMode ? ` Eingecheckt am ${checkedInLabel}.` : ''}
+                  {d.pin.hint}
+                  {checkedInLabel && !freshMode ? ` ${format(d.checkedInAt, { date: checkedInLabel })}` : ''}
                 </p>
               </>
             )}
@@ -592,8 +602,8 @@ function RoomDialog({
             >
               <Printer className="h-4 w-4" />
               {(freshMode ?? room.accessMode) === 'link'
-                ? 'Zugang drucken oder mailen'
-                : 'Gast-Handout drucken'}
+                ? d.link.print
+                : d.pin.print}
             </Link>
           </div>
         )}
@@ -602,7 +612,7 @@ function RoomDialog({
         {warning && (
           <div className="mb-4 rounded-xl border border-attention-tint-edge bg-attention-tint p-4">
             <p className="flex items-center gap-2 font-bold text-attention-deepest">
-              <AlertTriangle className="h-4 w-4" /> Zimmer nicht bereit
+              <AlertTriangle className="h-4 w-4" /> {d.warningTitle}
             </p>
             <ul className="mt-1 list-disc pl-5 text-sm text-attention-deepest">
               {warning.map(r => <li key={r}>{r}</li>)}
@@ -614,14 +624,14 @@ function RoomDialog({
                 onClick={() => runCheckIn(true)}
                 className="rounded-lg bg-attention px-3 py-2 text-sm font-bold text-attention-foreground disabled:opacity-50"
               >
-                Trotzdem einchecken
+                {d.forceCheckIn}
               </button>
               <button
                 type="button"
                 onClick={() => setWarning(null)}
                 className="rounded-lg border border-edge px-3 py-2 text-sm font-semibold text-ink-soft"
               >
-                Abbrechen
+                {common.cancel}
               </button>
             </div>
           </div>
@@ -638,9 +648,7 @@ function RoomDialog({
               bewusst nur im Zimmer-Setup, nicht nebenbei aus der Übersicht. */}
           {room.deactivated && (
             <p className="rounded-xl border border-edge bg-surface-sunken px-4 py-3 text-sm text-ink-soft">
-              Dieses Zimmer ist außer Betrieb — kein Check-in, keine Reinigung.
-              Unter <span className="font-semibold">Einstellungen → Zimmer</span>{' '}
-              lässt es sich wieder in Betrieb nehmen.
+              <Rich text={d.deactivated} tags={{ b: c => <span className="font-semibold">{c}</span> }} />
             </p>
           )}
 
@@ -648,8 +656,8 @@ function RoomDialog({
           {!room.deactivated && !room.occupied && !freshPin && !warning && (
             <>
               <div className="rounded-xl border border-edge bg-surface-sunken p-3">
-                <p className="mb-2 text-xs font-semibold text-ink-muted">Abreise (optional)</p>
-                <DepartureChooser value={departure} onChange={setDeparture} disabled={pending} tz={tz} />
+                <p className="mb-2 text-xs font-semibold text-ink-muted">{d.departureOptional}</p>
+                <DepartureChooser value={departure} onChange={setDeparture} disabled={pending} tz={tz} m={m.departure} intlLocale={intlLocale} />
               </div>
               <button
                 type="button"
@@ -657,7 +665,7 @@ function RoomDialog({
                 onClick={() => runCheckIn(false)}
                 className="rounded-xl bg-action px-4 py-3 font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
               >
-                {pending ? 'Check-in …' : 'Check-in'}
+                {pending ? d.checkingIn : d.checkIn}
               </button>
             </>
           )}
@@ -669,12 +677,12 @@ function RoomDialog({
               <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-ink-muted">
                 <Luggage className="h-3.5 w-3.5" />
                 {room.departureToday
-                  ? 'Abreise heute — Reinigung nach dem Check-out'
+                  ? d.departureToday
                   : room.expectedCheckout
-                    ? `Abreise am ${formatDateKey(room.expectedCheckout)}`
-                    : 'Abreise offen'}
+                    ? format(m.departure.on, { date: formatDateKey(room.expectedCheckout, intlLocale) })
+                    : d.departureOpen}
               </p>
-              <DepartureChooser value={departure} onChange={setDeparture} disabled={pending} tz={tz} />
+              <DepartureChooser value={departure} onChange={setDeparture} disabled={pending} tz={tz} m={m.departure} intlLocale={intlLocale} />
               {departureDirty && (
                 <button
                   type="button"
@@ -682,7 +690,7 @@ function RoomDialog({
                   onClick={runSaveDeparture}
                   className="mt-2 rounded-lg bg-action px-3 py-1.5 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
                 >
-                  {pending ? 'Speichern …' : 'Abreise speichern'}
+                  {pending ? common.saving : d.saveDeparture}
                 </button>
               )}
             </div>
@@ -697,7 +705,7 @@ function RoomDialog({
             <div className="rounded-xl border-2 border-attention bg-attention-tint p-3">
               <div className="flex items-baseline justify-between gap-3">
                 <p className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-attention-deepest">
-                  <ReceiptText className="h-3.5 w-3.5" /> Zu kassieren
+                  <ReceiptText className="h-3.5 w-3.5" /> {d.bill.toCollect}
                 </p>
                 <p className="text-2xl font-black tabular-nums text-attention-deepest">
                   {formatCents(bill.totalCents)}
@@ -707,9 +715,7 @@ function RoomDialog({
               {bill.openCount > 0 && (
                 <div className="mt-2 border-t border-attention-tint-edge pt-2">
                   <p className="text-xs font-semibold text-attention-deepest">
-                    Noch offen und deshalb nicht in der Summe. Bereits erbracht?
-                    Dann jetzt abhaken — der Check-out schließt offene Anfragen
-                    als „nicht erbracht“.
+                    {d.bill.openHint}
                   </p>
                   <ul className="mt-1.5 flex flex-col gap-1">
                     {bill.positions.filter(p => p.status === 'open').map(p => (
@@ -726,7 +732,7 @@ function RoomDialog({
                           onClick={() => runOrderDone(p.id)}
                           className="flex items-center gap-1 rounded-lg bg-attention px-2 py-1 text-xs font-bold text-attention-foreground disabled:opacity-50"
                         >
-                          <Check className="h-3 w-3" /> erbracht
+                          <Check className="h-3 w-3" /> {d.bill.markDone}
                         </button>
                       </li>
                     ))}
@@ -739,26 +745,22 @@ function RoomDialog({
                   href={`/h/${hotelSlug}/admin/aufstellung/${stayId}`}
                   className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-attention-tint-edge px-3 py-1.5 text-sm font-bold text-attention-deepest hover:bg-surface"
                 >
-                  <Printer className="h-4 w-4" /> Details
+                  <Printer className="h-4 w-4" /> {d.bill.details}
                 </Link>
               )}
             </div>
           )}
           {room.occupied && bill && !bill.hasPositions && (
             <p className="rounded-xl border border-edge bg-surface-sunken px-3 py-2 text-xs text-ink-soft">
-              Keine kostenpflichtigen Zusatzleistungen — beim Check-out ist nichts zu kassieren.
+              {d.bill.noPaidExtras}
               {bill.openFreeCount > 0 && (
                 <>
-                  {' '}{bill.openFreeCount === 1 ? 'Eine kostenfreie Anfrage ist' : `${bill.openFreeCount} kostenfreie Anfragen sind`}
-                  {' '}noch offen.
+                  {' '}{plural(intlLocale, bill.openFreeCount, d.bill.freeStillOpen)}
                 </>
               )}
               {bill.openMaintenanceCount > 0 && (
                 <>
-                  {' '}{bill.openMaintenanceCount === 1
-                    ? 'Eine Meldung ans Haus ist offen und bleibt es'
-                    : `${bill.openMaintenanceCount} Meldungen ans Haus sind offen und bleiben es`}
-                  {' '}über den Check-out hinaus.
+                  {' '}{plural(intlLocale, bill.openMaintenanceCount, d.bill.maintenanceStaysOpen)}
                 </>
               )}
             </p>
@@ -771,42 +773,32 @@ function RoomDialog({
               onClick={() => setConfirmCheckout(true)}
               className="rounded-xl border border-edge-strong px-4 py-3 font-bold text-ink hover:bg-surface-muted disabled:opacity-50"
             >
-              Check-out
+              {d.checkOut}
             </button>
           )}
           {room.occupied && confirmCheckout && (
             <div className="rounded-xl border border-edge bg-surface-sunken p-3">
               <p className="text-sm font-semibold text-ink">
-                Check-out bestätigen? Der Gast-Zugang wird sofort beendet.
+                {d.confirmCheckOut}
               </p>
               {bill?.hasPositions && bill.totalCents > 0 && (
                 <p className="mt-2 text-sm font-bold text-attention-strong">
-                  Zu kassieren: {formatCents(bill.totalCents)}
+                  {format(d.toCollectAmount, { amount: formatCents(bill.totalCents) })}
                 </p>
               )}
               {bill && bill.openCount > 0 && (
                 <p className="mt-1 text-xs font-semibold text-ink-soft">
-                  {bill.openCount === 1 ? 'Eine offene Anfrage' : `${bill.openCount} offene Anfragen`}
-                  {' '}({formatCents(bill.openCents)}) {bill.openCount === 1 ? 'wird' : 'werden'} als
-                  {' '}„nicht erbracht“ geschlossen.
+                  {plural(intlLocale, bill.openCount, d.openWillClose, { amount: formatCents(bill.openCents) })}
                 </p>
               )}
               {bill && bill.openFreeCount > 0 && (
                 <p className="mt-1 text-xs font-semibold text-ink-soft">
-                  {bill.openFreeCount === 1
-                    ? 'Eine kostenfreie Anfrage wird'
-                    : `${bill.openFreeCount} kostenfreie Anfragen werden`}
-                  {' '}ebenfalls geschlossen.
+                  {plural(intlLocale, bill.openFreeCount, d.freeWillClose)}
                 </p>
               )}
               {bill && bill.openMaintenanceCount > 0 && (
                 <p className="mt-1 text-xs font-semibold text-ink-soft">
-                  {bill.openMaintenanceCount === 1
-                    ? 'Eine Meldung ans Haus bleibt offen'
-                    : `${bill.openMaintenanceCount} Meldungen ans Haus bleiben offen`}
-                  {' '}— sie {bill.openMaintenanceCount === 1 ? 'gehört' : 'gehören'} zum Zimmer und
-                  {' '}{bill.openMaintenanceCount === 1 ? 'steht' : 'stehen'} weiter auf dem
-                  {' '}Services-Board.
+                  {plural(intlLocale, bill.openMaintenanceCount, d.maintenanceRemains)}
                 </p>
               )}
               <div className="mt-2 flex gap-2">
@@ -816,14 +808,14 @@ function RoomDialog({
                   onClick={runCheckOut}
                   className="rounded-lg bg-action px-3 py-2 text-sm font-bold text-action-foreground disabled:opacity-50"
                 >
-                  {pending ? 'Check-out …' : 'Ja, auschecken'}
+                  {pending ? d.checkingOut : d.yesCheckOut}
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfirmCheckout(false)}
                   className="rounded-lg border border-edge px-3 py-2 text-sm font-semibold text-ink-soft"
                 >
-                  Abbrechen
+                  {common.cancel}
                 </button>
               </div>
             </div>
@@ -841,7 +833,7 @@ function RoomDialog({
                   : 'border border-accent-pill-edge bg-accent-tint text-accent-strong hover:bg-accent-pill'
               }`}
             >
-              {pending ? 'Bitte warten …' : room.priority ? 'Priorisierung aufheben' : 'Reinigung priorisieren'}
+              {pending ? d.pleaseWait : room.priority ? d.removePriority : d.setPriority}
             </button>
           )}
 
@@ -853,7 +845,7 @@ function RoomDialog({
               onClick={runMarkCleaned}
               className="rounded-xl border border-positive-pill-edge bg-positive-tint px-4 py-3 font-bold text-positive-deep hover:bg-positive-pill disabled:opacity-50"
             >
-              {pending ? 'Bitte warten …' : 'Reinigung als erledigt markieren'}
+              {pending ? d.pleaseWait : d.markCleaned}
             </button>
           )}
         </div>
@@ -861,18 +853,18 @@ function RoomDialog({
         {/* Verlauf — Arbeitsnachweis & Beschwerde-Aufklärung */}
         <section className="mt-5 border-t border-edge pt-4">
           <h4 className="flex items-center gap-1.5 text-sm font-bold text-ink-soft">
-            <History className="h-4 w-4" /> Verlauf
-            <span className="font-normal text-ink-muted">letzte 30 Tage</span>
+            <History className="h-4 w-4" /> {d.history.title}
+            <span className="font-normal text-ink-muted">{d.history.range}</span>
           </h4>
 
           {historyError ? (
             <p className="mt-2 text-sm font-semibold text-critical-strong">{historyError}</p>
           ) : history === null ? (
             <p className="mt-2 flex items-center gap-2 text-sm text-ink-muted">
-              <Loader2 className="h-4 w-4 animate-spin" /> wird geladen …
+              <Loader2 className="h-4 w-4 animate-spin" /> {d.history.loading}
             </p>
           ) : history.length === 0 ? (
-            <p className="mt-2 text-sm text-ink-muted">Keine Ereignisse in den letzten 30 Tagen.</p>
+            <p className="mt-2 text-sm text-ink-muted">{d.history.empty}</p>
           ) : (
             <ol className="mt-2 max-h-56 space-y-1.5 overflow-y-auto pr-1">
               {history.map((e, i) => (
@@ -881,7 +873,7 @@ function RoomDialog({
                   <span className="min-w-0 flex-1">
                     <span className="block text-sm font-semibold text-ink">{e.label}</span>
                     <span className="block text-xs text-ink-muted">
-                      {historyTime(e.at)} · {e.actor}
+                      {historyTime(e.at, intlLocale)} · {e.actor}
                       {e.stayId && (
                         <>
                           {' · '}
@@ -889,7 +881,7 @@ function RoomDialog({
                             href={`/h/${hotelSlug}/admin/aufstellung/${e.stayId}`}
                             className="font-semibold text-action underline hover:text-action-strong"
                           >
-                            Aufstellung
+                            {d.history.bill}
                           </Link>
                         </>
                       )}

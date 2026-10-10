@@ -15,25 +15,31 @@ import { GUIDE_LANGS } from '@/lib/guest-guide'
 import { LOGO_HEAD_BYTES, validateLogoUpload } from '@/lib/logo'
 import { removeHotelLogo, uploadHotelLogo } from '@/utils/logo'
 import { isValidSlug, SLUG_MAX_LENGTH } from '@/lib/slug'
+import { format, getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 type ActionResult = { error?: string }
+
+async function messages() {
+  const { common, settings } = getMessages(await getLocale()).admin
+  return { ...common.errors, ...settings.errors }
+}
 
 /**
  * Hotelname + Adresse (Slug) + Policies speichern. Policies werden gemergt
  * (nicht ersetzt), damit künftige Policy-Schlüssel nicht verloren gehen.
  */
 export async function updateSettingsAction(slug: string, formData: FormData): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
 
   const name = ((formData.get('hotelName') as string) ?? '').trim()
-  if (name.length < 2) return { error: 'Hotelname muss mindestens 2 Zeichen haben.' }
+  if (name.length < 2) return { error: e.houseNameTooShort }
 
   const newSlug = ((formData.get('slug') as string) ?? '').trim().toLowerCase()
   if (!isValidSlug(newSlug)) {
-    return {
-      error: `Die Adresse darf nur Kleinbuchstaben, Ziffern und Bindestriche enthalten (max. ${SLUG_MAX_LENGTH} Zeichen, nicht mit einem Bindestrich beginnen oder enden).`,
-    }
+    return { error: format(e.slugInvalid, { max: SLUG_MAX_LENGTH }) }
   }
 
   const pinLength = clampPinLength(Number(formData.get('pinLength')))
@@ -41,23 +47,23 @@ export async function updateSettingsAction(slug: string, formData: FormData): Pr
   const stayoverAutoClean = formData.get('stayoverAutoClean') === 'on'
   const timeRaw = ((formData.get('stayoverAutoCleanTime') as string) ?? '').trim()
   if (stayoverAutoClean && !/^\d{1,2}:\d{2}$/.test(timeRaw)) {
-    return { error: 'Uhrzeit für die Routine-Reinigung fehlt (z. B. 10:00).' }
+    return { error: e.dailyTimeMissing }
   }
   const checkoutRaw = ((formData.get('checkoutUntil') as string) ?? '').trim()
   if (!/^\d{1,2}:\d{2}$/.test(checkoutRaw)) {
-    return { error: 'Check-out-Zeit fehlt (z. B. 11:00).' }
+    return { error: e.checkoutMissing }
   }
   const checkinRaw = ((formData.get('checkinFrom') as string) ?? '').trim()
   if (!/^\d{1,2}:\d{2}$/.test(checkinRaw)) {
-    return { error: 'Check-in-Zeit fehlt (z. B. 15:00).' }
+    return { error: e.checkinMissing }
   }
   const cleanDeferEnabled = formData.get('cleanDeferEnabled') === 'on'
   const deferRaw = ((formData.get('cleanDeferUntil') as string) ?? '').trim()
   if (cleanDeferEnabled && !/^\d{1,2}:\d{2}$/.test(deferRaw)) {
-    return { error: 'Uhrzeit, bis zu der Gäste aufschieben dürfen, fehlt (z. B. 11:00).' }
+    return { error: e.deferMissing }
   }
   const timeZone = ((formData.get('timeZone') as string) ?? '').trim()
-  if (!isValidTimeZone(timeZone)) return { error: 'Zeitzone ist ungültig.' }
+  if (!isValidTimeZone(timeZone)) return { error: e.timeZoneInvalid }
   // Team-Modus: nur die beiden Werte, alles andere fällt auf die Vorgabe zurück.
   const staffTracking = formData.get('staffTracking') === 'team' ? 'team' : 'person'
 
@@ -66,10 +72,10 @@ export async function updateSettingsAction(slug: string, formData: FormData): Pr
   const windowEndRaw = ((formData.get('cleaningWindowEnd') as string) ?? '').trim()
   if (cleaningWindowEnabled) {
     if (!/^\d{1,2}:\d{2}$/.test(windowStartRaw) || !/^\d{1,2}:\d{2}$/.test(windowEndRaw)) {
-      return { error: 'Für das Reinigungs-Zeitfenster fehlen Start- und Endzeit.' }
+      return { error: e.windowMissing }
     }
     if (windowStartRaw === windowEndRaw) {
-      return { error: 'Start- und Endzeit des Zeitfensters dürfen nicht gleich sein.' }
+      return { error: e.windowSame }
     }
   }
 
@@ -79,7 +85,7 @@ export async function updateSettingsAction(slug: string, formData: FormData): Pr
   // hier bewusst OHNE hotel_id-Filter, dafür mit Ausschluss des eigenen Hauses.
   const { data: taken } = await admin
     .from('hotels').select('id').eq('slug', newSlug).neq('id', ctx.hotelId).maybeSingle()
-  if (taken) return { error: 'Diese Adresse ist bereits vergeben.' }
+  if (taken) return { error: e.slugTaken }
 
   const { data: hotel } = await admin
     .from('hotels').select('policies').eq('id', ctx.hotelId).single()
@@ -145,12 +151,13 @@ export async function updateDisplayNameAction(
   slug: string,
   formData: FormData,
 ): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getManagementContext(slug)
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!ctx) return { error: e.notSignedIn }
 
   const displayName = ((formData.get('displayName') as string) ?? '').trim()
-  if (displayName.length < 2) return { error: 'Name muss mindestens 2 Zeichen haben.' }
-  if (displayName.length > 60) return { error: 'Name ist zu lang (höchstens 60 Zeichen).' }
+  if (displayName.length < 2) return { error: e.displayNameTooShort }
+  if (displayName.length > 60) return { error: e.displayNameTooLong }
 
   const admin = createAdminClient()
 
@@ -162,7 +169,7 @@ export async function updateDisplayNameAction(
     admin.from('hotel_members').update({ display_name: displayName }).eq('user_id', ctx.userId),
   ])
   const fehler = profil.error ?? konto.error ?? haus.error
-  if (fehler) return { error: `Speichern fehlgeschlagen: ${fehler.message}` }
+  if (fehler) return { error: format(e.saveFailed, { message: fehler.message }) }
 
   revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
   revalidatePath('/admin')
@@ -177,19 +184,20 @@ export async function updateDisplayNameAction(
  * einem Rezeptionstresen kein theoretischer Fall.
  */
 export async function changePasswordAction(slug: string, formData: FormData): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getManagementContext(slug)
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!ctx) return { error: e.notSignedIn }
 
   const current = (formData.get('currentPassword') as string) ?? ''
   const password = (formData.get('password') as string) ?? ''
   const confirm = (formData.get('passwordConfirm') as string) ?? ''
-  if (password.length < 8) return { error: 'Passwort braucht mindestens 8 Zeichen.' }
-  if (password !== confirm) return { error: 'Passwörter stimmen nicht überein.' }
-  if (!current) return { error: 'Bitte das aktuelle Passwort angeben.' }
+  if (password.length < 8) return { error: e.passwordTooShort }
+  if (password !== confirm) return { error: e.passwordMismatch }
+  if (!current) return { error: e.currentPasswordMissing }
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user?.email) return { error: 'Nicht angemeldet.' }
+  if (!user?.email) return { error: e.notSignedIn }
 
   // Gegenprobe über einen eigenständigen Client OHNE Cookie-Anbindung — sonst
   // überschriebe die Anmeldung hier die laufende Sitzung.
@@ -202,12 +210,12 @@ export async function changePasswordAction(slug: string, formData: FormData): Pr
     email: user.email,
     password: current,
   })
-  if (falsch) return { error: 'Das aktuelle Passwort stimmt nicht.' }
+  if (falsch) return { error: e.currentPasswordWrong }
 
   // Über den Session-Client (nicht Admin) — ändert den eigenen Account.
   const { error } = await supabase.auth.updateUser({ password })
   if (error) {
-    if (error.code === 'same_password') return { error: 'Das ist bereits dein aktuelles Passwort.' }
+    if (error.code === 'same_password') return { error: e.samePassword }
     return { error: error.message }
   }
   return {}
@@ -231,11 +239,12 @@ export async function uploadHotelLogoAction(
   slug: string,
   formData: FormData,
 ): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
 
   const datei = formData.get('logo')
-  if (!(datei instanceof File) || datei.size === 0) return { error: 'Keine Datei gewählt.' }
+  if (!(datei instanceof File) || datei.size === 0) return { error: e.noFile }
 
   const bytes = new Uint8Array(await datei.arrayBuffer())
   const check = validateLogoUpload(bytes.byteLength, bytes.subarray(0, LOGO_HEAD_BYTES))
@@ -249,8 +258,9 @@ export async function uploadHotelLogoAction(
 }
 
 export async function removeHotelLogoAction(slug: string): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
 
   const res = await removeHotelLogo(ctx.hotelId)
   if (res.error) return { error: res.error }
@@ -264,14 +274,15 @@ export async function updateSheetLanguagesAction(
   erste: string,
   zweite: string,
 ): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
 
   const erlaubt = GUIDE_LANGS as readonly string[]
-  if (!erlaubt.includes(erste)) return { error: 'Unbekannte Sprache.' }
+  if (!erlaubt.includes(erste)) return { error: e.unknownLanguage }
   // Leer ist gültig und heißt „nur eine Sprache" — siehe `parseSheetLanguages`.
-  if (zweite !== '' && !erlaubt.includes(zweite)) return { error: 'Unbekannte Sprache.' }
-  if (zweite === erste) return { error: 'Die zweite Sprache muss eine andere sein.' }
+  if (zweite !== '' && !erlaubt.includes(zweite)) return { error: e.unknownLanguage }
+  if (zweite === erste) return { error: e.secondLanguageSame }
 
   const admin = createAdminClient()
   const { data: hotel } = await admin
@@ -295,9 +306,10 @@ export async function updateGuestAccessModeAction(
   slug: string,
   mode: string,
 ): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
-  if (mode !== 'pin' && mode !== 'link') return { error: 'Unbekanntes Verfahren.' }
+  if (!ctx) return { error: e.noPermission }
+  if (mode !== 'pin' && mode !== 'link') return { error: e.unknownMode }
 
   const admin = createAdminClient()
   const { data: hotel } = await admin

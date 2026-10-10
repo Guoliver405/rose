@@ -6,6 +6,7 @@ import { Check, Languages, Loader2 } from 'lucide-react'
 import { GUIDE_LANGS, sheetLanguageLabel, type GuideLang } from '@/lib/guest-guide'
 import { updateSheetLanguagesAction } from './actions'
 import { useUnsavedSection } from '@/components/unsaved/UnsavedChanges'
+import type { AdminMessages } from '@/lib/i18n'
 
 /**
  * Sprachen der gedruckten Blätter — und der Zugangs-Mail.
@@ -21,11 +22,12 @@ import { useUnsavedSection } from '@/components/unsaved/UnsavedChanges'
  * Sprachen wäre doppelt so lang, ohne mehr zu sagen.
  */
 export default function SprachenForm({
-  hotelSlug, erste: ersteInitial, zweite: zweiteInitial,
+  hotelSlug, erste: ersteInitial, zweite: zweiteInitial, m,
 }: {
   hotelSlug: string
   erste: GuideLang
   zweite: GuideLang | null
+  m: AdminMessages['settings']['languages']
 }) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
@@ -43,7 +45,7 @@ export default function SprachenForm({
     try {
       const res = await updateSheetLanguagesAction(hotelSlug, erste, zweite)
       if (res.error) { setError(res.error); return false }
-      setNotice('Gespeichert. Die nächsten Ausdrucke und Mails folgen der neuen Wahl.')
+      setNotice(m.saved)
       router.refresh()
       return true
     } finally {
@@ -52,7 +54,7 @@ export default function SprachenForm({
   }
 
   useUnsavedSection('sprachen', {
-    label: 'Sprachen',
+    label: m.unsavedLabel,
     dirty: geaendert,
     save: speichern,
     discard: () => { setErste(ersteInitial); setZweite(zweiteInitial ?? '') },
@@ -62,7 +64,7 @@ export default function SprachenForm({
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-end gap-4 rounded-xl border border-edge bg-surface p-4">
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-bold text-ink-soft">Erste Sprache</span>
+          <span className="text-xs font-bold text-ink-soft">{m.first}</span>
           <select
             value={erste}
             onChange={e => setErste(e.target.value as GuideLang)}
@@ -72,22 +74,22 @@ export default function SprachenForm({
               <option key={l} value={l}>{sheetLanguageLabel(l)}</option>
             ))}
           </select>
-          <span className="text-[11px] text-ink-muted">Größer gesetzt · Sprache der Mail</span>
+          <span className="text-[11px] text-ink-muted">{m.firstHint}</span>
         </label>
 
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-bold text-ink-soft">Zweite Sprache</span>
+          <span className="text-xs font-bold text-ink-soft">{m.second}</span>
           <select
             value={zweite}
             onChange={e => setZweite(e.target.value)}
             className="rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink focus:border-action focus:outline-none"
           >
-            <option value="">— keine —</option>
+            <option value="">{m.none}</option>
             {GUIDE_LANGS.filter(l => l !== erste).map(l => (
               <option key={l} value={l}>{sheetLanguageLabel(l)}</option>
             ))}
           </select>
-          <span className="text-[11px] text-ink-muted">Kleiner darunter · nur auf dem Ausdruck</span>
+          <span className="text-[11px] text-ink-muted">{m.secondHint}</span>
         </label>
 
         <button
@@ -97,18 +99,13 @@ export default function SprachenForm({
           className="flex items-center gap-1.5 rounded-lg bg-action px-4 py-2.5 font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
         >
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-          {geaendert ? 'Sprachen speichern' : 'Bereits eingestellt'}
+          {geaendert ? m.save : m.alreadySet}
         </button>
       </div>
 
       <p className="flex items-start gap-2 text-xs leading-relaxed text-ink-muted">
         <Languages className="mt-0.5 h-4 w-4 shrink-0" />
-        <span>
-          Englisch als zweite Sprache ist die Empfehlung: Wer weder Ihre Landessprache noch
-          Englisch liest, kommt über die Piktogramme und den QR-Code weiter — im Portal kann er
-          den Text mit dem Handy übersetzen. Eine dritte und vierte Sprache auf Papier hilft
-          weniger, als sie an Platz kostet.
-        </span>
+        <span>{m.recommendation}</span>
       </p>
 
       {error && (

@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
 import { getAdminContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
+import { getMessages, intlLocale } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 import RoomSetup, { type SetupRoom } from './RoomSetup'
 
 export default async function RoomSetupPage({
@@ -14,6 +16,9 @@ export default async function RoomSetupPage({
   const ctx = await getAdminContext(slug)
   if (!ctx) redirect(`/h/${slug}/admin`)
 
+  const locale = await getLocale()
+  const admin = getMessages(locale).admin
+  const m = admin.rooms
   const supabase = await createClient()
 
   const [{ data: rooms }, { data: stays }] = await Promise.all([
@@ -42,8 +47,14 @@ export default async function RoomSetupPage({
     <div className="flex max-w-3xl flex-col gap-5">
       {/* Die QR-Aushänge liegen unter Einstellungen → Gäste-Zugang: sie
           gehören zum Zugangsverfahren, nicht zur Zimmerstruktur. */}
-      <h1 className="text-xl font-black text-ink">Zimmer verwalten</h1>
-      <RoomSetup hotelSlug={ctx.hotelSlug} rooms={setupRooms} />
+      <h1 className="text-xl font-black text-ink">{m.page.title}</h1>
+      <RoomSetup
+        hotelSlug={ctx.hotelSlug}
+        rooms={setupRooms}
+        m={m}
+        common={admin.common}
+        intlLocale={intlLocale(locale)}
+      />
     </div>
   )
 }

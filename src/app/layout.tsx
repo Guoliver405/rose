@@ -28,7 +28,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = await getLocale();
-  const { mail } = getMessages(locale);
+  const { mail, admin } = getMessages(locale);
   return (
     <html
       lang={locale}
@@ -38,7 +38,7 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <MessagesProvider value={{ mail: { status: mail.status, line: mail.line } }}>{children}</MessagesProvider>
+        <MessagesProvider value={{ mail: { status: mail.status, line: mail.line }, unsaved: admin.overview.unsaved }}>{children}</MessagesProvider>
       </body>
     </html>
   );

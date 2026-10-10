@@ -6,6 +6,14 @@ import { getAdminContext } from '@/utils/auth'
 import { parseEuroToCents } from '@/lib/money'
 import serviceTemplates from '@/lib/service-templates.json'
 import { normalizeLinkUrl } from '@/lib/service-link-templates'
+import { format, getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
+
+/** Meldungen: eigene plus die gemeinsamen (`noPermission`). */
+async function messages() {
+  const admin = getMessages(await getLocale()).admin
+  return { ...admin.common.errors, ...admin.services.errors }
+}
 
 type ActionResult = { error?: string }
 
@@ -15,11 +23,12 @@ type ActionResult = { error?: string }
  * nachträglich zum Link (dazu neu anlegen und den alten archivieren).
  */
 export async function updateServiceLinkAction(slug: string, serviceId: string, rawUrl: string): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
 
   const linkUrl = normalizeLinkUrl(rawUrl)
-  if (!linkUrl) return { error: 'Adresse nicht lesbar — sie muss mit „https://" beginnen.' }
+  if (!linkUrl) return { error: e.invalidUrl }
 
   const admin = createAdminClient()
   const { data: service } = await admin
@@ -27,8 +36,8 @@ export async function updateServiceLinkAction(slug: string, serviceId: string, r
     .select('id, hotel_id, link_url')
     .eq('id', serviceId)
     .maybeSingle()
-  if (!service || service.hotel_id !== ctx.hotelId) return { error: 'Service nicht gefunden.' }
-  if (!service.link_url) return { error: 'Dieser Service ist kein Verweis.' }
+  if (!service || service.hotel_id !== ctx.hotelId) return { error: e.serviceNotFound }
+  if (!service.link_url) return { error: e.notALink }
 
   const { error } = await admin
     .from('service_definitions')
@@ -47,8 +56,9 @@ export async function updateServiceLinkAction(slug: string, serviceId: string, r
  * Namen (auch archivierte) werden übersprungen — kein Doppel-Anlegen.
  */
 export async function createExampleServicesAction(slug: string): Promise<ActionResult & { created?: number }> {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
 
   const admin = createAdminClient()
   const { data: existing } = await admin
@@ -85,7 +95,7 @@ export async function createExampleServicesAction(slug: string): Promise<ActionR
   }
 
   revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
-  if (created === 0) return { error: 'Die Beispiel-Services existieren bereits (ggf. archiviert).' }
+  if (created === 0) return { error: e.examplesExist }
   return { created }
 }
 
@@ -98,8 +108,9 @@ export async function createExampleServicesAction(slug: string): Promise<ActionR
  * `maintenance` sagt, wem sie gehört — dem Zimmer statt dem Aufenthalt.
  */
 export async function createServiceAction(slug: string, formData: FormData): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
 
   const name = ((formData.get('name') as string) ?? '').trim()
   const description = ((formData.get('description') as string) ?? '').trim()
@@ -107,7 +118,7 @@ export async function createServiceAction(slug: string, formData: FormData): Pro
   const urgent = !isLink && formData.get('urgent') === 'on'
   const maintenance = !isLink && formData.get('maintenance') === 'on'
 
-  if (name.length < 2) return { error: 'Name muss mindestens 2 Zeichen haben.' }
+  if (name.length < 2) return { error: format(e.nameTooShort, { min: 2 }) }
 
   // Verweis (16.09.2026): Kachel, die einen Link nach außen öffnet — keine
   // Anfrage, keine Optionen, keine Kennzeichen. Nur http(s), sonst könnte im
@@ -115,7 +126,7 @@ export async function createServiceAction(slug: string, formData: FormData): Pro
   let linkUrl: string | null = null
   if (isLink) {
     linkUrl = normalizeLinkUrl((formData.get('link_url') as string) ?? '')
-    if (!linkUrl) return { error: 'Adresse nicht lesbar — sie muss mit „https://" beginnen.' }
+    if (!linkUrl) return { error: e.invalidUrl }
   }
 
   const admin = createAdminClient()
@@ -139,8 +150,9 @@ export async function createServiceAction(slug: string, formData: FormData): Pro
  * Portal und Konfigurator.
  */
 export async function archiveServiceAction(slug: string, serviceId: string): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
 
   const admin = createAdminClient()
   const { error } = await admin
@@ -159,8 +171,9 @@ export async function setServiceUrgentAction(
   serviceId: string,
   urgent: boolean,
 ): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
 
   const admin = createAdminClient()
   const { error } = await admin
@@ -186,8 +199,9 @@ export async function setServiceMaintenanceAction(
   serviceId: string,
   maintenance: boolean,
 ): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
 
   const admin = createAdminClient()
   const { error } = await admin
@@ -206,15 +220,16 @@ export async function createServiceItemAction(
   serviceId: string,
   formData: FormData,
 ): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
 
   const label = ((formData.get('label') as string) ?? '').trim()
   const priceRaw = ((formData.get('price') as string) ?? '').trim()
 
-  if (label.length < 1) return { error: 'Bezeichnung fehlt.' }
+  if (label.length < 1) return { error: e.labelMissing }
   const priceCents = parseEuroToCents(priceRaw)
-  if (priceRaw && priceCents === null) return { error: 'Preis nicht lesbar — z. B. „4,50" oder leer lassen.' }
+  if (priceRaw && priceCents === null) return { error: e.priceInvalid }
 
   const admin = createAdminClient()
   const { data: service } = await admin
@@ -222,7 +237,7 @@ export async function createServiceItemAction(
     .select('id, hotel_id')
     .eq('id', serviceId)
     .maybeSingle()
-  if (!service || service.hotel_id !== ctx.hotelId) return { error: 'Service nicht gefunden.' }
+  if (!service || service.hotel_id !== ctx.hotelId) return { error: e.serviceNotFound }
 
   const { error } = await admin.from('service_items').insert({
     service_id: serviceId,
@@ -237,8 +252,9 @@ export async function createServiceItemAction(
 }
 
 export async function archiveServiceItemAction(slug: string, itemId: string): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
 
   const admin = createAdminClient()
   const { error } = await admin

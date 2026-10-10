@@ -2,6 +2,7 @@ import { guest } from './de/guest'
 import { service } from './de/service'
 import { mail } from './de/mail'
 import { print } from './de/print'
+import { admin } from './de/admin'
 
 /**
  * Sprachen und Texte der Oberfläche. Ausgelagert sind bisher Gästeportal, Reinigungsboard und Mail-Versand
@@ -17,13 +18,14 @@ export type { GuestMessages } from './de/guest'
 export type { ServiceMessages } from './de/service'
 export type { MailMessages } from './de/mail'
 export type { PrintMessages } from './de/print'
+export type { AdminMessages } from './de/admin'
 
 export const LOCALES = ['de'] as const
 export type Locale = (typeof LOCALES)[number]
 export const DEFAULT_LOCALE: Locale = 'de'
 
 const MESSAGES = {
-  de: { guest, service, mail, print },
+  de: { guest, service, mail, print, admin },
 } satisfies Record<Locale, unknown>
 
 export type Messages = (typeof MESSAGES)['de']

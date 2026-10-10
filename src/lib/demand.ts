@@ -187,5 +187,3 @@ export function computeDemand(input: DemandInput): DemandStats {
 
   return { hours, weekdays, days, totalWishes, totalDnd, totalCheckouts, peakWishHour, uncoveredShare }
 }
-
-export const WEEKDAY_LABEL = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']

@@ -1,9 +1,12 @@
 'use client'
 
-import { useRef, useState, useTransition } from 'react'
+import { useMemo, useRef, useState, useTransition } from 'react'
 import { Archive, ExternalLink, Hammer, Link2, Loader2, Plus, Siren, Sparkles, Wrench } from 'lucide-react'
 import { formatCents } from '@/lib/money'
-import { SERVICE_LINK_TEMPLATES, type ServiceLinkTemplate } from '@/lib/service-link-templates'
+import { serviceLinkTemplates, type ServiceLinkTemplate } from '@/lib/service-link-templates'
+import { format, plural } from '@/lib/i18n/format'
+import type { AdminMessages } from '@/lib/i18n'
+import Rich from '@/components/i18n/Rich'
 import {
   archiveServiceAction, archiveServiceItemAction, createExampleServicesAction,
   createServiceAction, createServiceItemAction, setServiceMaintenanceAction, setServiceUrgentAction,
@@ -24,7 +27,21 @@ export type ServiceRow = {
 
 type Kind = 'order' | 'link'
 
-export default function ServicesManager({ hotelSlug, services }: { hotelSlug: string; services: ServiceRow[] }) {
+/** Hervorhebung in den Erklärtexten, wie bisher im Fließtext. */
+const em = (t: string) => <span className="font-semibold text-ink-soft">{t}</span>
+
+export default function ServicesManager({
+  hotelSlug, services, m, common, intlLocale,
+}: {
+  hotelSlug: string
+  services: ServiceRow[]
+  m: AdminMessages['services']
+  common: AdminMessages['common']
+  intlLocale: string
+}) {
+  const c = m.create
+  const sv = m.service
+  const templates = useMemo(() => serviceLinkTemplates(m.linkTemplates), [m.linkTemplates])
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [confirmArchiveId, setConfirmArchiveId] = useState<string | null>(null)
@@ -61,9 +78,9 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-black text-ink">Service-Baukasten</h1>
+        <h1 className="text-xl font-black text-ink">{m.title}</h1>
         <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-semibold text-ink-soft">
-          {services.length} {services.length === 1 ? 'Service' : 'Services'}
+          {plural(intlLocale, services.length, m.count)}
         </span>
       </div>
 
@@ -79,11 +96,11 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
         }}
         className="rounded-xl border border-edge bg-surface p-4"
       >
-        <h2 className="mb-3 text-sm font-bold text-ink-soft">Neuen Service anlegen</h2>
+        <h2 className="mb-3 text-sm font-bold text-ink-soft">{c.heading}</h2>
         {/* Art: bestellbar (Anfrage an die Rezeption) oder Verweis (Link nach außen). */}
         <input type="hidden" name="kind" value={kind} />
-        <div className="mb-3 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Art des Services">
-          {([['order', 'Bestellbar'], ['link', 'Verweis (Link)']] as [Kind, string][]).map(([k, label]) => (
+        <div className="mb-3 flex flex-wrap gap-1.5" role="radiogroup" aria-label={c.kindAria}>
+          {([['order', c.kindOrder], ['link', c.kindLink]] as [Kind, string][]).map(([k, label]) => (
             <button
               key={k}
               type="button"
@@ -102,8 +119,8 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
         </div>
         {kind === 'link' && (
           <div className="mb-3 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
-            <span className="font-semibold text-ink-soft">Vorlagen:</span>
-            {SERVICE_LINK_TEMPLATES.map(t => (
+            <span className="font-semibold text-ink-soft">{c.templates}</span>
+            {templates.map(t => (
               <button
                 key={t.id}
                 type="button"
@@ -118,26 +135,26 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
         )}
         <div className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-            Name
+            {c.name}
             <input
               name="name"
               required
               minLength={2}
-              placeholder="z. B. Extra Handtücher"
+              placeholder={c.namePlaceholder}
               className="w-52 rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink placeholder:text-ink-muted focus:border-action focus:outline-none"
             />
           </label>
           <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-            Beschreibung (optional)
+            {c.description}
             <input
               name="description"
-              placeholder="Kurzer Hinweis für den Gast"
+              placeholder={c.descriptionPlaceholder}
               className="w-64 rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink placeholder:text-ink-muted focus:border-action focus:outline-none"
             />
           </label>
           {kind === 'link' ? (
             <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-              Adresse (Link)
+              {c.linkUrl}
               <input
                 name="link_url"
                 type="url"
@@ -151,11 +168,11 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
             <>
               <label className="flex items-center gap-2 pb-2 text-sm font-semibold text-ink-soft">
                 <input type="checkbox" name="urgent" className="h-4 w-4 accent-current" />
-                Dringend
+                {c.urgent}
               </label>
               <label className="flex items-center gap-2 pb-2 text-sm font-semibold text-ink-soft">
                 <input type="checkbox" name="maintenance" className="h-4 w-4 accent-current" />
-                Meldung ans Haus
+                {c.maintenance}
               </label>
             </>
           )}
@@ -165,7 +182,7 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
             className="flex items-center gap-1.5 rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            Anlegen
+            {c.submit}
           </button>
         </div>
         <div className="mt-2 flex flex-col gap-1 text-xs text-ink-muted">
@@ -177,25 +194,16 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
                 </p>
               )}
               <p>
-                Ein <span className="font-semibold text-ink-soft">Verweis</span> ist eine Kachel im
-                Gastportal, die einen Link nach außen öffnet — Trinkgeld-App für das Housekeeping-Team,
-                Lieferdienst, Taxi. Er erzeugt keine Anfrage und erscheint weder auf dem Board der
-                Rezeption noch auf der Check-out-Aufstellung. Für Inhalt und Datenschutz des Ziels ist
-                der Anbieter verantwortlich; das Portal bettet nichts ein, es verlinkt nur.
+                <Rich text={c.linkExplanation} tags={{ b: em }} />
               </p>
             </>
           ) : (
             <>
               <p>
-                Dringende Bestellungen werden der Rezeption hervorgehoben. Auswahl-Optionen
-                (mit optionalem Preis) kommen pro Service dazu.
+                {c.urgentExplanation}
               </p>
               <p>
-                <span className="font-semibold text-ink-soft">Meldung ans Haus</span> ist für
-                Defekte und Instandhaltung gedacht — etwas am Zimmer, nicht am Aufenthalt.
-                Solche Anfragen bleiben beim Check-out offen (ein Defekt verschwindet nicht
-                mit dem Gast), erscheinen auf keiner Check-out-Aufstellung und warnen beim
-                nächsten Check-in.
+                <Rich text={c.maintenanceExplanation} tags={{ b: em }} />
               </p>
             </>
           )}
@@ -211,9 +219,9 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
       {services.length === 0 ? (
         <div className="rounded-xl border border-edge bg-surface p-8 text-center">
           <Wrench className="mx-auto mb-2 h-8 w-8 text-ink-muted" />
-          <p className="font-semibold text-ink">Noch keine Services angelegt.</p>
+          <p className="font-semibold text-ink">{m.empty.title}</p>
           <p className="mt-1 text-sm text-ink-muted">
-            Gäste sehen den Baukasten in ihrem Portal und bestellen mit einem Tipp.
+            {m.empty.text}
           </p>
           <button
             data-lotse="services.beispiele"
@@ -222,7 +230,7 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
             onClick={() => run(() => createExampleServicesAction(hotelSlug))}
             className="mx-auto mt-4 flex items-center gap-1.5 rounded-lg border border-edge px-4 py-2 text-sm font-bold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
           >
-            <Sparkles className="h-4 w-4" /> Beispiel-Services anlegen
+            <Sparkles className="h-4 w-4" /> {m.empty.examples}
           </button>
         </div>
       ) : (
@@ -236,17 +244,17 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
               <h2 className="text-base font-bold text-ink">{s.name}</h2>
               {s.urgent && (
                 <span className="flex items-center gap-1 rounded-full bg-critical-pill px-2.5 py-0.5 text-xs font-bold text-critical-deepest">
-                  <Siren className="h-3.5 w-3.5" /> dringend
+                  <Siren className="h-3.5 w-3.5" /> {sv.urgentBadge}
                 </span>
               )}
               {s.maintenance && (
                 <span className="flex items-center gap-1 rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-bold text-ink-soft">
-                  <Hammer className="h-3.5 w-3.5" /> Meldung ans Haus
+                  <Hammer className="h-3.5 w-3.5" /> {sv.maintenanceBadge}
                 </span>
               )}
               {s.linkUrl && (
                 <span className="flex items-center gap-1 rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-bold text-ink-soft">
-                  <Link2 className="h-3.5 w-3.5" /> Verweis
+                  <Link2 className="h-3.5 w-3.5" /> {sv.linkBadge}
                 </span>
               )}
               <div className="ml-auto flex items-center gap-2">
@@ -258,7 +266,7 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
                       onClick={() => run(() => setServiceUrgentAction(hotelSlug, s.id, !s.urgent))}
                       className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
                     >
-                      {s.urgent ? 'Dringend aus' : 'Dringend an'}
+                      {s.urgent ? sv.urgentOff : sv.urgentOn}
                     </button>
                     <button
                       type="button"
@@ -266,7 +274,7 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
                       onClick={() => run(() => setServiceMaintenanceAction(hotelSlug, s.id, !s.maintenance))}
                       className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
                     >
-                      {s.maintenance ? 'Keine Meldung' : 'Als Meldung'}
+                      {s.maintenance ? sv.maintenanceOff : sv.maintenanceOn}
                     </button>
                   </>
                 )}
@@ -276,7 +284,7 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
                   onClick={() => setConfirmArchiveId(s.id)}
                   className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
                 >
-                  <Archive className="h-4 w-4" /> Archivieren
+                  <Archive className="h-4 w-4" /> {sv.archive}
                 </button>
               </div>
             </div>
@@ -285,8 +293,7 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
             {confirmArchiveId === s.id && (
               <div className="mt-3 rounded-lg border border-edge bg-surface-sunken p-3">
                 <p className="text-sm font-semibold text-ink">
-                  &bdquo;{s.name}&ldquo; archivieren? Der Service verschwindet aus dem Gast-Portal;
-                  bestehende Bestellungen bleiben erhalten.
+                  {format(sv.archiveConfirm, { name: s.name })}
                 </p>
                 <div className="mt-2 flex gap-2">
                   <button
@@ -295,14 +302,14 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
                     onClick={() => run(() => archiveServiceAction(hotelSlug, s.id), () => setConfirmArchiveId(null))}
                     className="rounded-lg bg-action px-3 py-1.5 text-sm font-bold text-action-foreground disabled:opacity-50"
                   >
-                    Ja, archivieren
+                    {sv.archiveYes}
                   </button>
                   <button
                     type="button"
                     onClick={() => setConfirmArchiveId(null)}
                     className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft"
                   >
-                    Abbrechen
+                    {common.cancel}
                   </button>
                 </div>
               </div>
@@ -319,7 +326,7 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
                 className="mt-3 flex flex-wrap items-end gap-2"
               >
                 <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs font-semibold text-ink-muted">
-                  Adresse
+                  {sv.address}
                   <input
                     name="link_url"
                     type="url"
@@ -333,7 +340,7 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
                   disabled={pending}
                   className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
                 >
-                  Adresse speichern
+                  {sv.saveAddress}
                 </button>
                 <a
                   href={s.linkUrl}
@@ -341,7 +348,7 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink"
                 >
-                  <ExternalLink className="h-4 w-4" /> Testen
+                  <ExternalLink className="h-4 w-4" /> {sv.test}
                 </a>
               </form>
             ) : (
@@ -361,8 +368,8 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
                     type="button"
                     disabled={pending}
                     onClick={() => run(() => archiveServiceItemAction(hotelSlug, item.id))}
-                    title="Option archivieren"
-                    aria-label={`${item.label} archivieren`}
+                    title={sv.archiveOption}
+                    aria-label={format(sv.archiveOptionAria, { label: item.label })}
                     className="text-ink-muted hover:text-critical-strong disabled:opacity-50"
                   >
                     <Archive className="h-3.5 w-3.5" />
@@ -371,7 +378,7 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
               ))}
               {s.items.length === 0 && (
                 <span className="text-sm text-ink-muted">
-                  Keine Optionen — der Gast bestellt den Service als Ganzes.
+                  {sv.noOptions}
                 </span>
               )}
             </div>
@@ -387,20 +394,20 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
               className="mt-3 flex flex-wrap items-end gap-2"
             >
               <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-                Option
+                {sv.option}
                 <input
                   name="label"
                   required
-                  placeholder="z. B. Handtuch groß"
+                  placeholder={sv.optionPlaceholder}
                   className="w-44 rounded-lg border border-edge bg-surface-elevated px-3 py-1.5 text-sm font-semibold text-ink placeholder:text-ink-muted focus:border-action focus:outline-none"
                 />
               </label>
               <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-                Preis € (optional)
+                {sv.price}
                 <input
                   name="price"
                   inputMode="decimal"
-                  placeholder="4,50"
+                  placeholder={sv.pricePlaceholder}
                   className="w-24 rounded-lg border border-edge bg-surface-elevated px-3 py-1.5 text-sm font-semibold text-ink placeholder:text-ink-muted focus:border-action focus:outline-none"
                 />
               </label>
@@ -409,7 +416,7 @@ export default function ServicesManager({ hotelSlug, services }: { hotelSlug: st
                 disabled={pending}
                 className="flex items-center gap-1 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
               >
-                <Plus className="h-4 w-4" /> Hinzufügen
+                <Plus className="h-4 w-4" /> {sv.addOption}
               </button>
             </form>
             </>

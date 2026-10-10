@@ -7,47 +7,29 @@ import {
 import { getManagementContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import { parseGuestAccessMode } from '@/lib/guest-access'
+import { getMessages, type AdminMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
+
+type TileId = keyof AdminMessages['settings']['hub']['tiles']
 
 type Tile = {
   /** Pfad relativ zum Haus-Bereich — der Slug kommt erst beim Rendern dazu. */
   path: string
   icon: LucideIcon
-  title: string
-  description: string
+  /** Schlüssel für Titel und Beschreibung in der Sprachdatei. */
+  id: TileId
   /** Temporäre Bereiche (Test-Szenario) amber markieren. */
   temporary?: boolean
 }
 
 const ADMIN_TILES: Tile[] = [
-  {
-    path: '/einstellungen/hotel', icon: SlidersHorizontal, title: 'Hotel & Regeln',
-    description: 'Hotelname, Gast-PIN-Länge, Reinigungs-Timeout, Routine-Reinigung',
-  },
-  {
-    path: '/einstellungen/gastzugang', icon: DoorOpen, title: 'Gäste-Zugang',
-    description: 'Fester Zimmer-QR mit PIN (samt Aushängen) oder individueller Zugang je Aufenthalt',
-  },
-  {
-    path: '/zimmer', icon: BedDouble, title: 'Zimmer',
-    description: 'Zimmer anlegen und verwalten — Nummern, Etagen, Gebäudeteile',
-  },
-  {
-    path: '/personal', icon: Users, title: 'Personal',
-    description: 'Reinigungskräfte und Rezeptions-Zugänge, QR-Login-Karten',
-  },
-  {
-    path: '/services', icon: ConciergeBell, title: 'Service-Baukasten',
-    description: 'Services konfigurieren, die Gäste anfragen können',
-  },
-  {
-    path: '/einstellungen/zugang', icon: KeyRound, title: 'Mein Zugang',
-    description: 'Eigenen Anzeigenamen und das Anmelde-Passwort ändern',
-  },
-  {
-    path: '/einstellungen/test', icon: FlaskConical, title: 'Test-Szenario',
-    description: 'Vorübergehend: fingierte Belegungs- und Reinigungslage zum Testen',
-    temporary: true,
-  },
+  { path: '/einstellungen/hotel', icon: SlidersHorizontal, id: 'house' },
+  { path: '/einstellungen/gastzugang', icon: DoorOpen, id: 'guestAccess' },
+  { path: '/zimmer', icon: BedDouble, id: 'rooms' },
+  { path: '/personal', icon: Users, id: 'staff' },
+  { path: '/services', icon: ConciergeBell, id: 'services' },
+  { path: '/einstellungen/zugang', icon: KeyRound, id: 'myAccess' },
+  { path: '/einstellungen/test', icon: FlaskConical, id: 'testScenario', temporary: true },
 ]
 
 /**
@@ -56,18 +38,9 @@ const ADMIN_TILES: Tile[] = [
  * „Gäste-Zugang" nicht sieht — Inhaber und Manager erreichen sie von dort.
  */
 const RECEPTION_TILES: Tile[] = [
-  {
-    path: '/zimmer/aushang', icon: QrCode, title: 'QR-Aushänge',
-    description: 'Zimmer-Aushänge mit QR-Code zum Drucken',
-  },
-  {
-    path: '/personal', icon: Users, title: 'Personal-Karten',
-    description: 'QR-Login-Karten der Reinigungskräfte ansehen und drucken',
-  },
-  {
-    path: '/einstellungen/zugang', icon: KeyRound, title: 'Mein Zugang',
-    description: 'Eigenen Anzeigenamen und das Anmelde-Passwort ändern',
-  },
+  { path: '/zimmer/aushang', icon: QrCode, id: 'notices' },
+  { path: '/personal', icon: Users, id: 'staffCards' },
+  { path: '/einstellungen/zugang', icon: KeyRound, id: 'myAccess' },
 ]
 
 export default async function EinstellungenHubPage({
@@ -78,6 +51,7 @@ export default async function EinstellungenHubPage({
   const { slug } = await params
   const ctx = await getManagementContext(slug)
   if (!ctx) redirect('/admin')
+  const m = getMessages(await getLocale()).admin.settings
 
   // Manager hat im Haus dieselben Rechte wie der Inhaber — nur die
   // Rezeption bekommt den verkürzten Hub.
@@ -95,7 +69,7 @@ export default async function EinstellungenHubPage({
 
   return (
     <div className="flex max-w-2xl flex-col gap-5">
-      <h1 className="text-xl font-black text-ink">Einstellungen</h1>
+      <h1 className="text-xl font-black text-ink">{m.title}</h1>
 
       <div className="flex flex-col gap-2">
         {tiles.map(t => (
@@ -117,9 +91,9 @@ export default async function EinstellungenHubPage({
             </span>
             <span className="min-w-0 flex-1">
               <span className={`block text-sm font-bold ${t.temporary ? 'text-attention-deepest' : 'text-ink'}`}>
-                {t.title}
+                {m.hub.tiles[t.id].title}
               </span>
-              <span className="block truncate text-xs text-ink-muted">{t.description}</span>
+              <span className="block truncate text-xs text-ink-muted">{m.hub.tiles[t.id].description}</span>
             </span>
             <ChevronRight className="h-4 w-4 shrink-0 text-ink-muted" />
           </Link>

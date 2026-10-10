@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { ImageUp, Loader2, Trash2, TriangleAlert } from 'lucide-react'
 import { LOGO_ACCEPT, LOGO_MAX_BYTES, LOGO_MIN_WIDTH_PX } from '@/lib/logo'
 import { removeHotelLogoAction, uploadHotelLogoAction } from './actions'
+import { format } from '@/lib/i18n/format'
+import type { AdminMessages } from '@/lib/i18n'
 
 /**
  * Hotel-Logo für die gedruckten Blätter.
@@ -22,11 +24,12 @@ import { removeHotelLogoAction, uploadHotelLogoAction } from './actions'
  * aufbürden.
  */
 export default function LogoForm({
-  hotelSlug, hotelName, logoUrl,
+  hotelSlug, hotelName, logoUrl, m,
 }: {
   hotelSlug: string
   hotelName: string
   logoUrl: string | null
+  m: AdminMessages['settings']['logo']
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -41,7 +44,7 @@ export default function LogoForm({
     setWarnung(null)
 
     if (datei.size > LOGO_MAX_BYTES) {
-      setError(`Die Datei ist zu groß (${Math.round(datei.size / 1024)} KB). Höchstens 1 MB.`)
+      setError(format(m.tooLarge, { kb: Math.round(datei.size / 1024) }))
       e.target.value = ''
       return
     }
@@ -52,10 +55,7 @@ export default function LogoForm({
       const bild = new Image()
       bild.onload = () => {
         if (bild.naturalWidth < LOGO_MIN_WIDTH_PX) {
-          setWarnung(
-            `Das Bild ist nur ${bild.naturalWidth} px breit. Auf dem Blatt wird es rund 55 mm `
-            + `breit gedruckt und wirkt dann unscharf — ab ${LOGO_MIN_WIDTH_PX} px sieht es sauber aus.`,
-          )
+          setWarnung(format(m.lowResolution, { width: bild.naturalWidth, min: LOGO_MIN_WIDTH_PX }))
         }
         URL.revokeObjectURL(url)
       }
@@ -95,7 +95,7 @@ export default function LogoForm({
             <img src={logoUrl} alt={hotelName} className="max-h-full max-w-full object-contain" />
           ) : (
             <span className="text-center text-xs font-semibold text-ink-muted">
-              Kein Logo — die Blätter tragen den Hausnamen
+              {m.none}
             </span>
           )}
         </div>
@@ -116,7 +116,7 @@ export default function LogoForm({
               className="flex items-center gap-1.5 rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
             >
               {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageUp className="h-4 w-4" />}
-              {logoUrl ? 'Logo austauschen' : 'Logo hochladen'}
+              {logoUrl ? m.replace : m.upload}
             </button>
             {logoUrl && (
               <button
@@ -125,15 +125,11 @@ export default function LogoForm({
                 onClick={entfernen}
                 className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-2 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
               >
-                <Trash2 className="h-4 w-4" /> Entfernen
+                <Trash2 className="h-4 w-4" /> {m.remove}
               </button>
             )}
           </div>
-          <p className="text-xs text-ink-muted">
-            PNG, JPG oder SVG, höchstens 1 MB. Auf dem Blatt steht es oben links, höchstens
-            55 × 16 mm. Ein helles Logo für dunkle Hintergründe ist auf weißem Papier
-            unsichtbar — die Vorschau links zeigt es so, wie es gedruckt wird.
-          </p>
+          <p className="text-xs text-ink-muted">{m.hint}</p>
         </div>
       </div>
 

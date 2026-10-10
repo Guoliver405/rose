@@ -14,6 +14,10 @@
 import { createAdminClient } from '@/utils/supabase/service'
 import { parseStaffTracking } from '@/lib/staff-tracking'
 import { getManagementContext } from '@/utils/auth'
+import { format, getMessages, type AdminMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
+
+type H = AdminMessages['overview']['history']
 
 const HISTORY_DAYS = 30
 const MAX_EVENTS = 80
@@ -42,41 +46,45 @@ export type RoomHistoryResult = { events?: RoomHistoryEvent[]; error?: string }
  * ausschließlich zusammen mit einem Check-out (Setzen) oder einem
  * `clean_done` (Löschen) und wären damit immer eine Dopplung.
  */
-function transitionLabel(field: string, oldValue: string | null, newValue: string | null): string | null {
+function transitionLabel(field: string, oldValue: string | null, newValue: string | null, h: H): string | null {
   if (field === 'guest_signal') {
-    if (newValue === 'please_clean') return 'Reinigung angefordert'
-    if (newValue === 'dnd') return '„Nicht stören“ gesetzt'
+    if (newValue === 'please_clean') return h.pleaseClean
+    if (newValue === 'dnd') return h.dndSet
     if (newValue === 'none') {
-      return oldValue === 'dnd' ? '„Nicht stören“ aufgehoben' : 'Reinigungswunsch aufgehoben'
+      return oldValue === 'dnd' ? h.dndLifted : h.cleanWishLifted
     }
     return null
   }
   if (field === 'priority') {
-    return newValue === 'true' ? 'Reinigung priorisiert' : 'Priorisierung aufgehoben'
+    return newValue === 'true' ? h.prioritySet : h.priorityLifted
   }
   // Das Aufheben passiert still (Wunsch, Check-in, Check-out) — nur das Setzen zählt.
-  if (field === 'clean_declined_on') return newValue ? 'Heute keine Reinigung gewünscht' : null
+  if (field === 'clean_declined_on') return newValue ? h.declined : null
   return null
 }
 
-const STITCH_LABEL: Record<string, string> = {
-  clean_start: 'Reinigung gestartet',
-  clean_done: 'Reinigung abgeschlossen',
-  clean_aborted: 'Reinigung nicht abgeschlossen',
-  clean_deferred: 'An der Tür: Gast möchte später',
-  clean_declined: 'An der Tür: Gast möchte heute keine Reinigung',
+function stitchLabels(h: H): Record<string, string> {
+  return {
+    clean_start: h.cleanStart,
+    clean_done: h.cleanDone,
+    clean_aborted: h.cleanAborted,
+    clean_deferred: h.doorDeferred,
+    clean_declined: h.doorDeclined,
+  }
 }
 
 export async function getRoomHistoryAction(slug: string, roomId: string): Promise<RoomHistoryResult> {
   // Bewusst Management (nicht Admin-only): Beschwerde-Aufklärung ist
   // Tagesgeschäft der Rezeption.
+  const msg = getMessages(await getLocale()).admin
+  const h = msg.overview.history
   const ctx = await getManagementContext(slug)
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!ctx) return { error: msg.common.errors.notSignedIn }
   const admin = createAdminClient()
 
   const { data: room } = await admin
     .from('rooms').select('id, hotel_id').eq('id', roomId).maybeSingle()
-  if (!room || room.hotel_id !== ctx.hotelId) return { error: 'Zimmer nicht gefunden.' }
+  if (!room || room.hotel_id !== ctx.hotelId) return { error: msg.common.errors.roomNotFound }
 
   const since = new Date(Date.now() - HISTORY_DAYS * 86_400_000).toISOString()
 
@@ -138,12 +146,12 @@ export async function getRoomHistoryAction(slug: string, roomId: string): Promis
 
   /** Gäste sind anonym — nie eine Person, immer nur „Gast". */
   function actorLabel(source: string | null, actorId: string | null): string {
-    if (source === 'guest') return 'Gast'
-    if (source === 'system') return 'System'
-    if (source === 'maid' && team) return 'Reinigungsteam'
+    if (source === 'guest') return h.actors.guest
+    if (source === 'system') return h.actors.system
+    if (source === 'maid' && team) return h.actors.team
     const name = actorId ? nameById.get(actorId) : null
     if (name) return name
-    return source === 'maid' ? 'Reinigung' : 'Rezeption'
+    return source === 'maid' ? h.actors.cleaning : h.actors.reception
   }
 
   const events: RoomHistoryEvent[] = []
@@ -151,7 +159,7 @@ export async function getRoomHistoryAction(slug: string, roomId: string): Promis
   for (const t of transitions ?? []) {
     // An der Tür schreibt die Kraft zusätzlich einen Stich — der trägt den Eintrag.
     if (t.field === 'clean_declined_on' && t.source === 'maid') continue
-    const label = transitionLabel(t.field, t.old_value, t.new_value)
+    const label = transitionLabel(t.field, t.old_value, t.new_value, h)
     if (!label) continue
     events.push({
       at: t.occurred_at,
@@ -161,8 +169,9 @@ export async function getRoomHistoryAction(slug: string, roomId: string): Promis
     })
   }
 
+  const stitchLabel = stitchLabels(h)
   for (const s of stitches ?? []) {
-    const label = STITCH_LABEL[s.kind]
+    const label = stitchLabel[s.kind]
     if (!label) continue
     // clean_aborted schreibt ausschließlich der Stale-Timeout
     // (reapStaleCleanings): Akteur ist das System, die Kraft steht im Label.
@@ -171,8 +180,8 @@ export async function getRoomHistoryAction(slug: string, roomId: string): Promis
     const name = !team && s.profile_id ? nameById.get(s.profile_id) : undefined
     events.push({
       at: s.at,
-      label: isAbort ? `${label} (Zeitlimit${name ? `, ${name}` : ''})` : label,
-      actor: isAbort ? 'System' : (name ?? (team ? 'Reinigungsteam' : 'Reinigung')),
+      label: isAbort ? (name ? format(h.cleanAbortedTimeoutBy, { name }) : h.cleanAbortedTimeout) : label,
+      actor: isAbort ? h.actors.system : (name ?? (team ? h.actors.team : h.actors.cleaning)),
       tone: 'clean',
     })
   }
@@ -180,16 +189,16 @@ export async function getRoomHistoryAction(slug: string, roomId: string): Promis
   for (const s of stayRows ?? []) {
     events.push({
       at: s.checked_in_at,
-      label: 'Check-in',
-      actor: (s.created_by ? nameById.get(s.created_by) : null) ?? 'Rezeption',
+      label: h.checkIn,
+      actor: (s.created_by ? nameById.get(s.created_by) : null) ?? h.actors.reception,
       tone: 'desk',
     })
     if (s.checked_out_at) {
       // Alt-Aufenthalte (vor 04.09.2026) tragen kein checked_out_by → „Rezeption".
       events.push({
         at: s.checked_out_at,
-        label: 'Check-out',
-        actor: (s.checked_out_by ? nameById.get(s.checked_out_by) : null) ?? 'Rezeption',
+        label: h.checkOut,
+        actor: (s.checked_out_by ? nameById.get(s.checked_out_by) : null) ?? h.actors.reception,
         tone: 'desk',
         stayId: s.id,
       })
@@ -201,15 +210,15 @@ export async function getRoomHistoryAction(slug: string, roomId: string): Promis
     const def = Array.isArray(o.service_definitions) ? o.service_definitions[0] : o.service_definitions
     // Servicename bevorzugt aus dem Snapshot der Bestellung — eine spätere
     // Umbenennung im Baukasten soll den Verlauf nicht umschreiben.
-    const name = o.service_name ?? def?.name ?? 'Service'
-    events.push({ at: o.created_at, label: `Service angefragt: ${name}`, actor: 'Gast', tone: 'service' })
+    const name = o.service_name ?? def?.name ?? h.fallbackService
+    events.push({ at: o.created_at, label: format(h.requested, { name }), actor: h.actors.guest, tone: 'service' })
     if (o.done_at) {
       // `done_at` trägt beide Endzustände; welcher es war, sagt `status`.
       const abgebrochen = o.status === 'cancelled'
       events.push({
         at: o.done_at,
-        label: abgebrochen ? `Service nicht erbracht: ${name}` : `Service erledigt: ${name}`,
-        actor: (o.done_by ? nameById.get(o.done_by) : null) ?? 'Rezeption',
+        label: format(abgebrochen ? h.requestNotProvided : h.requestDone, { name }),
+        actor: (o.done_by ? nameById.get(o.done_by) : null) ?? h.actors.reception,
         tone: 'service',
       })
     }

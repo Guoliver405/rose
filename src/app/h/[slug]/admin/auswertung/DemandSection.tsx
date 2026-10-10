@@ -1,5 +1,6 @@
 import { Info } from 'lucide-react'
-import { WEEKDAY_LABEL, type DemandStats } from '@/lib/demand'
+import type { DemandStats } from '@/lib/demand'
+import { format, plural, type AdminMessages } from '@/lib/i18n'
 
 /**
  * Nachfrage — wann wünschen Gäste Reinigung, wann reisen sie ab, und wer ist
@@ -10,14 +11,17 @@ import { WEEKDAY_LABEL, type DemandStats } from '@/lib/demand'
  * Rosé = „Bitte nicht stören", Grün = Kräfte im Dienst.
  */
 export default function DemandSection({
-  stats, routineLabel, checkoutLabel,
+  stats, routineLabel, checkoutLabel, m, intlLocale,
 }: {
   stats: DemandStats
   /** „11:00" — Uhrzeit, ab der die Routine fällig wird; null, wenn die Routine aus ist. */
   routineLabel: string | null
   /** „11:00" — Check-out-Frist des Hauses. */
   checkoutLabel: string
+  m: AdminMessages['staff']['report']['demand']
+  intlLocale: string
 }) {
+  const hh = (h: number) => String(h).padStart(2, '0')
   const maxEvents = Math.max(1, ...stats.hours.map(h => Math.max(h.wishes, h.checkouts, h.dnd)))
   const maxStaff = Math.max(0.01, ...stats.hours.map(h => h.staffAvg))
   const routineHour = routineLabel ? Number(routineLabel.slice(0, 2)) : null
@@ -28,29 +32,28 @@ export default function DemandSection({
   return (
     <section data-lotse="auswertung.nachfrage" className="flex flex-col gap-3 rounded-xl border border-edge bg-surface p-4">
       <div className="flex flex-wrap items-baseline gap-3">
-        <h2 className="text-lg font-black text-ink">Nachfrage — wann Gäste Reinigung wünschen</h2>
-        <span className="text-xs text-ink-muted">{stats.days} {stats.days === 1 ? 'Tag' : 'Tage'}, Ortszeit</span>
+        <h2 className="text-lg font-black text-ink">{m.title}</h2>
+        <span className="text-xs text-ink-muted">{plural(intlLocale, stats.days, m.days)}</span>
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Mini label="Reinigungswünsche" value={String(stats.totalWishes)} tone="attention" />
-        <Mini label="Abreisen" value={String(stats.totalCheckouts)} tone="caution" />
+        <Mini label={m.wishes} value={String(stats.totalWishes)} tone="attention" />
+        <Mini label={m.checkouts} value={String(stats.totalCheckouts)} tone="caution" />
         <Mini
-          label="Spitzenstunde"
-          value={stats.peakWishHour === null ? '–' : `${String(stats.peakWishHour).padStart(2, '0')}–${String(stats.peakWishHour + 1).padStart(2, '0')} Uhr`}
+          label={m.peakHour}
+          value={stats.peakWishHour === null ? '–' : format(m.hourRange, { from: hh(stats.peakWishHour), to: hh(stats.peakWishHour + 1) })}
         />
         <Mini
-          label="Wünsche ohne Kraft im Dienst"
-          value={stats.uncoveredShare === null ? '–' : `${Math.round(stats.uncoveredShare * 100)} %`}
+          label={m.uncovered}
+          value={stats.uncoveredShare === null ? '–' : format(m.uncoveredValue, { pct: Math.round(stats.uncoveredShare * 100) })}
           tone={stats.uncoveredShare !== null && stats.uncoveredShare > 0.2 ? 'attention' : undefined}
-          hint="Anteil, der in Stunden fiel, in denen niemand auf Schicht war"
+          hint={m.uncoveredHint}
         />
       </div>
 
       {empty ? (
         <p className="text-sm text-ink-muted">
-          Noch keine Gast-Signale oder Abreisen in diesem Zeitraum. Sobald Gäste im Portal
-          tippen und die Rezeption auscheckt, entsteht hier das Tagesprofil.
+          {m.empty}
         </p>
       ) : (
         <>
@@ -59,7 +62,7 @@ export default function DemandSection({
             <div className="min-w-[640px]">
               <div className="grid h-28 grid-cols-24 items-end gap-px">
                 {stats.hours.map(h => (
-                  <div key={h.hour} className="flex h-full items-end justify-center gap-px px-px" title={`${h.hour}–${h.hour + 1} Uhr: ${h.wishes} Wünsche · ${h.checkouts} Abreisen · ${h.dnd}× Nicht stören · Ø ${h.staffAvg.toFixed(1)} Kräfte`}>
+                  <div key={h.hour} className="flex h-full items-end justify-center gap-px px-px" title={format(m.hourTitle, { from: h.hour, to: h.hour + 1, wishes: h.wishes, checkouts: h.checkouts, dnd: h.dnd, staff: h.staffAvg.toFixed(1) })}>
                     <span className="w-1/3 rounded-t bg-attention" style={{ height: pct(h.wishes) }} />
                     <span className="w-1/3 rounded-t bg-caution" style={{ height: pct(h.checkouts) }} />
                     <span className="w-1/3 rounded-t bg-blocked" style={{ height: pct(h.dnd) }} />
@@ -73,7 +76,7 @@ export default function DemandSection({
                     key={h.hour}
                     className="flex h-6 items-center justify-center rounded-sm bg-positive text-[10px] font-bold text-positive-foreground"
                     style={{ opacity: h.staffAvg === 0 ? 0.12 : 0.35 + 0.65 * (h.staffAvg / maxStaff) }}
-                    title={`Ø ${h.staffAvg.toFixed(1)} Kräfte im Dienst`}
+                    title={format(m.staffTitle, { staff: h.staffAvg.toFixed(1) })}
                   >
                     {h.staffAvg >= 0.05 ? h.staffAvg.toFixed(1) : ''}
                   </div>
@@ -84,9 +87,9 @@ export default function DemandSection({
                 {stats.hours.map(h => (
                   <div key={h.hour} className="flex flex-col items-center">
                     <span>{h.hour % 3 === 0 ? String(h.hour).padStart(2, '0') : ''}</span>
-                    {h.hour === checkoutHour && <span className="font-bold text-caution-deep">Check-out</span>}
+                    {h.hour === checkoutHour && <span className="font-bold text-caution-deep">{m.markerCheckout}</span>}
                     {routineHour !== null && h.hour === routineHour && h.hour !== checkoutHour && (
-                      <span className="font-bold text-attention-deep">Routine</span>
+                      <span className="font-bold text-attention-deep">{m.markerDaily}</span>
                     )}
                   </div>
                 ))}
@@ -95,10 +98,10 @@ export default function DemandSection({
           </div>
 
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink-soft">
-            <Legend className="bg-attention" text="Reinigungswunsch (Gast tippt)" />
-            <Legend className="bg-caution" text="Abreise (Check-out)" />
-            <Legend className="bg-blocked" text="Bitte nicht stören" />
-            <Legend className="bg-positive" text="Ø Kräfte im Dienst" />
+            <Legend className="bg-attention" text={m.legendWish} />
+            <Legend className="bg-caution" text={m.legendCheckout} />
+            <Legend className="bg-blocked" text={m.legendDnd} />
+            <Legend className="bg-positive" text={m.legendStaff} />
           </div>
 
           {/* Wochentage */}
@@ -106,21 +109,21 @@ export default function DemandSection({
             <table className="w-full min-w-[480px] text-center text-sm">
               <thead>
                 <tr className="text-xs font-semibold text-ink-muted">
-                  <th className="py-1 text-left">Wochentag</th>
-                  {stats.weekdays.map(w => <th key={w.weekday} className="py-1">{WEEKDAY_LABEL[w.weekday]}</th>)}
+                  <th className="py-1 text-left">{m.weekday}</th>
+                  {stats.weekdays.map(w => <th key={w.weekday} className="py-1">{m.weekdays[w.weekday]}</th>)}
                 </tr>
               </thead>
               <tbody>
                 <tr className="border-t border-edge">
-                  <td className="py-1 text-left text-ink-soft">Wünsche</td>
+                  <td className="py-1 text-left text-ink-soft">{m.rowWishes}</td>
                   {stats.weekdays.map(w => <td key={w.weekday} className="py-1 font-semibold text-ink">{w.wishes}</td>)}
                 </tr>
                 <tr className="border-t border-edge">
-                  <td className="py-1 text-left text-ink-soft">Abreisen</td>
+                  <td className="py-1 text-left text-ink-soft">{m.rowCheckouts}</td>
                   {stats.weekdays.map(w => <td key={w.weekday} className="py-1 text-ink">{w.checkouts}</td>)}
                 </tr>
                 <tr className="border-t border-edge">
-                  <td className="py-1 text-left text-ink-soft">Nicht stören</td>
+                  <td className="py-1 text-left text-ink-soft">{m.rowDnd}</td>
                   {stats.weekdays.map(w => <td key={w.weekday} className="py-1 text-ink">{w.dnd}</td>)}
                 </tr>
               </tbody>
@@ -132,11 +135,10 @@ export default function DemandSection({
       <p className="flex items-start gap-2 rounded-lg bg-surface-sunken px-3 py-2 text-xs text-ink-muted">
         <Info className="mt-0.5 h-4 w-4 shrink-0" />
         <span>
-          Gezählt wird der Zeitpunkt, an dem ein Gast im Portal tippt, und der Check-out-Klick
-          der Rezeption — keine Wunschzeiten, sondern die tatsächliche Nachfrage. &bdquo;Kräfte im
-          Dienst&ldquo; kommt aus den Schicht-Stichen, gemittelt über die Tage des Zeitraums. Liegen
-          viele Wünsche in Stunden mit wenig oder keiner Kraft, ist das der Hinweis für die
-          Schichtplanung. Check-out-Frist {checkoutLabel} Uhr{routineLabel ? `, Routine-Reinigung ab ${routineLabel} Uhr` : ', Routine-Reinigung aus'}.
+          {m.note}{' '}
+          {routineLabel
+            ? format(m.noteRules, { checkout: checkoutLabel, daily: routineLabel })
+            : format(m.noteRulesOff, { checkout: checkoutLabel })}
         </span>
       </p>
     </section>

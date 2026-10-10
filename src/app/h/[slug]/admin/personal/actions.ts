@@ -8,6 +8,14 @@ import { confirmUrl, sendInviteMail, sendRecoveryMail, type MailResult } from '@
 import { generatePin, generateToken } from '@/lib/ids'
 import { buildMaidEmail, normalizeUsername } from '@/lib/maid'
 import { testzugaengeErlaubt } from '@/lib/test-accounts'
+import { format, getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
+
+/** Meldungen in der Sprache der Anfrage — gemeinsame (Berechtigung) und die des Personal-Bereichs. */
+async function messages() {
+  const admin = getMessages(await getLocale()).admin
+  return { ...admin.common.errors, ...admin.staff.errors }
+}
 
 export type MaidLoginCard = {
   profileId: string
@@ -24,14 +32,15 @@ export type CreateMaidResult = { card?: MaidLoginCard; error?: string }
  * + Profil mit username-Discriminator + Login-Karte (Token + PIN als Einheit).
  */
 export async function createMaidAction(slug: string, formData: FormData): Promise<CreateMaidResult> {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
 
   const displayName = ((formData.get('displayName') as string) ?? '').trim()
   const username = normalizeUsername((formData.get('username') as string) ?? '')
 
-  if (displayName.length < 2) return { error: 'Name muss mindestens 2 Zeichen haben.' }
-  if (username.length < 2) return { error: 'Benutzername muss mindestens 2 Zeichen haben (a–z, 0–9, . _ -).' }
+  if (displayName.length < 2) return { error: e.nameTooShort }
+  if (username.length < 2) return { error: e.usernameTooShort }
 
   const pin = generatePin(6)
   const email = buildMaidEmail(username, ctx.hotelId)
@@ -44,9 +53,9 @@ export async function createMaidAction(slug: string, formData: FormData): Promis
   })
   if (authErr || !authUser.user) {
     if (authErr?.message?.includes('already')) {
-      return { error: 'Benutzername bereits vergeben. Bitte anderen wählen.' }
+      return { error: e.usernameTaken }
     }
-    return { error: authErr?.message ?? 'Konto konnte nicht erstellt werden.' }
+    return { error: authErr?.message ?? e.accountCreateFailed }
   }
 
   const { error: profileErr } = await admin.from('profiles').insert({
@@ -59,9 +68,9 @@ export async function createMaidAction(slug: string, formData: FormData): Promis
     // Rollback: Auth-User ohne Profil wäre eine Leiche
     await admin.auth.admin.deleteUser(authUser.user.id)
     if (profileErr.code === '23505') {
-      return { error: 'Benutzername bereits in diesem Hotel vergeben.' }
+      return { error: e.usernameTakenHere }
     }
-    return { error: `Profil konnte nicht angelegt werden: ${profileErr.message}` }
+    return { error: format(e.profileCreateFailed, { message: profileErr.message }) }
   }
 
   // Login-Karte: Token + PIN als Einheit (UPSERT auf PK invalidiert bei
@@ -90,8 +99,9 @@ export async function issueMaidLoginCardAction(
   slug: string,
   profileId: string,
 ): Promise<{ card?: MaidLoginCard; error?: string }> {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
   const admin = createAdminClient()
 
   const { data: profile } = await admin
@@ -99,8 +109,8 @@ export async function issueMaidLoginCardAction(
     .select('id, hotel_id, username, display_name')
     .eq('id', profileId)
     .maybeSingle()
-  if (!profile || profile.hotel_id !== ctx.hotelId) return { error: 'Profil nicht gefunden.' }
-  if (!profile.username) return { error: 'Profil ist kein Reinigungs-Zugang.' }
+  if (!profile || profile.hotel_id !== ctx.hotelId) return { error: e.profileNotFound }
+  if (!profile.username) return { error: e.notMaid }
 
   const pin = generatePin(6)
   const token = generateToken(24)
@@ -112,7 +122,7 @@ export async function issueMaidLoginCardAction(
     { profile_id: profileId, hotel_id: ctx.hotelId, token, pin },
     { onConflict: 'profile_id' },
   )
-  if (tokenErr) return { error: `Karte konnte nicht gespeichert werden: ${tokenErr.message}` }
+  if (tokenErr) return { error: format(e.cardSaveFailed, { message: tokenErr.message }) }
 
   revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
   return {
@@ -207,22 +217,23 @@ export async function setStaffActiveAction(
   userId: string,
   active: boolean,
 ): Promise<SetStaffActiveResult> {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
-  if (userId === ctx.userId) return { error: 'Der eigene Zugang lässt sich hier nicht beenden.' }
+  if (!ctx) return { error: e.noPermission }
+  if (userId === ctx.userId) return { error: e.ownAccessEnd }
   const admin = createAdminClient()
 
   const staff = await resolveStaff(admin, ctx.hotelId, userId)
-  if (!staff) return { error: 'Zugang nicht gefunden.' }
+  if (!staff) return { error: e.accessNotFound }
   if (!darfVerwalten(staff.kind, ctx.isOwner)) {
-    return { error: 'Nur der Kontoinhaber kann Manager verwalten.' }
+    return { error: e.ownerOnlyManagers }
   }
 
   if (!active && staff.kind === 'maid') {
     const { data: cleaning } = await admin
       .from('room_states').select('room_id').eq('cleaning_by', userId).limit(1)
     if (cleaning && cleaning.length > 0) {
-      return { error: 'Diese Kraft reinigt gerade ein Zimmer. Erst die Reinigung abschließen (oder im Board als erledigt markieren).' }
+      return { error: e.maidIsCleaning }
     }
   }
 
@@ -276,16 +287,17 @@ export async function renameStaffAction(
   userId: string,
   patch: StaffPatch,
 ): Promise<{ error?: string; changed?: boolean }> {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
   const admin = createAdminClient()
 
   const displayName = patch.displayName === undefined ? undefined : patch.displayName.trim()
   if (displayName !== undefined && displayName.length < 2) {
-    return { error: 'Name muss mindestens 2 Zeichen haben.' }
+    return { error: e.nameTooShort }
   }
   if (displayName !== undefined && displayName.length > 80) {
-    return { error: 'Name ist zu lang (maximal 80 Zeichen).' }
+    return { error: e.nameTooLong }
   }
 
   const [{ data: profile }, { data: member }] = await Promise.all([
@@ -294,23 +306,23 @@ export async function renameStaffAction(
   ])
 
   const istReinigung = Boolean(profile?.username) && profile?.hotel_id === ctx.hotelId
-  if (!istReinigung && !member) return { error: 'Zugang nicht gefunden.' }
+  if (!istReinigung && !member) return { error: e.accessNotFound }
   // Gleiche Grenze wie beim Entfernen: ein Manager, der Mit-Manager umbenennt,
   // wäre zwar harmlos — aber die Manager-Verwaltung liegt geschlossen beim
   // Kontoinhaber, und geteilte Zuständigkeit verwirrt mehr, als sie nützt.
   if (member?.role === 'manager' && !ctx.isOwner) {
-    return { error: 'Nur der Kontoinhaber kann Manager verwalten.' }
+    return { error: e.ownerOnlyManagers }
   }
 
   const username = patch.username === undefined ? undefined : normalizeUsername(patch.username)
   if (username !== undefined) {
-    if (!istReinigung) return { error: 'Nur Reinigungs-Zugänge haben einen Benutzernamen.' }
+    if (!istReinigung) return { error: e.onlyMaidsHaveUsername }
     if (username.length < 2) {
-      return { error: 'Benutzername muss mindestens 2 Zeichen haben (a–z, 0–9, . _ -).' }
+      return { error: e.usernameTooShort }
     }
   }
 
-  if (displayName === undefined && username === undefined) return { error: 'Nichts zu ändern.' }
+  if (displayName === undefined && username === undefined) return { error: e.nothingToChange }
 
   // Bewusst ohne Kurzschluss bei unverändertem Wert: der Anzeigename steht in
   // drei Tabellen, und ein Schreibvorgang mit gleichem Wert gleicht eine
@@ -321,7 +333,7 @@ export async function renameStaffAction(
     const { data: clash } = await admin
       .from('profiles').select('id').eq('hotel_id', ctx.hotelId).eq('username', username).maybeSingle()
     if (clash && clash.id !== userId) {
-      return { error: `Benutzername „${username}" ist in diesem Haus bereits vergeben.` }
+      return { error: format(e.usernameTakenNamed, { username }) }
     }
     // Der PIN-Login baut seine Auth-Adresse aus dem Benutzernamen
     // (`buildMaidEmail`) — ohne diesen Schritt käme die Kraft nicht mehr rein.
@@ -329,7 +341,7 @@ export async function renameStaffAction(
     const { error: mailErr } = await admin.auth.admin.updateUserById(userId, {
       email: buildMaidEmail(username, ctx.hotelId),
     })
-    if (mailErr) return { error: `Login konnte nicht umgestellt werden: ${mailErr.message}` }
+    if (mailErr) return { error: format(e.loginSwitchFailed, { message: mailErr.message }) }
   }
 
   const profilePatch: { display_name?: string; username?: string } = {}
@@ -337,7 +349,7 @@ export async function renameStaffAction(
   if (username !== undefined) profilePatch.username = username
   if (Object.keys(profilePatch).length > 0) {
     const { error } = await admin.from('profiles').update(profilePatch).eq('id', userId)
-    if (error) return { error: `Ändern fehlgeschlagen: ${error.message}` }
+    if (error) return { error: format(e.changeFailed, { message: error.message }) }
   }
 
   if (displayName !== undefined) {
@@ -397,14 +409,15 @@ export async function getStaffDeletionImpactAction(
   slug: string,
   userId: string,
 ): Promise<{ impact?: StaffDeletionImpact; error?: string }> {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
   const admin = createAdminClient()
 
   const staff = await resolveStaff(admin, ctx.hotelId, userId)
-  if (!staff) return { error: 'Zugang nicht gefunden.' }
+  if (!staff) return { error: e.accessNotFound }
   if (!darfVerwalten(staff.kind, ctx.isOwner)) {
-    return { error: 'Nur der Kontoinhaber kann Manager verwalten.' }
+    return { error: e.ownerOnlyManagers }
   }
 
   const [log, cleanings, checkIns, ordersDone, card, cleaning, firstRow, lastRow, otherRows, ownerRow] =
@@ -489,19 +502,20 @@ export async function deleteStaffAction(
   userId: string,
   confirmPhrase = '',
 ): Promise<DeleteStaffResult> {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
-  if (userId === ctx.userId) return { error: 'Der eigene Zugang lässt sich hier nicht löschen.' }
+  if (!ctx) return { error: e.noPermission }
+  if (userId === ctx.userId) return { error: e.ownAccessDelete }
   const admin = createAdminClient()
 
   const { impact, error: impactErr } = await getStaffDeletionImpactAction(slug, userId)
-  if (!impact) return { error: impactErr ?? 'Zugang nicht gefunden.' }
+  if (!impact) return { error: impactErr ?? e.accessNotFound }
 
   if (impact.cleaningRoom) {
-    return { error: `Diese Kraft reinigt gerade Zimmer ${impact.cleaningRoom}. Erst die Reinigung abschließen (oder im Board als erledigt markieren).` }
+    return { error: format(e.maidIsCleaningRoom, { room: impact.cleaningRoom }) }
   }
   if (impact.requiresPhrase && confirmPhrase.trim() !== impact.confirmPhrase) {
-    return { error: `Bitte „${impact.confirmPhrase}" zur Bestätigung eingeben.` }
+    return { error: format(e.confirmPhrase, { phrase: impact.confirmPhrase }) }
   }
 
   if (impact.kind !== 'maid') {
@@ -553,13 +567,14 @@ async function legeMitgliedschaftAn(
   opts: { displayName: string; hotelId: string; role: 'reception' | 'manager' },
 ): Promise<string | null> {
   const { displayName, hotelId, role } = opts
+  const e = await messages()
 
   const { error: profileErr } = await admin
     .from('profiles')
     .insert({ id: userId, hotel_id: hotelId, display_name: displayName })
   if (profileErr) {
     await admin.auth.admin.deleteUser(userId)
-    return `Profil konnte nicht angelegt werden: ${profileErr.message}`
+    return format(e.profileCreateFailed, { message: profileErr.message })
   }
 
   const { error: memberErr } = await admin
@@ -567,7 +582,7 @@ async function legeMitgliedschaftAn(
     .insert({ hotel_id: hotelId, user_id: userId, role, display_name: displayName })
   if (memberErr) {
     await admin.auth.admin.deleteUser(userId)
-    return `Zuordnung konnte nicht angelegt werden: ${memberErr.message}`
+    return format(e.membershipCreateFailed, { message: memberErr.message })
   }
 
   return null
@@ -613,6 +628,7 @@ async function ladeEin(opts: {
   ohneMail?: boolean
 }): Promise<{ einladung?: Einladung; zugang?: Zugangsdaten; error?: string }> {
   const { email, displayName, hotelId, hotelSlug, hotelName, role, ohneMail, invitedBy } = opts
+  const e = await messages()
   const admin = createAdminClient()
 
   // ── Testbetrieb: ohne Mail, Passwort einmal anzeigen ───────────────────
@@ -622,7 +638,7 @@ async function ladeEin(opts: {
   // auch nicht zustellbare Adressen (`…@rose.local`) brauchbar, an denen der
   // Mailversand ohnehin scheitern würde.
   if (ohneMail) {
-    if (!testzugaengeErlaubt()) return { error: 'Testzugänge sind nicht freigeschaltet.' }
+    if (!testzugaengeErlaubt()) return { error: e.testAccountsDisabled }
 
     const password = generateToken(9)
     const { data: created, error: createErr } = await admin.auth.admin.createUser({
@@ -630,9 +646,9 @@ async function ladeEin(opts: {
     })
     if (createErr || !created?.user) {
       if (createErr?.message?.toLowerCase().includes('already')) {
-        return { error: 'Für diese E-Mail-Adresse gibt es bereits einen Zugang.' }
+        return { error: e.emailTaken }
       }
-      return { error: createErr?.message ?? 'Zugang konnte nicht erstellt werden.' }
+      return { error: createErr?.message ?? e.accessCreateFailed }
     }
 
     const fehler = await legeMitgliedschaftAn(admin, created.user.id, {
@@ -659,14 +675,12 @@ async function ladeEin(opts: {
   const tokenHash = link?.properties?.hashed_token
   if (linkErr || !link?.user || !tokenHash) {
     if (linkErr?.message?.toLowerCase().includes('already')) {
-      return {
-        error: 'Für diese E-Mail-Adresse gibt es bereits einen Zugang. War die Person hier schon einmal tätig, steht sie unter „Beendete Zugänge" und lässt sich dort wieder aktivieren.',
-      }
+      return { error: e.emailTakenReactivate }
     }
     console.error('[generateLink invite]', {
       status: linkErr?.status, code: linkErr?.code, message: linkErr?.message,
     })
-    return { error: 'Die Einladung konnte nicht angelegt werden. Bitte die Adresse prüfen.' }
+    return { error: e.inviteFailed }
   }
   const fehler = await legeMitgliedschaftAn(admin, link.user.id, {
     displayName, hotelId, role,
@@ -750,8 +764,9 @@ async function einladungsLink(slug: string, userId: string): Promise<
   | { ctx: NonNullable<Awaited<ReturnType<typeof getAdminContext>>>; email: string; url: string }
   | { error: string }
 > {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
 
   const admin = createAdminClient()
 
@@ -762,20 +777,20 @@ async function einladungsLink(slug: string, userId: string): Promise<
     .eq('hotel_id', ctx.hotelId)
     .eq('user_id', userId)
     .maybeSingle()
-  if (!member) return { error: 'Zugang nicht gefunden.' }
+  if (!member) return { error: e.accessNotFound }
   if (member.role === 'manager' && !ctx.isOwner) {
-    return { error: 'Nur der Kontoinhaber kann Manager verwalten.' }
+    return { error: e.ownerOnlyManagers }
   }
 
   const { data: user } = await admin.auth.admin.getUserById(userId)
   const email = user?.user?.email
-  if (!email) return { error: 'Zugang hat keine E-Mail-Adresse.' }
+  if (!email) return { error: e.noEmail }
 
   const { data: link, error: linkErr } = await admin.auth.admin.generateLink({ type: 'recovery', email })
   const tokenHash = link?.properties?.hashed_token
   if (linkErr || !tokenHash) {
     console.error('[generateLink recovery]', { status: linkErr?.status, message: linkErr?.message })
-    return { error: 'Der Link konnte nicht erzeugt werden.' }
+    return { error: e.linkFailed }
   }
 
   return { ctx, email, url: confirmUrl(tokenHash, 'recovery', '/passwort-neu?einladung=1') }
@@ -795,14 +810,15 @@ export async function createReceptionAction(
   slug: string,
   formData: FormData,
 ): Promise<{ einladung?: Einladung; zugang?: Zugangsdaten; error?: string }> {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
 
   const displayName = ((formData.get('displayName') as string) ?? '').trim()
   const email = ((formData.get('email') as string) ?? '').trim().toLowerCase()
 
-  if (displayName.length < 2) return { error: 'Name muss mindestens 2 Zeichen haben.' }
-  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: 'Bitte eine gültige E-Mail-Adresse angeben.' }
+  if (displayName.length < 2) return { error: e.nameTooShort }
+  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: e.invalidEmail }
 
   return ladeEin({
     email, displayName,
@@ -839,14 +855,15 @@ export async function createManagerAction(
   slug: string,
   formData: FormData,
 ): Promise<{ einladung?: Einladung; zugang?: Zugangsdaten; error?: string }> {
+  const e = await messages()
   const ctx = await requireOwner(slug)
-  if (!ctx) return { error: 'Nur der Kontoinhaber kann Manager verwalten.' }
+  if (!ctx) return { error: e.ownerOnlyManagers }
 
   const displayName = ((formData.get('displayName') as string) ?? '').trim()
   const email = ((formData.get('email') as string) ?? '').trim().toLowerCase()
 
-  if (displayName.length < 2) return { error: 'Name muss mindestens 2 Zeichen haben.' }
-  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: 'Bitte eine gültige E-Mail-Adresse angeben.' }
+  if (displayName.length < 2) return { error: e.nameTooShort }
+  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: e.invalidEmail }
 
   const res = await ladeEin({
     email, displayName,
@@ -857,8 +874,8 @@ export async function createManagerAction(
   })
   // Beim Manager gibt es für „schon vergeben" einen zweiten Weg — darauf
   // hinweisen, statt den Nutzer im Regen stehen zu lassen.
-  if (res.error?.includes('bereits einen Zugang')) {
-    return { error: 'Für diese E-Mail-Adresse gibt es bereits einen Zugang. Ist die Person schon Manager im Konto, über „Vorhandenen Manager hinzufügen" auswählen.' }
+  if (res.error === e.emailTaken || res.error === e.emailTakenReactivate) {
+    return { error: e.emailTakenManager }
   }
   return res
 }
@@ -870,8 +887,9 @@ export async function createManagerAction(
  * dieselbe Person.
  */
 export async function attachManagerAction(slug: string, userId: string): Promise<{ error?: string }> {
+  const e = await messages()
   const ctx = await requireOwner(slug)
-  if (!ctx) return { error: 'Nur der Kontoinhaber kann Manager verwalten.' }
+  if (!ctx) return { error: e.ownerOnlyManagers }
 
   const admin = createAdminClient()
 
@@ -887,7 +905,7 @@ export async function attachManagerAction(slug: string, userId: string): Promise
     .eq('user_id', userId)
     .eq('role', 'manager')
     .in('hotel_id', ownIds)
-  if (!existing || existing.length === 0) return { error: 'Manager nicht gefunden.' }
+  if (!existing || existing.length === 0) return { error: e.managerNotFound }
 
   // Für DIESES Haus kann bereits eine Zeile existieren — auch eine beendete
   // oder eine mit anderer Rolle. Der Primärschlüssel ist (hotel_id, user_id),
@@ -902,8 +920,8 @@ export async function attachManagerAction(slug: string, userId: string): Promise
   if (hier && !hier.deactivated_at) {
     return {
       error: hier.role === 'manager'
-        ? 'Diese Person ist hier bereits Manager.'
-        : 'Diese Person hat hier bereits einen Rezeptions-Zugang. Erst dort beenden.',
+        ? e.alreadyManager
+        : e.alreadyReception,
     }
   }
 

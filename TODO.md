@@ -295,8 +295,11 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       Bibliothek, siehe AGENTS „Texte in Sprachdateien“), Entscheidungen dort umgesetzt.
       **10.10.: Reinigungsboard ausgelagert. 11.10.: Druckblätter und Mails** (Blatt-Sprachen
       in `i18n/<sprache>/sheet.ts`, Legende aus der Portal-Sprachdatei, Gast-Mail ganz in der
-      Sprache des Hauses). Weiter: Rezeption (mit
-      `room-symbols.ts`, „Routine-Reinigung fällig“ → „Tägliche Reinigung fällig“) →
+      Sprache des Hauses). **11.10.: Rezeption** (`i18n/de/admin/`, Zimmer-Symbole in
+      `de/symbols.ts`). Nachzuziehen: alte Seitennamen „Hotel & Regeln“/„Gäste-Zugang“ und
+      „Services-Board“ in `lotsen.ts`, `hilfe.ts`, Konto-Seiten und Simulator; Fehlermeldungen
+      des Logo-Uploads (`lib/logo.ts`, `utils/logo.ts`); Rollennamen in der Einladungs-Mail.
+      Weiter: Anmeldung/Registrierung →
       Konto → Simulator; Fließtexte (Hilfe, Lotsen, Landing, Rechtstexte) als
       Abschnitte zuletzt. Danach: Sprachwahl des Gastes in `getLocale()` und erste
       Übersetzung (Englisch) des Gästeportals.

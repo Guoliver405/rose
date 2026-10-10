@@ -10,6 +10,14 @@ import {
 } from '@/lib/guest-access'
 import { mailReady, sendGuestAccessMail, type MailResult } from '@/utils/mail'
 import { buildGuestGuide, parseSheetLanguages, type GuestGuide } from '@/lib/guest-guide'
+import { format, getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
+
+/** Meldungen dieses Bereichs plus die gemeinsamen (nicht angemeldet, Zimmer nicht gefunden). */
+async function messages() {
+  const admin = getMessages(await getLocale()).admin
+  return { ...admin.common.errors, ...admin.overview.errors }
+}
 
 export type CheckInResult = {
   /** Nur beim Verfahren `pin`. */
@@ -40,14 +48,18 @@ function auditFields(userId: string) {
  * (ein Tag Toleranz, weil Server-Zeit und Haus-Zeit auseinanderliegen
  * können), höchstens ein Jahr voraus. `null` = kein festes Datum.
  */
-function parseExpectedCheckout(raw: unknown, tz: string): { value: string | null } | { error: string } {
+function parseExpectedCheckout(
+  raw: unknown,
+  tz: string,
+  e: Awaited<ReturnType<typeof messages>>,
+): { value: string | null } | { error: string } {
   if (raw === null || raw === undefined || raw === '') return { value: null }
-  if (typeof raw !== 'string' || !parseDateKey(raw)) return { error: 'Abreisedatum ist ungültig.' }
+  if (typeof raw !== 'string' || !parseDateKey(raw)) return { error: e.departureInvalid }
   // Reine Datumsschlüssel-Vergleiche in der Zeit des Hauses — kein Date-Objekt,
   // das auf dem UTC-Server einen anderen Tag meinen könnte.
   const heute = zonedDateKey(new Date(), tz)
-  if (raw < addDaysKey(heute, -1)) return { error: 'Abreisedatum liegt in der Vergangenheit.' }
-  if (raw > addDaysKey(heute, 366)) return { error: 'Abreisedatum liegt mehr als ein Jahr voraus.' }
+  if (raw < addDaysKey(heute, -1)) return { error: e.departurePast }
+  if (raw > addDaysKey(heute, 366)) return { error: e.departureTooFar }
   return { value: raw }
 }
 
@@ -57,11 +69,12 @@ export async function checkInAction(
   force = false,
   expectedCheckout: string | null = null,
 ): Promise<CheckInResult> {
+  const e = await messages()
   const ctx = await getManagementContext(slug)
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!ctx) return { error: e.notSignedIn }
   const admin = createAdminClient()
 
-  const abreise = parseExpectedCheckout(expectedCheckout, parseTimeZone(ctx.policies))
+  const abreise = parseExpectedCheckout(expectedCheckout, parseTimeZone(ctx.policies), e)
   if ('error' in abreise) return { error: abreise.error }
 
   // Drei unabhängige Fragen (Zimmer, laufender Aufenthalt, Reinigungslage)
@@ -84,20 +97,21 @@ export async function checkInAction(
       .eq('service_definitions.maintenance', true)
       .limit(5),
   ])
-  if (!room || room.hotel_id !== ctx.hotelId) return { error: 'Zimmer nicht gefunden.' }
+  if (!room || room.hotel_id !== ctx.hotelId) return { error: e.roomNotFound }
   if (room.deactivated_at) {
-    return { error: 'Zimmer ist außer Betrieb — erst unter Einstellungen → Zimmer zurückholen.' }
+    return { error: e.roomDeactivated }
   }
-  if (activeStay) return { error: 'Zimmer ist bereits belegt.' }
+  if (activeStay) return { error: e.roomOccupied }
 
   if (!force) {
+    const w = getMessages(await getLocale()).admin.overview.checkInWarnings
     const reasons: string[] = []
-    if (state?.checkout_pending) reasons.push('Das Zimmer ist seit dem letzten Check-out noch nicht gereinigt.')
-    if (state?.priority) reasons.push('Für das Zimmer ist eine priorisierte Reinigung offen.')
-    if (state?.cleaning_by) reasons.push('Das Zimmer wird gerade gereinigt.')
+    if (state?.checkout_pending) reasons.push(w.notCleaned)
+    if (state?.priority) reasons.push(w.priorityOpen)
+    if (state?.cleaning_by) reasons.push(w.beingCleaned)
     for (const m of meldungen ?? []) {
       const def = Array.isArray(m.service_definitions) ? m.service_definitions[0] : m.service_definitions
-      reasons.push(`Offene Meldung ans Haus: ${m.service_name ?? def?.name ?? 'Service'}.`)
+      reasons.push(format(w.openMaintenance, { name: m.service_name ?? def?.name ?? w.fallbackService }))
     }
     if (reasons.length > 0) return { warning: { reasons } }
   }
@@ -157,8 +171,8 @@ export async function checkInAction(
   })
   if (insErr) {
     // 23505 = Partial-Unique verletzt → paralleler Check-in gewann das Race
-    if (insErr.code === '23505') return { error: 'Zimmer ist bereits belegt.' }
-    return { error: `Check-in fehlgeschlagen: ${insErr.message}` }
+    if (insErr.code === '23505') return { error: e.roomOccupied }
+    return { error: format(e.checkInFailed, { message: insErr.message }) }
   }
 
   // Stale Gast-Signale des Vorgängers sterben mit dem neuen Check-in.
@@ -181,9 +195,10 @@ export async function setExpectedCheckoutAction(
   roomId: string,
   expectedCheckout: string | null,
 ): Promise<{ error?: string }> {
+  const e = await messages()
   const ctx = await getManagementContext(slug)
-  if (!ctx) return { error: 'Nicht angemeldet.' }
-  const abreise = parseExpectedCheckout(expectedCheckout, parseTimeZone(ctx.policies))
+  if (!ctx) return { error: e.notSignedIn }
+  const abreise = parseExpectedCheckout(expectedCheckout, parseTimeZone(ctx.policies), e)
   if ('error' in abreise) return { error: abreise.error }
 
   const admin = createAdminClient()
@@ -193,13 +208,13 @@ export async function setExpectedCheckoutAction(
     .eq('room_id', roomId)
     .is('checked_out_at', null)
     .maybeSingle()
-  if (!stay || stay.hotel_id !== ctx.hotelId) return { error: 'Kein aktiver Aufenthalt auf diesem Zimmer.' }
+  if (!stay || stay.hotel_id !== ctx.hotelId) return { error: e.noActiveStay }
 
   const { error } = await admin
     .from('stays')
     .update({ expected_checkout: abreise.value })
     .eq('id', stay.id)
-  if (error) return { error: `Speichern fehlgeschlagen: ${error.message}` }
+  if (error) return { error: format(e.saveFailed, { message: error.message }) }
 
   revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
   return {}
@@ -227,8 +242,9 @@ export async function checkOutAction(
   slug: string,
   roomId: string,
 ): Promise<{ error?: string; stayId?: string }> {
+  const e = await messages()
   const ctx = await getManagementContext(slug)
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!ctx) return { error: e.notSignedIn }
   const admin = createAdminClient()
 
   const { data: stay } = await admin
@@ -237,7 +253,7 @@ export async function checkOutAction(
     .eq('room_id', roomId)
     .is('checked_out_at', null)
     .maybeSingle()
-  if (!stay || stay.hotel_id !== ctx.hotelId) return { error: 'Kein aktiver Aufenthalt auf diesem Zimmer.' }
+  if (!stay || stay.hotel_id !== ctx.hotelId) return { error: e.noActiveStay }
 
   // checked_out_by spiegelt created_by: der Zimmer-Verlauf nennt sonst beim
   // Check-in die Person und beim Check-out nur „Rezeption".
@@ -245,7 +261,7 @@ export async function checkOutAction(
     .from('stays')
     .update({ checked_out_at: new Date().toISOString(), checked_out_by: ctx.userId })
     .eq('id', stay.id)
-  if (updErr) return { error: `Check-out fehlgeschlagen: ${updErr.message}` }
+  if (updErr) return { error: format(e.checkOutFailed, { message: updErr.message }) }
 
   // Offene Anfragen des Aufenthalts holen, um die Meldungen auszunehmen. Zwei
   // Schritte statt eines Filters auf der eingebetteten Spalte: Der Update soll
@@ -286,7 +302,7 @@ export async function checkOutAction(
 /** Priorisierte Reinigung an/aus — manueller Rezeptions-Eingriff. */
 export async function setPriorityAction(slug: string, roomId: string, value: boolean): Promise<{ error?: string }> {
   const ctx = await getManagementContext(slug)
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!ctx) return { error: (await messages()).notSignedIn }
   const admin = createAdminClient()
 
   const { error } = await admin.from('room_states')
@@ -306,7 +322,7 @@ export async function setPriorityAction(slug: string, roomId: string, value: boo
  */
 export async function markCleanedAction(slug: string, roomId: string): Promise<{ error?: string }> {
   const ctx = await getManagementContext(slug)
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!ctx) return { error: (await messages()).notSignedIn }
   const admin = createAdminClient()
 
   const { data: state } = await admin
@@ -372,13 +388,14 @@ export async function getGuestAccessAction(
   slug: string,
   roomId: string,
 ): Promise<{ access?: GuestAccess; error?: string }> {
+  const e = await messages()
   const ctx = await getManagementContext(slug)
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!ctx) return { error: e.notSignedIn }
   const admin = createAdminClient()
 
   const { data: room } = await admin
     .from('rooms').select('id, hotel_id, number').eq('id', roomId).maybeSingle()
-  if (!room || room.hotel_id !== ctx.hotelId) return { error: 'Zimmer nicht gefunden.' }
+  if (!room || room.hotel_id !== ctx.hotelId) return { error: e.roomNotFound }
 
   const { data: stay } = await admin
     .from('stays')
@@ -386,7 +403,7 @@ export async function getGuestAccessAction(
     .eq('room_id', roomId)
     .is('checked_out_at', null)
     .maybeSingle()
-  if (!stay) return { error: 'Für dieses Zimmer läuft kein Aufenthalt.' }
+  if (!stay) return { error: e.noStay }
 
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
   const mode = stay.access_mode === 'link' ? 'link' : 'pin'
@@ -396,7 +413,7 @@ export async function getGuestAccessAction(
   const [mailLang] = parseSheetLanguages(ctx.policies)
 
   if (mode === 'link') {
-    if (!stay.guest_token) return { error: 'Diesem Aufenthalt fehlt der Zugang.' }
+    if (!stay.guest_token) return { error: e.stayWithoutAccess }
     return {
       access: {
         accessMode: 'link',
@@ -442,10 +459,11 @@ export async function mailGuestAccessAction(
   email: string,
   opts: { release?: boolean } = {},
 ): Promise<MailResult> {
+  const e = await messages()
   const { access, error } = await getGuestAccessAction(slug, roomId)
-  if (!access) return { error: error ?? 'Zugang nicht gefunden.' }
+  if (!access) return { error: error ?? e.accessNotFound }
   const ctx = await getManagementContext(slug)
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!ctx) return { error: e.notSignedIn }
 
   return sendGuestAccessMail({
     to: email.trim(),

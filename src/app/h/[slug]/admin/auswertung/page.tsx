@@ -13,21 +13,9 @@ import {
 } from '@/lib/worklog'
 import { addDaysKey, parseTimeZone, zonedDateKey, zonedDayRange } from '@/lib/tz'
 import { groupForPairing, pairingKey, parseStaffTracking } from '@/lib/staff-tracking'
-
-const KIND_LABEL: Record<string, string> = {
-  shift_start: 'Schichtbeginn',
-  shift_end: 'Schichtende',
-  break_start: 'Pause begonnen',
-  break_end: 'Pause beendet',
-  other_cleaning: 'Sonstige Reinigung (Einzelstich)',
-  other_start: 'Sonstige Reinigung begonnen',
-  other_end: 'Sonstige Reinigung beendet',
-  clean_start: 'Reinigung gestartet',
-  clean_done: 'Reinigung abgeschlossen',
-  clean_aborted: 'Reinigung abgebrochen',
-  clean_deferred: 'Gast an der Tür: später',
-  clean_declined: 'Gast an der Tür: heute nicht',
-}
+import { format, getMessages, intlLocale, plural } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
+import Rich from '@/components/i18n/Rich'
 
 /** „YYYY-MM-DD" oder null. */
 function parseDayParam(raw: string | undefined): string | null {
@@ -35,12 +23,12 @@ function parseDayParam(raw: string | undefined): string | null {
 }
 
 /** Uhrzeit vor Ort — der Server läuft in UTC, ohne `timeZone` stünde hier Serverzeit. */
-function timeLabel(iso: string, tz: string): string {
-  return new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: tz })
+function timeLabel(iso: string, tz: string, loc: string): string {
+  return new Date(iso).toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', timeZone: tz })
 }
 
-function dayLabel(key: string, tz: string): string {
-  return zonedDayRange(key, tz).start.toLocaleDateString('de-DE', {
+function dayLabel(key: string, tz: string, loc: string): string {
+  return zonedDayRange(key, tz).start.toLocaleDateString(loc, {
     weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric', timeZone: tz,
   })
 }
@@ -56,6 +44,9 @@ export default async function AuswertungPage({
   // Arbeitszeit-Auswertung ist Personaldatenverarbeitung → verwaltende Rolle.
   const ctx = await getAdminContext(slug)
   if (!ctx) redirect(`/h/${slug}/admin`)
+  const locale = await getLocale()
+  const loc = intlLocale(locale)
+  const m = getMessages(locale).admin.staff.report
 
   const params = await searchParams
   const now = new Date()
@@ -204,23 +195,23 @@ export default async function AuswertungPage({
           Einstellungen, die Seite ist wie Übersicht und Services eine
           Hauptebene. */}
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-xl font-black text-ink">Auswertung Reinigung</h1>
+        <h1 className="text-xl font-black text-ink">{m.title}</h1>
         <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-semibold text-ink-soft">
-          {dayLabel(fromKey, tz)} – {dayLabel(toKey, tz)}
+          {dayLabel(fromKey, tz, loc)} – {dayLabel(toKey, tz, loc)}
         </span>
       </div>
 
       {/* Zeitraum — reines GET-Formular, damit der Stand teil- und druckbar bleibt */}
       <form data-lotse="auswertung.zeitraum" method="get" className="flex flex-wrap items-end gap-3 rounded-xl border border-edge bg-surface p-4 print:hidden">
         <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-          von
+          {m.from}
           <input
             type="date" name="from" defaultValue={fromKey}
             className="rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink focus:border-action focus:outline-none"
           />
         </label>
         <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-          bis
+          {m.to}
           <input
             type="date" name="to" defaultValue={toKey}
             className="rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink focus:border-action focus:outline-none"
@@ -231,7 +222,7 @@ export default async function AuswertungPage({
           type="submit"
           className="rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong"
         >
-          Anzeigen
+          {m.show}
         </button>
       </form>
 
@@ -241,39 +232,41 @@ export default async function AuswertungPage({
         stats={demand}
         routineLabel={stayover.enabled ? hhmm(due.hour, due.minute) : null}
         checkoutLabel={hhmm(stayover.checkoutHour, stayover.checkoutMinute)}
+        m={m.demand}
+        intlLocale={loc}
       />
 
       {!hasActivity ? (
         <div data-lotse="auswertung.kennzahlen" className="rounded-xl border border-edge bg-surface p-8 text-center">
-          <p className="font-semibold text-ink">Keine Tätigkeiten in diesem Zeitraum.</p>
+          <p className="font-semibold text-ink">{m.emptyTitle}</p>
           <p className="mt-1 text-sm text-ink-muted">
-            Sobald Reinigungskräfte Schichten und Reinigungen stechen, erscheinen hier die Kennzahlen.
+            {m.emptyHint}
           </p>
         </div>
       ) : (
         <>
           {/* Kennzahlen gesamt */}
           <section data-lotse="auswertung.kennzahlen" className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-            <Kpi label="Arbeitszeit" value={formatDuration(total.shiftMs)} hint={`${total.shiftCount} Schichten`} />
-            <Kpi label="davon Pause" value={formatDuration(total.breakMs)} />
-            <Kpi label="Netto-Arbeitszeit" value={formatDuration(total.netMs)} tone="positive" />
-            <Kpi label="Zimmerreinigung" value={formatDuration(total.cleaningMs)} hint={`${total.cleaningCount} Zimmer`} />
-            <Kpi label="Ø je Zimmer" value={formatDuration(total.avgCleaningMs)} tone="action" />
+            <Kpi label={m.workTime} value={formatDuration(total.shiftMs)} hint={plural(loc, total.shiftCount, m.shifts)} />
+            <Kpi label={m.breakShare} value={formatDuration(total.breakMs)} />
+            <Kpi label={m.netWorkTime} value={formatDuration(total.netMs)} tone="positive" />
+            <Kpi label={m.roomCleaning} value={formatDuration(total.cleaningMs)} hint={plural(loc, total.cleaningCount, m.rooms)} />
+            <Kpi label={m.avgPerRoom} value={formatDuration(total.avgCleaningMs)} tone="action" />
             <Kpi
-              label="Sonstige Reinigung"
+              label={m.otherCleaning}
               value={formatDuration(total.otherCleaningMs)}
               hint={
                 total.legacyOtherCount > 0
-                  ? `${total.otherCleaningCount}× · ${total.legacyOtherCount} Alt-Stiche ohne Dauer`
-                  : `${total.otherCleaningCount}×`
+                  ? format(m.otherCountLegacy, { count: total.otherCleaningCount, legacy: total.legacyOtherCount })
+                  : format(m.otherCount, { count: total.otherCleaningCount })
               }
             />
-            <Kpi label="Übrige Zeit" value={formatDuration(total.unassignedMs)} hint="Wege, Rüstzeit" />
+            <Kpi label={m.rest} value={formatDuration(total.unassignedMs)} hint={m.restHint} />
             <Kpi
               anchor="auswertung.auffaellig"
-              label="Auffällig"
+              label={m.flagged}
               value={`${total.implausibleCount + total.abortedCount + total.openCount + total.implausibleShiftCount + total.implausibleBreakCount}`}
-              hint={`${total.implausibleShiftCount} Schichten ohne Ende · ${total.abortedCount} abgebrochen · ${total.openCount} offen · ${total.implausibleCount} unplausibel`}
+              hint={format(m.flaggedHint, { shifts: total.implausibleShiftCount, aborted: total.abortedCount, open: total.openCount, implausible: total.implausibleCount })}
               tone={
                 total.implausibleCount + total.openCount + total.implausibleShiftCount > 0
                   ? 'attention'
@@ -286,12 +279,13 @@ export default async function AuswertungPage({
             <p data-lotse="auswertung.tabelle" className="flex items-start gap-2 rounded-xl border border-edge bg-surface-sunken px-4 py-3 text-xs text-ink-muted">
               <Info className="mt-0.5 h-4 w-4 shrink-0" />
               <span>
-                Dieses Haus wertet die Reinigung <strong className="font-semibold text-ink-soft">nur als Team</strong>{' '}aus
-                (Einstellung unter Hotel &amp; Regeln): Die Kennzahlen oben sind die Summe über {groups.size}{' '}
-                {groups.size === 1 ? 'Schicht' : 'Schichten'}{' '}im Zeitraum, eine Tabelle je Kraft und ein Tagesprotokoll
-                gibt es nicht. Wer wann welches Zimmer gereinigt hat, steht im Zimmer-Verlauf als „Reinigungsteam&quot;.
+                <Rich
+                  text={m.teamNote}
+                  vars={{ shifts: plural(loc, groups.size, m.shifts) }}
+                  tags={{ b: t => <strong className="font-semibold text-ink-soft">{t}</strong> }}
+                />
                 {unpaired > 0 && (
-                  <> {unpaired} Stiche aus der Zeit vor dem Team-Modus tragen keinen Schicht-Schlüssel mehr und sind in den Summen nicht enthalten.</>
+                  <> {plural(loc, unpaired, m.teamUnpaired)}</>
                 )}
               </span>
             </p>
@@ -304,50 +298,50 @@ export default async function AuswertungPage({
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead>
                 <tr className="border-b border-edge text-xs font-semibold text-ink-muted">
-                  <th className="px-4 py-2">Reinigungskraft</th>
-                  <th className="px-3 py-2">Schichten</th>
-                  <th className="px-3 py-2">Arbeitszeit</th>
-                  <th className="px-3 py-2">Pause</th>
-                  <th className="px-3 py-2">Netto</th>
-                  <th className="px-3 py-2">Zimmer</th>
-                  <th className="px-3 py-2">Reinigungszeit</th>
-                  <th className="px-3 py-2">Ø je Zimmer</th>
-                  <th className="px-3 py-2">Sonstige</th>
-                  <th className="px-3 py-2">Übrige Zeit</th>
+                  <th className="px-4 py-2">{m.table.maid}</th>
+                  <th className="px-3 py-2">{m.table.shifts}</th>
+                  <th className="px-3 py-2">{m.table.workTime}</th>
+                  <th className="px-3 py-2">{m.table.break}</th>
+                  <th className="px-3 py-2">{m.table.net}</th>
+                  <th className="px-3 py-2">{m.table.rooms}</th>
+                  <th className="px-3 py-2">{m.table.cleaningTime}</th>
+                  <th className="px-3 py-2">{m.table.avgPerRoom}</th>
+                  <th className="px-3 py-2">{m.table.other}</th>
+                  <th className="px-3 py-2">{m.table.rest}</th>
                 </tr>
               </thead>
               <tbody>
-                {maids.map(m => (
-                  <tr key={m.id} className="border-b border-edge last:border-0">
+                {maids.map(x => (
+                  <tr key={x.id} className="border-b border-edge last:border-0">
                     <td className="px-4 py-2">
-                      <Link href={linkFor(m.id)} className="font-bold text-ink hover:underline">
-                        {m.name}
+                      <Link href={linkFor(x.id)} className="font-bold text-ink hover:underline">
+                        {x.name}
                       </Link>
-                      {m.deactivated && (
+                      {x.deactivated && (
                         <span className="ml-2 rounded-full bg-surface-muted px-2 py-0.5 text-xs font-semibold text-ink-muted">
-                          deaktiviert
+                          {m.deactivated}
                         </span>
                       )}
                     </td>
                     <td className="px-3 py-2 text-ink-soft">
-                      {m.stats.shiftCount}
-                      {m.stats.implausibleShiftCount > 0 && (
+                      {x.stats.shiftCount}
+                      {x.stats.implausibleShiftCount > 0 && (
                         <span
                           className="ml-1.5 rounded-full bg-attention-pill px-2 py-0.5 text-xs font-bold text-attention-deepest"
-                          title={`${m.stats.implausibleShiftCount}× Schichtende vergessen — nicht in der Arbeitszeit enthalten`}
+                          title={format(m.openShiftsTitle, { count: x.stats.implausibleShiftCount })}
                         >
-                          +{m.stats.implausibleShiftCount} offen
+                          {format(m.openShifts, { count: x.stats.implausibleShiftCount })}
                         </span>
                       )}
                     </td>
-                    <td className="px-3 py-2 font-semibold text-ink">{formatDuration(m.stats.shiftMs)}</td>
-                    <td className="px-3 py-2 text-ink-soft">{formatDuration(m.stats.breakMs)}</td>
-                    <td className="px-3 py-2 font-semibold text-ink">{formatDuration(m.stats.netMs)}</td>
-                    <td className="px-3 py-2 text-ink-soft">{m.stats.cleaningCount}</td>
-                    <td className="px-3 py-2 text-ink-soft">{formatDuration(m.stats.cleaningMs)}</td>
-                    <td className="px-3 py-2 font-semibold text-ink">{formatDuration(m.stats.avgCleaningMs)}</td>
-                    <td className="px-3 py-2 text-ink-soft">{formatDuration(m.stats.otherCleaningMs)}</td>
-                    <td className="px-3 py-2 text-ink-soft">{formatDuration(m.stats.unassignedMs)}</td>
+                    <td className="px-3 py-2 font-semibold text-ink">{formatDuration(x.stats.shiftMs)}</td>
+                    <td className="px-3 py-2 text-ink-soft">{formatDuration(x.stats.breakMs)}</td>
+                    <td className="px-3 py-2 font-semibold text-ink">{formatDuration(x.stats.netMs)}</td>
+                    <td className="px-3 py-2 text-ink-soft">{x.stats.cleaningCount}</td>
+                    <td className="px-3 py-2 text-ink-soft">{formatDuration(x.stats.cleaningMs)}</td>
+                    <td className="px-3 py-2 font-semibold text-ink">{formatDuration(x.stats.avgCleaningMs)}</td>
+                    <td className="px-3 py-2 text-ink-soft">{formatDuration(x.stats.otherCleaningMs)}</td>
+                    <td className="px-3 py-2 text-ink-soft">{formatDuration(x.stats.unassignedMs)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -357,13 +351,7 @@ export default async function AuswertungPage({
           <p className="flex items-start gap-2 rounded-xl border border-edge bg-surface-sunken px-4 py-3 text-xs text-ink-muted">
             <Info className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
-              Zeiten entstehen aus den Stichen der Kräfte (Schicht, Pause, Reinigung Start/Ende).
-              Vergessene Stiche werden nicht stillschweigend gekappt, sondern aus den Summen
-              genommen und unter &bdquo;Auffällig&ldquo; ausgewiesen: Schichten über
-              {' '}{MAX_SHIFT_HOURS} h, Pausen und sonstige Reinigungen über
-              {' '}{MAX_BREAK_HOURS} h sowie Zimmerreinigungen ohne Abschluss oder länger als
-              {` ${staleMinutes} Minuten. `}&bdquo;Übrige Zeit&ldquo; ist der Rest der
-              Netto-Arbeitszeit (Wege, Rüstzeit). Name anklicken für das Tagesprotokoll.
+              {format(m.explainer, { maxShift: MAX_SHIFT_HOURS, maxBreak: MAX_BREAK_HOURS, stale: staleMinutes })}
             </span>
           </p>
 
@@ -371,26 +359,26 @@ export default async function AuswertungPage({
           {selected && (
             <section className="flex flex-col gap-3">
               <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-lg font-black text-ink">Tagesprotokoll — {selected.name}</h2>
+                <h2 className="text-lg font-black text-ink">{format(m.dayLog, { name: selected.name })}</h2>
                 <Link href={linkFor()} className="text-sm font-semibold text-ink-muted hover:text-ink print:hidden">
-                  schließen
+                  {m.closeDayLog}
                 </Link>
               </div>
 
               {days.map(d => (
                 <div key={d.key} className="rounded-xl border border-edge bg-surface p-4">
                   <div className="flex flex-wrap items-center gap-2 border-b border-edge pb-2">
-                    <h3 className="text-sm font-bold text-ink">{dayLabel(d.key, tz)}</h3>
+                    <h3 className="text-sm font-bold text-ink">{dayLabel(d.key, tz, loc)}</h3>
                     <span className="rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-semibold text-ink-soft">
-                      {formatDuration(d.stats.shiftMs)} Arbeitszeit
+                      {format(m.dayWork, { duration: formatDuration(d.stats.shiftMs) })}
                     </span>
                     {d.stats.breakMs > 0 && (
                       <span className="rounded-full bg-caution-pill px-2.5 py-0.5 text-xs font-semibold text-caution-deepest">
-                        {formatDuration(d.stats.breakMs)} Pause
+                        {format(m.dayBreak, { duration: formatDuration(d.stats.breakMs) })}
                       </span>
                     )}
                     <span className="rounded-full bg-positive-pill px-2.5 py-0.5 text-xs font-semibold text-positive-deepest">
-                      {d.stats.cleaningCount} Zimmer · {formatDuration(d.stats.cleaningMs)}
+                      {plural(loc, d.stats.cleaningCount, m.dayRooms, { duration: formatDuration(d.stats.cleaningMs) })}
                     </span>
                   </div>
 
@@ -400,14 +388,14 @@ export default async function AuswertungPage({
                       return (
                         <li key={`${r.at}-${i}`} className="flex items-baseline gap-3 text-sm">
                           <span className="w-12 shrink-0 font-mono text-xs text-ink-muted">
-                            {timeLabel(r.at, tz)}
+                            {timeLabel(r.at, tz, loc)}
                           </span>
                           <span className="font-semibold text-ink">
-                            {KIND_LABEL[r.kind] ?? r.kind}
+                            {m.kinds[r.kind] ?? r.kind}
                           </span>
                           {r.room_id && (
                             <span className="text-ink-soft">
-                              Zimmer {roomNumber.get(r.room_id) ?? '?'}
+                              {format(m.room, { number: roomNumber.get(r.room_id) ?? '?' })}
                             </span>
                           )}
                           {ms !== undefined && (
