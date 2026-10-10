@@ -300,10 +300,12 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       „Services-Board“ in `lotsen.ts`, `hilfe.ts`, Konto-Seiten und Simulator; Fehlermeldungen
       des Logo-Uploads (`lib/logo.ts`, `utils/logo.ts`); Rollennamen in der Einladungs-Mail.
       **11.10.: Anmeldung, Registrierung, Passwort** (`de/auth.ts`; Navigation „Anfragen“). **11.10.: Konto** (`de/account/`). **11.10.: Simulator** (`de/simulator/`; Tagesbild-Komponente
-      `landing/CleaningSimulation.tsx` trägt noch eigene Texte, u. a. „Kollegin“ in der Legende). Weiter:
-      Konto → Simulator; Fließtexte (Hilfe, Lotsen, Landing, Rechtstexte) als
-      Abschnitte zuletzt. Danach: Sprachwahl des Gastes in `getLocale()` und erste
-      Übersetzung (Englisch) des Gästeportals.
+      `landing/CleaningSimulation.tsx` trägt noch eigene Texte, u. a. „Kollegin“ in der Legende).
+      **Nächste Session:** Fließtexte — Hilfe + Lotsen, dann Landing Page, dann Rechtstexte
+      (offene Frage: nur Deutsch lassen, weil Übersetzung juristisch geprüft werden müsste?).
+      Protokoll: [2026-10-11_Mehrsprachigkeit-Auslagerung.md](Sessions/2026-10-11_Mehrsprachigkeit-Auslagerung.md). Danach:
+      Sprachwahl des Gastes in `getLocale()` und erste Übersetzung (Englisch) des
+      Gästeportals.
 - [ ] **Thailändisch als Belastungsprobe** — probehalber implementieren, um zu
       sehen, wie weit das Sprach-System trägt: nicht-lateinische Schrift,
       andere Zeilenumbruch-Regeln (keine Leerzeichen zwischen Wörtern),

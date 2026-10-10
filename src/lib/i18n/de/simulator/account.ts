@@ -84,7 +84,7 @@ export const account = {
       'Testen Sie RoSe mindestens einen Monat lang kostenlos – ohne Zahlungsdaten. Überzeugt es Sie nicht, löschen Sie das Konto einfach vorher; es entstehen keine Kosten. Ihr Zugang und Ihre Szenarien bleiben dabei, wie sie sind.',
     prices: 'Preise',
     next: 'Weiter',
-    closed: 'Die Anmeldung als Hotel ist derzeit nur mit Einladung möglich und gerade nicht freigeschaltet. Schreiben Sie uns – die Adresse steht im Impressum.',
+    closed: 'Die Registrierung als Hotel ist derzeit nur mit Einladung möglich und gerade nicht freigeschaltet. Schreiben Sie uns – die Adresse steht im Impressum.',
     houseName: 'Name des Hauses',
     yourName: 'Ihr Name',
     inviteCode: 'Einladungscode',

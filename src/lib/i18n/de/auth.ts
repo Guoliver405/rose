@@ -84,7 +84,7 @@ export const auth = {
     passwordsDiffer: 'Die beiden Passwörter stimmen nicht überein.',
     sessionExpired: 'Die Sitzung ist abgelaufen. Bitte einen neuen Link anfordern.',
     samePassword: 'Das ist bereits Ihr aktuelles Passwort. Bitte ein anderes wählen.',
-    signupClosed: 'Die Anmeldung als Hotel ist derzeit nicht freigeschaltet.',
+    signupClosed: 'Die Registrierung als Hotel ist derzeit nicht freigeschaltet.',
     inviteCodeWrong: 'Der Einladungscode stimmt nicht.',
     createAccountFailed: 'Das Konto konnte nicht angelegt werden: {detail}',
     createHouseFailed: 'Das Haus konnte nicht angelegt werden: {detail}',
