@@ -8,6 +8,11 @@ import {
   mailStatusText, type MailStatus,
 } from '@/lib/mail-status'
 import type { MailBlock, MailResult } from '@/utils/mail'
+import { format } from '@/lib/i18n/format'
+import Rich from '@/components/i18n/Rich'
+import { useClientMessages, type ClientMessages } from '@/components/i18n/MessagesProvider'
+
+type Line = ClientMessages['mail']['line']
 
 /**
  * Countdown und Zustellstatus nach dem Senden einer Mail — für **alle**
@@ -163,18 +168,20 @@ const TONE = {
   critical: `${BOX} border-critical-tint-edge bg-critical-tint text-critical-strong`,
 }
 
+/** Datum in der Sprache des Dokuments (`<html lang>`, gesetzt vom Root-Layout). */
 function datum(iso: string | null): string {
   if (!iso) return ''
   const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? '' : d.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })
+  const lang = typeof document === 'undefined' ? undefined : document.documentElement.lang || undefined
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleString(lang, { dateStyle: 'short', timeStyle: 'short' })
 }
 
-function originText(b: MailBlock): string {
+function originText(b: MailBlock, line: Line): string {
   switch (b.origin) {
-    case 'bounce': return 'Der Empfänger-Server hat eine frühere Mail an diese Adresse abgewiesen'
-    case 'complaint': return 'Der Empfänger hat eine frühere Mail als Spam gemeldet'
-    case 'manual': return 'Die Adresse wurde von Hand auf die Sperrliste gesetzt'
-    default: return 'Eine frühere Mail an diese Adresse ist nicht angekommen'
+    case 'bounce': return line.origin.bounce
+    case 'complaint': return line.origin.complaint
+    case 'manual': return line.origin.manual
+    default: return line.origin.other
   }
 }
 
@@ -187,12 +194,13 @@ export function MailStatusLine({
   mail, className = '', children,
 }: { mail: MailDispatch; className?: string; children?: ReactNode }) {
   const { run, status, detail, remaining, timedOut } = mail
+  const { status: st, line } = useClientMessages().mail
   if (!run) return null
 
   const countdown = remaining > 0
-    ? <span className="ml-2 inline-flex items-center gap-1 whitespace-nowrap text-xs font-normal opacity-80"><Clock className="h-3 w-3" /> erneut in {remaining} s</span>
+    ? <span className="ml-2 inline-flex items-center gap-1 whitespace-nowrap text-xs font-normal opacity-80"><Clock className="h-3 w-3" /> {format(line.againIn, { seconds: remaining })}</span>
     : null
-  const an = run.recipient ? <span className="font-mono text-xs opacity-80"> an {run.recipient}</span> : null
+  const an = run.recipient ? <span className="font-mono text-xs opacity-80">{format(line.to, { recipient: run.recipient })}</span> : null
   const auswege = children ? <span className="mt-2 flex flex-wrap gap-2">{children}</span> : null
 
   // Gesperrt: gar nicht erst gesendet. Grund, Datum, Auswege.
@@ -200,15 +208,13 @@ export function MailStatusLine({
     const b = run.blocked
     return (
       <p className={`${TONE.critical} ${className}`}>
-        <span className="inline-flex items-center gap-1.5 font-semibold"><ShieldAlert className="h-4 w-4" /> Nicht gesendet — Adresse gesperrt{an}</span>
+        <span className="inline-flex items-center gap-1.5 font-semibold"><ShieldAlert className="h-4 w-4" /> {line.blockedTitle}{an}</span>
         <span className="mt-1 block">
-          {originText(b)}{b.since ? ` (${datum(b.since)})` : ''}. Der Versanddienst liefert an diese Adresse nichts mehr aus, bis sie freigegeben wird.
+          {format(line.blockedText, { origin: originText(b, line), since: b.since ? ` (${datum(b.since)})` : '' })}
         </span>
-        {b.detail && <span className="mt-1 block text-xs">Grund damals: {b.detail}</span>}
+        {b.detail && <span className="mt-1 block text-xs">{format(line.reasonThen, { detail: b.detail })}</span>}
         <span className="mt-1 block text-xs">
-          {b.canRelease
-            ? 'Stimmt die Adresse? Dann freigeben und erneut senden. Bounct sie wieder, steht der neue Grund hier.'
-            : 'Die Freigabe ist derzeit nicht aus der Anwendung möglich — bitte die Adresse prüfen oder den Zugang auf anderem Weg übergeben.'}
+          {b.canRelease ? line.canRelease : line.cannotRelease}
         </span>
         {auswege}
       </p>
@@ -226,21 +232,21 @@ export function MailStatusLine({
 
   const providerHinweis = run.domainWarning ? (
     <span className="mt-2 block rounded border border-attention-tint-edge bg-attention-tint px-2 py-1 text-xs text-attention-deepest">
-      Hinweis: Bei <span className="font-mono">{run.domainWarning.domain}</span> wurden zuletzt {run.domainWarning.bounced} verschiedene
-      Adressen abgewiesen und keine zugestellt (seit {datum(run.domainWarning.since)}). Dieser Anbieter nimmt unsere Mails
-      derzeit womöglich nicht an — falls nichts ankommt, den Zugang auf anderem Weg übergeben.
+      <Rich
+        text={line.providerHint}
+        vars={{ domain: run.domainWarning.domain, count: run.domainWarning.bounced, since: datum(run.domainWarning.since) }}
+        tags={{ code: c => <span className="font-mono">{c}</span> }}
+      />
     </span>
   ) : null
 
   if (status && isMailFailure(status)) {
     return (
       <p className={`${TONE.critical} ${className}`}>
-        <span className="inline-flex items-center gap-1.5 font-semibold"><MailX className="h-4 w-4" /> Nicht angekommen{an}</span>
-        <span className="mt-1 block">{mailStatusText(status, detail)}</span>
+        <span className="inline-flex items-center gap-1.5 font-semibold"><MailX className="h-4 w-4" /> {line.failedTitle}{an}</span>
+        <span className="mt-1 block">{mailStatusText(status, detail, st)}</span>
         <span className="mt-1 block text-xs">
-          {status === 'suppressed'
-            ? 'Stimmt die Adresse? Dann freigeben und erneut senden — sonst den Zugang auf anderem Weg übergeben.'
-            : 'Adresse prüfen und erneut senden — oder den Zugang auf anderem Weg übergeben. Die Adresse steht jetzt auf der Sperrliste; ein erneuter Versand gibt sie vorher frei.'}
+          {status === 'suppressed' ? line.suppressedHelp : line.failedHelp}
         </span>
         {providerHinweis}
         {auswege}{countdown}
@@ -251,8 +257,8 @@ export function MailStatusLine({
   if (status === 'delivered') {
     return (
       <p className={`${TONE.positive} ${className}`}>
-        <span className="inline-flex items-center gap-1.5 font-semibold"><MailCheck className="h-4 w-4" /> Zugestellt{an}</span>
-        <span className="mt-1 block text-xs">Der Empfänger-Server hat die Mail angenommen. Landet sie nicht im Posteingang, lohnt ein Blick in den Spam-Ordner.</span>{countdown}
+        <span className="inline-flex items-center gap-1.5 font-semibold"><MailCheck className="h-4 w-4" /> {line.deliveredTitle}{an}</span>
+        <span className="mt-1 block text-xs">{line.deliveredHelp}</span>{countdown}
       </p>
     )
   }
@@ -260,8 +266,8 @@ export function MailStatusLine({
   if (status === 'delayed') {
     return (
       <p className={`${TONE.attention} ${className}`}>
-        <span className="inline-flex items-center gap-1.5 font-semibold"><Clock className="h-4 w-4" /> Verzögert{an}</span>
-        <span className="mt-1 block">{mailStatusText('delayed', null)}</span>{providerHinweis}{countdown}
+        <span className="inline-flex items-center gap-1.5 font-semibold"><Clock className="h-4 w-4" /> {line.delayedTitle}{an}</span>
+        <span className="mt-1 block">{mailStatusText('delayed', null, st)}</span>{providerHinweis}{countdown}
       </p>
     )
   }
@@ -269,8 +275,8 @@ export function MailStatusLine({
   if (timedOut) {
     return (
       <p className={`${TONE.attention} ${className}`}>
-        <span className="inline-flex items-center gap-1.5 font-semibold"><Clock className="h-4 w-4" /> Übergeben, Zustellung noch unbestätigt{an}</span>
-        <span className="mt-1 block text-xs">Manche Anbieter bestätigen erst nach Minuten. Bitte im Postfach nachsehen (auch Spam); bei Bedarf erneut senden.</span>
+        <span className="inline-flex items-center gap-1.5 font-semibold"><Clock className="h-4 w-4" /> {line.timedOutTitle}{an}</span>
+        <span className="mt-1 block text-xs">{line.timedOutHelp}</span>
         {providerHinweis}{auswege}
       </p>
     )
@@ -278,8 +284,8 @@ export function MailStatusLine({
 
   return (
     <p className={`${TONE.neutral} ${className}`}>
-      <span className="inline-flex items-center gap-1.5 font-semibold"><Loader2 className="h-4 w-4 animate-spin" /> Übergeben{an}</span>
-      <span className="mt-1 block text-xs">{mailStatusText(status ?? 'sent', null)}</span>{providerHinweis}{countdown}
+      <span className="inline-flex items-center gap-1.5 font-semibold"><Loader2 className="h-4 w-4 animate-spin" /> {line.sentTitle}{an}</span>
+      <span className="mt-1 block text-xs">{mailStatusText(status ?? 'sent', null, st)}</span>{providerHinweis}{countdown}
     </p>
   )
 }
@@ -294,6 +300,7 @@ export const auswegButton = 'inline-flex items-center gap-1.5 rounded-lg border 
  */
 export function InviteLinkBox({ url, onClose }: { url: string; onClose: () => void }) {
   const [copied, setCopied] = useState(false)
+  const t = useClientMessages().mail.line.inviteLink
   async function kopieren() {
     try {
       await navigator.clipboard.writeText(url)
@@ -303,18 +310,17 @@ export function InviteLinkBox({ url, onClose }: { url: string; onClose: () => vo
   }
   return (
     <span className="mt-2 block rounded-lg border border-edge bg-surface p-3 text-ink">
-      <span className="block text-xs font-semibold text-ink-soft">Einladungslink — per Messenger, SMS oder Zettel übergeben</span>
+      <span className="block text-xs font-semibold text-ink-soft">{t.title}</span>
       <span className="mt-1 block break-all rounded bg-surface-muted px-2 py-1 font-mono text-xs select-all">{url}</span>
       <span className="mt-2 flex flex-wrap items-center gap-2">
         <button type="button" onClick={kopieren} className={`${auswegButton} text-ink`}>
           {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-          {copied ? 'Kopiert' : 'Link kopieren'}
+          {copied ? t.copied : t.copy}
         </button>
-        <button type="button" onClick={onClose} className="text-xs text-ink-muted hover:underline">Ausblenden</button>
+        <button type="button" onClick={onClose} className="text-xs text-ink-muted hover:underline">{t.hide}</button>
       </span>
       <span className="mt-2 block text-xs text-ink-muted">
-        Wer diesen Link öffnet, vergibt das Passwort für diesen Zugang. Er gilt einmal und nur begrenzte Zeit.
-        Nutzt ihn jemand anderes zuerst, scheitert die eingeladene Person und meldet sich — dann einfach einen neuen erzeugen.
+        {t.help}
       </span>
     </span>
   )

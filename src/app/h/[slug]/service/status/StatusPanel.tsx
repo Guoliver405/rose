@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Coffee, Loader2, Sparkles, Timer } from 'lucide-react'
 import SlideAction from '@/components/SlideAction'
 import { formatDuration } from '@/lib/worklog'
-import { format, type ServiceMessages } from '@/lib/i18n'
+import { format } from '@/lib/i18n/format'
+import type { ServiceMessages } from '@/lib/i18n'
 import {
   breakToggleAction, otherCleaningToggleAction, shiftEndAction, shiftStartAction,
 } from '../actions'

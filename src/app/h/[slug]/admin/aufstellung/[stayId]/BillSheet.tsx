@@ -3,6 +3,8 @@
 import { Printer } from 'lucide-react'
 import { formatCents } from '@/lib/money'
 import type { StayBill } from '@/lib/stay-bill'
+import type { PrintMessages } from '@/lib/i18n'
+import Rich from '@/components/i18n/Rich'
 
 /**
  * Das Blatt. Auf dem Bildschirm eine Karte, im Druck der Seiteninhalt —
@@ -20,6 +22,8 @@ export default function BillSheet({
   checkedOutAt,
   timeZone,
   bill,
+  m,
+  intlLocale,
 }: {
   hotelName: string
   roomNumber: string
@@ -28,10 +32,13 @@ export default function BillSheet({
   checkedOutAt: string | null
   timeZone: string
   bill: StayBill
+  m: PrintMessages['statement']
+  /** Sprach-Tag für Datum und Uhrzeit („de-DE“). */
+  intlLocale: string
 }) {
   const stamp = (iso: string | null) =>
     iso
-      ? new Intl.DateTimeFormat('de-DE', {
+      ? new Intl.DateTimeFormat(intlLocale, {
           timeZone, day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
         }).format(new Date(iso))
       : '—'
@@ -41,12 +48,12 @@ export default function BillSheet({
       <article className="w-full max-w-[820px] rounded-2xl border border-edge bg-surface p-8 shadow-lg print:w-[186mm] print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none">
         <header className="border-t-4 border-action pt-4">
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-action">
-            Aufstellung der Zusatzleistungen
+            {m.title}
           </p>
           <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
             <h1 className="text-4xl font-black leading-none text-ink">
               <span className="mr-2 align-middle text-sm font-bold uppercase tracking-wider text-ink-muted">
-                Zimmer
+                {m.room}
               </span>
               {roomNumber}
             </h1>
@@ -58,35 +65,34 @@ export default function BillSheet({
 
         <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-1 border-b border-edge pb-4 text-sm sm:grid-cols-3">
           <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Anreise</dt>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-ink-muted">{m.arrival}</dt>
             <dd className="font-semibold text-ink">{stamp(checkedInAt)}</dd>
           </div>
           <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Abreise</dt>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-ink-muted">{m.departure}</dt>
             <dd className="font-semibold text-ink">
-              {checkedOutAt ? stamp(checkedOutAt) : 'Aufenthalt läuft'}
+              {checkedOutAt ? stamp(checkedOutAt) : m.stayRunning}
             </dd>
           </div>
           <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Erstellt</dt>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-ink-muted">{m.created}</dt>
             <dd className="font-semibold text-ink">{stamp(new Date().toISOString())}</dd>
           </div>
         </dl>
 
         {!bill.hasPositions ? (
           <p className="mt-6 rounded-xl border border-edge bg-surface-sunken px-4 py-6 text-center text-sm font-semibold text-ink-soft">
-            Während dieses Aufenthalts wurden keine kostenpflichtigen
-            Zusatzleistungen in Anspruch genommen.
+            {m.none}
           </p>
         ) : (
           <>
             <table className="mt-5 w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-edge text-left text-xs uppercase tracking-wide text-ink-muted">
-                  <th className="py-2 font-semibold">Leistung</th>
-                  <th className="py-2 font-semibold">Bestellt</th>
-                  <th className="py-2 font-semibold">Erbracht</th>
-                  <th className="py-2 text-right font-semibold">Betrag</th>
+                  <th className="py-2 font-semibold">{m.service}</th>
+                  <th className="py-2 font-semibold">{m.ordered}</th>
+                  <th className="py-2 font-semibold">{m.done}</th>
+                  <th className="py-2 text-right font-semibold">{m.amount}</th>
                 </tr>
               </thead>
               <tbody>
@@ -101,7 +107,7 @@ export default function BillSheet({
                       )}
                       {!p.counted && (
                         <span className="mt-1 inline-block rounded-full border border-edge-strong px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-ink-soft">
-                          {p.status === 'open' ? 'offen — nicht berechnet' : 'nicht erbracht — nicht berechnet'}
+                          {p.status === 'open' ? m.openNotCharged : m.notProvidedNotCharged}
                         </span>
                       )}
                     </td>
@@ -118,7 +124,7 @@ export default function BillSheet({
               <tfoot>
                 <tr>
                   <td colSpan={3} className="pt-3 text-right text-sm font-bold uppercase tracking-wide text-ink-soft">
-                    Gesamtsumme
+                    {m.total}
                   </td>
                   <td className="pt-3 text-right text-2xl font-black tabular-nums text-ink">
                     {formatCents(bill.totalCents)}
@@ -129,18 +135,14 @@ export default function BillSheet({
 
             {(bill.openCount > 0 || bill.notDoneCount > 0) && (
               <p className="mt-3 text-xs text-ink-soft">
-                Nicht erbrachte oder noch offene Leistungen sind gekennzeichnet und in
-                der Gesamtsumme nicht enthalten.
+                {m.excludedNote}
               </p>
             )}
           </>
         )}
 
         <footer className="mt-6 border-t border-edge pt-3 text-[11px] leading-relaxed text-ink-muted">
-          Diese Aufstellung ist <span className="font-semibold">keine Rechnung</span> und kein
-          Steuerbeleg. Sie listet ausschließlich die über das Gäste-Portal bestellten
-          Zusatzleistungen dieses Zimmers; Übernachtung und weitere Posten sowie die
-          Rechnungsstellung liegen im System des Hauses.
+          <Rich text={m.footer} tags={{ b: c => <span className="font-semibold">{c}</span> }} />
         </footer>
       </article>
 
@@ -151,7 +153,7 @@ export default function BillSheet({
           className="flex items-center gap-2 rounded-xl bg-action px-5 py-2.5 font-bold text-action-foreground shadow-sm hover:bg-action-strong"
         >
           <Printer className="h-4 w-4" />
-          Aufstellung drucken
+          {m.print}
         </button>
       </div>
     </div>

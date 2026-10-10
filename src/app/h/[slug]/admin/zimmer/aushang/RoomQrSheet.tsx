@@ -4,6 +4,8 @@ import { useState, useTransition } from 'react'
 import { Loader2, Printer, QrCode, RefreshCw } from 'lucide-react'
 import { GuestSheetA4, GuestSheetCompact } from '@/components/print/GuestSheet'
 import type { GuestSheetText } from '@/lib/guest-guide'
+import { format as fill, plural } from '@/lib/i18n/format'
+import type { PrintMessages } from '@/lib/i18n'
 import { ensureRoomTokensAction, regenerateRoomTokenAction } from './actions'
 
 export type RoomQrData = {
@@ -39,6 +41,8 @@ export default function RoomQrSheet({
   texts,
   manualUrl,
   canRenew,
+  m,
+  intlLocale,
 }: {
   hotelSlug: string
   cards: RoomQrData[]
@@ -50,6 +54,9 @@ export default function RoomQrSheet({
   manualUrl: string
   /** „Code erneuern" invalidiert den alten Aushang — nur für Admins. */
   canRenew: boolean
+  m: PrintMessages['roomSigns']
+  /** Sprach-Tag für Pluralformen („de-DE“). */
+  intlLocale: string
 }) {
   const [pending, startTransition] = useTransition()
   const [format, setFormat] = useState<'a4' | 'kompakt'>('a4')
@@ -64,9 +71,7 @@ export default function RoomQrSheet({
     startTransition(async () => {
       const res = await ensureRoomTokensAction(hotelSlug)
       if (res.error) { setError(res.error); return }
-      setNotice(res.created === 0
-        ? 'Alle Zimmer haben bereits einen QR-Code.'
-        : `${res.created} QR-Code${res.created === 1 ? '' : 's'} erzeugt.`)
+      setNotice(res.created === 0 ? m.allHaveCodes : plural(intlLocale, res.created ?? 0, m.created))
     })
   }
 
@@ -76,7 +81,7 @@ export default function RoomQrSheet({
     startTransition(async () => {
       const res = await regenerateRoomTokenAction(hotelSlug, roomId)
       if (res.error) { setError(res.error); return }
-      setNotice(`Neuer QR-Code für Zimmer ${number} — der alte Aushang ist ungültig.`)
+      setNotice(fill(m.renewed, { number }))
     })
   }
 
@@ -89,7 +94,7 @@ export default function RoomQrSheet({
   return (
     <div className="flex flex-col gap-4">
       <div data-lotse="aushang.knopf" className="flex flex-wrap items-center gap-3 print:hidden">
-        <h1 className="text-xl font-black text-ink">Zimmer-QR-Aushänge</h1>
+        <h1 className="text-xl font-black text-ink">{m.title}</h1>
         {missing > 0 ? (
           <button
             type="button"
@@ -98,15 +103,15 @@ export default function RoomQrSheet({
             className="flex items-center gap-1.5 rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
-            {missing} fehlende QR-Codes erzeugen
+            {plural(intlLocale, missing, m.createMissing)}
           </button>
         ) : cards.length > 0 && (
           <>
             <FormatKnopf aktiv={format === 'a4'} onClick={() => setFormat('a4')}>
-              DIN A4 — eine Seite je Zimmer
+              {m.formatA4}
             </FormatKnopf>
             <FormatKnopf aktiv={format === 'kompakt'} onClick={() => setFormat('kompakt')}>
-              Kompakt — vier je Seite
+              {m.formatCompact}
             </FormatKnopf>
             <button
               type="button"
@@ -114,16 +119,14 @@ export default function RoomQrSheet({
               className="flex items-center gap-1.5 rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong"
             >
               <Printer className="h-4 w-4" />
-              Alle drucken ({format === 'a4' ? `${cards.length} Seiten` : `${seiten.length} Seiten`})
+              {plural(intlLocale, format === 'a4' ? cards.length : seiten.length, m.printAll)}
             </button>
           </>
         )}
       </div>
 
       <p data-lotse="aushang.hinweis" className="text-sm text-ink-muted print:hidden">
-        Einmal drucken, im Zimmer aufhängen oder in die Mappe legen — der Gast scannt und tippt
-        nur noch seine PIN, die er beim Check-in bekommt. Das kompakte Format lässt sich
-        auseinanderschneiden. Ein neuer Code invalidiert den alten Aushang des Zimmers.
+        {m.hint}
       </p>
 
       {error && (
@@ -139,7 +142,7 @@ export default function RoomQrSheet({
 
       {cards.length === 0 ? (
         <p className="rounded-xl border border-edge bg-surface p-8 text-center font-semibold text-ink">
-          Noch keine Zimmer angelegt.
+          {m.noRooms}
         </p>
       ) : format === 'a4' ? (
         <div className="flex flex-col items-center gap-6 print:block print:gap-0">
@@ -163,13 +166,14 @@ export default function RoomQrSheet({
                   texts={texts}
                 />
               ) : (
-                <OhneCode number={c.number} />
+                <OhneCode number={c.number} text={m.noCode} />
               )}
               {canRenew && c.url && (
                 <ErneuernKnopf
                   ersteKarte={i === 0}
                   pending={pending}
                   onClick={() => runRegenerate(c.roomId, c.number)}
+                  label={m.renew}
                 />
               )}
             </div>
@@ -202,13 +206,14 @@ export default function RoomQrSheet({
                       texts={texts}
                     />
                   ) : (
-                    <OhneCode number={c.number} />
+                    <OhneCode number={c.number} text={m.noCode} />
                   )}
                   {canRenew && c.url && (
                     <ErneuernKnopf
                       ersteKarte={s === 0 && i === 0}
                       pending={pending}
                       onClick={() => runRegenerate(c.roomId, c.number)}
+                      label={m.renew}
                     />
                   )}
                 </div>
@@ -221,20 +226,21 @@ export default function RoomQrSheet({
   )
 }
 
-function OhneCode({ number }: { number: string }) {
+function OhneCode({ number, text }: { number: string; text: string }) {
   return (
     <p className="rounded-xl border-2 border-dashed border-edge-strong bg-surface px-6 py-10 text-center text-sm font-semibold text-ink-muted">
-      Zimmer {number}: noch kein QR-Code — oben erzeugen.
+      {fill(text, { number })}
     </p>
   )
 }
 
 function ErneuernKnopf({
-  ersteKarte, pending, onClick,
+  ersteKarte, pending, onClick, label,
 }: {
   ersteKarte: boolean
   pending: boolean
   onClick: () => void
+  label: string
 }) {
   return (
     <button
@@ -244,7 +250,7 @@ function ErneuernKnopf({
       onClick={onClick}
       className="flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink disabled:opacity-50 print:hidden"
     >
-      <RefreshCw className="h-3 w-3" /> Code erneuern
+      <RefreshCw className="h-3 w-3" /> {label}
     </button>
   )
 }

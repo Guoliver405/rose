@@ -29,7 +29,10 @@
 
 import { createAdminClient } from '@/utils/supabase/service'
 import { guideLines, type GuestGuide } from '@/lib/guest-guide'
-import { inviteMail, recoveryMail, simConfirmMail, simExistsMail } from '@/lib/mail-templates'
+import { format, getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
+import { SHEETS } from '@/lib/i18n/sheets'
+import { inviteMail, plainText, recoveryMail, richHtml, simConfirmMail, simExistsMail } from '@/lib/mail-templates'
 import { SIMULATOR_NAME } from '@/lib/sim-account'
 import {
   advance, domainPattern, MAIL_COOLDOWN_SECONDS, MAIL_LOG_RETENTION_DAYS,
@@ -37,6 +40,11 @@ import {
 } from '@/lib/mail-status'
 
 const API = 'https://api.resend.com/emails'
+
+/** Meldungen des Versands in der Sprache der Anfrage. */
+async function mailErrors() {
+  return getMessages(await getLocale()).mail.errors
+}
 const SUPPRESSIONS_API = 'https://api.resend.com/suppressions'
 
 /** Ist der Versand eingerichtet? Steuert, ob die Oberfläche ihn anbietet. */
@@ -179,6 +187,7 @@ async function lookupSuppression(email: string): Promise<SuppressionLookup> {
  * ist, und genau richtig, wenn der Fehler behoben wurde.
  */
 export async function releaseSuppression(email: string): Promise<{ error?: string }> {
+  const e = await mailErrors()
   try {
     const res = await fetch(`${SUPPRESSIONS_API}/${encodeURIComponent(email.trim().toLowerCase())}`, {
       method: 'DELETE',
@@ -188,12 +197,12 @@ export async function releaseSuppression(email: string): Promise<{ error?: strin
     const body = await res.text().catch(() => '')
     console.error('[mail] Freigabe antwortete', res.status, body)
     if (res.status === 401 || res.status === 403) {
-      return { error: 'Die Freigabe ist mit dem hinterlegten Resend-Schlüssel nicht erlaubt (Vollzugriff nötig).' }
+      return { error: e.releaseForbidden }
     }
-    return { error: `Die Freigabe ist fehlgeschlagen (Resend antwortete ${res.status}).` }
+    return { error: format(e.releaseFailed, { status: res.status }) }
   } catch (err) {
     console.error('[mail] Freigabe fehlgeschlagen:', err)
-    return { error: 'Die Freigabe ist fehlgeschlagen: Resend nicht erreichbar.' }
+    return { error: e.releaseUnreachable }
   }
 }
 
@@ -334,8 +343,9 @@ export async function mailStatus(logId: string): Promise<MailStatusView | null> 
 }
 
 async function dispatch(d: Dispatch): Promise<MailResult> {
-  if (!mailReady()) return { error: 'Mailversand ist nicht eingerichtet.' }
-  if (!/^\S+@\S+\.\S+$/.test(d.to)) return { error: 'Bitte eine gültige E-Mail-Adresse angeben.' }
+  const e = await mailErrors()
+  if (!mailReady()) return { error: e.notConfigured }
+  if (!/^\S+@\S+\.\S+$/.test(d.to)) return { error: e.invalidAddress }
 
   const admin = createAdminClient()
 
@@ -352,7 +362,7 @@ async function dispatch(d: Dispatch): Promise<MailResult> {
   if (wait > 0) {
     // Ohne Zahl im Text: die Oberfläche zählt daneben live herunter, eine
     // eingefrorene Sekundenangabe stünde sonst neben dem laufenden Countdown.
-    return { wait, error: 'Gerade erst verschickt — bitte kurz warten, bevor erneut gesendet wird.' }
+    return { wait, error: e.cooldown }
   }
   await aufraeumen(admin)
 
@@ -373,7 +383,7 @@ async function dispatch(d: Dispatch): Promise<MailResult> {
     .single()
   if (insErr || !row) {
     console.error('[mail] mail_log insert:', insErr?.message)
-    return { error: 'Die Mail konnte nicht verschickt werden.' }
+    return { error: e.sendFailed }
   }
   const logId = row.id as string
 
@@ -402,13 +412,13 @@ async function dispatch(d: Dispatch): Promise<MailResult> {
       // Der Klartext von Resend gehört ins Server-Log; für die Oberfläche
       // reicht die Meldung ohne Statuscode-Prosa.
       console.error('[mail] Resend antwortete', res.status, body)
-      let grund = `Resend antwortete ${res.status}`
+      let grund = format(e.providerAnswered, { status: res.status })
       try {
         const j = JSON.parse(body) as { message?: string }
         if (j.message) grund = j.message
       } catch { /* kein JSON */ }
       await advanceMailStatus(logId, 'failed', { detail: grund })
-      return { logId, error: `Die Mail konnte nicht verschickt werden: ${grund}` }
+      return { logId, error: format(e.sendFailedDetail, { detail: grund }) }
     }
 
     const { id: resendId } = (await res.json()) as { id?: string }
@@ -416,8 +426,8 @@ async function dispatch(d: Dispatch): Promise<MailResult> {
     return { logId, domainWarning }
   } catch (err) {
     console.error('[mail] Versand fehlgeschlagen:', err)
-    await advanceMailStatus(logId, 'failed', { detail: 'Resend nicht erreichbar' })
-    return { logId, error: 'Die Mail konnte nicht verschickt werden: Resend nicht erreichbar.' }
+    await advanceMailStatus(logId, 'failed', { detail: e.providerUnreachable })
+    return { logId, error: format(e.sendFailedDetail, { detail: e.providerUnreachable }) }
   }
 }
 
@@ -443,30 +453,35 @@ export type GuestAccessMail = {
   release?: boolean
 }
 
+/**
+ * Die Mail geht in der Sprache der Anleitung (`guide.lang`, die erste Sprache
+ * des Hauses) — Anrede, Knopf und Überschrift eingeschlossen. Bis 10.10.2026
+ * standen diese Zeilen fest auf Deutsch, auch über einer englischen Anleitung.
+ */
 function guestHtml(m: GuestAccessMail): string {
-  const hotel = escape(m.hotelName)
-  const zimmer = escape(m.roomNumber)
+  const t = SHEETS[m.guide.lang].mail
+  const vars = { hotel: m.hotelName, room: m.roomNumber }
   const url = escape(m.url)
 
   // Bewusst KEIN QR-Code im HTML: Gmail und andere blockieren `data:`-Bilder,
   // der Code wäre also ausgerechnet dort unsichtbar. In einer Mail genügt der
   // klickbare Link — QR-Codes braucht nur Papier.
   const pinBlock = m.pin
-    ? `<p style="margin:16px 0 0">Ihre PIN: <strong style="font-size:20px;letter-spacing:3px">${escape(m.pin)}</strong></p>`
+    ? `<p style="margin:16px 0 0">${escape(t.pin)} <strong style="font-size:20px;letter-spacing:3px">${escape(m.pin)}</strong></p>`
     : ''
 
   return `<!doctype html>
-<html lang="de"><body style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#1e293b;line-height:1.5">
-  <p>Guten Tag,</p>
-  <p>hier ist Ihr Zugang zum Gäste-Portal von <strong>${hotel}</strong>, Zimmer <strong>${zimmer}</strong>.</p>
+<html lang="${m.guide.lang}"><body style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#1e293b;line-height:1.5">
+  <p>${escape(t.greeting)}</p>
+  <p>${richHtml(t.intro, vars)}</p>
   <p style="margin:24px 0">
-    <a href="${url}" style="background:#2563eb;color:#ffffff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold">Gäste-Portal öffnen</a>
+    <a href="${url}" style="background:#2563eb;color:#ffffff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold">${escape(t.open)}</a>
   </p>
   ${pinBlock}
   <p style="margin-top:24px;font-size:13px;color:#64748b">
-    Falls sich der Knopf nicht öffnen lässt:<br><a href="${url}">${url}</a>
+    ${escape(t.fallback)}<br><a href="${url}">${url}</a>
   </p>
-  <h2 style="margin-top:28px;font-size:15px">So funktioniert das Portal</h2>
+  <h2 style="margin-top:28px;font-size:15px">${escape(t.howTo)}</h2>
   <p>${escape(m.guide.purpose)}</p>
   <ul style="padding-left:20px">
     <li style="margin-bottom:8px"><strong>${escape(m.guide.labels.cleaning)}:</strong> ${escape(m.guide.cleaning)}</li>
@@ -485,15 +500,16 @@ function guestHtml(m: GuestAccessMail): string {
  * Sendehistorie. Kostet nichts und ist für Textclients ohnehin richtig.
  */
 function guestText(m: GuestAccessMail): string {
+  const t = SHEETS[m.guide.lang].mail
   const zeilen = [
-    'Guten Tag,',
+    t.greeting,
     '',
-    `hier ist Ihr Zugang zum Gäste-Portal von ${m.hotelName}, Zimmer ${m.roomNumber}.`,
+    plainText(t.intro, { hotel: m.hotelName, room: m.roomNumber }),
     '',
-    `Gäste-Portal öffnen: ${m.url}`,
+    `${t.open}: ${m.url}`,
   ]
-  if (m.pin) zeilen.push('', `Ihre PIN: ${m.pin}`)
-  zeilen.push('', 'So funktioniert das Portal:', '')
+  if (m.pin) zeilen.push('', `${t.pin} ${m.pin}`)
+  zeilen.push('', `${t.howTo}:`, '')
   for (const line of guideLines(m.guide)) zeilen.push(`- ${line}`)
   return zeilen.join('\n')
 }
@@ -504,7 +520,7 @@ export function sendGuestAccessMail(m: GuestAccessMail): Promise<MailResult> {
     purpose: 'guest_access',
     to: m.to,
     fromName: m.hotelName,
-    subject: `Ihr Zugang zum Gäste-Portal — ${m.hotelName}, Zimmer ${m.roomNumber}`,
+    subject: format(SHEETS[m.guide.lang].mail.subject, { hotel: m.hotelName, room: m.roomNumber }),
     html: guestHtml(m),
     text: guestText(m),
     hotelId: m.hotelId,
@@ -531,7 +547,7 @@ export function sendInviteMail(m: {
   return dispatch({
     purpose: 'invite',
     to: m.to,
-    fromName: `${m.hotelName} via RoSe`,
+    fromName: format(getMessages().mail.fromVia, { hotel: m.hotelName }),
     ...inhalt,
     hotelId: m.hotelId,
     userId: m.userId,

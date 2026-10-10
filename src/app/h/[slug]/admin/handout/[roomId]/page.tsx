@@ -8,6 +8,8 @@ import { mailReady } from '@/utils/mail'
 import { logoUrlFor } from '@/utils/logo'
 import { buildGuestSheets } from '@/lib/guest-guide'
 import GuestHandoutCard from './GuestHandoutCard'
+import { format, getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /**
  * Druckbares Gast-Handout nach dem Check-in — der Zettel, den der Gast
@@ -55,6 +57,7 @@ export default async function HandoutPage({
         ? roomAccessUrl(origin, token.token)
         : manualUrl
   const deepLink = accessMode === 'link' || Boolean(token)
+  const m = getMessages(await getLocale()).print
 
   return (
     <div className="flex flex-col items-center gap-5 py-6">
@@ -62,12 +65,12 @@ export default async function HandoutPage({
         href={`/h/${ctx.hotelSlug}/admin`}
         className="flex items-center gap-1.5 self-start text-sm font-semibold text-ink-soft hover:text-ink print:hidden"
       >
-        <ArrowLeft className="h-4 w-4" /> Zurück zur Übersicht
+        <ArrowLeft className="h-4 w-4" /> {m.backToOverview}
       </Link>
 
       {!stay ? (
         <p className="rounded-xl border border-attention-tint-edge bg-attention-tint px-4 py-3 font-semibold text-attention-deepest">
-          Zimmer {room.number} ist aktuell nicht belegt — erst einchecken, dann Handout drucken.
+          {format(m.checkinSheet.notOccupied, { number: room.number })}
         </p>
       ) : (
         <GuestHandoutCard
@@ -84,6 +87,7 @@ export default async function HandoutPage({
           mailReady={mailReady()}
           logoUrl={logoUrlFor(ctx.logoPath)}
           texts={buildGuestSheets(ctx.policies, { accessMode, deepLink })}
+          m={m.checkinSheet}
         />
       )}
     </div>

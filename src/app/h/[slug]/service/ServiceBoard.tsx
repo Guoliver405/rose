@@ -14,7 +14,8 @@ import {
   leaveFloorAction, startCleaningAction,
 } from './actions'
 import { floorSwitchHint, recommendFloor, type DoorChoice, type RecommendFloor } from '@/lib/board'
-import { format, plural, type ServiceMessages } from '@/lib/i18n'
+import { format, plural } from '@/lib/i18n/format'
+import type { ServiceMessages } from '@/lib/i18n'
 
 type M = ServiceMessages
 

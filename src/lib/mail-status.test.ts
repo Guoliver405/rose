@@ -5,6 +5,7 @@ import {
   mailStatusText, recipientDomain, recipientHash, statusFromEvent, verifyResendSignature,
 } from './mail-status'
 import { inviteMail, recoveryMail } from './mail-templates'
+import { getMessages } from './i18n'
 
 describe('Statusfolge', () => {
   it('geht nur nach vorn — ein verspätetes „sent" überschreibt kein „delivered"', () => {
@@ -59,9 +60,10 @@ describe('Statusfolge', () => {
   })
 
   it('formuliert den Grund mit, wenn es einen gibt', () => {
-    expect(mailStatusText('bounced', 'user unknown')).toContain('user unknown')
-    expect(mailStatusText('bounced', null)).toMatch(/abgewiesen/)
-    expect(mailStatusText('delivered', null)).toBe('Zugestellt.')
+    const st = getMessages().mail.status
+    expect(mailStatusText('bounced', 'user unknown', st)).toContain('user unknown')
+    expect(mailStatusText('bounced', null, st)).toMatch(/abgewiesen/)
+    expect(mailStatusText('delivered', null, st)).toBe('Zugestellt.')
   })
 })
 

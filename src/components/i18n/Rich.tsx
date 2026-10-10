@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from 'react'
-import { parseRich, type Vars } from '@/lib/i18n'
+import { parseRich, type Vars } from '@/lib/i18n/format'
 
 /**
  * Text aus der Sprachdatei mit Hervorhebungen: `<b>…</b>` im Text wird über

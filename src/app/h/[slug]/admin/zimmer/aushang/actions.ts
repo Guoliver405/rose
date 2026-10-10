@@ -4,6 +4,13 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/utils/supabase/service'
 import { getAdminContext, getManagementContext } from '@/utils/auth'
 import { generateToken } from '@/lib/ids'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
+
+/** Meldungen der Aushang-Seite in der Sprache der Anfrage. */
+async function messages() {
+  return getMessages(await getLocale()).print.roomSigns.errors
+}
 
 /**
  * Fehlende Zimmer-QR-Tokens erzeugen (idempotent): bestehende Tokens
@@ -11,8 +18,9 @@ import { generateToken } from '@/lib/ids'
  * versehentlich invalidiert.
  */
 export async function ensureRoomTokensAction(slug: string): Promise<{ created?: number; error?: string }> {
+  const e = await messages()
   const ctx = await getManagementContext(slug)
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!ctx) return { error: e.notSignedIn }
   const admin = createAdminClient()
 
   const [{ data: rooms }, { data: existing }] = await Promise.all([
@@ -39,13 +47,14 @@ export async function ensureRoomTokensAction(slug: string): Promise<{ created?: 
  * Bestehendes → nur Admin; Rezeption darf Aushänge nur (nach-)drucken.
  */
 export async function regenerateRoomTokenAction(slug: string, roomId: string): Promise<{ error?: string }> {
+  const e = await messages()
   const ctx = await getAdminContext(slug)
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
   const admin = createAdminClient()
 
   const { data: room } = await admin
     .from('rooms').select('id, hotel_id').eq('id', roomId).maybeSingle()
-  if (!room || room.hotel_id !== ctx.hotelId) return { error: 'Zimmer nicht gefunden.' }
+  if (!room || room.hotel_id !== ctx.hotelId) return { error: e.roomNotFound }
 
   const { error } = await admin.from('room_guest_tokens').upsert(
     { room_id: roomId, hotel_id: ctx.hotelId, token: generateToken(24) },

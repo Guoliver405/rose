@@ -6,6 +6,8 @@ import { createAdminClient } from '@/utils/supabase/service'
 import { loadStayBill } from '@/utils/stay-bill'
 import { parseTimeZone } from '@/lib/tz'
 import BillSheet from './BillSheet'
+import { getMessages, intlLocale } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /**
  * Druckbare Aufstellung der Zusatzleistungen eines Aufenthalts.
@@ -40,6 +42,8 @@ export default async function AufstellungPage({
 
   const room = Array.isArray(stay.rooms) ? stay.rooms[0] : stay.rooms
   const bill = await loadStayBill(admin, ctx.hotelId, stay.id)
+  const locale = await getLocale()
+  const m = getMessages(locale).print
 
   return (
     <div className="flex flex-col items-center gap-5 py-6">
@@ -47,7 +51,7 @@ export default async function AufstellungPage({
         href={`/h/${ctx.hotelSlug}/admin`}
         className="flex items-center gap-1.5 self-start text-sm font-semibold text-ink-soft hover:text-ink print:hidden"
       >
-        <ArrowLeft className="h-4 w-4" /> Zurück zur Übersicht
+        <ArrowLeft className="h-4 w-4" /> {m.backToOverview}
       </Link>
 
       <BillSheet
@@ -58,6 +62,8 @@ export default async function AufstellungPage({
         checkedOutAt={stay.checked_out_at}
         timeZone={parseTimeZone(ctx.policies)}
         bill={bill}
+        m={m.statement}
+        intlLocale={intlLocale(locale)}
       />
     </div>
   )

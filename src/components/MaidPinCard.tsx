@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react'
 import { Printer, Sparkles } from 'lucide-react'
 import QRCode from 'qrcode'
+import { format } from '@/lib/i18n/format'
+import type { PrintMessages } from '@/lib/i18n'
+import Rich from '@/components/i18n/Rich'
 
 /**
  * Druckbare QR-Login-Karte für Reinigungskräfte (Pattern aus HotCord).
@@ -17,6 +20,7 @@ export default function MaidPinCard({
   pin,
   loginUrl,
   manualUrl,
+  m,
 }: {
   hotelName: string
   displayName: string
@@ -25,6 +29,7 @@ export default function MaidPinCard({
   loginUrl: string // vollständige URL inkl. Origin
   /** Abtippbare Anmeldeadresse des Hotels für den PIN-Weg. */
   manualUrl: string
+  m: PrintMessages['accessCard']
 }) {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
 
@@ -40,7 +45,7 @@ export default function MaidPinCard({
           <div className="mb-1 flex items-center justify-center gap-2">
             <Sparkles className="h-4 w-4" />
             <p className="text-[11px] font-black uppercase tracking-[0.2em]">
-              Personal-Zugang Reinigung
+              {m.title}
             </p>
             <Sparkles className="h-4 w-4" />
           </div>
@@ -53,14 +58,14 @@ export default function MaidPinCard({
         <div className="space-y-5 px-8 py-7 text-center">
           <div>
             <p className="mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-attention-strong">
-              QR scannen → automatisch eingeloggt
+              {m.scan}
             </p>
             {qrDataUrl ? (
               // next/image lohnt bei data:image/png;base64 nicht
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={qrDataUrl}
-                alt="QR-Code zum Reinigungsboard"
+                alt={m.qrAlt}
                 className="mx-auto rounded-lg border-2 border-attention-tint-edge"
                 width={200}
                 height={200}
@@ -77,29 +82,26 @@ export default function MaidPinCard({
               und die Anmeldung findet nicht statt. */}
           <div className="border-t-2 border-dashed border-attention-tint-edge pt-5">
             <p className="mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-attention-strong">
-              Anmeldung von Hand → Zugangsdaten
+              {m.manual}
             </p>
             <dl className="mx-auto grid w-fit grid-cols-[auto_auto] items-baseline gap-x-4 gap-y-2 text-left">
-              <dt className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">Benutzername</dt>
+              <dt className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">{m.username}</dt>
               <dd className="font-mono text-2xl font-black text-attention-deepest">{username}</dd>
-              <dt className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">PIN</dt>
+              <dt className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">{m.pin}</dt>
               <dd className="font-mono text-4xl font-black tracking-[0.25em] text-attention-deepest">{pin}</dd>
             </dl>
             <p className="mt-3 break-all text-[10px] text-ink-muted">
-              Adresse: {manualUrl}
+              {format(m.address, { url: manualUrl })}
             </p>
           </div>
 
           <p className="pt-1 text-[11px] leading-relaxed text-ink-muted">
-            QR mit dem Tablet scannen oder auf der Adresse oben Benutzername und
-            PIN eintippen — als Benutzername gilt <span className="font-mono font-bold">{username}</span>,
-            nicht der Name im Kopf der Karte. Diese Karte vertraulich behandeln — sie
-            öffnet das Reinigungsboard ohne weitere Bestätigung.
+            <Rich text={m.help} vars={{ username }} tags={{ code: c => <span className="font-mono font-bold">{c}</span> }} />
           </p>
 
           {/* Klartext-Link als Fallback, falls der QR-Scan nicht klappt */}
           <p className="break-all border-t border-dashed border-attention-tint-edge pt-2 text-[10px] text-ink-muted">
-            QR-Ziel: {loginUrl}
+            {format(m.target, { url: loginUrl })}
           </p>
         </div>
       </div>
@@ -109,7 +111,7 @@ export default function MaidPinCard({
         className="flex items-center gap-2 rounded-xl bg-attention-strong px-5 py-2.5 font-bold text-attention-foreground shadow-sm hover:opacity-90 print:hidden"
       >
         <Printer className="h-4 w-4" />
-        Karte drucken
+        {m.print}
       </button>
     </div>
   )

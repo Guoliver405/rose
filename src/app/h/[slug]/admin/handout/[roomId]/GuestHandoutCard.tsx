@@ -8,6 +8,8 @@ import { auswegButton, beginFrom, MailStatusLine, sendLabel, useMailDispatch } f
 import { RotateCw } from 'lucide-react'
 import type { GuestAccessMode } from '@/lib/guest-access'
 import type { GuestSheetText } from '@/lib/guest-guide'
+import type { PrintMessages } from '@/lib/i18n'
+import Rich from '@/components/i18n/Rich'
 
 /**
  * Druckbares Gast-Handout — plus Versand per Mail.
@@ -40,6 +42,7 @@ export default function GuestHandoutCard({
   deepLink,
   mailReady,
   texts,
+  m,
 }: {
   hotelSlug: string
   roomId: string
@@ -57,6 +60,7 @@ export default function GuestHandoutCard({
   mailReady: boolean
   /** Ein bis zwei Sprachblöcke, wie das Haus sie gewählt hat. */
   texts: GuestSheetText[]
+  m: PrintMessages['checkinSheet']
 }) {
   const [pending, startTransition] = useTransition()
   const [format, setFormat] = useState<'a4' | 'kompakt'>('a4')
@@ -88,7 +92,7 @@ export default function GuestHandoutCard({
       onClick={e => sendMail(e, true)}
       className={`${auswegButton} text-critical-strong`}
     >
-      <RotateCw className="h-3.5 w-3.5" /> Adresse freigeben und erneut senden
+      <RotateCw className="h-3.5 w-3.5" /> {m.release}
     </button>
   ) : null
 
@@ -114,10 +118,10 @@ export default function GuestHandoutCard({
       {/* ── Format wählen, nie gedruckt ────────────────────────────────── */}
       <div className="flex flex-wrap items-center justify-center gap-2 print:hidden">
         <FormatKnopf aktiv={format === 'a4'} onClick={() => setFormat('a4')}>
-          DIN A4 — Mappe, Aufsteller, Rahmen
+          {m.formatA4}
         </FormatKnopf>
         <FormatKnopf aktiv={format === 'kompakt'} onClick={() => setFormat('kompakt')}>
-          Kompakt — Zettel für die Hand
+          {m.formatCompact}
         </FormatKnopf>
       </div>
 
@@ -130,7 +134,7 @@ export default function GuestHandoutCard({
           className="flex items-center gap-2 rounded-xl bg-action px-5 py-2.5 font-bold text-action-foreground shadow-sm hover:bg-action-strong"
         >
           <Printer className="h-4 w-4" />
-          {format === 'a4' ? 'Handout drucken (DIN A4)' : 'Zettel drucken (kompakt)'}
+          {format === 'a4' ? m.printA4 : m.printCompact}
         </button>
 
         {mailReady ? (
@@ -139,7 +143,7 @@ export default function GuestHandoutCard({
             className="flex w-[380px] flex-col gap-2 rounded-xl border border-edge bg-surface p-4"
           >
             <p className="flex items-center gap-1.5 text-sm font-bold text-ink-soft">
-              <Mail className="h-4 w-4" /> Stattdessen per E-Mail schicken
+              <Mail className="h-4 w-4" /> {m.mailTitle}
             </p>
             <div className="flex gap-2">
               <input
@@ -147,7 +151,7 @@ export default function GuestHandoutCard({
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="adresse@beispiel.de"
+                placeholder={m.mailPlaceholder}
                 className="flex-1 rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink focus:border-action focus:outline-none"
               />
               <button
@@ -156,27 +160,22 @@ export default function GuestHandoutCard({
                 className="flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
               >
                 {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                {sendLabel('Senden', mail)}
+                {sendLabel(m.send, mail)}
               </button>
             </div>
             <p className="text-xs text-ink-muted">
-              Die Adresse wird <strong>nicht gespeichert</strong> — sie dient nur diesem Versand.
-              Die Mail geht in der ersten Sprache des Hauses heraus; Piktogramme und die
-              zweite Sprache stehen nur auf dem Ausdruck.
+              <Rich text={m.mailHint} />
             </p>
             <MailStatusLine mail={mail}>
               {freigeben}
               {mail.failed && (
-                <span className="self-center text-xs text-ink-muted">Oder: das Handout drucken — es trägt denselben Zugang.</span>
+                <span className="self-center text-xs text-ink-muted">{m.orPrint}</span>
               )}
             </MailStatusLine>
           </form>
         ) : (
           <p className="w-[380px] rounded-xl border border-edge bg-surface px-4 py-3 text-xs text-ink-muted">
-            Versand per E-Mail ist nicht eingerichtet — dafür braucht es
-            <code className="mx-1 font-mono">RESEND_API_KEY</code> und
-            <code className="mx-1 font-mono">GUEST_MAIL_FROM</code> in den
-            Umgebungsvariablen.
+            <Rich text={m.mailNotConfigured} tags={{ code: c => <code className="mx-1 font-mono">{c}</code> }} />
           </p>
         )}
       </div>

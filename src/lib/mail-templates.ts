@@ -7,9 +7,11 @@
  * eine Rückmeldung über die Zustellung (Webhook, siehe `mail-status.ts`);
  * über die SMTP-Strecke von Supabase kam nichts zurück.
  *
- * I/O-frei und getestet: HTML und Reintext entstehen aus denselben Sätzen,
- * damit sie nicht auseinanderlaufen.
+ * Die Sätze stehen seit 10.10.2026 in der Sprachdatei (`i18n/de/mail.ts`);
+ * hier steht nur noch der Aufbau. I/O-frei und getestet: HTML und Reintext
+ * entstehen aus denselben Sätzen, damit sie nicht auseinanderlaufen.
  */
+import { format, getMessages, parseRich, type Vars } from './i18n'
 
 export type MailContent = { subject: string; html: string; text: string }
 
@@ -19,9 +21,26 @@ export function escapeHtml(text: string): string {
     .replace(/"/g, '&quot;')
 }
 
+/** Satz aus der Sprachdatei als HTML: Text escapen, `<b>…</b>` als `<strong>`. */
+export function richHtml(template: string, vars: Vars = {}): string {
+  return parseRich(template, vars)
+    .map(p => (p.tag === 'b' ? `<strong>${escapeHtml(p.text)}</strong>` : escapeHtml(p.text)))
+    .join('')
+}
+
+/** Derselbe Satz ohne Auszeichnung — für die Reintext-Fassung. */
+export function plainText(template: string, vars: Vars = {}): string {
+  return parseRich(template, vars).map(p => p.text).join('')
+}
+
 const STYLE_BODY = "font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#1e293b;line-height:1.5"
 const STYLE_BUTTON = 'background:#2563eb;color:#ffffff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold'
 const STYLE_SMALL = 'margin-top:24px;font-size:13px;color:#64748b'
+
+/** Texte der Vorlagen — heute immer Deutsch, das Personal arbeitet in der Sprache des Hauses. */
+function t() {
+  return getMessages().mail.templates
+}
 
 function knopf(url: string, label: string): string {
   return `<p style="margin:24px 0"><a href="${escapeHtml(url)}" style="${STYLE_BUTTON}">${escapeHtml(label)}</a></p>`
@@ -29,7 +48,7 @@ function knopf(url: string, label: string): string {
 
 function linkZeile(url: string): string {
   const u = escapeHtml(url)
-  return `<p style="${STYLE_SMALL}">Falls sich der Knopf nicht öffnen lässt:<br><a href="${u}">${u}</a></p>`
+  return `<p style="${STYLE_SMALL}">${escapeHtml(t().fallback)}<br><a href="${u}">${u}</a></p>`
 }
 
 /**
@@ -45,64 +64,51 @@ export function inviteMail(m: {
   /** Wer eingeladen hat — steht in der Mail, damit sie sich einordnen lässt. */
   invitedBy?: string
 }): MailContent {
-  const hotel = escapeHtml(m.hotelName)
-  const name = escapeHtml(m.displayName)
-  const von = m.invitedBy ? ` von ${m.invitedBy}` : ''
+  const v = t().invite
+  const vars = { name: m.displayName, role: m.rolle, hotel: m.hotelName, by: m.invitedBy ?? '' }
+  const satz = m.invitedBy ? v.invitedBy : v.invited
 
   const html = `<!doctype html>
 <html lang="de"><body style="${STYLE_BODY}">
-  <p>Guten Tag ${name},</p>
-  <p>Sie sind${escapeHtml(von)} als <strong>${escapeHtml(m.rolle)}</strong> für <strong>${hotel}</strong> in RoSe eingeladen worden.</p>
-  <p>Über den folgenden Knopf vergeben Sie Ihr Passwort und melden sich danach mit dieser E-Mail-Adresse an.</p>
-  ${knopf(m.url, 'Passwort vergeben')}
+  <p>${escapeHtml(format(v.greeting, vars))}</p>
+  <p>${richHtml(satz, vars)}</p>
+  <p>${escapeHtml(v.body)}</p>
+  ${knopf(m.url, v.button)}
   ${linkZeile(m.url)}
-  <p style="${STYLE_SMALL}">Der Link ist begrenzt gültig. Falls Sie diese Einladung nicht erwarten, können Sie die Mail ignorieren.</p>
+  <p style="${STYLE_SMALL}">${escapeHtml(v.note)}</p>
 </body></html>`
 
   const text = [
-    `Guten Tag ${m.displayName},`,
+    format(v.greeting, vars),
     '',
-    `Sie sind${von} als ${m.rolle} für ${m.hotelName} in RoSe eingeladen worden.`,
-    'Über den folgenden Link vergeben Sie Ihr Passwort und melden sich danach mit dieser E-Mail-Adresse an.',
+    plainText(satz, vars),
+    v.bodyText,
     '',
     m.url,
     '',
-    'Der Link ist begrenzt gültig. Falls Sie diese Einladung nicht erwarten, können Sie die Mail ignorieren.',
+    v.note,
   ].join('\n')
 
-  return { subject: `Einladung: ${m.rolle} für ${m.hotelName} in RoSe`, html, text }
+  return { subject: format(v.subject, vars), html, text }
 }
 
 /** Link zum Zurücksetzen des Passworts (oder zum ersten Setzen nach einer Einladung). */
 export function recoveryMail(m: { url: string; einladung?: boolean }): MailContent {
-  const einleitung = m.einladung
-    ? 'hier ist Ihr neuer Link, um das Passwort für Ihren RoSe-Zugang zu vergeben.'
-    : 'für Ihren RoSe-Zugang wurde ein neues Passwort angefordert.'
+  const v = t().recovery
+  const einleitung = m.einladung ? v.introInvite : v.intro
 
   const html = `<!doctype html>
 <html lang="de"><body style="${STYLE_BODY}">
-  <p>Guten Tag,</p>
+  <p>${escapeHtml(t().greeting)}</p>
   <p>${escapeHtml(einleitung)}</p>
-  ${knopf(m.url, m.einladung ? 'Passwort vergeben' : 'Neues Passwort setzen')}
+  ${knopf(m.url, m.einladung ? v.buttonInvite : v.button)}
   ${linkZeile(m.url)}
-  <p style="${STYLE_SMALL}">Der Link ist begrenzt gültig und lässt sich auf jedem Gerät öffnen. Haben Sie kein neues Passwort angefordert, können Sie die Mail ignorieren — Ihr Passwort bleibt unverändert.</p>
+  <p style="${STYLE_SMALL}">${escapeHtml(v.note)}</p>
 </body></html>`
 
-  const text = [
-    'Guten Tag,',
-    '',
-    einleitung,
-    '',
-    m.url,
-    '',
-    'Der Link ist begrenzt gültig und lässt sich auf jedem Gerät öffnen. Haben Sie kein neues Passwort angefordert, können Sie die Mail ignorieren — Ihr Passwort bleibt unverändert.',
-  ].join('\n')
+  const text = [t().greeting, '', einleitung, '', m.url, '', v.note].join('\n')
 
-  return {
-    subject: m.einladung ? 'Ihr Link zum Passwort für RoSe' : 'Neues Passwort für RoSe',
-    html,
-    text,
-  }
+  return { subject: m.einladung ? v.subjectInvite : v.subject, html, text }
 }
 
 /**
@@ -111,22 +117,21 @@ export function recoveryMail(m: { url: string; einladung?: boolean }): MailConte
  * und Einwilligung in einem Schritt (Double-Opt-in).
  */
 export function simConfirmMail(m: { url: string; marketing: boolean; toolName: string }): MailContent {
-  const zweck = `Bitte bestätigen Sie Ihre E-Mail-Adresse, damit Sie den ${m.toolName} von RoSe nutzen können.`
-  const werbung = 'Sie haben außerdem zugestimmt, dass RoSe Sie gelegentlich per E-Mail über neue Funktionen und besondere Angebote informiert – ausschließlich zu RoSe. Mit dem Klick bestätigen Sie auch diese Einwilligung; widerrufen können Sie sie jederzeit im Konto.'
-  const schluss = 'Der Link ist begrenzt gültig. Haben Sie sich nicht registriert, ignorieren Sie die Mail einfach — ohne Bestätigung wird das Konto nach sieben Tagen gelöscht.'
+  const v = t().simConfirm
+  const zweck = format(v.purpose, { tool: m.toolName })
 
   const html = `<!doctype html>
 <html lang="de"><body style="${STYLE_BODY}">
-  <p>Guten Tag,</p>
+  <p>${escapeHtml(t().greeting)}</p>
   <p>${escapeHtml(zweck)}</p>
-  ${m.marketing ? `<p>${escapeHtml(werbung)}</p>` : ''}
-  ${knopf(m.url, 'E-Mail-Adresse bestätigen')}
+  ${m.marketing ? `<p>${escapeHtml(v.marketing)}</p>` : ''}
+  ${knopf(m.url, v.button)}
   ${linkZeile(m.url)}
-  <p style="${STYLE_SMALL}">${escapeHtml(schluss)}</p>
+  <p style="${STYLE_SMALL}">${escapeHtml(v.note)}</p>
 </body></html>`
 
-  const text = ['Guten Tag,', '', zweck, ...(m.marketing ? ['', werbung] : []), '', m.url, '', schluss].join('\n')
-  return { subject: `Bitte bestätigen: Ihr Konto für den ${m.toolName}`, html, text }
+  const text = [t().greeting, '', zweck, ...(m.marketing ? ['', v.marketing] : []), '', m.url, '', v.note].join('\n')
+  return { subject: format(v.subject, { tool: m.toolName }), html, text }
 }
 
 /**
@@ -136,20 +141,19 @@ export function simConfirmMail(m: { url: string; marketing: boolean; toolName: s
  * kommt per Mail an die Person, der die Adresse gehört.
  */
 export function simExistsMail(m: { loginUrl: string; resetUrl: string; toolName: string }): MailContent {
+  const v = t().simExists
   // Nicht „steht Ihnen zur Verfügung": Rezeptionszugänge bekommen den Simulator nicht (26.09.2026).
-  const satz = `Für diese E-Mail-Adresse gibt es bereits einen Zugang zu RoSe. Ein zweites Konto lässt sich mit derselben Adresse nicht anlegen. Melden Sie sich mit Ihrem bestehenden Zugang an — als Inhaber oder Manager eines Hauses finden Sie den ${m.toolName} dann unter ${m.loginUrl.replace(/\/login$/, '/simulator')}.`
-  const vergessen = 'Passwort vergessen? Dann setzen Sie es hier neu:'
-  const schluss = 'Haben Sie sich nicht erneut registriert, können Sie diese Mail ignorieren — an Ihrem Zugang hat sich nichts geändert.'
+  const satz = format(v.text, { tool: m.toolName, url: m.loginUrl.replace(/\/login$/, '/simulator') })
 
   const html = `<!doctype html>
 <html lang="de"><body style="${STYLE_BODY}">
-  <p>Guten Tag,</p>
+  <p>${escapeHtml(t().greeting)}</p>
   <p>${escapeHtml(satz)}</p>
-  ${knopf(m.loginUrl, 'Anmelden')}
-  <p>${escapeHtml(vergessen)} <a href="${escapeHtml(m.resetUrl)}">${escapeHtml(m.resetUrl)}</a></p>
-  <p style="${STYLE_SMALL}">${escapeHtml(schluss)}</p>
+  ${knopf(m.loginUrl, v.button)}
+  <p>${escapeHtml(v.forgot)} <a href="${escapeHtml(m.resetUrl)}">${escapeHtml(m.resetUrl)}</a></p>
+  <p style="${STYLE_SMALL}">${escapeHtml(v.note)}</p>
 </body></html>`
 
-  const text = ['Guten Tag,', '', satz, '', `Anmelden: ${m.loginUrl}`, '', `${vergessen} ${m.resetUrl}`, '', schluss].join('\n')
-  return { subject: 'Sie haben bereits einen Zugang zu RoSe', html, text }
+  const text = [t().greeting, '', satz, '', format(v.buttonText, { url: m.loginUrl }), '', `${v.forgot} ${m.resetUrl}`, '', v.note].join('\n')
+  return { subject: v.subject, html, text }
 }

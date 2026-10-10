@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { guestLoginAction } from '@/app/guest/actions'
-import { format, type GuestMessages } from '@/lib/i18n'
+import { format } from '@/lib/i18n/format'
+import type { GuestMessages } from '@/lib/i18n'
 
 type Props = {
   /**

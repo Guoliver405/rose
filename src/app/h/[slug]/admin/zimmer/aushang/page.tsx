@@ -7,6 +7,8 @@ import { parseGuestAccessMode } from '@/lib/guest-access'
 import { buildGuestSheets } from '@/lib/guest-guide'
 import { logoUrlFor } from '@/utils/logo'
 import RoomQrSheet, { type RoomQrData } from './RoomQrSheet'
+import { getMessages, intlLocale } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /**
  * Zimmer-QR-Aushänge: ein Blatt je Zimmer, wahlweise DIN A4 (eine Seite je
@@ -50,6 +52,8 @@ export default async function AushangPage({
     .sort((a, b) => a.number.localeCompare(b.number, 'de', { numeric: true }))
 
   const isAdmin = ctx.role !== 'reception'
+  const locale = await getLocale()
+  const m = getMessages(locale).print.roomSigns
   const backHref = isAdmin
     ? `/h/${ctx.hotelSlug}/admin/einstellungen/gastzugang`
     : `/h/${ctx.hotelSlug}/admin/einstellungen`
@@ -60,16 +64,14 @@ export default async function AushangPage({
         href={backHref}
         className="flex items-center gap-1.5 self-start text-sm font-semibold text-ink-soft hover:text-ink print:hidden"
       >
-        <ArrowLeft className="h-4 w-4" /> {isAdmin ? 'Zurück zu Gäste-Zugang' : 'Zurück zu Einstellungen'}
+        <ArrowLeft className="h-4 w-4" /> {isAdmin ? m.backToGuestAccess : m.backToSettings}
       </Link>
 
       {accessMode === 'link' && (
         <p className="flex items-start gap-2 rounded-xl border border-attention-tint-edge bg-attention-tint px-4 py-3 text-sm font-semibold text-attention-deepest print:hidden">
           <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
-            Dieses Haus nutzt individuelle Zugänge je Aufenthalt. Die Aushänge führen auf eine
-            PIN-Eingabe, die neue Gäste nicht bedienen können — sie gehören nicht ins Zimmer,
-            solange dieses Verfahren gilt.
+            {m.linkModeWarning}
           </span>
         </p>
       )}
@@ -88,6 +90,8 @@ export default async function AushangPage({
         })}
         manualUrl={`${origin}/h/${ctx.hotelSlug}/guest`}
         canRenew={isAdmin}
+        m={m}
+        intlLocale={intlLocale(locale)}
       />
     </div>
   )

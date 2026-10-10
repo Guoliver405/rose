@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { siteUrl } from "@/lib/site";
+import { getMessages } from "@/lib/i18n";
+import { getLocale } from "@/utils/locale";
+import MessagesProvider from "@/components/i18n/MessagesProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,20 +22,24 @@ export const metadata: Metadata = {
   description: "Leichtgewichtiges Zimmerservice- und Reinigungs-Portal",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const { mail } = getMessages(locale);
   return (
     <html
-      lang="de"
+      lang={locale}
       data-theme="auto"
       data-density="standard"
       data-motion="auto"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <MessagesProvider value={{ mail: { status: mail.status, line: mail.line } }}>{children}</MessagesProvider>
+      </body>
     </html>
   );
 }

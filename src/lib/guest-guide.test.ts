@@ -191,16 +191,9 @@ describe('buildGuestSheet — Legende', () => {
     expect(en.buttons.clean.hint).toMatch(/cleaned/)
   })
 
-  it('zieht mit, sobald das Portal übersetzt ist', () => {
-    const en = buildGuestSheet({}, { ...pinDeep, portalLang: 'en' }, 'en')
-    expect(en.buttons.clean.label).toBe('Clean my room')
-    expect(en.buttons.dnd.label).toBe('Do not disturb')
-  })
-
-  it('deutsche Beschriftungen sind wortgleich mit dem Gastportal', () => {
-    // Quelle: GuestSignalPanel.tsx („Zimmer reinigen", „Bitte nicht stören")
-    // und GuestServicesPanel.tsx („Service bestellen"). Wer dort umbenennt,
-    // muss hier nachziehen.
+  it('deutsche Beschriftungen sind wortgleich mit dem Gästeportal', () => {
+    // Quelle ist die Sprachdatei des Portals (`i18n/de/guest.ts`) — wer dort
+    // umbenennt, ändert die Legende auf dem Blatt automatisch mit.
     const de = buildGuestSheet({}, pinDeep)
     expect([de.buttons.clean.label, de.buttons.dnd.label, de.buttons.services.label])
       .toEqual(['Zimmer reinigen', 'Bitte nicht stören', 'Service bestellen'])

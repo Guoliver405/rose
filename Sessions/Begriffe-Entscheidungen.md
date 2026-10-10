@@ -32,7 +32,8 @@ Meldung ans Haus, Aufstellung, außer Betrieb, Zugang beenden.
 |---|---|
 | Gästeportal | **umgesetzt 10.10.2026** — `src/lib/i18n/de/guest.ts`, Wächter-Test `src/lib/i18n/guest.test.ts` |
 | Reinigungsboard | **umgesetzt 10.10.2026** — `src/lib/i18n/de/service.ts`, Wächter-Test `service.test.ts`. Kachel sagt „Tägliche Reinigung“ (ohne „fällig“, sonst abgeschnitten); Karten-Hinweise nennen die Rezeption statt „Management“ |
-| Druckblätter, Mails, Rezeption (inkl. `room-symbols.ts`), Konto, Simulator, Fließtexte | offen |
+| Druckblätter und Mails | **umgesetzt 11.10.2026** — `de/print.ts`, `de/mail.ts`, Blatt-Sprachen `<sprache>/sheet.ts`, Wächter-Test `print-mail.test.ts`. „Check-in-Blatt“, „Aushang“, „Zugangskarte“, „E-Mail“, Aufstellung „Erledigt“. In en/es/fr zogen nur die Hinweise sinngemäß mit („auch kein Service“, Defekte melden) |
+| Rezeption (inkl. `room-symbols.ts`), Konto, Anmeldung, Simulator, Fließtexte | offen |
 
 ## Nächster Schritt
 

@@ -17,6 +17,8 @@
  * gesetzt, nie zurück — `advance` entscheidet das ohne Uhrzeitvergleich.
  */
 
+import { format } from './i18n/format'
+import type { MailMessages } from './i18n'
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
 
 export type MailPurpose = 'invite' | 'recovery' | 'guest_access' | 'sim_confirm'
@@ -140,21 +142,21 @@ export function detailFromEvent(ev: ResendEvent): string | null {
   return null
 }
 
-/** Text für die Oberfläche. */
-export function mailStatusText(status: MailStatus, detail: string | null): string {
+/**
+ * Text für die Oberfläche. Die Sätze kommen aus der Sprachdatei
+ * (`mail.status`) — als Parameter, weil die Funktion auch im Browser läuft und
+ * die ganze Sprachdatei dort nichts zu suchen hat.
+ */
+export function mailStatusText(status: MailStatus, detail: string | null, m: MailMessages['status']): string {
   switch (status) {
-    case 'queued': return 'Wird übergeben …'
-    case 'sent': return 'An den Versand übergeben — warte auf die Zustellbestätigung …'
-    case 'delayed': return 'Zustellung verzögert: Der Empfänger-Server nimmt gerade nicht an, es wird weiter versucht.'
-    case 'delivered': return 'Zugestellt.'
-    case 'complained': return 'Der Empfänger hat die Mail als Spam gemeldet.'
-    case 'bounced': return detail
-      ? `Vom Empfänger-Server abgewiesen: ${detail}`
-      : 'Vom Empfänger-Server abgewiesen.'
-    case 'suppressed': return 'Nicht zugestellt: Die Adresse steht nach einem früheren Bounce auf der Sperrliste des Versanddienstes. Erst freigeben, dann erneut senden.'
-    case 'failed': return detail
-      ? `Konnte nicht verschickt werden: ${detail}`
-      : 'Konnte nicht verschickt werden.'
+    case 'queued': return m.queued
+    case 'sent': return m.sent
+    case 'delayed': return m.delayed
+    case 'delivered': return m.delivered
+    case 'complained': return m.complained
+    case 'bounced': return detail ? format(m.bouncedDetail, { detail }) : m.bounced
+    case 'suppressed': return m.suppressed
+    case 'failed': return detail ? format(m.failedDetail, { detail }) : m.failed
   }
 }
 

@@ -293,8 +293,9 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       Begriffe und Anrede mit dem User entschieden ([Begriffe-Entscheidungen.md](Sessions/Begriffe-Entscheidungen.md)).
       **10.10.: Gästeportal ausgelagert** (`src/lib/i18n/`, eigene Lösung ohne
       Bibliothek, siehe AGENTS „Texte in Sprachdateien“), Entscheidungen dort umgesetzt.
-      **10.10.: Reinigungsboard ausgelagert.** Weiter in dieser Reihenfolge: Druckblätter und Mails
-      (`guest-guide.ts`, Legende soll aus der Sprachdatei kommen) → Rezeption (mit
+      **10.10.: Reinigungsboard ausgelagert. 11.10.: Druckblätter und Mails** (Blatt-Sprachen
+      in `i18n/<sprache>/sheet.ts`, Legende aus der Portal-Sprachdatei, Gast-Mail ganz in der
+      Sprache des Hauses). Weiter: Rezeption (mit
       `room-symbols.ts`, „Routine-Reinigung fällig“ → „Tägliche Reinigung fällig“) →
       Konto → Simulator; Fließtexte (Hilfe, Lotsen, Landing, Rechtstexte) als
       Abschnitte zuletzt. Danach: Sprachwahl des Gastes in `getLocale()` und erste

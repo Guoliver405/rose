@@ -4,6 +4,8 @@ import { ArrowLeft } from 'lucide-react'
 import { getManagementContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import MaidPinCard from '@/components/MaidPinCard'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /**
  * Standalone-Druckseite für die Maid-Zugangskarte. Bewusst eigene Seite
@@ -42,6 +44,7 @@ export default async function MaidCardPage({
   // Hand braucht die Hotel-Adresse, weil Benutzernamen nur je Hotel eindeutig sind.
   const loginUrl = `${origin}/service/auto/${card.token}`
   const manualUrl = `${origin}/h/${ctx.hotelSlug}/service/login`
+  const m = getMessages(await getLocale()).print.accessCard
 
   return (
     <div className="flex flex-col items-center gap-5 py-6">
@@ -49,7 +52,7 @@ export default async function MaidCardPage({
         href={`/h/${ctx.hotelSlug}/admin/personal`}
         className="flex items-center gap-1.5 self-start text-sm font-semibold text-ink-soft hover:text-ink print:hidden"
       >
-        <ArrowLeft className="h-4 w-4" /> Zurück zum Personal
+        <ArrowLeft className="h-4 w-4" /> {m.back}
       </Link>
 
       <MaidPinCard
@@ -59,6 +62,7 @@ export default async function MaidCardPage({
         pin={card.pin}
         loginUrl={loginUrl}
         manualUrl={manualUrl}
+        m={m}
       />
     </div>
   )
