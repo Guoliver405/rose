@@ -50,17 +50,15 @@ describe('validateLogoUpload', () => {
 
   it('weist zu große Dateien mit Zahl ab', () => {
     const res = validateLogoUpload(LOGO_MAX_BYTES + 1, PNG)
-    expect('error' in res && res.error).toMatch(/zu groß/)
-    expect('error' in res && res.error).toMatch(/1 MB/)
+    expect(res).toEqual({ error: 'tooLarge', kb: 1024 })
     // Genau an der Grenze noch erlaubt.
     expect(validateLogoUpload(LOGO_MAX_BYTES, PNG)).toEqual({ mime: 'image/png' })
   })
 
   it('weist Leeres und Fremdes ab', () => {
-    expect('error' in validateLogoUpload(0, PNG)).toBe(true)
-    expect('error' in validateLogoUpload(NaN, PNG)).toBe(true)
-    const res = validateLogoUpload(1000, ZIP)
-    expect('error' in res && res.error).toMatch(/PNG, JPG oder SVG/)
+    expect(validateLogoUpload(0, PNG)).toEqual({ error: 'empty' })
+    expect(validateLogoUpload(NaN, PNG)).toEqual({ error: 'empty' })
+    expect(validateLogoUpload(1000, ZIP)).toEqual({ error: 'wrongType' })
   })
 })
 

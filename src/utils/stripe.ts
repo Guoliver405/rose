@@ -1,6 +1,14 @@
 import Stripe from 'stripe'
 import { createAdminClient } from '@/utils/supabase/service'
 import type { BillingDetails } from '@/lib/vat'
+import { format, getMessages, type AccountMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
+
+/** Texte der Stripe-Anbindung: Meldungen und die gespeicherte Kurzbezeichnung des Zahlungswegs. */
+async function texts() {
+  const b = getMessages(await getLocale()).account.billing
+  return { e: b.errors.stripe, labels: b.labels }
+}
 
 /*
  * Stripe-Anbindung — Kunde, Rechnungsdaten, Zahlungsweg (Bauplan Schritt 1).
@@ -135,10 +143,11 @@ function isMissing(err: unknown): boolean {
  * existiert oder die gespeicherte ID im aktuellen Stripe-Konto unbekannt ist.
  */
 export async function ensureStripeCustomer(accountId: string): Promise<{ customerId?: string; error?: string }> {
-  if (!stripeReady()) return { error: 'Stripe ist nicht eingerichtet.' }
+  const { e } = await texts()
+  if (!stripeReady()) return { error: e.notConfigured }
   const admin = createAdminClient()
   const billing = await getAccountBilling(accountId)
-  if (!billing) return { error: 'Konto nicht gefunden.' }
+  if (!billing) return { error: e.accountNotFound }
   const stripe = stripeClient()
 
   if (billing.stripeCustomerId) {
@@ -146,7 +155,7 @@ export async function ensureStripeCustomer(accountId: string): Promise<{ custome
       const existing = await stripe.customers.retrieve(billing.stripeCustomerId)
       if (!existing.deleted) return { customerId: existing.id }
     } catch (err) {
-      if (!isMissing(err)) return { error: err instanceof Error ? err.message : 'Stripe nicht erreichbar.' }
+      if (!isMissing(err)) return { error: err instanceof Error ? err.message : e.unreachable }
     }
     // ID aus einem anderen Stripe-Konto (Sandbox → Live) oder gelöscht:
     // neu anlegen, gespeicherten Zahlungsweg verwerfen.
@@ -169,7 +178,7 @@ export async function ensureStripeCustomer(accountId: string): Promise<{ custome
     if (error) return { error: `accounts: ${error.message}` }
     return { customerId: customer.id }
   } catch (err) {
-    return { error: err instanceof Error ? err.message : 'Stripe-Kunde konnte nicht angelegt werden.' }
+    return { error: err instanceof Error ? err.message : e.customerFailed }
   }
 }
 
@@ -181,6 +190,7 @@ export async function syncCustomerBillingDetails(
   accountId: string,
   details: BillingDetails,
 ): Promise<{ error?: string }> {
+  const { e } = await texts()
   const admin = createAdminClient()
   const ensured = await ensureStripeCustomer(accountId)
   if (!ensured.customerId) return { error: ensured.error }
@@ -218,18 +228,21 @@ export async function syncCustomerBillingDetails(
     if (error) return { error: `accounts: ${error.message}` }
     return {}
   } catch (err) {
-    return { error: err instanceof Error ? err.message : 'Rechnungsdaten konnten nicht übertragen werden.' }
+    return { error: err instanceof Error ? err.message : e.detailsFailed }
   }
 }
 
 /** Kurzbezeichnung eines gespeicherten Zahlungsmittels für die Konto-Seite. */
-export function describePaymentMethod(pm: Stripe.PaymentMethod): { kind: PaymentMethodKind; label: string } | null {
+export function describePaymentMethod(
+  pm: Stripe.PaymentMethod,
+  labels: AccountMessages['billing']['labels'],
+): { kind: PaymentMethodKind; label: string } | null {
   if (pm.type === 'card' && pm.card) {
     const brand = pm.card.brand.charAt(0).toUpperCase() + pm.card.brand.slice(1)
-    return { kind: 'card', label: `${brand} •••• ${pm.card.last4}` }
+    return { kind: 'card', label: format(labels.card, { brand, last4: pm.card.last4 }) }
   }
   if (pm.type === 'sepa_debit' && pm.sepa_debit) {
-    return { kind: 'sepa_debit', label: `SEPA-Lastschrift •••• ${pm.sepa_debit.last4}` }
+    return { kind: 'sepa_debit', label: format(labels.sepaDebit, { last4: pm.sepa_debit.last4 ?? '' }) }
   }
   return null
 }
@@ -243,21 +256,22 @@ export async function savePaymentMethodFromSetupIntent(
   accountId: string,
   setupIntentId: string,
 ): Promise<{ error?: string; label?: string }> {
-  if (!stripeReady()) return { error: 'Stripe ist nicht eingerichtet.' }
+  const { e, labels } = await texts()
+  if (!stripeReady()) return { error: e.notConfigured }
   const billing = await getAccountBilling(accountId)
-  if (!billing?.stripeCustomerId) return { error: 'Kein Stripe-Kunde für dieses Konto.' }
+  if (!billing?.stripeCustomerId) return { error: e.noCustomer }
   const stripe = stripeClient()
   const admin = createAdminClient()
 
   try {
     const si = await stripe.setupIntents.retrieve(setupIntentId, { expand: ['payment_method'] })
     const customerId = typeof si.customer === 'string' ? si.customer : si.customer?.id
-    if (customerId !== billing.stripeCustomerId) return { error: 'Zahlungsmittel gehört nicht zu diesem Konto.' }
-    if (si.status !== 'succeeded') return { error: `Zahlungsmittel noch nicht bestätigt (${si.status}).` }
+    if (customerId !== billing.stripeCustomerId) return { error: e.wrongAccount }
+    if (si.status !== 'succeeded') return { error: format(e.notConfirmed, { status: si.status }) }
     const pm = si.payment_method
-    if (!pm || typeof pm === 'string') return { error: 'Zahlungsmittel fehlt am SetupIntent.' }
-    const described = describePaymentMethod(pm)
-    if (!described) return { error: `Zahlungsart ${pm.type} wird nicht unterstützt.` }
+    if (!pm || typeof pm === 'string') return { error: e.missingOnIntent }
+    const described = describePaymentMethod(pm, labels)
+    if (!described) return { error: format(e.unsupported, { type: pm.type }) }
 
     // Vorheriges Zahlungsmittel lösen, damit am Kunden nicht Altlasten hängen.
     if (billing.stripePaymentMethod && billing.stripePaymentMethod !== pm.id) {
@@ -274,12 +288,13 @@ export async function savePaymentMethodFromSetupIntent(
     if (error) return { error: `accounts: ${error.message}` }
     return { label: described.label }
   } catch (err) {
-    return { error: err instanceof Error ? err.message : 'Zahlungsmittel konnte nicht gespeichert werden.' }
+    return { error: err instanceof Error ? err.message : e.saveFailed }
   }
 }
 
 /** Zahlungsweg „Überweisung auf Rechnung": nichts bei Stripe speichern, nur die Wahl merken. */
 export async function chooseBankTransfer(accountId: string): Promise<{ error?: string }> {
+  const { labels } = await texts()
   const ensured = await ensureStripeCustomer(accountId)
   if (!ensured.customerId) return { error: ensured.error }
   const cleared = await detachStoredPaymentMethod(accountId)
@@ -288,20 +303,21 @@ export async function chooseBankTransfer(accountId: string): Promise<{ error?: s
   const { error } = await admin.from('accounts').update({
     payment_method_kind: 'bank_transfer',
     stripe_payment_method: null,
-    payment_method_label: 'Überweisung auf Rechnung',
+    payment_method_label: labels.bankTransfer,
   }).eq('id', accountId)
   return error ? { error: `accounts: ${error.message}` } : {}
 }
 
 /** Gespeichertes Zahlungsmittel bei Stripe lösen und am Konto leeren. */
 export async function detachStoredPaymentMethod(accountId: string): Promise<{ error?: string }> {
+  const { e } = await texts()
   const billing = await getAccountBilling(accountId)
-  if (!billing) return { error: 'Konto nicht gefunden.' }
+  if (!billing) return { error: e.accountNotFound }
   if (billing.stripePaymentMethod && stripeReady()) {
     try {
       await stripeClient().paymentMethods.detach(billing.stripePaymentMethod)
     } catch (err) {
-      if (!isMissing(err)) return { error: err instanceof Error ? err.message : 'Zahlungsmittel konnte nicht gelöst werden.' }
+      if (!isMissing(err)) return { error: err instanceof Error ? err.message : e.detachFailed }
     }
   }
   const admin = createAdminClient()

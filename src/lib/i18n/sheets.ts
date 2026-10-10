@@ -3,14 +3,15 @@ import { sheet as en } from './en/sheet'
 import { sheet as es } from './es/sheet'
 import { sheet as fr } from './fr/sheet'
 
+import type { GuideLang } from './langs'
+
 /**
  * Sprachen der gedruckten Blätter und der Zugangs-Mail an den Gast — ein
  * eigener Satz neben den Sprachen der Oberfläche (`LOCALES`): Das Blatt war
- * schon viersprachig, bevor die Oberfläche übersetzt wurde. Reihenfolge =
- * Druckreihenfolge.
+ * schon viersprachig, bevor die Oberfläche übersetzt wurde. Die Kennungen
+ * stehen in `langs.ts`.
  */
-export const GUIDE_LANGS = ['de', 'en', 'es', 'fr'] as const
-export type GuideLang = (typeof GUIDE_LANGS)[number]
+export { GUIDE_LANGS, type GuideLang } from './langs'
 
 export const SHEETS: Record<GuideLang, SheetMessages> = { de, en, es, fr }
 

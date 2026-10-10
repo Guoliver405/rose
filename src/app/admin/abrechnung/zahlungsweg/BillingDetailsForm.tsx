@@ -6,16 +6,11 @@ import { Building2, CheckCircle2 } from 'lucide-react'
 import { saveBillingDetailsAction } from '../actions'
 import { isEuCountry } from '@/lib/vat'
 import type { BillingAddress } from '@/utils/stripe'
+import { format } from '@/lib/i18n/format'
+import type { AccountMessages } from '@/lib/i18n'
 
 const inputClass =
   'rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink placeholder:text-ink-muted focus:border-action focus:outline-none'
-
-const STATUS_TEXT: Record<string, string> = {
-  pending: 'wird geprüft',
-  verified: 'geprüft',
-  unverified: 'Prüfung fehlgeschlagen — bitte Nummer kontrollieren',
-  unavailable: 'Prüfdienst nicht erreichbar, wird nachgeholt',
-}
 
 /**
  * Rechnungsdaten des Kontos. Die USt-IdNr. ist Pflicht für EU-Länder außer
@@ -23,8 +18,9 @@ const STATUS_TEXT: Record<string, string> = {
  * Land gewählt ist; die verbindliche Prüfung sitzt in `validateBillingDetails`.
  */
 export default function BillingDetailsForm({
-  laender, vorgabeName, adresse, vatId, vatIdStatus,
+  m, laender, vorgabeName, adresse, vatId, vatIdStatus,
 }: {
+  m: AccountMessages['billing']['details']
   laender: { code: string; name: string }[]
   vorgabeName: string
   adresse: BillingAddress | null
@@ -57,37 +53,35 @@ export default function BillingDetailsForm({
       className="flex flex-col gap-4 rounded-xl border border-edge bg-surface p-4"
     >
       <h2 className="flex items-center gap-1.5 text-sm font-bold text-ink-soft">
-        <Building2 className="h-4 w-4" /> Rechnungsdaten
+        <Building2 className="h-4 w-4" /> {m.title}
       </h2>
       <p className="text-xs text-ink-muted">
-        Stehen auf jeder Rechnung. Die Anschrift bestimmt die Umsatzsteuer: Deutschland 19 %,
-        Unternehmen in der EU mit USt-IdNr. ohne deutsche Steuer (Reverse Charge), außerhalb
-        der EU ohne deutsche Steuer.
+        {m.intro}
       </p>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted sm:col-span-2">
-          Rechnungsempfänger (Firma)
+          {m.name}
           <input name="name" required minLength={2} maxLength={120} defaultValue={vorgabeName} className={inputClass} />
         </label>
         <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted sm:col-span-2">
-          Straße und Hausnummer
+          {m.line1}
           <input name="line1" required minLength={3} maxLength={120} defaultValue={adresse?.line1 ?? ''} className={inputClass} />
         </label>
         <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted sm:col-span-2">
-          Adresszusatz (optional)
+          {m.line2}
           <input name="line2" maxLength={120} defaultValue={adresse?.line2 ?? ''} className={inputClass} />
         </label>
         <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-          Postleitzahl
+          {m.postalCode}
           <input name="postalCode" required minLength={3} maxLength={12} defaultValue={adresse?.postal_code ?? ''} className={inputClass} />
         </label>
         <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-          Ort
+          {m.city}
           <input name="city" required minLength={2} maxLength={80} defaultValue={adresse?.city ?? ''} className={inputClass} />
         </label>
         <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-          Land
+          {m.country}
           <select
             name="country"
             required
@@ -99,7 +93,7 @@ export default function BillingDetailsForm({
           </select>
         </label>
         <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-          USt-IdNr. {vatPflicht ? '(Pflicht)' : vatMoeglich ? '(optional)' : '(entfällt)'}
+          {format(m.vatId, { suffix: vatPflicht ? m.vatRequired : vatMoeglich ? m.vatOptional : m.vatNotApplicable })}
           <input
             name="vatId"
             maxLength={20}
@@ -109,15 +103,16 @@ export default function BillingDetailsForm({
             className={`${inputClass} disabled:opacity-50`}
           />
           {vatId && vatIdStatus && (
-            <span className="text-[11px] font-normal text-ink-muted">Status: {STATUS_TEXT[vatIdStatus] ?? vatIdStatus}</span>
+            <span className="text-[11px] font-normal text-ink-muted">{format(m.vatStatus, {
+              status: (m.vatStatusText as Record<string, string>)[vatIdStatus] ?? vatIdStatus,
+            })}</span>
           )}
         </label>
       </div>
 
       {vatPflicht && (
         <p className="text-xs text-ink-soft">
-          Für Unternehmen in der EU außerhalb Deutschlands ist die USt-IdNr. nötig — nur dann
-          kann die Rechnung ohne deutsche Umsatzsteuer gestellt werden.
+          {m.vatHint}
         </p>
       )}
 
@@ -129,11 +124,11 @@ export default function BillingDetailsForm({
           disabled={pending}
           className="rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
         >
-          {pending ? 'Speichern …' : 'Rechnungsdaten speichern'}
+          {pending ? m.submitting : m.submit}
         </button>
         {saved && (
           <span className="flex items-center gap-1 text-sm font-semibold text-positive-strong">
-            <CheckCircle2 className="h-4 w-4" /> Gespeichert
+            <CheckCircle2 className="h-4 w-4" /> {m.saved}
           </span>
         )}
       </div>

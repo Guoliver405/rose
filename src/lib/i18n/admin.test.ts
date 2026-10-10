@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { admin } from './de/admin'
 import { symbols } from './de/symbols'
 import { auth } from './de/auth'
+import { account } from './de/account'
 import { flattenMessages } from './format'
 
 /*
@@ -9,11 +10,12 @@ import { flattenMessages } from './format'
  * Rezeption (alle Bereiche) und die Zeichensprache der Zimmer-Kacheln.
  * Die Verwaltung wird gesiezt.
  */
-describe('Rezeption und Anmeldung — Begriffe und Schreibweise (deutsch)', () => {
+describe('Rezeption, Anmeldung und Konto — Begriffe und Schreibweise (deutsch)', () => {
   const all = [
     ...flattenMessages(admin).map(([k, t]) => [`admin.${k}`, t] as const),
     ...flattenMessages(symbols).map(([k, t]) => [`symbols.${k}`, t] as const),
     ...flattenMessages(auth).map(([k, t]) => [`auth.${k}`, t] as const),
+    ...flattenMessages(account).map(([k, t]) => [`account.${k}`, t] as const),
   ]
   const hits = (re: RegExp) => all.filter(([, t]) => re.test(t))
 
@@ -49,6 +51,10 @@ describe('Rezeption und Anmeldung — Begriffe und Schreibweise (deutsch)', () =
 
   it('sagt „Check-in-Blatt“ und „Aushang“ (Entscheidung 9)', () => {
     expect(hits(/Handout|Zettel|QR-Aush|Zimmer-QR-Aush/)).toEqual([])
+  })
+
+  it('sagt „Zahlungsweg“, nicht „Zahlungsverfahren“ oder „Zahlungsmittel“ (Entscheidung 10)', () => {
+    expect(hits(/Zahlungsverfahren|Zahlungsmittel/)).toEqual([])
   })
 
   it('sagt „Bitte nicht stören“, „Eintrag“ und „Schieber“ (Entscheidungen 11, 12)', () => {

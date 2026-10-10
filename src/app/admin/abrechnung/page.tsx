@@ -10,6 +10,9 @@ import { formatCents } from '@/lib/money'
 import {
   MIN_COVERS_ROOMS, MIN_MONTHLY_CENTS, PRICE_PER_ROOM_CENTS, billingLine, lastFreePeriodStart,
 } from '@/lib/pricing'
+import { format, getMessages, intlLocale, type AccountMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
+import Rich from '@/components/i18n/Rich'
 import KontoShell from '../KontoShell'
 
 /**
@@ -30,8 +33,10 @@ import KontoShell from '../KontoShell'
  * Nur für den Kontoinhaber: ein Manager hat kein Konto und landet auf `/admin`.
  */
 
-const monatsName = (periodStart: string) =>
-  new Date(`${periodStart}T00:00:00`).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })
+type PageMessages = AccountMessages['billing']['page']
+
+const monatsName = (periodStart: string, intl: string) =>
+  new Date(`${periodStart}T00:00:00`).toLocaleDateString(intl, { month: 'long', year: 'numeric' })
 
 function Card({
   title, icon: Icon, children, anchor,
@@ -52,34 +57,39 @@ function Card({
   )
 }
 
-function FreiBadge() {
+function FreiBadge({ m }: { m: PageMessages['free'] }) {
   return (
     <span
       className="rounded-full bg-positive-pill px-2 py-0.5 text-xs font-semibold text-positive-deepest"
-      title="Freier Monat: der Kalendermonat der Registrierung und der erste volle Monat danach."
+      title={m.title}
     >
-      frei
+      {m.label}
     </span>
   )
 }
 
-const STATUS_PILL: Record<InvoiceRow['status'], { text: string; cls: string }> = {
-  draft: { text: 'in Vorbereitung', cls: 'bg-surface-muted text-ink-muted' },
-  open: { text: 'offen', cls: 'bg-attention-pill text-attention-deepest' },
-  paid: { text: 'bezahlt', cls: 'bg-positive-pill text-positive-deepest' },
-  uncollectible: { text: 'nicht einbringlich', cls: 'bg-critical-pill text-critical-deepest' },
-  void: { text: 'storniert', cls: 'bg-surface-muted text-ink-muted' },
+const STATUS_PILL: Record<InvoiceRow['status'], string> = {
+  draft: 'bg-surface-muted text-ink-muted',
+  open: 'bg-attention-pill text-attention-deepest',
+  paid: 'bg-positive-pill text-positive-deepest',
+  uncollectible: 'bg-critical-pill text-critical-deepest',
+  void: 'bg-surface-muted text-ink-muted',
 }
 
-function InvoicePill({ inv, heute }: { inv: InvoiceRow; heute: Date }) {
+function InvoicePill({ inv, heute, m }: { inv: InvoiceRow; heute: Date; m: PageMessages['status'] }) {
   const ueberfaellig = isOverdue(inv.status, inv.dueAt, heute)
-  const p = ueberfaellig ? { text: 'überfällig', cls: 'bg-critical-pill text-critical-deepest' } : STATUS_PILL[inv.status]
+  const p = ueberfaellig
+    ? { text: m.overdue, cls: 'bg-critical-pill text-critical-deepest' }
+    : { text: m[inv.status], cls: STATUS_PILL[inv.status] }
   return (
     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${p.cls}`} title={inv.lastError ?? undefined}>
       {p.text}
     </span>
   )
 }
+
+/** Hervorhebung in Sätzen der Seite („<b>Zahlung:</b> …“). */
+const hervorhebung = { b: (c: string) => <span className="font-semibold text-ink">{c}</span> }
 
 function Regel({ children }: { children: React.ReactNode }) {
   return (
@@ -93,6 +103,10 @@ function Regel({ children }: { children: React.ReactNode }) {
 export default async function AbrechnungPage() {
   const account = await getAccountContext()
   if (!account) redirect('/admin')
+  const locale = await getLocale()
+  const b = getMessages(locale).account.billing
+  const m = b.page
+  const intl = intlLocale(locale)
 
   const mitStripe = stripeReady()
   // Den Monatslauf für dieses Konto nachziehen, falls der Cron nicht lief —
@@ -105,9 +119,7 @@ export default async function AbrechnungPage() {
   ])
   const heute = new Date()
   const rechnungJePeriode = new Map(rechnungen.map(r => [r.periodStart, r]))
-  const zahlungsweg = konto?.paymentMethodKind
-    ? { card: 'Karte', sepa_debit: 'SEPA-Lastschrift', bank_transfer: 'Überweisung auf Rechnung' }[konto.paymentMethodKind]
-    : null
+  const zahlungsweg = konto?.paymentMethodKind ? b.kinds[konto.paymentMethodKind] : null
   const laufend = billingLine(
     billing.current.rooms, account.createdAt, new Date(`${billing.current.periodStart}T00:00:00`),
   )
@@ -115,11 +127,11 @@ export default async function AbrechnungPage() {
     ...row,
     line: billingLine(row.rooms, account.createdAt, new Date(`${row.periodStart}T00:00:00`)),
   }))
-  const registriert = account.createdAt.toLocaleDateString('de-DE', {
+  const registriert = account.createdAt.toLocaleDateString(intl, {
     day: '2-digit', month: 'long', year: 'numeric',
   })
   const freiBis = lastFreePeriodStart(account.createdAt)
-    .toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })
+    .toLocaleDateString(intl, { month: 'long', year: 'numeric' })
 
   return (
     <KontoShell who={account.displayName} istInhaber>
@@ -128,9 +140,9 @@ export default async function AbrechnungPage() {
           href="/admin"
           className="flex items-center gap-1.5 rounded-lg border border-edge bg-surface px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink"
         >
-          <ArrowLeft className="h-4 w-4" /> Häuser
+          <ArrowLeft className="h-4 w-4" /> {m.backToHouses}
         </Link>
-        <h1 className="text-xl font-black text-ink">Plan &amp; Abrechnung</h1>
+        <h1 className="text-xl font-black text-ink">{m.title}</h1>
       </div>
 
       {/* ── Hinweis: Testbetrieb bzw. noch keine Berechnung ───────────── */}
@@ -138,44 +150,44 @@ export default async function AbrechnungPage() {
         <div className="flex gap-3 rounded-xl border border-attention-tint-edge bg-attention-tint p-4 text-sm">
           <Info className="mt-0.5 h-5 w-5 shrink-0 text-attention-deep" />
           <div className="text-attention-deepest">
-            <p className="font-bold">{mitStripe ? 'Testbetrieb — es wird nichts belastet.' : 'Aktuell wird nichts berechnet.'}</p>
-            <p className="mt-1">
-              {mitStripe
-                ? 'Rechnungen werden monatlich am 1. für den Vormonat gestellt, derzeit aber über die Testumgebung unseres Zahlungsdienstleisters: Sie sind Testrechnungen, hinterlegte Zahlungsmittel werden nicht belastet. Vor dem Wechsel in den Echtbetrieb werden Sie in Textform informiert.'
-                : 'Rechnungsstellung und Zahlungsverfahren sind noch nicht eingerichtet. Die Beträge auf dieser Seite zeigen, was das Konto nach dem Preismodell kosten würde. Vor der ersten Berechnung werden Sie in Textform informiert und können ein Zahlungsverfahren hinterlegen — bis dahin entstehen keine Kosten.'}
-            </p>
+            <p className="font-bold">{mitStripe ? m.notice.testTitle : m.notice.noneTitle}</p>
+            <p className="mt-1">{mitStripe ? m.notice.testText : m.notice.noneText}</p>
           </div>
         </div>
       )}
 
       {/* ── Plan ───────────────────────────────────────────────────────── */}
-      <Card title="Ihr Plan" icon={Check} anchor="konto.plan">
+      <Card title={m.plan.title} icon={Check} anchor="konto.plan">
         <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
           <p>
             <span className="text-3xl font-black text-ink">{formatCents(PRICE_PER_ROOM_CENTS)}</span>
-            <span className="ml-1.5 text-sm text-ink-soft">je Zimmer und Monat, zzgl. USt.</span>
+            <span className="ml-1.5 text-sm text-ink-soft">{m.plan.perRoom}</span>
           </p>
           <p className="text-sm text-ink-soft">
-            Mindestbetrag <span className="font-semibold text-ink">{formatCents(MIN_MONTHLY_CENTS)}</span> je
-            Konto und Monat — bis {MIN_COVERS_ROOMS} Zimmer ein Festpreis.
+            <Rich
+              text={m.plan.minimum}
+              vars={{ amount: formatCents(MIN_MONTHLY_CENTS), rooms: MIN_COVERS_ROOMS }}
+              tags={hervorhebung}
+            />
           </p>
         </div>
         <p className="mt-3 text-sm text-ink-soft">
-          Ein Preis für alle Hausgrößen, alle Funktionen sind enthalten. Es gibt keine Pakete
-          und nichts, worauf Sie später hochstufen müssten. Ihr Konto besteht seit dem{' '}
-          {registriert} und ist frei bis Ende {freiBis} — der Monat der Registrierung und der
-          erste volle Kalendermonat danach kosten nichts.
+          {format(m.plan.text, { registered: registriert, freeUntil: freiBis })}
         </p>
       </Card>
 
       {/* ── Laufender Monat ────────────────────────────────────────────── */}
-      <Card title={`Laufender Monat — ${monatsName(billing.current.periodStart)}`} icon={Building2} anchor="konto.laufend">
+      <Card
+        title={format(m.current.title, { month: monatsName(billing.current.periodStart, intl) })}
+        icon={Building2}
+        anchor="konto.laufend"
+      >
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-ink-muted">
-                <th className="pb-2 font-bold">Haus</th>
-                <th className="pb-2 text-right font-bold">Abrechenbare Zimmer</th>
+                <th className="pb-2 font-bold">{m.current.colHouse}</th>
+                <th className="pb-2 text-right font-bold">{m.current.colRooms}</th>
               </tr>
             </thead>
             <tbody>
@@ -190,7 +202,7 @@ export default async function AbrechnungPage() {
                 </tr>
               ))}
               <tr className="border-t-2 border-edge-strong font-bold">
-                <td className="py-2 text-ink">Gesamt</td>
+                <td className="py-2 text-ink">{m.current.total}</td>
                 <td className="py-2 text-right tabular-nums text-ink">{laufend.rooms}</td>
               </tr>
             </tbody>
@@ -198,70 +210,68 @@ export default async function AbrechnungPage() {
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg bg-surface-muted px-3 py-2 text-sm">
-          <span className="text-ink-soft">Voraussichtlicher Betrag:</span>
+          <span className="text-ink-soft">{m.current.expected}</span>
           <span className="text-lg font-black text-ink">{formatCents(laufend.cents)}</span>
           {laufend.free && (
             <>
-              <FreiBadge />
+              <FreiBadge m={m.free} />
               {laufend.regularCents > 0 && (
-                <span className="text-xs text-ink-muted">statt {formatCents(laufend.regularCents)}</span>
+                <span className="text-xs text-ink-muted">
+                  {format(m.insteadOf, { amount: formatCents(laufend.regularCents) })}
+                </span>
               )}
             </>
           )}
-          <span className="text-xs text-ink-muted">zzgl. USt.</span>
+          <span className="text-xs text-ink-muted">{m.plusVat}</span>
         </div>
-        <p className="mt-2 text-xs text-ink-muted">
-          Gezählt wird jedes Zimmer, das im Monat auch nur vorübergehend in Betrieb war — ein
-          heute außer Betrieb genommenes Zimmer zählt für diesen Monat also noch mit, ein heute
-          angelegtes ebenfalls. Die Zahl steht erst mit dem Monatsende fest.
-        </p>
+        <p className="mt-2 text-xs text-ink-muted">{m.current.note}</p>
       </Card>
 
       {/* ── Abgeschlossene Monate ──────────────────────────────────────── */}
-      <Card title="Abgeschlossene Monate" icon={FileText} anchor="konto.monate">
+      <Card title={m.closed.title} icon={FileText} anchor="konto.monate">
         {abgeschlossen.length === 0 ? (
-          <p className="text-sm text-ink-muted">
-            Noch kein abgeschlossener Monat — der erste erscheint hier ab dem 1. des Folgemonats.
-          </p>
+          <p className="text-sm text-ink-muted">{m.closed.empty}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-ink-muted">
-                  <th className="pb-2 font-bold">Monat</th>
-                  <th className="pb-2 text-right font-bold">Zimmer</th>
-                  <th className="pb-2 text-right font-bold">Betrag</th>
-                  <th className="pb-2 pl-3 font-bold">Status</th>
+                  <th className="pb-2 font-bold">{m.closed.colMonth}</th>
+                  <th className="pb-2 text-right font-bold">{m.closed.colRooms}</th>
+                  <th className="pb-2 text-right font-bold">{m.closed.colAmount}</th>
+                  <th className="pb-2 pl-3 font-bold">{m.closed.colStatus}</th>
                 </tr>
               </thead>
               <tbody>
                 {abgeschlossen.map(row => (
                   <tr key={row.periodStart} className="border-t border-edge">
-                    <td className="py-2 font-semibold text-ink">{monatsName(row.periodStart)}</td>
+                    <td className="py-2 font-semibold text-ink">{monatsName(row.periodStart, intl)}</td>
                     <td className="py-2 text-right tabular-nums text-ink">{row.rooms}</td>
                     <td className="py-2 text-right tabular-nums text-ink">
                       {formatCents(row.line.cents)}
                       {row.line.free && row.line.regularCents > 0 && (
-                        <span className="ml-1 text-xs text-ink-muted">statt {formatCents(row.line.regularCents)}</span>
+                        <span className="ml-1 text-xs text-ink-muted">
+                          {format(m.insteadOf, { amount: formatCents(row.line.regularCents) })}
+                        </span>
                       )}
                     </td>
                     <td className="py-2 pl-3">
                       <span className="flex flex-wrap gap-1">
-                        {row.line.free && <FreiBadge />}
+                        {row.line.free && <FreiBadge m={m.free} />}
                         {row.fixed && (
                           <span
                             className="rounded-full bg-surface-muted px-2 py-0.5 text-xs font-semibold text-ink-muted"
-                            title="Festgeschrieben, bevor Zimmer gelöscht wurden — diese Zahl ändert sich nicht mehr."
+                            title={m.closed.fixedTitle}
                           >
-                            festgeschrieben
+                            {m.closed.fixed}
                           </span>
                         )}
                         {!row.line.free && row.line.cents > 0 && (
                           rechnungJePeriode.get(row.periodStart)
-                            ? <InvoicePill inv={rechnungJePeriode.get(row.periodStart)!} heute={heute} />
+                            ? <InvoicePill inv={rechnungJePeriode.get(row.periodStart)!} heute={heute} m={m.status} />
                             : (
                               <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs font-semibold text-ink-muted">
-                                nicht berechnet
+                                {m.closed.notCharged}
                               </span>
                             )
                         )}
@@ -273,23 +283,14 @@ export default async function AbrechnungPage() {
             </table>
           </div>
         )}
-        <p className="mt-2 text-xs text-ink-muted">
-          Abgeschlossene Monate werden festgeschrieben, sobald Zimmer gelöscht werden — sonst
-          würde ein gelöschtes Zimmer rückwirkend aus bereits abgerechneten Zeiträumen
-          verschwinden. Solange nichts gelöscht wird, ist die Zählung aus den Zimmern selbst
-          ebenso verbindlich.
-        </p>
+        <p className="mt-2 text-xs text-ink-muted">{m.closed.note}</p>
       </Card>
 
-      {/* ── Zahlungsverfahren + Rechnungen (Platzhalter) ───────────────── */}
+      {/* ── Zahlungsweg + Rechnungen ───────────────────────────────────── */}
       <div className="grid gap-6 md:grid-cols-2">
-        <Card title="Zahlungsverfahren" icon={CreditCard} anchor="konto.zahlungsweg">
+        <Card title={m.paymentMethod.title} icon={CreditCard} anchor="konto.zahlungsweg">
           {!mitStripe ? (
-            <p className="text-sm text-ink-soft">
-              Noch kein Zahlungsverfahren hinterlegt — und derzeit auch keines wählbar. Sobald
-              die Rechnungsstellung eingerichtet ist, können Sie hier ein Zahlungsverfahren
-              hinterlegen. Sie werden vorher in Textform informiert.
-            </p>
+            <p className="text-sm text-ink-soft">{m.paymentMethod.unavailable}</p>
           ) : (
             <div className="flex flex-col gap-3 text-sm">
               {zahlungsweg ? (
@@ -301,58 +302,67 @@ export default async function AbrechnungPage() {
                 </p>
               ) : (
                 <p className="rounded-lg border border-attention-tint-edge bg-attention-tint px-3 py-2 text-xs font-semibold text-attention-deepest">
-                  Noch kein Zahlungsweg hinterlegt.
+                  {m.paymentMethod.none}
                 </p>
               )}
               {billingDetailsComplete(konto) ? (
                 <p className="text-xs text-ink-soft">
-                  Rechnung an <span className="font-semibold text-ink">{konto?.billingName}</span>,{' '}
-                  {konto?.billingAddress?.postal_code} {konto?.billingAddress?.city},{' '}
-                  {konto?.billingAddress?.country}
-                  {konto?.vatId ? ` · USt-IdNr. ${konto.vatId}` : ''}
+                  <Rich
+                    text={m.paymentMethod.invoiceTo}
+                    vars={{
+                      name: konto?.billingName ?? '',
+                      postalCode: konto?.billingAddress?.postal_code ?? '',
+                      city: konto?.billingAddress?.city ?? '',
+                      country: konto?.billingAddress?.country ?? '',
+                    }}
+                    tags={hervorhebung}
+                  />
+                  {konto?.vatId ? format(m.paymentMethod.vatId, { vatId: konto.vatId }) : ''}
                 </p>
               ) : (
-                <p className="text-xs text-ink-soft">Rechnungsdaten fehlen noch.</p>
+                <p className="text-xs text-ink-soft">{m.paymentMethod.detailsMissing}</p>
               )}
               <Link
                 href="/admin/abrechnung/zahlungsweg"
                 className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-edge bg-surface-elevated px-3 py-1.5 text-xs font-bold text-ink hover:border-edge-strong"
               >
-                <Pencil className="h-3.5 w-3.5" /> {zahlungsweg ? 'Zahlungsweg und Rechnungsdaten ändern' : 'Zahlungsweg hinterlegen'}
+                <Pencil className="h-3.5 w-3.5" /> {zahlungsweg ? m.paymentMethod.change : m.paymentMethod.add}
               </Link>
             </div>
           )}
         </Card>
-        <Card title="Rechnungen" icon={FileText} anchor="konto.rechnungen">
+        <Card title={m.invoices.title} icon={FileText} anchor="konto.rechnungen">
           {rechnungen.length === 0 ? (
             <p className="text-sm text-ink-soft">
-              {mitStripe
-                ? 'Noch keine Rechnung. Die erste entsteht am 1. des Monats nach dem Freimonat — monatlich nachträglich, elektronisch, fällig innerhalb von 14 Tagen ohne Abzug.'
-                : 'Noch keine Rechnungen. Rechnungen erscheinen hier, sobald die Rechnungsstellung eingerichtet ist — monatlich nachträglich, elektronisch, fällig innerhalb von 14 Tagen ohne Abzug.'}
+              {mitStripe ? m.invoices.emptyStripe : m.invoices.emptyNone}
             </p>
           ) : (
             <ul className="flex flex-col divide-y divide-edge text-sm">
               {rechnungen.map(inv => (
                 <li key={inv.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
-                  <span className="font-semibold text-ink">{monatsName(inv.periodStart)}</span>
+                  <span className="font-semibold text-ink">{monatsName(inv.periodStart, intl)}</span>
                   {inv.number && <span className="font-mono text-xs text-ink-muted">{inv.number}</span>}
                   <span className="tabular-nums text-ink">
-                    {inv.totalCents != null ? formatCents(inv.totalCents) : `${formatCents(inv.netCents)} netto`}
+                    {inv.totalCents != null
+                      ? formatCents(inv.totalCents)
+                      : format(m.invoices.net, { amount: formatCents(inv.netCents) })}
                   </span>
-                  <InvoicePill inv={inv} heute={heute} />
+                  <InvoicePill inv={inv} heute={heute} m={m.status} />
                   {inv.dueAt && inv.status === 'open' && (
-                    <span className="text-xs text-ink-muted">fällig {new Date(`${inv.dueAt}T00:00:00`).toLocaleDateString('de-DE')}</span>
+                    <span className="text-xs text-ink-muted">
+                      {format(m.invoices.due, { date: new Date(`${inv.dueAt}T00:00:00`).toLocaleDateString(intl) })}
+                    </span>
                   )}
                   {inv.lastError && inv.status === 'draft' && (
                     <span className="text-xs text-attention-deepest">{inv.lastError}</span>
                   )}
                   <span className="ml-auto flex gap-3">
                     {inv.invoicePdf && (
-                      <a href={inv.invoicePdf} className="text-xs font-semibold text-action-strong hover:underline">PDF</a>
+                      <a href={inv.invoicePdf} className="text-xs font-semibold text-action-strong hover:underline">{m.invoices.pdf}</a>
                     )}
                     {inv.hostedInvoiceUrl && (
                       <a href={inv.hostedInvoiceUrl} target="_blank" rel="noopener" className="flex items-center gap-1 text-xs font-semibold text-action-strong hover:underline">
-                        {inv.status === 'open' ? 'Ansehen / bezahlen' : 'Ansehen'} <ExternalLink className="h-3 w-3" />
+                        {inv.status === 'open' ? m.invoices.viewPay : m.invoices.view} <ExternalLink className="h-3 w-3" />
                       </a>
                     )}
                   </span>
@@ -364,36 +374,18 @@ export default async function AbrechnungPage() {
       </div>
 
       {/* ── Modalitäten ────────────────────────────────────────────────── */}
-      <Card title="Abrechnungsmodalitäten" icon={Info}>
+      <Card title={m.terms.title} icon={Info}>
         <ul className="grid gap-x-6 gap-y-2 text-sm text-ink-soft sm:grid-cols-2">
+          {[m.terms.interval, m.terms.payment, m.terms.minimum, m.terms.inactive, m.terms.cancel, m.terms.net].map(text => (
+            <Regel key={text}>
+              <Rich text={text} tags={hervorhebung} />
+            </Regel>
+          ))}
           <Regel>
-            <span className="font-semibold text-ink">Abrechnungsintervall:</span> Kalendermonat,
-            monatlich nachträglich — die Rechnung kommt am 1. des Folgemonats per E-Mail und
-            erscheint hier.
-          </Regel>
-          <Regel>
-            <span className="font-semibold text-ink">Zahlung:</span> mit hinterlegter Karte oder
-            Lastschrift wird mit Rechnungsstellung eingezogen (Lastschrift nach Vorabankündigung),
-            sonst innerhalb von 14 Tagen per Überweisung oder über die Zahlungsseite.
-          </Regel>
-          <Regel>
-            <span className="font-semibold text-ink">Mindestbetrag je Konto,</span> nicht je Haus —
-            mehrere Häuser zahlen für die Summe ihrer Zimmer.
-          </Regel>
-          <Regel>
-            <span className="font-semibold text-ink">Zimmer außer Betrieb</span> (Renovierung, Saison)
-            zählen nicht, solange sie den ganzen Monat außer Betrieb sind.
-          </Regel>
-          <Regel>
-            <span className="font-semibold text-ink">Keine Laufzeit:</span> monatlich zum Monatsende
-            kündbar. Das Löschen des Kontos unter „Daten löschen“ ist zugleich die Kündigung.
-          </Regel>
-          <Regel>
-            <span className="font-semibold text-ink">Alle Preise netto,</span> zuzüglich der
-            gesetzlichen Umsatzsteuer.
-          </Regel>
-          <Regel>
-            Details in den <Link href="/agb" className="underline hover:text-ink">AGB</Link>, § 6 und § 7.
+            <Rich
+              text={m.terms.details}
+              tags={{ link: c => <Link href="/agb" className="underline hover:text-ink">{c}</Link> }}
+            />
           </Regel>
         </ul>
       </Card>

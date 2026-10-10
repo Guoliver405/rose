@@ -8,6 +8,8 @@ import {
 } from '@/utils/stripe'
 import { COUNTRY_CODES } from '@/lib/vat'
 import { einrichtungStart } from '@/lib/lotsen'
+import { format, getMessages, intlLocale } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 import KontoShell from '../../KontoShell'
 import BillingDetailsForm from './BillingDetailsForm'
 import PaymentMethodPanel from './PaymentMethodPanel'
@@ -38,6 +40,10 @@ export default async function ZahlungswegPage({
   const account = await getAccountContext()
   if (!account) redirect('/admin')
   if (!stripeReady()) redirect('/admin/abrechnung')
+  const locale = await getLocale()
+  const intl = intlLocale(locale)
+  const b = getMessages(locale).account.billing
+  const m = b.paymentPage
 
   const { neu, setup_intent: setupIntent, redirect_status: redirectStatus } = await searchParams
   const neuSlug = neu && /^[a-z0-9-]+$/.test(neu) ? neu : null
@@ -46,9 +52,9 @@ export default async function ZahlungswegPage({
   if (setupIntent && /^seti_[A-Za-z0-9]+$/.test(setupIntent)) {
     if (redirectStatus === 'succeeded') {
       const res = await savePaymentMethodFromSetupIntent(account.accountId, setupIntent)
-      hinweis = res.error ? `Zahlungsmittel konnte nicht gespeichert werden: ${res.error}` : null
+      hinweis = res.error ? format(m.saveFailed, { error: res.error }) : null
     } else {
-      hinweis = 'Die Bestätigung des Zahlungsmittels wurde abgebrochen. Bitte noch einmal versuchen.'
+      hinweis = m.confirmCancelled
     }
     if (!hinweis) redirect(neuSlug ? `/admin/abrechnung/zahlungsweg?neu=${neuSlug}` : '/admin/abrechnung/zahlungsweg')
   }
@@ -56,10 +62,10 @@ export default async function ZahlungswegPage({
   const billing = await getAccountBilling(account.accountId)
   const datenVollstaendig = billingDetailsComplete(billing)
 
-  const namen = new Intl.DisplayNames(['de'], { type: 'region' })
+  const namen = new Intl.DisplayNames([intl], { type: 'region' })
   const laender = COUNTRY_CODES
     .map(code => ({ code, name: namen.of(code) ?? code }))
-    .sort((a, b) => a.name.localeCompare(b.name, 'de'))
+    .sort((x, y) => x.name.localeCompare(y.name, intl))
 
   return (
     <KontoShell who={account.displayName} istInhaber>
@@ -68,27 +74,22 @@ export default async function ZahlungswegPage({
           href="/admin/abrechnung"
           className="flex items-center gap-1.5 rounded-lg border border-edge bg-surface px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink"
         >
-          <ArrowLeft className="h-4 w-4" /> Plan &amp; Abrechnung
+          <ArrowLeft className="h-4 w-4" /> {m.backToBilling}
         </Link>
-        <h1 className="text-xl font-black text-ink">Zahlungsweg &amp; Rechnungsdaten</h1>
+        <h1 className="text-xl font-black text-ink">{m.title}</h1>
       </div>
 
       {neuSlug && (
         <div className="flex gap-3 rounded-xl border border-action-tint-edge bg-action-tint p-4 text-sm">
           <Info className="mt-0.5 h-5 w-5 shrink-0 text-action-deep" />
           <div className="text-ink">
-            <p className="font-bold">Schritt 2 von 2 — Zahlungsweg</p>
-            <p className="mt-1">
-              Ihr Konto und Ihr Haus sind angelegt. Hinterlegen Sie jetzt Rechnungsdaten und
-              Zahlungsweg — belastet wird nichts, der Monat der Registrierung und der erste
-              volle Monat danach sind frei. Sie können diesen Schritt auch später auf der Seite{' '}
-              {'„Plan & Abrechnung“'} nachholen.
-            </p>
+            <p className="font-bold">{m.step.title}</p>
+            <p className="mt-1">{m.step.text}</p>
             <Link
               href={einrichtungStart(neuSlug)}
               className="mt-2 inline-flex items-center gap-1 font-semibold underline hover:no-underline"
             >
-              Später — weiter zum Zimmer-Setup <ArrowRight className="h-4 w-4" />
+              {m.step.later} <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -101,6 +102,7 @@ export default async function ZahlungswegPage({
       )}
 
       <BillingDetailsForm
+        m={b.details}
         laender={laender}
         vorgabeName={billing?.billingName ?? account.accountName}
         adresse={billing?.billingAddress ?? null}
@@ -109,6 +111,8 @@ export default async function ZahlungswegPage({
       />
 
       <PaymentMethodPanel
+        m={b.panel}
+        kinds={b.kinds}
         publishableKey={stripePublishableKey()}
         aktiv={billing?.paymentMethodKind ? { kind: billing.paymentMethodKind, label: billing.paymentMethodLabel ?? '' } : null}
         datenVollstaendig={datenVollstaendig}

@@ -248,7 +248,10 @@ export async function uploadHotelLogoAction(
 
   const bytes = new Uint8Array(await datei.arrayBuffer())
   const check = validateLogoUpload(bytes.byteLength, bytes.subarray(0, LOGO_HEAD_BYTES))
-  if ('error' in check) return { error: check.error }
+  if ('error' in check) {
+    const lm = getMessages(await getLocale()).account.houses.logo
+    return { error: check.error === 'tooLarge' ? format(lm.tooLarge, { kb: check.kb }) : lm[check.error] }
+  }
 
   const res = await uploadHotelLogo(ctx.hotelId, bytes, check.mime)
   if (res.error) return { error: res.error }

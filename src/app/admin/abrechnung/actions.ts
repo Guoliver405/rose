@@ -7,6 +7,8 @@ import {
   savePaymentMethodFromSetupIntent, stripeClient, stripeReady, syncCustomerBillingDetails,
 } from '@/utils/stripe'
 import { validateBillingDetails } from '@/lib/vat'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /*
  * Konto-Seite: Rechnungsdaten und Zahlungsweg.
@@ -19,16 +21,21 @@ type Result = { error?: string }
 
 const PFAD = '/admin/abrechnung'
 
+async function messages() {
+  return getMessages(await getLocale()).account.billing.errors
+}
+
 export async function saveBillingDetailsAction(formData: FormData): Promise<Result> {
+  const e = await messages()
   const ctx = await getAccountContext()
-  if (!ctx) return { error: 'Keine Berechtigung.' }
-  if (!stripeReady()) return { error: 'Zahlungsverfahren sind noch nicht eingerichtet.' }
+  if (!ctx) return { error: e.noPermission }
+  if (!stripeReady()) return { error: e.notReady }
 
   const get = (k: string) => ((formData.get(k) as string) ?? '')
   const checked = validateBillingDetails({
     name: get('name'), line1: get('line1'), line2: get('line2'),
     postalCode: get('postalCode'), city: get('city'), country: get('country'), vatId: get('vatId'),
-  })
+  }, e.vat)
   if ('error' in checked) return { error: checked.error }
 
   const res = await syncCustomerBillingDetails(ctx.accountId, checked.details)
@@ -39,9 +46,10 @@ export async function saveBillingDetailsAction(formData: FormData): Promise<Resu
 
 /** SetupIntent für Karte oder SEPA-Lastschrift — ohne Belastung, `off_session` für spätere Rechnungen. */
 export async function createSetupIntentAction(): Promise<Result & { clientSecret?: string }> {
+  const e = await messages()
   const ctx = await getAccountContext()
-  if (!ctx) return { error: 'Keine Berechtigung.' }
-  if (!stripeReady()) return { error: 'Zahlungsverfahren sind noch nicht eingerichtet.' }
+  if (!ctx) return { error: e.noPermission }
+  if (!stripeReady()) return { error: e.notReady }
 
   const ensured = await ensureStripeCustomer(ctx.accountId)
   if (!ensured.customerId) return { error: ensured.error }
@@ -54,31 +62,34 @@ export async function createSetupIntentAction(): Promise<Result & { clientSecret
     })
     return { clientSecret: si.client_secret ?? undefined }
   } catch (err) {
-    return { error: err instanceof Error ? err.message : 'Stripe nicht erreichbar.' }
+    return { error: err instanceof Error ? err.message : e.stripeUnreachable }
   }
 }
 
 export async function confirmPaymentMethodAction(setupIntentId: string): Promise<Result & { label?: string }> {
+  const e = await messages()
   const ctx = await getAccountContext()
-  if (!ctx) return { error: 'Keine Berechtigung.' }
-  if (!/^seti_[A-Za-z0-9]+$/.test(setupIntentId)) return { error: 'Ungültige Kennung.' }
+  if (!ctx) return { error: e.noPermission }
+  if (!/^seti_[A-Za-z0-9]+$/.test(setupIntentId)) return { error: e.invalidId }
   const res = await savePaymentMethodFromSetupIntent(ctx.accountId, setupIntentId)
   if (!res.error) revalidatePath(PFAD, 'layout')
   return res
 }
 
 export async function chooseBankTransferAction(): Promise<Result> {
+  const e = await messages()
   const ctx = await getAccountContext()
-  if (!ctx) return { error: 'Keine Berechtigung.' }
-  if (!stripeReady()) return { error: 'Zahlungsverfahren sind noch nicht eingerichtet.' }
+  if (!ctx) return { error: e.noPermission }
+  if (!stripeReady()) return { error: e.notReady }
   const res = await chooseBankTransfer(ctx.accountId)
   if (!res.error) revalidatePath(PFAD, 'layout')
   return res
 }
 
 export async function removePaymentMethodAction(): Promise<Result> {
+  const e = await messages()
   const ctx = await getAccountContext()
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
   const res = await detachStoredPaymentMethod(ctx.accountId)
   if (!res.error) revalidatePath(PFAD, 'layout')
   return res

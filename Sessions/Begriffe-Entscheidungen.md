@@ -35,7 +35,8 @@ Meldung ans Haus, Aufstellung, außer Betrieb, Zugang beenden.
 | Druckblätter und Mails | **umgesetzt 11.10.2026** — `de/print.ts`, `de/mail.ts`, Blatt-Sprachen `<sprache>/sheet.ts`, Wächter-Test `print-mail.test.ts`. „Check-in-Blatt“, „Aushang“, „Zugangskarte“, „E-Mail“, Aufstellung „Erledigt“. In en/es/fr zogen nur die Hinweise sinngemäß mit („auch kein Service“, Defekte melden) |
 | Rezeption | **umgesetzt 11.10.2026** — `de/admin/*.ts` (Übersicht, Personal und Auswertung, Zimmer, Services, Einstellungen), Zimmer-Symbole `de/symbols.ts`, Wächter-Test `admin.test.ts`. Seiten heißen „Haus & Regeln“, „Gästezugang“, Anfragen-Seite „Anfragen“ |
 | Anmeldung, Registrierung, Passwort | **umgesetzt 11.10.2026** — `de/auth.ts`. „Neues Passwort“ siezt; veraltete Hinweise korrigiert (Zurücksetzen per E-Mail gibt es seit 12.09., Links gehen auf jedem Gerät) |
-| Konto, Simulator, Fließtexte (Hilfe, Lotsen, Landing, Rechtstexte) | offen |
+| Konto | **umgesetzt 11.10.2026** — `de/account/` (Häuser, Plan & Abrechnung, Zahlungsweg, Rechnungstexte, Löschen, Logo-Meldungen). „Zahlungsweg“ durchgehend, „Karte bzw. Konto“ statt „Zahlungsmittel“; Ländernamen über `Intl.DisplayNames` |
+| Simulator, Fließtexte (Hilfe, Lotsen, Landing, Rechtstexte) | offen |
 
 ## Nächster Schritt
 

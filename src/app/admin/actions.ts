@@ -10,6 +10,8 @@ import {
   deleteAccountData, deleteHotelData, previewAccountDeletion, previewHotelDeletion,
   type DeletionPreview,
 } from '@/utils/deletion'
+import { format, getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /*
  * Konto-Ebene: Häuser anlegen.
@@ -25,6 +27,10 @@ import {
 
 type Result = { error?: string }
 
+async function messages() {
+  return getMessages(await getLocale()).account.houses.errors
+}
+
 /**
  * Konto umbenennen.
  *
@@ -36,12 +42,13 @@ type Result = { error?: string }
  * `billing_name`, der bleibt hiervon unberührt.
  */
 export async function renameAccountAction(formData: FormData): Promise<Result> {
+  const e = await messages()
   const ctx = await getAccountContext()
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
 
   const name = ((formData.get('name') as string) ?? '').trim()
-  if (name.length < 2) return { error: 'Der Kontoname muss mindestens 2 Zeichen haben.' }
-  if (name.length > 80) return { error: 'Der Kontoname darf höchstens 80 Zeichen haben.' }
+  if (name.length < 2) return { error: e.accountNameTooShort }
+  if (name.length > 80) return { error: e.accountNameTooLong }
 
   const { error } = await createAdminClient()
     .from('accounts').update({ name }).eq('id', ctx.accountId)
@@ -54,11 +61,12 @@ export async function renameAccountAction(formData: FormData): Promise<Result> {
 
 /** Neues Haus im eigenen Konto. Slug wird aus dem Namen erzeugt. */
 export async function createHotelAction(formData: FormData): Promise<Result & { slug?: string }> {
+  const e = await messages()
   const ctx = await getAccountContext()
-  if (!ctx) return { error: 'Keine Berechtigung.' }
+  if (!ctx) return { error: e.noPermission }
 
   const name = ((formData.get('name') as string) ?? '').trim()
-  if (name.length < 2) return { error: 'Hotelname muss mindestens 2 Zeichen haben.' }
+  if (name.length < 2) return { error: e.houseNameTooShort }
 
   const admin = createAdminClient()
 
@@ -77,7 +85,7 @@ export async function createHotelAction(formData: FormData): Promise<Result & { 
     })
     .select('id')
     .single()
-  if (error) return { error: `Anlegen fehlgeschlagen: ${error.message}` }
+  if (error) return { error: format(e.createFailed, { message: error.message }) }
 
   // Beispiel-Services seeden — gleiche Vorlagen wie beim Anlegen eines
   // Mandanten per Skript. Ganz normale Services, jederzeit archivierbar.
@@ -120,17 +128,18 @@ export async function createHotelAction(formData: FormData): Promise<Result & { 
 export async function getDeletionPreviewAction(
   hotelId?: string,
 ): Promise<{ preview?: DeletionPreview; confirmPhrase?: string; error?: string }> {
+  const e = await messages()
   const ctx = await getAccountContext()
-  if (!ctx) return { error: 'Nur der Kontoinhaber kann Daten löschen.' }
+  if (!ctx) return { error: e.ownerOnlyDelete }
 
   if (hotelId) {
     const admin = createAdminClient()
     const { data: hotel } = await admin
       .from('hotels').select('id, name, account_id').eq('id', hotelId).maybeSingle()
-    if (!hotel || hotel.account_id !== ctx.accountId) return { error: 'Haus nicht gefunden.' }
+    if (!hotel || hotel.account_id !== ctx.accountId) return { error: e.houseNotFound }
 
     const preview = await previewHotelDeletion(hotelId)
-    if (!preview) return { error: 'Haus nicht gefunden.' }
+    if (!preview) return { error: e.houseNotFound }
     return { preview, confirmPhrase: hotel.name }
   }
 
@@ -145,19 +154,20 @@ export async function deleteHotelAction(
   hotelId: string,
   confirmPhrase: string,
 ): Promise<Result> {
+  const e = await messages()
   const ctx = await getAccountContext()
-  if (!ctx) return { error: 'Nur der Kontoinhaber kann Daten löschen.' }
+  if (!ctx) return { error: e.ownerOnlyDelete }
 
   const admin = createAdminClient()
   const { data: hotel } = await admin
     .from('hotels').select('id, name, account_id').eq('id', hotelId).maybeSingle()
-  if (!hotel || hotel.account_id !== ctx.accountId) return { error: 'Haus nicht gefunden.' }
+  if (!hotel || hotel.account_id !== ctx.accountId) return { error: e.houseNotFound }
   if (confirmPhrase.trim() !== hotel.name) {
-    return { error: `Bitte „${hotel.name}" zur Bestätigung eingeben.` }
+    return { error: format(e.confirmPhrase, { phrase: hotel.name }) }
   }
 
   const res = await deleteHotelData(hotelId)
-  if (res.error) return { error: `Löschen fehlgeschlagen: ${res.error}` }
+  if (res.error) return { error: format(e.deleteFailed, { message: res.error }) }
 
   revalidatePath('/admin')
   return {}
@@ -168,14 +178,15 @@ export async function deleteHotelAction(
  * Sitzung ist danach ungültig, der Aufrufer muss auf `/login` führen.
  */
 export async function deleteAccountAction(confirmPhrase: string): Promise<Result> {
+  const e = await messages()
   const ctx = await getAccountContext()
-  if (!ctx) return { error: 'Nur der Kontoinhaber kann das Konto löschen.' }
+  if (!ctx) return { error: e.ownerOnlyDeleteAccount }
   if (confirmPhrase.trim() !== ctx.accountName) {
-    return { error: `Bitte „${ctx.accountName}" zur Bestätigung eingeben.` }
+    return { error: format(e.confirmPhrase, { phrase: ctx.accountName }) }
   }
 
   const res = await deleteAccountData(ctx.accountId)
-  if (res.error) return { error: `Löschen fehlgeschlagen: ${res.error}` }
+  if (res.error) return { error: format(e.deleteFailed, { message: res.error }) }
 
   revalidatePath('/admin')
   return {}

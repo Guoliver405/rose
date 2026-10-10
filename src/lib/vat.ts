@@ -12,6 +12,9 @@
  * österreichisches Hotel deutsche Umsatzsteuer zahlen.
  */
 
+import type { AccountMessages } from './i18n'
+import { format } from './i18n/format'
+
 /** EU-Mitgliedstaaten (ISO 3166-1 alpha-2). */
 export const EU_COUNTRIES = new Set([
   'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT',
@@ -69,11 +72,17 @@ export type BillingDetails = {
   vatId: string | null
 }
 
+/** Meldungen der Prüfung — aus der Sprachdatei (`account.billing.errors.vat`), hereingereicht statt importiert, weil `vat.ts` auch im Browser läuft. */
+export type VatMessages = AccountMessages['billing']['errors']['vat']
+
 /**
  * Prüft und normalisiert die Rechnungsdaten. Liefert entweder einen
  * Fehlertext für das Formular oder die bereinigten Werte.
  */
-export function validateBillingDetails(input: BillingDetailsInput): { error: string } | { details: BillingDetails } {
+export function validateBillingDetails(
+  input: BillingDetailsInput,
+  m: VatMessages,
+): { error: string } | { details: BillingDetails } {
   const name = input.name.trim()
   const line1 = input.line1.trim()
   const line2 = (input.line2 ?? '').trim()
@@ -82,23 +91,23 @@ export function validateBillingDetails(input: BillingDetailsInput): { error: str
   const country = input.country.trim().toUpperCase()
   const vatRaw = (input.vatId ?? '').trim()
 
-  if (name.length < 2) return { error: 'Bitte den Rechnungsempfänger angeben.' }
-  if (!/^[A-Z]{2}$/.test(country)) return { error: 'Bitte ein Land auswählen.' }
-  if (line1.length < 3) return { error: 'Bitte Straße und Hausnummer angeben.' }
-  if (postalCode.length < 3) return { error: 'Bitte die Postleitzahl angeben.' }
-  if (city.length < 2) return { error: 'Bitte den Ort angeben.' }
+  if (name.length < 2) return { error: m.nameMissing }
+  if (!/^[A-Z]{2}$/.test(country)) return { error: m.countryMissing }
+  if (line1.length < 3) return { error: m.line1Missing }
+  if (postalCode.length < 3) return { error: m.postalCodeMissing }
+  if (city.length < 2) return { error: m.cityMissing }
 
   let vatId: string | null = null
   if (vatRaw) {
     if (!isEuCountry(country)) {
-      return { error: 'Eine USt-IdNr. gibt es nur für Unternehmen in der EU. Bitte das Feld leer lassen.' }
+      return { error: m.outsideEu }
     }
     if (!vatIdLooksValid(vatRaw, country)) {
-      return { error: `Die USt-IdNr. passt nicht zum Format für ${country} (Präfix ${vatPrefixFor(country)}).` }
+      return { error: format(m.format, { country, prefix: vatPrefixFor(country) ?? '' }) }
     }
     vatId = normalizeVatId(vatRaw)
   } else if (isEuCountry(country) && country !== 'DE') {
-    return { error: 'Für Unternehmen in der EU außerhalb Deutschlands ist die USt-IdNr. Pflicht — sonst müssten wir deutsche Umsatzsteuer berechnen.' }
+    return { error: m.required }
   }
 
   return {

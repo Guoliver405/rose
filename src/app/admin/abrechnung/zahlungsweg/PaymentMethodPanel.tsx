@@ -10,6 +10,11 @@ import {
   chooseBankTransferAction, confirmPaymentMethodAction, createSetupIntentAction, removePaymentMethodAction,
 } from '../actions'
 import type { PaymentMethodKind } from '@/utils/stripe'
+import { format } from '@/lib/i18n/format'
+import type { AccountMessages } from '@/lib/i18n'
+import Rich from '@/components/i18n/Rich'
+
+type PanelMessages = AccountMessages['billing']['panel']
 
 /*
  * Zahlungsweg des Kontos — drei Wege, alle über Stripe:
@@ -27,12 +32,6 @@ import type { PaymentMethodKind } from '@/utils/stripe'
  * das Zahlungsmittel serverseitig (siehe page.tsx).
  */
 
-const KIND_TEXT: Record<PaymentMethodKind, string> = {
-  card: 'Karte',
-  sepa_debit: 'SEPA-Lastschrift',
-  bank_transfer: 'Überweisung auf Rechnung',
-}
-
 function darkMode(): boolean {
   if (typeof document === 'undefined') return false
   const t = document.documentElement.getAttribute('data-theme')
@@ -41,7 +40,7 @@ function darkMode(): boolean {
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false
 }
 
-function ElementsForm({ onDone, onCancel, onBankTransfer }: { onDone: (label: string) => void; onCancel: () => void; onBankTransfer: () => void }) {
+function ElementsForm({ m, onDone, onCancel, onBankTransfer }: { m: PanelMessages['form']; onDone: (label: string) => void; onCancel: () => void; onBankTransfer: () => void }) {
   const stripe = useStripe()
   const elements = useElements()
   const router = useRouter()
@@ -61,12 +60,12 @@ function ElementsForm({ onDone, onCancel, onBankTransfer }: { onDone: (label: st
           redirect: 'if_required',
         })
         if (confirmErr) {
-          setError(confirmErr.message ?? 'Bestätigung fehlgeschlagen.')
+          setError(confirmErr.message ?? m.confirmFailed)
           setPending(false)
           return
         }
         if (!setupIntent || setupIntent.status !== 'succeeded') {
-          setError(`Zahlungsmittel noch nicht bestätigt (${setupIntent?.status ?? 'unbekannt'}).`)
+          setError(format(m.notConfirmed, { status: setupIntent?.status ?? m.unknownStatus }))
           setPending(false)
           return
         }
@@ -86,30 +85,36 @@ function ElementsForm({ onDone, onCancel, onBankTransfer }: { onDone: (label: st
           disabled={!stripe || pending}
           className="rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
         >
-          {pending ? 'Wird gespeichert …' : 'Zahlungsmittel speichern'}
+          {pending ? m.submitting : m.submit}
         </button>
         <button type="button" onClick={onCancel} className="text-sm font-semibold text-ink-muted hover:text-ink">
-          Abbrechen
+          {m.cancel}
         </button>
       </div>
       <p className="text-sm text-ink-soft">
-        Lieber ohne gespeichertes Zahlungsmittel?{' '}
-        <button type="button" onClick={onBankTransfer} className="font-semibold text-action-strong underline hover:no-underline">
-          Überweisung auf Rechnung wählen
-        </button>
-        {' '}— jede Rechnung nennt dann eine Bankverbindung und einen Verwendungszweck, Zahlungsziel 14 Tage.
+        <Rich
+          text={m.preferTransfer}
+          tags={{
+            link: c => (
+              <button type="button" onClick={onBankTransfer} className="font-semibold text-action-strong underline hover:no-underline">
+                {c}
+              </button>
+            ),
+          }}
+        />
       </p>
       <p className="text-xs text-ink-muted">
-        Es wird nichts belastet. Das Zahlungsmittel wird bei Stripe gespeichert und für die
-        Monatsrechnungen verwendet; RoSe selbst sieht keine Karten- oder Kontodaten.
+        {m.noCharge}
       </p>
     </form>
   )
 }
 
 export default function PaymentMethodPanel({
-  publishableKey, aktiv, datenVollstaendig, weiterZu,
+  m, kinds, publishableKey, aktiv, datenVollstaendig, weiterZu,
 }: {
+  m: PanelMessages
+  kinds: AccountMessages['billing']['kinds']
   publishableKey: string
   aktiv: { kind: PaymentMethodKind; label: string } | null
   datenVollstaendig: boolean
@@ -136,7 +141,7 @@ export default function PaymentMethodPanel({
     setErfolg(null)
     startTransition(async () => {
       const res = await createSetupIntentAction()
-      if (res.error || !res.clientSecret) { setError(res.error ?? 'Stripe nicht erreichbar.'); return }
+      if (res.error || !res.clientSecret) { setError(res.error ?? m.stripeUnreachable); return }
       setClientSecret(res.clientSecret)
     })
   }
@@ -148,7 +153,7 @@ export default function PaymentMethodPanel({
       const res = await chooseBankTransferAction()
       if (res.error) { setError(res.error); return }
       setClientSecret(null)
-      setErfolg('Überweisung auf Rechnung gewählt.')
+      setErfolg(m.bankTransferChosen)
       router.refresh()
     })
   }
@@ -166,13 +171,13 @@ export default function PaymentMethodPanel({
   return (
     <section className="flex flex-col gap-4 rounded-xl border border-edge bg-surface p-4">
       <h2 className="flex items-center gap-1.5 text-sm font-bold text-ink-soft">
-        <CreditCard className="h-4 w-4" /> Zahlungsweg
+        <CreditCard className="h-4 w-4" /> {m.title}
       </h2>
 
       {aktiv ? (
         <div className="flex flex-wrap items-center gap-3 rounded-lg bg-surface-muted px-3 py-2 text-sm">
           <CheckCircle2 className="h-4 w-4 text-positive-strong" />
-          <span className="font-semibold text-ink">{KIND_TEXT[aktiv.kind]}</span>
+          <span className="font-semibold text-ink">{kinds[aktiv.kind]}</span>
           {aktiv.kind !== 'bank_transfer' && <span className="text-ink-soft">{aktiv.label}</span>}
           <button
             type="button"
@@ -180,29 +185,26 @@ export default function PaymentMethodPanel({
             disabled={pending}
             className="ml-auto flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-critical-strong disabled:opacity-50"
           >
-            <Trash2 className="h-3.5 w-3.5" /> Entfernen
+            <Trash2 className="h-3.5 w-3.5" /> {m.remove}
           </button>
         </div>
       ) : (
         <p className="text-sm text-ink-soft">
-          Noch kein Zahlungsweg hinterlegt. Drei Wege, alle über unseren Zahlungsdienstleister
-          Stripe: Karte oder SEPA-Lastschrift werden hier gespeichert und monatlich eingezogen;
-          bei Überweisung auf Rechnung wird nichts gespeichert, jede Rechnung nennt eine
-          Bankverbindung mit Verwendungszweck.
+          {m.none}
         </p>
       )}
 
       {!datenVollstaendig && (
         <p className="rounded-lg border border-attention-tint-edge bg-attention-tint px-3 py-2 text-xs font-semibold text-attention-deepest">
-          Bitte zuerst die Rechnungsdaten oben speichern — sie stehen auf der Rechnung und
-          bestimmen die Umsatzsteuer.
+          {m.detailsFirst}
         </p>
       )}
 
       {clientSecret && stripePromise ? (
         <Elements stripe={stripePromise} options={{ clientSecret, locale: 'de', appearance }}>
           <ElementsForm
-            onDone={label => { setClientSecret(null); setErfolg(`${label} gespeichert.`) }}
+            m={m.form}
+            onDone={label => { setClientSecret(null); setErfolg(format(m.saved, { label })) }}
             onCancel={() => setClientSecret(null)}
             onBankTransfer={bankTransfer}
           />
@@ -215,7 +217,7 @@ export default function PaymentMethodPanel({
             disabled={pending || !datenVollstaendig}
             className="flex items-center gap-1.5 rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
           >
-            <CreditCard className="h-4 w-4" /> {aktiv && aktiv.kind !== 'bank_transfer' ? 'Karte oder Lastschrift ändern' : 'Karte oder SEPA-Lastschrift hinterlegen'}
+            <CreditCard className="h-4 w-4" /> {aktiv && aktiv.kind !== 'bank_transfer' ? m.change : m.add}
           </button>
           {aktiv?.kind !== 'bank_transfer' && (
             <button
@@ -224,7 +226,7 @@ export default function PaymentMethodPanel({
               disabled={pending || !datenVollstaendig}
               className="flex items-center gap-1.5 rounded-lg border border-edge bg-surface-elevated px-4 py-2 text-sm font-bold text-ink hover:border-edge-strong disabled:opacity-50"
             >
-              <Banknote className="h-4 w-4" /> Überweisung auf Rechnung
+              <Banknote className="h-4 w-4" /> {m.bankTransfer}
             </button>
           )}
         </div>
@@ -238,10 +240,7 @@ export default function PaymentMethodPanel({
       )}
 
       <p className="text-xs text-ink-muted">
-        Überweisung: Die Rechnung nennt eine Bankverbindung unseres Zahlungsdienstleisters mit
-        Verwendungszweck; der Eingang wird automatisch zugeordnet, Zahlungsziel 14 Tage.
-        Lastschrift: Einzug mit Rechnungsstellung nach Vorabankündigung. Karte: Belastung mit
-        Rechnungsstellung.
+        {m.notes}
       </p>
 
       {weiterZu && aktiv && (
@@ -249,7 +248,7 @@ export default function PaymentMethodPanel({
           href={weiterZu}
           className="inline-flex w-fit items-center gap-1.5 rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong"
         >
-          Weiter zum Zimmer-Setup <ArrowRight className="h-4 w-4" />
+          {m.next} <ArrowRight className="h-4 w-4" />
         </Link>
       )}
     </section>

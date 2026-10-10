@@ -5,6 +5,8 @@ import HilfeKnopf from '@/components/hilfe/HilfeKnopf'
 import HilfeLeiste from '@/components/hilfe/HilfeLeiste'
 import LotsePilot from '@/components/lotse/LotsePilot'
 import { getAuthUserId } from '@/utils/auth'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /**
  * Rahmen der Konto-Seiten außerhalb von `/h/<slug>/`: Logo, Name der
@@ -20,6 +22,7 @@ export default async function KontoShell({
   istInhaber: boolean
   children: React.ReactNode
 }) {
+  const m = getMessages(await getLocale()).account.houses.shell
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-surface-sunken">
       {/* Sticky wie im Haus-Layout, damit die Hilfe-Leiste darunter
@@ -40,7 +43,7 @@ export default async function KontoShell({
                 className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink"
               >
                 <LogOut className="h-4 w-4" />
-                Abmelden
+                {m.logout}
               </button>
             </form>
           </div>

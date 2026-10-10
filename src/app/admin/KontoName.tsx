@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Pencil, X } from 'lucide-react'
 import { renameAccountAction } from './actions'
+import type { AccountMessages } from '@/lib/i18n'
 
 const inputClass =
   'rounded-lg border border-edge bg-surface-elevated px-3 py-1.5 text-lg font-black text-ink focus:border-action focus:outline-none'
@@ -16,7 +17,7 @@ const inputClass =
  * „Hotel & Regeln" umbenannte, sah hier weiter den alten Namen stehen
  * (Rückmeldung 22.09.2026). Deshalb an Ort und Stelle editierbar.
  */
-export default function KontoName({ name }: { name: string }) {
+export default function KontoName({ name, m }: { name: string; m: AccountMessages['houses']['accountName'] }) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -29,8 +30,8 @@ export default function KontoName({ name }: { name: string }) {
         <button
           type="button"
           onClick={() => { setEditing(true); setError(null) }}
-          aria-label="Konto umbenennen"
-          title="Konto umbenennen"
+          aria-label={m.rename}
+          title={m.rename}
           className="rounded-md p-1 text-ink-muted hover:bg-surface-muted hover:text-ink"
         >
           <Pencil className="h-4 w-4" />
@@ -70,7 +71,7 @@ export default function KontoName({ name }: { name: string }) {
           disabled={pending}
           className="flex items-center gap-1 rounded-lg bg-action px-3 py-1.5 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
         >
-          <Check className="h-4 w-4" /> Speichern
+          <Check className="h-4 w-4" /> {m.save}
         </button>
         <button
           type="button"
@@ -78,13 +79,11 @@ export default function KontoName({ name }: { name: string }) {
           onClick={() => setEditing(false)}
           className="flex items-center gap-1 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong"
         >
-          <X className="h-4 w-4" /> Abbrechen
+          <X className="h-4 w-4" /> {m.cancel}
         </button>
       </div>
       <p className="text-xs text-ink-muted">
-        Der Kontoname ist unabhängig vom Namen der Häuser — beim Anlegen wurde der
-        Name des ersten Hauses übernommen. Die Häuser selbst benennen Sie unter
-        Einstellungen → Hotel &amp; Regeln um.
+        {m.hint}
       </p>
       {error && (
         <p className="rounded-lg border border-critical-tint-edge bg-critical-tint px-3 py-2 text-sm font-semibold text-critical-strong">

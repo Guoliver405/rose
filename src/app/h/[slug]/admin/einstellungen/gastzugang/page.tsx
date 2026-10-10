@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/server'
 import { parseGuestAccessMode } from '@/lib/guest-access'
 import { parseSheetLanguages } from '@/lib/guest-guide'
 import GastzugangForm from '../GastzugangForm'
+import { GUIDE_LANGS, sheetLanguageLabel, type GuideLang } from '@/lib/guest-guide'
 import SprachenForm from '../SprachenForm'
 import { UnsavedChanges } from '@/components/unsaved/UnsavedChanges'
 import Rich from '@/components/i18n/Rich'
@@ -69,7 +70,13 @@ export default async function GastzugangPage({
         <p className="text-sm text-ink-soft">
           <Rich text={m.guestAccess.languagesSection.intro} />
         </p>
-        <SprachenForm hotelSlug={ctx.hotelSlug} erste={erste} zweite={zweite ?? null} m={m.languages} />
+        <SprachenForm
+          hotelSlug={ctx.hotelSlug}
+          erste={erste}
+          zweite={zweite ?? null}
+          m={m.languages}
+          langLabels={Object.fromEntries(GUIDE_LANGS.map(l => [l, sheetLanguageLabel(l)])) as Record<GuideLang, string>}
+        />
       </section>
 
       {mode === 'pin' ? (

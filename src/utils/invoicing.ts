@@ -5,10 +5,12 @@ import {
   billingDetailsComplete, getAccountBilling, stripeClient, stripeReady, type AccountBilling,
 } from '@/utils/stripe'
 import { billingLine } from '@/lib/pricing'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 import { periodKey, type BillingPeriod } from '@/lib/rooms'
 import {
   INVOICE_DUE_DAYS, SAAS_TAX_CODE, dateKeyFromUnix, invoiceFooter, invoiceIdempotencyKey,
-  invoiceLineDescription, invoiceMemo, mapStripeInvoiceStatus, periodRangeLabel, previousMonthPeriod,
+  invoiceLineDescription, invoiceMemo, invoicePeriodFieldName, mapStripeInvoiceStatus, periodRangeLabel, previousMonthPeriod,
   type MirrorStatus,
 } from '@/lib/invoice'
 
@@ -103,7 +105,7 @@ export function stripeGateway(): InvoiceGateway {
         pending_invoice_items_behavior: 'exclude',
         description: input.memo,
         footer: input.footer,
-        custom_fields: [{ name: 'Leistungszeitraum', value: periodRangeLabel(input.period) }],
+        custom_fields: [{ name: invoicePeriodFieldName(), value: periodRangeLabel(input.period) }],
         rendering: { pdf: { page_size: 'a4' } },
         metadata: {
           account_id: input.accountId,
@@ -249,9 +251,10 @@ export async function ensureInvoiceForPeriod(
   }
 
   const billing = await getAccountBilling(accountId)
+  const e = getMessages(await getLocale()).account.billing.errors.invoicing
   const fehlt = !billing?.stripeCustomerId
-    ? 'Kein Stripe-Kunde — bitte Zahlungsweg-Seite öffnen.'
-    : !billingDetailsComplete(billing) ? 'Rechnungsdaten fehlen.' : null
+    ? e.noCustomer
+    : !billingDetailsComplete(billing) ? e.detailsMissing : null
   if (fehlt || !billing) {
     await admin.from('invoices').update({ last_error: fehlt, updated_at: new Date().toISOString() }).eq('id', mirror.id)
     return 'failed'

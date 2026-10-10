@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   COUNTRY_CODES, isEuCountry, normalizeVatId, validateBillingDetails, vatIdLooksValid, vatPrefixFor,
 } from './vat'
+import { getMessages } from './i18n'
+
+const m = getMessages().account.billing.errors.vat
 
 describe('vatPrefixFor / isEuCountry', () => {
   it('kennt die EU und den griechischen Sonderfall', () => {
@@ -33,42 +36,42 @@ describe('validateBillingDetails', () => {
   const basis = { name: 'Hotel Test GmbH', line1: 'Hauptstraße 1', postalCode: '12345', city: 'Berlin', country: 'DE' }
 
   it('nimmt deutsche Daten ohne USt-IdNr.', () => {
-    const r = validateBillingDetails(basis)
+    const r = validateBillingDetails(basis, m)
     expect('details' in r && r.details.vatId).toBeNull()
     expect('details' in r && r.details.address.country).toBe('DE')
   })
 
   it('normalisiert die USt-IdNr. und das Land', () => {
-    const r = validateBillingDetails({ ...basis, country: 'de', vatId: 'de 123 456 789' })
+    const r = validateBillingDetails({ ...basis, country: 'de', vatId: 'de 123 456 789' }, m)
     expect('details' in r && r.details.vatId).toBe('DE123456789')
   })
 
   it('verlangt in der EU außerhalb Deutschlands eine USt-IdNr.', () => {
-    const r = validateBillingDetails({ ...basis, country: 'AT' })
+    const r = validateBillingDetails({ ...basis, country: 'AT' }, m)
     expect('error' in r && r.error).toMatch(/Pflicht/)
-    const ok = validateBillingDetails({ ...basis, country: 'AT', vatId: 'ATU12345678' })
+    const ok = validateBillingDetails({ ...basis, country: 'AT', vatId: 'ATU12345678' }, m)
     expect('details' in ok).toBe(true)
   })
 
   it('lehnt eine USt-IdNr. außerhalb der EU ab', () => {
-    const r = validateBillingDetails({ ...basis, country: 'CH', vatId: 'CHE123456789' })
+    const r = validateBillingDetails({ ...basis, country: 'CH', vatId: 'CHE123456789' }, m)
     expect('error' in r && r.error).toMatch(/nur für Unternehmen in der EU/)
   })
 
   it('lässt Drittländer ohne USt-IdNr. durch', () => {
-    const r = validateBillingDetails({ ...basis, country: 'US', postalCode: '10001', city: 'New York' })
+    const r = validateBillingDetails({ ...basis, country: 'US', postalCode: '10001', city: 'New York' }, m)
     expect('details' in r).toBe(true)
   })
 
   it('meldet fehlende Pflichtfelder einzeln', () => {
-    expect(validateBillingDetails({ ...basis, name: '' })).toEqual({ error: expect.stringMatching(/Rechnungsempfänger/) })
-    expect(validateBillingDetails({ ...basis, country: '' })).toEqual({ error: expect.stringMatching(/Land/) })
-    expect(validateBillingDetails({ ...basis, line1: '' })).toEqual({ error: expect.stringMatching(/Straße/) })
-    expect(validateBillingDetails({ ...basis, city: '' })).toEqual({ error: expect.stringMatching(/Ort/) })
+    expect(validateBillingDetails({ ...basis, name: '' }, m)).toEqual({ error: expect.stringMatching(/Rechnungsempfänger/) })
+    expect(validateBillingDetails({ ...basis, country: '' }, m)).toEqual({ error: expect.stringMatching(/Land/) })
+    expect(validateBillingDetails({ ...basis, line1: '' }, m)).toEqual({ error: expect.stringMatching(/Straße/) })
+    expect(validateBillingDetails({ ...basis, city: '' }, m)).toEqual({ error: expect.stringMatching(/Ort/) })
   })
 
   it('meldet ein falsches Präfix mit dem erwarteten', () => {
-    const r = validateBillingDetails({ ...basis, country: 'GR', vatId: 'GR123456789' })
+    const r = validateBillingDetails({ ...basis, country: 'GR', vatId: 'GR123456789' }, m)
     expect('error' in r && r.error).toMatch(/EL/)
   })
 })

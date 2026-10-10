@@ -95,18 +95,19 @@ export function detectLogoMime(head: Uint8Array): LogoMime | null {
   return null
 }
 
-export type LogoCheck = { mime: LogoMime } | { error: string }
-
 /**
- * Prüft Größe und Typ. Die Meldungen gehen so an die Rezeption bzw. den
- * Inhaber — deshalb deutsch und ohne Fachbegriffe.
+ * Ergebnis der Prüfung. Statt eines Textes kommt ein Schlüssel zurück — die
+ * Meldung wählt der Aufrufer aus der Sprachdatei (`account.houses.logo`),
+ * damit diese Datei I/O-frei bleibt.
  */
+export type LogoError = { error: 'empty' } | { error: 'tooLarge'; kb: number } | { error: 'wrongType' }
+export type LogoCheck = { mime: LogoMime } | LogoError
+
+/** Prüft Größe und Typ. */
 export function validateLogoUpload(size: number, head: Uint8Array): LogoCheck {
-  if (!Number.isFinite(size) || size <= 0) return { error: 'Die Datei ist leer.' }
-  if (size > LOGO_MAX_BYTES) {
-    return { error: `Die Datei ist zu groß (${Math.round(size / 1024)} KB). Höchstens 1 MB.` }
-  }
+  if (!Number.isFinite(size) || size <= 0) return { error: 'empty' }
+  if (size > LOGO_MAX_BYTES) return { error: 'tooLarge', kb: Math.round(size / 1024) }
   const mime = detectLogoMime(head)
-  if (!mime) return { error: 'Nur PNG, JPG oder SVG — die Datei ist keines davon.' }
+  if (!mime) return { error: 'wrongType' }
   return { mime }
 }

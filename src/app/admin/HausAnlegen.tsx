@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, Plus } from 'lucide-react'
 import { createHotelAction } from './actions'
+import type { AccountMessages } from '@/lib/i18n'
 
 /**
  * „Haus anlegen" auf der Häuser-Seite — der einzige interaktive Teil dort.
@@ -11,7 +12,7 @@ import { createHotelAction } from './actions'
  * Bewusst als eigene Client-Komponente: die Haus-Kacheln bleiben damit
  * server-gerendert und behalten ihr Lagebild ohne Umweg über Props.
  */
-export default function HausAnlegen() {
+export default function HausAnlegen({ m }: { m: AccountMessages['houses']['create'] }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -24,7 +25,7 @@ export default function HausAnlegen() {
         onClick={() => { setOpen(v => !v); setError(null) }}
         className="flex items-center gap-1.5 self-start rounded-lg bg-action px-3 py-1.5 text-sm font-bold text-action-foreground hover:bg-action-strong"
       >
-        <Plus className="h-4 w-4" /> Haus anlegen
+        <Plus className="h-4 w-4" /> {m.button}
       </button>
 
       {error && (
@@ -51,12 +52,12 @@ export default function HausAnlegen() {
           className="flex flex-wrap items-end gap-2 rounded-xl border border-edge bg-surface p-3"
         >
           <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-            Name des Hauses
+            {m.name}
             <input
               name="name"
               required
               minLength={2}
-              placeholder="z. B. Stadthotel Krone"
+              placeholder={m.namePlaceholder}
               className="w-64 rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink placeholder:text-ink-muted focus:border-action focus:outline-none"
             />
           </label>
@@ -66,12 +67,10 @@ export default function HausAnlegen() {
             className="flex items-center gap-1.5 rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
           >
             {pending && <Loader2 className="h-4 w-4 animate-spin" />}
-            Anlegen
+            {m.submit}
           </button>
           <p className="w-full text-xs text-ink-muted">
-            Die Adresse wird aus dem Namen erzeugt und ist danach unter
-            Einstellungen → Hotel &amp; Regeln änderbar. Beispiel-Services werden
-            mit angelegt.
+            {m.hint}
           </p>
         </form>
       )}

@@ -7,6 +7,9 @@ import {
   deleteAccountAction, deleteHotelAction, getDeletionPreviewAction,
 } from './actions'
 import type { DeletionPreview } from '@/utils/deletion'
+import type { AccountMessages } from '@/lib/i18n'
+import { format, plural, type PluralForms, type Vars } from '@/lib/i18n/format'
+import Rich from '@/components/i18n/Rich'
 
 type Target = {
   /** undefined = das ganze Konto. */
@@ -19,11 +22,6 @@ type Target = {
 const input =
   'rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink focus:border-action focus:outline-none'
 
-/** „1 Aufenthalt" statt „1 Aufenthalte" — in einer Löschbestätigung zählt jedes Wort. */
-function plural(n: number, one: string, many: string): string {
-  return `${n} ${n === 1 ? one : many}`
-}
-
 /**
  * Löschbegehren — Haus oder ganzes Konto restlos entfernen.
  *
@@ -33,11 +31,16 @@ function plural(n: number, one: string, many: string): string {
  * dessen, was verschwindet.
  */
 export default function DatenLoeschen({
-  hotels, accountName,
+  hotels, accountName, m, intlLocale,
 }: {
   hotels: { id: string; name: string }[]
   accountName: string
+  m: AccountMessages['houses']['deletion']
+  intlLocale: string
 }) {
+  // „1 Aufenthalt" statt „1 Aufenthalte" — in einer Löschbestätigung zählt jedes Wort.
+  const n = (count: number, forms: PluralForms, vars: Vars = {}) =>
+    plural(intlLocale, count, forms, vars)
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -53,7 +56,7 @@ export default function DatenLoeschen({
     startTransition(async () => {
       const res = await getDeletionPreviewAction(hotelId)
       if (!res.preview || !res.confirmPhrase) {
-        setError(res.error ?? 'Konnte nicht geladen werden.')
+        setError(res.error ?? m.loadFailed)
         return
       }
       setTarget({ hotelId, label, preview: res.preview, confirmPhrase: res.confirmPhrase })
@@ -68,7 +71,7 @@ export default function DatenLoeschen({
         const res = await deleteHotelAction(target.hotelId, confirmInput)
         if (res.error) { setError(res.error); return }
         setTarget(null)
-        setNotice(`${target.label} wurde vollständig entfernt.`)
+        setNotice(format(m.houseRemoved, { name: target.label }))
         router.refresh()
       } else {
         const res = await deleteAccountAction(confirmInput)
@@ -86,18 +89,15 @@ export default function DatenLoeschen({
   return (
     <details className="rounded-xl border border-edge bg-surface">
       <summary className="cursor-pointer px-4 py-3 text-sm font-bold text-ink-soft">
-        Daten löschen
+        {m.summary}
         <span className="ml-2 font-normal text-ink-muted">
-          Haus oder Konto endgültig entfernen
+          {m.summaryHint}
         </span>
       </summary>
 
       <div className="flex flex-col gap-3 border-t border-edge p-4">
         <p className="text-xs text-ink-muted">
-          Entfernt <strong>alles</strong>: Zimmer, Aufenthalte, Service-Anfragen,
-          Reinigungsnachweise, Zimmer-Verlauf, Abrechnungsbelege und die
-          Anmeldekonten der betroffenen Personen. Nicht rückgängig zu machen und
-          nicht wiederherstellbar — es gibt keine Sicherung.
+          <Rich text={m.intro} />
         </p>
 
         {error && (
@@ -113,7 +113,7 @@ export default function DatenLoeschen({
 
         {hotels.length > 0 && (
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-bold text-ink-soft">Einzelnes Haus</p>
+            <p className="text-xs font-bold text-ink-soft">{m.singleHouse}</p>
             {hotels.map(h => (
               <div key={h.id} className="flex items-center gap-3">
                 <span className="min-w-40 text-sm font-semibold text-ink">{h.name}</span>
@@ -123,7 +123,7 @@ export default function DatenLoeschen({
                   onClick={() => open(h.id, h.name)}
                   className="flex items-center gap-1.5 rounded-lg border border-critical-pill-edge px-3 py-1.5 text-sm font-semibold text-critical-strong hover:bg-critical-tint disabled:opacity-50"
                 >
-                  <Trash2 className="h-4 w-4" /> Löschen
+                  <Trash2 className="h-4 w-4" /> {m.delete}
                 </button>
               </div>
             ))}
@@ -137,59 +137,51 @@ export default function DatenLoeschen({
             onClick={() => open(undefined, accountName)}
             className="flex items-center gap-1.5 rounded-lg border border-critical-pill-edge px-3 py-1.5 text-sm font-bold text-critical-strong hover:bg-critical-tint disabled:opacity-50"
           >
-            <AlertTriangle className="h-4 w-4" /> Gesamtes Konto löschen
+            <AlertTriangle className="h-4 w-4" /> {m.deleteAccount}
           </button>
           <p className="mt-1.5 text-xs text-ink-muted">
-            Mit allen Häusern und dem eigenen Zugang. Danach ist keine Anmeldung mehr möglich.
+            {m.deleteAccountHint}
           </p>
         </div>
 
         {target && p && (
           <div className="mt-2 rounded-xl border border-critical-tint-edge bg-critical-tint p-4">
             <p className="text-sm font-bold text-critical-strong">
-              {target.hotelId ? `${target.label} löschen` : `Konto „${target.label}" löschen`} — das
-              verschwindet endgültig:
+              {format(target.hotelId ? m.headingHouse : m.headingAccount, { name: target.label })}
             </p>
             <ul className="mt-2 list-disc pl-5 text-sm text-ink-soft">
               {!target.hotelId && p.hotels.length > 0 && (
-                <li>{p.hotels.length} {p.hotels.length === 1 ? 'Haus' : 'Häuser'}: {p.hotels.map(h => h.name).join(', ')}</li>
+                <li>{n(p.hotels.length, m.houses, { names: p.hotels.map(h => h.name).join(', ') })}</li>
               )}
-              {p.rooms > 0 && <li>{p.rooms} Zimmer</li>}
-              {p.stays > 0 && <li>{plural(p.stays, 'Aufenthalt', 'Aufenthalte')}</li>}
+              {p.rooms > 0 && <li>{n(p.rooms, m.rooms)}</li>}
+              {p.stays > 0 && <li>{n(p.stays, m.stays)}</li>}
               {p.orders > 0 && (
-                <li>{plural(p.orders, 'Service-Anfrage', 'Service-Anfragen')}</li>
+                <li>{n(p.orders, m.orders)}</li>
               )}
               {p.staffLog > 0 && (
-                <li>
-                  {plural(p.staffLog, 'Eintrag', 'Einträge')} im Tätigkeits-Protokoll
-                </li>
+                <li>{n(p.staffLog, m.staffLog)}</li>
               )}
               {p.transitions > 0 && (
-                <li>{plural(p.transitions, 'Eintrag', 'Einträge')} im Zimmer-Verlauf</li>
+                <li>{n(p.transitions, m.transitions)}</li>
               )}
               {p.snapshots > 0 && (
-                <li>
-                  {plural(p.snapshots, 'festgeschriebener Abrechnungsmonat', 'festgeschriebene Abrechnungsmonate')}
-                </li>
+                <li>{n(p.snapshots, m.snapshots)}</li>
               )}
               {p.authUsers > 0 && (
                 <li className="font-semibold">
-                  {plural(p.authUsers, 'Anmeldekonto', 'Anmeldekonten')} samt E-Mail-Adresse
+                  {n(p.authUsers, m.authUsers)}
                 </li>
               )}
             </ul>
 
             {p.authUsersKept > 0 && (
               <p className="mt-2 text-xs text-ink-muted">
-                {p.authUsersKept}{' '}
-                {p.authUsersKept === 1 ? 'Anmeldekonto bleibt' : 'Anmeldekonten bleiben'} bestehen —
-                {p.authUsersKept === 1 ? ' diese Person ist' : ' diese Personen sind'} noch in
-                anderen Häusern eingetragen.
+                {n(p.authUsersKept, m.authUsersKept)}
               </p>
             )}
 
             <label className="mt-3 flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-              Zum Bestätigen &bdquo;{target.confirmPhrase}&ldquo; eingeben
+              {format(m.confirmLabel, { phrase: target.confirmPhrase })}
               <input
                 value={confirmInput}
                 onChange={e => setConfirmInput(e.target.value)}
@@ -205,14 +197,14 @@ export default function DatenLoeschen({
                 onClick={run}
                 className="rounded-lg bg-critical px-4 py-2 text-sm font-bold text-critical-foreground disabled:opacity-50"
               >
-                {pending ? 'Wird gelöscht …' : 'Ja, endgültig löschen'}
+                {pending ? m.deleting : m.confirm}
               </button>
               <button
                 type="button"
                 onClick={() => setTarget(null)}
                 className="rounded-lg border border-edge px-3 py-2 text-sm font-semibold text-ink-soft"
               >
-                Abbrechen
+                {m.cancel}
               </button>
             </div>
           </div>

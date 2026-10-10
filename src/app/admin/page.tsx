@@ -14,6 +14,10 @@ import HausAnlegen from './HausAnlegen'
 import DatenLoeschen from './DatenLoeschen'
 import KontoShell from './KontoShell'
 import KontoName from './KontoName'
+import Rich from '@/components/i18n/Rich'
+import { format, getMessages, intlLocale, plural } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
+import { SIMULATOR_NAME } from '@/lib/sim-account'
 
 /**
  * Häuser — der Einstieg ins Management-Portal und zugleich der Konto-Bereich.
@@ -37,6 +41,10 @@ import KontoName from './KontoName'
 export default async function HotelPickerPage() {
   const hotels = await listAccessibleHotels()
   if (hotels.length === 0) redirect('/login')
+
+  const locale = await getLocale()
+  const il = intlLocale(locale)
+  const m = getMessages(locale).account.houses
 
   const account = await getAccountContext()
 
@@ -118,63 +126,69 @@ export default async function HotelPickerPage() {
         <section className="rounded-xl border border-edge bg-surface p-4">
           <div className="flex flex-wrap items-start gap-3">
             <div className="min-w-0 flex-1">
-              <h2 className="text-sm font-bold text-ink-soft">Konto</h2>
-              <KontoName name={account.accountName} />
+              <h2 className="text-sm font-bold text-ink-soft">{m.account.heading}</h2>
+              <KontoName name={account.accountName} m={m.accountName} />
             </div>
             <Link
               href="/admin/abrechnung"
               className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink"
             >
-              <CreditCard className="h-4 w-4" /> Plan &amp; Abrechnung
+              <CreditCard className="h-4 w-4" /> {m.account.billingLink}
               <ChevronRight className="h-4 w-4 text-ink-muted" />
             </Link>
           </div>
           <div className="mt-3 flex flex-wrap gap-2 text-sm">
             <span className="rounded-full bg-surface-muted px-3 py-1 font-semibold text-ink-soft">
-              {hotels.length} {hotels.length === 1 ? 'Haus' : 'Häuser'}
+              {plural(il, hotels.length, m.account.houseCount)}
             </span>
             <span className="rounded-full bg-surface-muted px-3 py-1 font-semibold text-ink-soft">
-              {totalRooms} Zimmer in Betrieb
+              {format(m.account.roomsActive, { count: totalRooms })}
             </span>
             <span className="rounded-full bg-action-tint px-3 py-1 font-semibold text-action-strong">
-              {laufend.rooms} abrechenbar im laufenden Monat
+              {format(m.account.roomsBillable, { count: laufend.rooms })}
             </span>
             <span className="rounded-full bg-surface-muted px-3 py-1 font-semibold text-ink-soft">
-              voraussichtlich {formatCents(laufend.cents)}
-              {laufend.free ? ' (Freimonat)' : ''}
+              {format(laufend.free ? m.account.expectedFree : m.account.expected, { amount: formatCents(laufend.cents) })}
             </span>
           </div>
           {problemRechnung && (
             <p className="mt-3 rounded-lg border border-critical-tint-edge bg-critical-tint px-3 py-2 text-sm text-critical-deepest">
-              <span className="font-bold">
-                {problemRechnung.status === 'draft'
-                  ? 'Eine Rechnung konnte nicht gestellt werden.'
-                  : `Rechnung ${problemRechnung.number ?? ''} ist überfällig.`}
-              </span>{' '}
-              {problemRechnung.status === 'draft' ? problemRechnung.lastError : 'Bitte begleichen, sonst kann der Zugang nach Mahnung gesperrt werden (§ 6 Abs. 6 AGB).'}{' '}
-              <Link href={problemRechnung.hostedInvoiceUrl ?? '/admin/abrechnung'} className="font-semibold underline hover:no-underline">
-                {problemRechnung.status === 'draft' ? 'Zur Abrechnung' : 'Rechnung ansehen'}
-              </Link>
+              <Rich
+                text={problemRechnung.status === 'draft' ? m.account.invoiceFailed : m.account.invoiceOverdue}
+                vars={{ reason: problemRechnung.lastError ?? '', number: problemRechnung.number ?? '' }}
+                tags={{
+                  b: c => <span className="font-bold">{c}</span>,
+                  link: c => (
+                    <Link href={problemRechnung.hostedInvoiceUrl ?? '/admin/abrechnung'} className="font-semibold underline hover:no-underline">
+                      {c}
+                    </Link>
+                  ),
+                }}
+              />
             </p>
           )}
           {zahlungswegFehlt && (
             <p className="mt-3 rounded-lg border border-attention-tint-edge bg-attention-tint px-3 py-2 text-sm text-attention-deepest">
-              <span className="font-bold">Noch kein Zahlungsweg hinterlegt.</span>{' '}
-              Karte, SEPA-Lastschrift oder Überweisung —{' '}
-              <Link href="/admin/abrechnung/zahlungsweg" className="font-semibold underline hover:no-underline">
-                jetzt hinterlegen
-              </Link>
-              . Belastet wird erst nach dem Freimonat.
+              <Rich
+                text={m.account.noPaymentMethod}
+                tags={{
+                  b: c => <span className="font-bold">{c}</span>,
+                  link: c => (
+                    <Link href="/admin/abrechnung/zahlungsweg" className="font-semibold underline hover:no-underline">
+                      {c}
+                    </Link>
+                  ),
+                }}
+              />
             </p>
           )}
           <p className="mt-2 text-xs text-ink-muted">
-            Abgerechnet wird je Zimmer und Kalendermonat; gezählt wird jedes Zimmer, das im
-            Monat <em>auch nur vorübergehend</em> in Betrieb war.{' '}
+            <Rich text={m.account.billingRule} tags={{ em: c => <em>{c}</em> }} />{' '}
             {!mitStripe
-              ? 'Rechnungsstellung und Zahlungsverfahren sind noch nicht eingerichtet — aktuell wird nichts berechnet.'
+              ? m.account.billingNotSetUp
               : stripeTestMode()
-                ? 'Rechnungen werden monatlich am 1. gestellt — derzeit als Testrechnungen, es wird nichts belastet.'
-                : 'Rechnungen werden monatlich am 1. für den Vormonat gestellt.'}
+                ? m.account.billingTestMode
+                : m.account.billingLive}
           </p>
         </section>
       )}
@@ -182,11 +196,11 @@ export default async function HotelPickerPage() {
       {/* ── Häuser ────────────────────────────────────────────────────── */}
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-xl font-black text-ink">Häuser</h1>
+          <h1 className="text-xl font-black text-ink">{m.list.heading}</h1>
           <span className="rounded-full bg-surface-muted px-3 py-1 text-sm font-semibold text-ink-soft">
             {hotels.length}
           </span>
-          {account && <div className="ml-auto"><HausAnlegen /></div>}
+          {account && <div className="ml-auto"><HausAnlegen m={m.create} /></div>}
         </div>
 
         <div className="flex flex-col gap-2">
@@ -209,14 +223,14 @@ export default async function HotelPickerPage() {
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-bold text-ink">{h.name}</span>
                   <span className="block truncate font-mono text-xs text-ink-muted">
-                    /{h.slug} · {roomsByHotel.get(h.id) ?? 0} Zimmer
+                    /{h.slug} · {format(m.list.rooms, { count: roomsByHotel.get(h.id) ?? 0 })}
                   </span>
                 </span>
 
                 <span className="flex shrink-0 flex-wrap items-center gap-1.5 text-xs font-semibold">
                   {open > 0 && (
                     <span className="rounded-full bg-attention-pill px-2.5 py-0.5 text-attention-deepest">
-                      {open} zu reinigen
+                      {format(m.list.toClean, { count: open })}
                     </span>
                   )}
                   {cleaning > 0 && (
@@ -237,12 +251,12 @@ export default async function HotelPickerPage() {
                   )}
                   {open === 0 && cleaning === 0 && !ord && (
                     <span className="rounded-full bg-positive-pill px-2.5 py-0.5 text-positive-deepest">
-                      alles bereit
+                      {m.list.allReady}
                     </span>
                   )}
                   {h.role === 'manager' && (
                     <span className="rounded-full bg-surface-muted px-2.5 py-0.5 text-ink-muted">
-                      Manager
+                      {m.list.manager}
                     </span>
                   )}
                 </span>
@@ -260,9 +274,9 @@ export default async function HotelPickerPage() {
           className="flex items-center gap-3 rounded-xl border border-edge bg-surface p-4 hover:border-edge-strong">
           <BarChart3 className="h-5 w-5 shrink-0 text-action" aria-hidden />
           <div className="min-w-0 flex-1">
-            <div className="font-bold text-ink">Housekeeping-Simulator</div>
+            <div className="font-bold text-ink">{SIMULATOR_NAME}</div>
             <div className="text-sm text-ink-soft">
-              Ihr Haus mit anderen Zahlen durchrechnen – Personal, Zeiten, Belegung – über viele Tage, ohne Steuerung und mit RoSe.
+              {m.simulator.text}
             </div>
           </div>
           <ChevronRight className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden />
@@ -273,6 +287,8 @@ export default async function HotelPickerPage() {
       {account && (
         <DatenLoeschen
           accountName={account.accountName}
+          m={m.deletion}
+          intlLocale={il}
           hotels={hotels
             .filter(h => h.accountId === account.accountId)
             .map(h => ({ id: h.id, name: h.name }))}

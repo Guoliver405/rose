@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Check, Languages, Loader2 } from 'lucide-react'
-import { GUIDE_LANGS, sheetLanguageLabel, type GuideLang } from '@/lib/guest-guide'
+import { GUIDE_LANGS, type GuideLang } from '@/lib/i18n/langs'
 import { updateSheetLanguagesAction } from './actions'
 import { useUnsavedSection } from '@/components/unsaved/UnsavedChanges'
 import type { AdminMessages } from '@/lib/i18n'
@@ -22,11 +22,13 @@ import type { AdminMessages } from '@/lib/i18n'
  * Sprachen wäre doppelt so lang, ohne mehr zu sagen.
  */
 export default function SprachenForm({
-  hotelSlug, erste: ersteInitial, zweite: zweiteInitial, m,
+  hotelSlug, erste: ersteInitial, zweite: zweiteInitial, m, langLabels,
 }: {
   hotelSlug: string
   erste: GuideLang
   zweite: GuideLang | null
+  /** Name jeder Blatt-Sprache in ihr selbst („Français“) — kommt vom Server, damit die Sprachdateien nicht ins Browser-Bundle wandern. */
+  langLabels: Record<GuideLang, string>
   m: AdminMessages['settings']['languages']
 }) {
   const router = useRouter()
@@ -71,7 +73,7 @@ export default function SprachenForm({
             className="rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink focus:border-action focus:outline-none"
           >
             {GUIDE_LANGS.map(l => (
-              <option key={l} value={l}>{sheetLanguageLabel(l)}</option>
+              <option key={l} value={l}>{langLabels[l]}</option>
             ))}
           </select>
           <span className="text-[11px] text-ink-muted">{m.firstHint}</span>
@@ -86,7 +88,7 @@ export default function SprachenForm({
           >
             <option value="">{m.none}</option>
             {GUIDE_LANGS.filter(l => l !== erste).map(l => (
-              <option key={l} value={l}>{sheetLanguageLabel(l)}</option>
+              <option key={l} value={l}>{langLabels[l]}</option>
             ))}
           </select>
           <span className="text-[11px] text-ink-muted">{m.secondHint}</span>
