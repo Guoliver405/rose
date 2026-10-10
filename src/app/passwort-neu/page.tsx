@@ -2,6 +2,9 @@ import Link from 'next/link'
 import { createClient } from '@/utils/supabase/server'
 import NewPasswordForm from './NewPasswordForm'
 import LegalFooter from '@/components/LegalFooter'
+import Rich from '@/components/i18n/Rich'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /**
  * Neues Passwort setzen — Ziel des Links aus der Mail.
@@ -23,6 +26,7 @@ export default async function PasswortNeuPage({
   // Dieselbe Seite, andere Ansprache: hier vergibt jemand sein ERSTES Passwort.
   const { einladung } = await searchParams
   const istEinladung = einladung === '1'
+  const m = getMessages(await getLocale()).auth.newPassword
 
   return (
     <>
@@ -32,38 +36,38 @@ export default async function PasswortNeuPage({
           Ro<span className="text-blocked">Se</span>
         </h1>
         <p className="mt-1 text-sm text-ink-muted">
-          {istEinladung ? 'Zugang einrichten' : 'Neues Passwort vergeben'}
+          {istEinladung ? m.titleInvite : m.title}
         </p>
       </div>
 
       {user ? (
         <>
           <p className="max-w-sm text-center text-sm text-ink-soft">
-            {istEinladung ? 'Willkommen! Vergib ein Passwort für ' : 'Für '}
-            <span className="font-semibold text-ink">{user.email}</span>.
-            Nach dem Speichern bist du direkt angemeldet.
+            <Rich
+              text={istEinladung ? m.introInvite : m.intro}
+              vars={{ email: user.email ?? '' }}
+              tags={{ b: c => <span className="font-semibold text-ink">{c}</span> }}
+            />
           </p>
-          <NewPasswordForm />
+          <NewPasswordForm m={m} />
         </>
       ) : (
         <div className="flex w-full max-w-sm flex-col gap-3">
           <p className="rounded-lg border border-critical-tint-edge bg-critical-tint px-3 py-2 text-sm font-semibold text-critical-strong">
-            Dieser Link ist nicht (mehr) gültig. Das passiert, wenn er abgelaufen
-            ist, schon benutzt wurde oder in einem anderen Browser geöffnet wird
-            als dem, in dem er angefordert wurde.
+            {m.linkInvalid}
           </p>
           <Link
             href="/passwort-vergessen"
             className="rounded-lg bg-action px-4 py-3 text-center font-bold text-action-foreground hover:bg-action-strong"
           >
-            Neuen Link anfordern
+            {m.requestNew}
           </Link>
         </div>
       )}
 
       <p className="text-sm text-ink-muted">
         <Link href="/login" className="font-semibold text-action-strong hover:underline">
-          Zurück zur Anmeldung
+          {m.backToLogin}
         </Link>
       </p>
     </main>

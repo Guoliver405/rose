@@ -6,7 +6,7 @@ export const overview = {
   /** Kopfzeile und Navigation des Rezeptions-Portals. */
   nav: {
     overview: 'Übersicht',
-    services: 'Services',
+    services: 'Anfragen',
     evaluation: 'Auswertung',
     settings: 'Einstellungen',
     help: 'Hilfe',

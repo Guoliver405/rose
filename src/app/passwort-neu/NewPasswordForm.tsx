@@ -2,11 +2,13 @@
 
 import { useState, useTransition } from 'react'
 import { setNewPasswordAction } from './actions'
+import { format } from '@/lib/i18n/format'
+import type { AuthMessages } from '@/lib/i18n'
 
 const feldKlasse =
   'rounded-lg border border-edge bg-surface px-3 py-2.5 text-ink outline-none focus:border-active'
 
-export default function NewPasswordForm() {
+export default function NewPasswordForm({ m }: { m: AuthMessages['newPassword'] }) {
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -25,7 +27,7 @@ export default function NewPasswordForm() {
       className="flex w-full max-w-sm flex-col gap-4"
     >
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-semibold text-ink-soft">Neues Passwort</span>
+        <span className="text-sm font-semibold text-ink-soft">{m.password}</span>
         <input
           name="password"
           type="password"
@@ -34,11 +36,11 @@ export default function NewPasswordForm() {
           autoComplete="new-password"
           className={feldKlasse}
         />
-        <span className="text-xs text-ink-muted">Mindestens 8 Zeichen.</span>
+        <span className="text-xs text-ink-muted">{format(m.passwordHint, { min: 8 })}</span>
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-semibold text-ink-soft">Wiederholen</span>
+        <span className="text-sm font-semibold text-ink-soft">{m.confirm}</span>
         <input
           name="passwordConfirm"
           type="password"
@@ -60,7 +62,7 @@ export default function NewPasswordForm() {
         disabled={pending}
         className="mt-2 rounded-lg bg-action px-4 py-3 font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
       >
-        {pending ? 'Wird gespeichert …' : 'Passwort speichern'}
+        {pending ? m.submitting : m.submit}
       </button>
     </form>
   )

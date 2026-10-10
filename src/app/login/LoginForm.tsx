@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from 'react'
 import { loginAction } from './actions'
+import type { AuthMessages } from '@/lib/i18n'
 
-export default function LoginForm() {
+export default function LoginForm({ m }: { m: AuthMessages['login'] }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -22,7 +23,7 @@ export default function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-4">
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-semibold text-ink-soft">E-Mail</span>
+        <span className="text-sm font-semibold text-ink-soft">{m.email}</span>
         <input
           type="email"
           required
@@ -34,7 +35,7 @@ export default function LoginForm() {
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-semibold text-ink-soft">Passwort</span>
+        <span className="text-sm font-semibold text-ink-soft">{m.password}</span>
         <input
           type="password"
           required
@@ -56,7 +57,7 @@ export default function LoginForm() {
         disabled={pending}
         className="mt-2 rounded-lg bg-action px-4 py-3 font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
       >
-        {pending ? 'Anmelden …' : 'Anmelden'}
+        {pending ? m.submitting : m.submit}
       </button>
     </form>
   )

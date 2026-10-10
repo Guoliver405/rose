@@ -3,6 +3,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { landingRoute } from '@/utils/auth'
+import { format, getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /*
  * Passwort vergessen — Schritt 2 von 2.
@@ -14,11 +16,12 @@ import { landingRoute } from '@/utils/auth'
 export async function setNewPasswordAction(
   formData: FormData,
 ): Promise<{ error?: string }> {
+  const e = getMessages(await getLocale()).auth.errors
   const password = ((formData.get('password') as string) ?? '').trim()
   const confirm = ((formData.get('passwordConfirm') as string) ?? '').trim()
 
-  if (password.length < 8) return { error: 'Passwort braucht mindestens 8 Zeichen.' }
-  if (password !== confirm) return { error: 'Die beiden Passwörter stimmen nicht überein.' }
+  if (password.length < 8) return { error: format(e.passwordTooShort, { min: 8 }) }
+  if (password !== confirm) return { error: e.passwordsDiffer }
 
   const supabase = await createClient()
 
@@ -26,13 +29,13 @@ export async function setNewPasswordAction(
   // geöffnet — dann hilft nur ein neuer.
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
-    return { error: 'Die Sitzung ist abgelaufen. Bitte einen neuen Link anfordern.' }
+    return { error: e.sessionExpired }
   }
 
   const { error } = await supabase.auth.updateUser({ password })
   if (error) {
     if (error.code === 'same_password') {
-      return { error: 'Das ist bereits dein aktuelles Passwort. Bitte ein anderes wählen.' }
+      return { error: e.samePassword }
     }
     return { error: error.message }
   }

@@ -2,6 +2,8 @@
 
 import { createAdminClient } from '@/utils/supabase/service'
 import { confirmUrl, mailReady, recoveryFlooded, sendRecoveryMail } from '@/utils/mail'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /*
  * Passwort vergessen — Schritt 1 von 2.
@@ -29,12 +31,13 @@ import { confirmUrl, mailReady, recoveryFlooded, sendRecoveryMail } from '@/util
 export async function requestPasswordResetAction(
   formData: FormData,
 ): Promise<{ error?: string; sent?: boolean }> {
+  const e = getMessages(await getLocale()).auth.errors
   const email = ((formData.get('email') as string) ?? '').trim().toLowerCase()
   if (!/^\S+@\S+\.\S+$/.test(email)) {
-    return { error: 'Bitte eine gültige E-Mail-Adresse angeben.' }
+    return { error: e.invalidEmail }
   }
   if (!mailReady()) {
-    return { error: 'Der Mailversand ist nicht eingerichtet. Bitte an den Betreiber wenden.' }
+    return { error: e.mailNotConfigured }
   }
 
   // Notbremse gegen das Leeren des Kontingents über die öffentliche Seite.

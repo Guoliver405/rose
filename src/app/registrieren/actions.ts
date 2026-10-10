@@ -5,6 +5,8 @@ import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/service'
 import { einrichtungStart } from '@/lib/lotsen'
 import { checkInviteCode, createHotelAccount } from '@/utils/hotel-account'
+import { format, getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /*
  * Phase 6b — Self-Service-Registrierung.
@@ -45,15 +47,17 @@ export async function signupAction(formData: FormData): Promise<Result> {
   const hotelName = ((formData.get('hotelName') as string) ?? '').trim()
   const displayName = ((formData.get('displayName') as string) ?? '').trim()
 
+  const e = getMessages(await getLocale()).auth.errors
+
   // ── Riegel ───────────────────────────────────────────────────────────────
-  const codeError = checkInviteCode(code)
+  const codeError = await checkInviteCode(code)
   if (codeError) return { error: codeError }
 
   // ── Eingaben ─────────────────────────────────────────────────────────────
-  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: 'Bitte eine gültige E-Mail-Adresse angeben.' }
-  if (password.length < MIN_PASSWORT) return { error: `Passwort braucht mindestens ${MIN_PASSWORT} Zeichen.` }
-  if (hotelName.length < 2) return { error: 'Bitte den Namen des Hauses angeben.' }
-  if (displayName.length < 2) return { error: 'Bitte Ihren Namen angeben.' }
+  if (!/^\S+@\S+\.\S+$/.test(email)) return { error: e.invalidEmail }
+  if (password.length < MIN_PASSWORT) return { error: format(e.passwordTooShort, { min: MIN_PASSWORT }) }
+  if (hotelName.length < 2) return { error: e.houseNameMissing }
+  if (displayName.length < 2) return { error: e.yourNameMissing }
 
   const admin = createAdminClient()
 
@@ -66,9 +70,9 @@ export async function signupAction(formData: FormData): Promise<Result> {
   })
   if (authErr || !authUser.user) {
     if (authErr?.message?.toLowerCase().includes('already')) {
-      return { error: 'Für diese E-Mail-Adresse gibt es bereits ein Konto. Bitte anmelden.' }
+      return { error: e.emailTaken }
     }
-    return { error: authErr?.message ?? 'Zugang konnte nicht angelegt werden.' }
+    return { error: authErr?.message ?? e.accessNotCreated }
   }
   const userId = authUser.user.id
 
@@ -78,7 +82,7 @@ export async function signupAction(formData: FormData): Promise<Result> {
   if (created.error || !created.slug) {
     // Den Auth-Nutzer hat dieser Aufruf angelegt — also räumt er ihn auch ab.
     await admin.auth.admin.deleteUser(userId)
-    return { error: created.error ?? 'Konto konnte nicht angelegt werden.' }
+    return { error: created.error ?? e.accountNotCreated }
   }
   const slug = created.slug
   const mitStripe = created.stripe === true
@@ -90,7 +94,7 @@ export async function signupAction(formData: FormData): Promise<Result> {
   if (signInErr) {
     // Das Konto steht — nur die Sitzung fehlt. Kein Rollback, sonst wäre die
     // Registrierung wegen einer Nebensache verloren.
-    return { error: 'Konto angelegt, aber die Anmeldung schlug fehl. Bitte über die Anmeldeseite einloggen.' }
+    return { error: e.signInAfterSignupFailed }
   }
 
   // redirect() wirft intern — bewusst außerhalb jeder Fehlerbehandlung.

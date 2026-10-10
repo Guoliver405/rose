@@ -56,7 +56,7 @@ export const symbols = {
     },
     orders: {
       label: 'Offene Service-Anfrage',
-      text: 'Der Gast hat etwas angefragt, das noch niemand abgehakt hat. Die Anfragen liegen unter „Services“; abgehakt wird dort oder im Zimmer-Dialog.',
+      text: 'Der Gast hat etwas angefragt, das noch niemand abgehakt hat. Die Anfragen liegen unter „Anfragen“ in der Navigation; abgehakt wird dort oder im Zimmer-Dialog.',
     },
     urgent: {
       label: 'Dringende Service-Anfrage',

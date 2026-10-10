@@ -3,11 +3,14 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/service'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 export async function loginAction(
   email: string,
   password: string,
 ): Promise<{ error?: string }> {
+  const e = getMessages(await getLocale()).auth.errors
   const supabase = await createClient()
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
@@ -15,9 +18,9 @@ export async function loginAction(
     // Unbestätigtes Simulator-Konto: Supabase verweigert die Anmeldung. Das
     // verrät nur, wer das richtige Passwort kennt — also die Person selbst.
     if (error?.code === 'email_not_confirmed') {
-      return { error: 'Bitte zuerst die E-Mail-Adresse bestätigen — den Link haben wir Ihnen bei der Registrierung geschickt.' }
+      return { error: e.confirmEmailFirst }
     }
-    return { error: 'Anmeldung fehlgeschlagen — E-Mail oder Passwort falsch.' }
+    return { error: e.loginFailed }
   }
 
   // Reinigungskräfte (username gesetzt) gehören ins Reinigungs-Portal,
@@ -38,12 +41,12 @@ export async function loginAction(
     if (sim?.confirmed_at) redirect('/simulator')
     await supabase.auth.signOut()
     return sim
-      ? { error: 'Bitte zuerst die E-Mail-Adresse bestätigen — den Link haben wir Ihnen bei der Registrierung geschickt.' }
-      : { error: 'Dieser Zugang ist nicht für die Rezeption freigeschaltet.' }
+      ? { error: e.confirmEmailFirst }
+      : { error: e.notForReception }
   }
   if (profile.username !== null) {
     await supabase.auth.signOut()
-    return { error: 'Dieser Zugang ist nicht für die Rezeption freigeschaltet.' }
+    return { error: e.notForReception }
   }
 
   redirect('/admin')

@@ -299,7 +299,7 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       `de/symbols.ts`). Nachzuziehen: alte Seitennamen „Hotel & Regeln“/„Gäste-Zugang“ und
       „Services-Board“ in `lotsen.ts`, `hilfe.ts`, Konto-Seiten und Simulator; Fehlermeldungen
       des Logo-Uploads (`lib/logo.ts`, `utils/logo.ts`); Rollennamen in der Einladungs-Mail.
-      Weiter: Anmeldung/Registrierung →
+      **11.10.: Anmeldung, Registrierung, Passwort** (`de/auth.ts`; Navigation „Anfragen“). Weiter:
       Konto → Simulator; Fließtexte (Hilfe, Lotsen, Landing, Rechtstexte) als
       Abschnitte zuletzt. Danach: Sprachwahl des Gastes in `getLocale()` und erste
       Übersetzung (Englisch) des Gästeportals.

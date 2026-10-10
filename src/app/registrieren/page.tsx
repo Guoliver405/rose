@@ -3,6 +3,9 @@ import { redirect } from 'next/navigation'
 import { landingRoute } from '@/utils/auth'
 import SignupForm from './SignupForm'
 import LegalFooter from '@/components/LegalFooter'
+import Rich from '@/components/i18n/Rich'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /**
  * Self-Service-Registrierung (Phase 6b).
@@ -14,6 +17,7 @@ import LegalFooter from '@/components/LegalFooter'
 export default async function RegistrierenPage() {
   const ziel = await landingRoute()
   if (ziel) redirect(ziel)
+  const m = getMessages(await getLocale()).auth.signup
 
   return (
     <>
@@ -22,16 +26,16 @@ export default async function RegistrierenPage() {
         <h1 className="text-3xl font-black text-ink">
           Ro<span className="text-blocked">Se</span>
         </h1>
-        <p className="mt-1 text-sm text-ink-muted">Konto anlegen</p>
+        <p className="mt-1 text-sm text-ink-muted">{m.title}</p>
       </div>
 
-      <SignupForm />
+      <SignupForm m={m} />
 
       <p className="text-sm text-ink-muted">
-        Schon ein Konto?{' '}
-        <Link href="/login" className="font-semibold text-action-strong hover:underline">
-          Anmelden
-        </Link>
+        <Rich
+          text={m.haveAccount}
+          tags={{ link: c => <Link href="/login" className="font-semibold text-action-strong hover:underline">{c}</Link> }}
+        />
       </p>
     </main>
     <LegalFooter />

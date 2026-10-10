@@ -1,4 +1,6 @@
 import { createAdminClient } from '@/utils/supabase/service'
+import { format, getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 import { slugify, uniqueSlug } from '@/lib/slug'
 import { DEFAULT_PIN_LENGTH } from '@/lib/ids'
 import serviceTemplates from '@/lib/service-templates.json'
@@ -36,14 +38,15 @@ export type HotelAccountResult = { accountId?: string; hotelId?: string; slug?: 
  * kopierter Code trägt gern ein Zeichen mit, das niemand sieht (26.09.2026,
  * Umwandlung in Produktion abgewiesen).
  */
-export function checkInviteCode(code: string): string | null {
+export async function checkInviteCode(code: string): Promise<string | null> {
+  const e = getMessages(await getLocale()).auth.errors
   const erwartet = normalizeCode(process.env.SIGNUP_INVITE_CODE ?? '')
-  if (!erwartet) return 'Die Anmeldung als Hotel ist derzeit nicht freigeschaltet.'
+  if (!erwartet) return e.signupClosed
   const got = normalizeCode(code)
   if (got !== erwartet) {
     // Nur Längen ins Log, nie der Code.
     console.error('[einladungscode] abgewiesen', { laenge: got.length, erwartet: erwartet.length, roh: code.length })
-    return 'Einladungscode stimmt nicht.'
+    return e.inviteCodeWrong
   }
   return null
 }
@@ -58,13 +61,14 @@ export const hotelSignupOpen = () => Boolean(normalizeCode(process.env.SIGNUP_IN
 export const MAX_ROOMS_AT_SIGNUP = 1000
 
 export async function createHotelAccount(input: HotelAccountInput): Promise<HotelAccountResult> {
+  const e = getMessages(await getLocale()).auth.errors
   const admin = createAdminClient()
   const { userId, hotelName, displayName } = input
   const rollback = async (accountId: string) => { await admin.from('accounts').delete().eq('id', accountId) }
 
   // ── Konto ────────────────────────────────────────────────────────────────
   const { data: account, error: accErr } = await admin.from('accounts').insert({ name: hotelName }).select('id').single()
-  if (accErr || !account) return { error: `Konto konnte nicht angelegt werden: ${accErr?.message}` }
+  if (accErr || !account) return { error: format(e.createAccountFailed, { detail: accErr?.message ?? '' }) }
 
   // ── Erstes Haus. Slugs sind GLOBAL eindeutig (URL-Schlüssel).
   const { data: existing } = await admin.from('hotels').select('slug')
@@ -76,7 +80,7 @@ export async function createHotelAccount(input: HotelAccountInput): Promise<Hote
     .single()
   if (hotelErr || !hotel) {
     await rollback(account.id)
-    return { error: `Haus konnte nicht angelegt werden: ${hotelErr?.message}` }
+    return { error: format(e.createHouseFailed, { detail: hotelErr?.message ?? '' }) }
   }
 
   // ── Profil. PFLICHT auch für Management: stays.created_by und
@@ -84,7 +88,7 @@ export async function createHotelAccount(input: HotelAccountInput): Promise<Hote
   const { error: profileErr } = await admin.from('profiles').insert({ id: userId, hotel_id: hotel.id, display_name: displayName })
   if (profileErr) {
     await rollback(account.id)
-    return { error: `Profil konnte nicht angelegt werden: ${profileErr.message}` }
+    return { error: format(e.createProfileFailed, { detail: profileErr.message }) }
   }
   const dropProfile = () => admin.from('profiles').delete().eq('id', userId)
 
@@ -95,7 +99,7 @@ export async function createHotelAccount(input: HotelAccountInput): Promise<Hote
   if (memberErr) {
     await dropProfile()
     await rollback(account.id)
-    return { error: `Inhaber konnte nicht eingetragen werden: ${memberErr.message}` }
+    return { error: format(e.createOwnerFailed, { detail: memberErr.message }) }
   }
 
   // ── Zimmer samt room_states (wie das Zimmer-Setup). Nicht fatal: das Haus

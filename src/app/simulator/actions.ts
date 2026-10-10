@@ -96,7 +96,7 @@ export async function convertToHotelAction(input: {
   const ctx = await getSimContext()
   if (!ctx) return { error: 'Bitte erneut anmelden.' }
   if (ctx.kind !== 'sim') return { error: 'Zu diesem Zugang gibt es bereits ein Hotelkonto.' }
-  const codeError = checkInviteCode(input.code)
+  const codeError = await checkInviteCode(input.code)
   if (codeError) return { error: codeError }
   const hotelName = input.hotelName.trim()
   const displayName = input.displayName.trim()

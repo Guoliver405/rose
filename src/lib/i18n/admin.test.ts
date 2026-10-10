@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { admin } from './de/admin'
 import { symbols } from './de/symbols'
+import { auth } from './de/auth'
 import { flattenMessages } from './format'
 
 /*
@@ -8,10 +9,11 @@ import { flattenMessages } from './format'
  * Rezeption (alle Bereiche) und die Zeichensprache der Zimmer-Kacheln.
  * Die Verwaltung wird gesiezt.
  */
-describe('Rezeption — Begriffe und Schreibweise (deutsch)', () => {
+describe('Rezeption und Anmeldung — Begriffe und Schreibweise (deutsch)', () => {
   const all = [
     ...flattenMessages(admin).map(([k, t]) => [`admin.${k}`, t] as const),
     ...flattenMessages(symbols).map(([k, t]) => [`symbols.${k}`, t] as const),
+    ...flattenMessages(auth).map(([k, t]) => [`auth.${k}`, t] as const),
   ]
   const hits = (re: RegExp) => all.filter(([, t]) => re.test(t))
 
@@ -21,6 +23,8 @@ describe('Rezeption — Begriffe und Schreibweise (deutsch)', () => {
 
   it('sagt „Haus“ und „Haus & Regeln“, nicht „Hotel & Regeln“ (Entscheidung 2)', () => {
     expect(hits(/Hotel (&|und) Regeln|in diesem Hotel|Hotelname/)).toEqual([])
+    // „Hotel“ nur, wo es um die Branche geht.
+    expect(hits(/\bHotel/).map(([k]) => k)).toEqual(['auth.errors.signupClosed'])
   })
 
   it('kennt keine „Kollegin“ und kein „Zimmermädchen“ (Entscheidung 3)', () => {

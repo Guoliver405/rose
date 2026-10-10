@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { landingRoute } from '@/utils/auth'
 import ForgotForm from './ForgotForm'
 import LegalFooter from '@/components/LegalFooter'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 export default async function PasswortVergessenPage({
   searchParams,
@@ -13,6 +15,7 @@ export default async function PasswortVergessenPage({
   if (ziel) redirect(ziel)
 
   const { fehler } = await searchParams
+  const m = getMessages(await getLocale()).auth.forgot
 
   return (
     <>
@@ -21,24 +24,22 @@ export default async function PasswortVergessenPage({
         <h1 className="text-3xl font-black text-ink">
           Ro<span className="text-blocked">Se</span>
         </h1>
-        <p className="mt-1 text-sm text-ink-muted">Passwort zurücksetzen</p>
+        <p className="mt-1 text-sm text-ink-muted">{m.title}</p>
       </div>
 
       {/* Kommt von /auth/callback, wenn der Link abgelaufen, schon benutzt oder
           in einem anderen Browser geöffnet wurde. */}
       {fehler === 'link' && (
         <p className="w-full max-w-sm rounded-lg border border-critical-tint-edge bg-critical-tint px-3 py-2 text-sm font-semibold text-critical-strong">
-          Der Link ist abgelaufen oder wurde bereits benutzt. Bitte einen neuen
-          anfordern — und ihn in demselben Browser öffnen, in dem er angefordert
-          wurde.
+          {m.linkInvalid}
         </p>
       )}
 
-      <ForgotForm />
+      <ForgotForm m={m} />
 
       <p className="text-sm text-ink-muted">
         <Link href="/login" className="font-semibold text-action-strong hover:underline">
-          Zurück zur Anmeldung
+          {m.backToLogin}
         </Link>
       </p>
     </main>

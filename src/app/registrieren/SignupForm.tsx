@@ -2,11 +2,14 @@
 
 import { useState, useTransition } from 'react'
 import { signupAction } from './actions'
+import { format } from '@/lib/i18n/format'
+import type { AuthMessages } from '@/lib/i18n'
+import Rich from '@/components/i18n/Rich'
 
 const feldKlasse =
   'rounded-lg border border-edge bg-surface px-3 py-2.5 text-ink outline-none focus:border-active'
 
-export default function SignupForm() {
+export default function SignupForm({ m }: { m: AuthMessages['signup'] }) {
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -24,44 +27,41 @@ export default function SignupForm() {
   return (
     <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-4">
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-semibold text-ink-soft">Einladungscode</span>
+        <span className="text-sm font-semibold text-ink-soft">{m.inviteCode}</span>
         <input
           name="code"
           required
           autoComplete="off"
           className={feldKlasse}
         />
-        <span className="text-xs text-ink-muted">
-          RoSe ist in der frühen Testphase — die Registrierung ist noch auf
-          eingeladene Häuser beschränkt.
-        </span>
+        <span className="text-xs text-ink-muted">{m.inviteCodeHint}</span>
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-semibold text-ink-soft">Name des Hauses</span>
+        <span className="text-sm font-semibold text-ink-soft">{m.houseName}</span>
         <input
           name="hotelName"
           required
           minLength={2}
-          placeholder="z. B. Pension Alpenblick"
+          placeholder={m.houseNamePlaceholder}
           className={feldKlasse}
         />
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-semibold text-ink-soft">Ihr Name</span>
+        <span className="text-sm font-semibold text-ink-soft">{m.yourName}</span>
         <input
           name="displayName"
           required
           minLength={2}
           autoComplete="name"
-          placeholder="z. B. Anna Berg"
+          placeholder={m.yourNamePlaceholder}
           className={feldKlasse}
         />
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-semibold text-ink-soft">E-Mail (Login)</span>
+        <span className="text-sm font-semibold text-ink-soft">{m.email}</span>
         <input
           name="email"
           type="email"
@@ -72,7 +72,7 @@ export default function SignupForm() {
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-semibold text-ink-soft">Passwort</span>
+        <span className="text-sm font-semibold text-ink-soft">{m.password}</span>
         <input
           name="password"
           type="password"
@@ -81,10 +81,7 @@ export default function SignupForm() {
           autoComplete="new-password"
           className={feldKlasse}
         />
-        <span className="text-xs text-ink-muted">
-          Mindestens 8 Zeichen. Zurücksetzen per E-Mail ist noch nicht
-          eingerichtet — bitte sicher notieren.
-        </span>
+        <span className="text-xs text-ink-muted">{format(m.passwordHint, { min: 8 })}</span>
       </label>
 
       {error && (
@@ -98,20 +95,21 @@ export default function SignupForm() {
         disabled={pending}
         className="mt-2 rounded-lg bg-action px-4 py-3 font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
       >
-        {pending ? 'Wird angelegt …' : 'Konto anlegen'}
+        {pending ? m.submitting : m.submit}
       </button>
 
       <p className="text-xs text-ink-muted">
-        Mit dem Anlegen des Kontos akzeptieren Sie die{' '}
-        <a href="/agb" target="_blank" rel="noopener" className="underline hover:text-ink">AGB</a>{' '}
-        und nehmen die{' '}
-        <a href="/datenschutz" target="_blank" rel="noopener" className="underline hover:text-ink">Datenschutzerklärung</a>{' '}
-        zur Kenntnis. Der Kalendermonat der Registrierung und der erste volle Monat danach sind kostenfrei.
+        <Rich
+          text={m.terms}
+          tags={{
+            terms: c => <a href="/agb" target="_blank" rel="noopener" className="underline hover:text-ink">{c}</a>,
+            privacy: c => <a href="/datenschutz" target="_blank" rel="noopener" className="underline hover:text-ink">{c}</a>,
+          }}
+        />
       </p>
 
       <p className="text-xs text-ink-muted">
-        Im nächsten Schritt legen Sie die Zimmer an. Beispiel-Services sind
-        bereits eingerichtet und jederzeit änderbar.
+        {m.nextStep}
       </p>
     </form>
   )
