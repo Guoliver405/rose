@@ -3,6 +3,7 @@ import { admin } from './de/admin'
 import { symbols } from './de/symbols'
 import { auth } from './de/auth'
 import { account } from './de/account'
+import { simulator } from './de/simulator'
 import { flattenMessages } from './format'
 
 /*
@@ -10,12 +11,13 @@ import { flattenMessages } from './format'
  * Rezeption (alle Bereiche) und die Zeichensprache der Zimmer-Kacheln.
  * Die Verwaltung wird gesiezt.
  */
-describe('Rezeption, Anmeldung und Konto — Begriffe und Schreibweise (deutsch)', () => {
+describe('Rezeption, Anmeldung, Konto und Simulator — Begriffe und Schreibweise (deutsch)', () => {
   const all = [
     ...flattenMessages(admin).map(([k, t]) => [`admin.${k}`, t] as const),
     ...flattenMessages(symbols).map(([k, t]) => [`symbols.${k}`, t] as const),
     ...flattenMessages(auth).map(([k, t]) => [`auth.${k}`, t] as const),
     ...flattenMessages(account).map(([k, t]) => [`account.${k}`, t] as const),
+    ...flattenMessages(simulator).map(([k, t]) => [`simulator.${k}`, t] as const),
   ]
   const hits = (re: RegExp) => all.filter(([, t]) => re.test(t))
 
@@ -25,8 +27,9 @@ describe('Rezeption, Anmeldung und Konto — Begriffe und Schreibweise (deutsch)
 
   it('sagt „Haus“ und „Haus & Regeln“, nicht „Hotel & Regeln“ (Entscheidung 2)', () => {
     expect(hits(/Hotel (&|und) Regeln|in diesem Hotel|Hotelname/)).toEqual([])
-    // „Hotel“ nur, wo es um die Branche geht.
-    expect(hits(/\bHotel/).map(([k]) => k)).toEqual(['auth.errors.signupClosed'])
+    // „Hotel“ nur, wo es um die Branche geht: Hotelkonto, Hotelzugang, „als Hotel“.
+    const branche = /Hotelkonto|Hotelzugang|[Aa]ls Hotel\b/
+    expect(all.filter(([, t]) => /\bHotel/.test(t.replace(new RegExp(branche, 'g'), ''))).map(([k]) => k)).toEqual([])
   })
 
   it('kennt keine „Kollegin“ und kein „Zimmermädchen“ (Entscheidung 3)', () => {

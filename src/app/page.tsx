@@ -11,6 +11,8 @@ import { PROVIDER } from '@/lib/provider'
 import LiveDemo from '@/components/landing/LiveDemo'
 import RoiCalculator from '@/components/landing/RoiCalculator'
 import CleaningSimulation from '@/components/landing/CleaningSimulation'
+import { getMessages, intlLocale } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 export const metadata: Metadata = {
   title: 'RoSe — RoomService für Hotels jeder Größe',
@@ -454,7 +456,8 @@ function Flow() {
 
 /* ── Derselbe Tag, mit und ohne RoSe ───────────────────────────────────────── */
 
-function DayComparison() {
+async function DayComparison() {
+  const locale = await getLocale()
   return (
     <section id="vergleich" className="mx-auto w-full max-w-6xl scroll-mt-20 px-4 py-16">
       <h2 className="text-center text-3xl font-black text-ink">Derselbe Tag, mit und ohne RoSe</h2>
@@ -463,7 +466,7 @@ function DayComparison() {
         wissen und wonach sie das nächste Zimmer wählen – ob Ihr Haus täglich reinigt oder nur auf Wunsch.
       </p>
       <div className="mt-10">
-        <CleaningSimulation />
+        <CleaningSimulation texts={getMessages(locale).simulator.app.day} intlLocale={intlLocale(locale)} />
       </div>
       {/* Simulator Phase 3 (26.09.2026): derselbe Rechenkern mit den Zahlen des eigenen Hauses. */}
       <div className="mt-8 flex flex-col items-center gap-3 rounded-2xl border border-edge bg-surface-elevated px-6 py-6 text-center sm:flex-row sm:text-left">

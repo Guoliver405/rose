@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest'
+import { getMessages } from './i18n'
 import {
   ALL_RUNS, CHECKIN_AT, CHECKOUT_AT, COMPLAINT, DEFAULT_CONFIG, MAIDS, MIX, SCENARIO, SCENARIO_SEED,
   assignFloors, buildScenario, clockLabel, floorOf, highlights, maidActivityAt, maidLabel, maidsAt, minutesUntil, mixFromShares, simulate, tilesAt,
   toldBefore, turnedAwayAt, typicalSeed, validateConfig, type ScenarioConfig,
   type Coordination, type Policy, type SimResult,
 } from './cleaning-sim'
+
+/** Texte kommen als Parameter (der Rechenkern importiert keine Sprachdatei). */
+const TX = getMessages().simulator.app
+const hl = (r: Parameters<typeof highlights>[0], scn?: Parameters<typeof highlights>[3]) => highlights(r, TX.day.highlights, 'de-DE', scn)
+const valid = (cfg: ScenarioConfig) => validateConfig(cfg, TX.validation)
 
 describe('Reinigungs-Simulation', () => {
   const run = Object.fromEntries(ALL_RUNS.map(([c, p]) => [`${c}-${p}`, simulate(c, p)])) as Record<`${Coordination}-${Policy}`, SimResult>
@@ -161,7 +167,7 @@ describe('Reinigungs-Simulation', () => {
 
   it('Hinweise: zeitlich geordnet, Töne passen zum Bild, Check-in aus dem Ablauf', () => {
     for (const r of all) {
-      const h = highlights(r)
+      const h = hl(r)
       expect(h.length).toBeGreaterThanOrEqual(3)
       expect(h.map(x => x.at)).toEqual([...h.map(x => x.at)].sort((a, b) => a - b))
       const ready = r.metrics.departuresReadyAt!
@@ -171,7 +177,7 @@ describe('Reinigungs-Simulation', () => {
       // Ohne Software ist der Check-in-Eintrag der einzige, der gut ausgehen kann.
       else expect(h.filter(x => x.tone === 'good').every(x => x === checkin)).toBe(true)
     }
-    const live = highlights(run['rose-routine']).find(x => x.text.includes('sofort auf dem Board'))!
+    const live = hl(run['rose-routine']).find(x => x.text.includes('sofort auf dem Board'))!
     expect(live.at).toBeLessThan(CHECKOUT_AT)
     expect(run['rose-routine'].segments.some(g => g.kind === 'clean' && g.start === live.at)).toBe(true)
   })
@@ -251,7 +257,7 @@ describe('Anzeige: „später“, erneutes Klopfen, Tätigkeiten', () => {
 describe('Simulator-Konfiguration', () => {
   it('die Vorgabe ist das Haus der Landing Page', () => {
     expect(buildScenario(SCENARIO_SEED, DEFAULT_CONFIG)).toEqual(SCENARIO)
-    expect(validateConfig(DEFAULT_CONFIG)).toEqual([])
+    expect(valid(DEFAULT_CONFIG)).toEqual([])
   })
 
   it('eine um eine Stunde verschobene Schicht mit verschobenen Zeiten rechnet denselben Tag', () => {
@@ -262,8 +268,8 @@ describe('Simulator-Konfiguration', () => {
     expect(scn.rooms).toEqual(ref.rooms)
     for (const [c, p] of ALL_RUNS) expect(simulate(c, p, scn).metrics).toEqual(simulate(c, p, ref).metrics)
     const r = simulate('rose', 'routine', scn)
-    expect(highlights(r, scn).map(h => h.text)).toEqual(
-      highlights(simulate('rose', 'routine', ref), ref).map(h => h.text.replace(/\b(\d{1,2}):(\d\d)\b/g, (_, h, m) => `${Number(h) - 1}:${m}`)))
+    expect(hl(r, scn).map(h => h.text)).toEqual(
+      hl(simulate('rose', 'routine', ref), ref).map(h => h.text.replace(/\b(\d{1,2}):(\d\d)\b/g, (_, h, m) => `${Number(h) - 1}:${m}`)))
     expect(clockLabel(0, early.times.shiftStart)).toBe('7:00')
   })
 
@@ -297,7 +303,7 @@ describe('Simulator-Konfiguration', () => {
   })
 
   it('Gültigkeitsgrenzen mit Meldungen', () => {
-    const bad = (patch: Partial<ScenarioConfig>) => validateConfig({ ...DEFAULT_CONFIG, ...patch })
+    const bad = (patch: Partial<ScenarioConfig>) => valid({ ...DEFAULT_CONFIG, ...patch })
     expect(bad({ floors: 61 })).not.toEqual([])
     expect(bad({ roomsPerFloor: 51 })).not.toEqual([])
     expect(bad({ maids: 0 })).not.toEqual([])
@@ -437,7 +443,7 @@ describe('Arbeitsweise ohne Software (Phase 5)', () => {
   })
 
   it('Arbeitsweise ungültig: Meldung', () => {
-    expect(validateConfig({ ...DEFAULT_CONFIG, baseline: { departures: 'rauch', floors: 'fixed' } as unknown as ScenarioConfig['baseline'] })).not.toEqual([])
+    expect(valid({ ...DEFAULT_CONFIG, baseline: { departures: 'rauch', floors: 'fixed' } as unknown as ScenarioConfig['baseline'] })).not.toEqual([])
   })
 })
 

@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { ALL_RUNS, SCENARIO, simulate } from './cleaning-sim'
-import { eventLog, filterLog } from './sim-log'
+import { eventLog as rawLog, filterLog as rawFilter, type LogEntry } from './sim-log'
+import { getMessages } from './i18n'
+import type { Scenario, SimResult } from './cleaning-sim'
+
+/** Texte kommen als Parameter (die Rechnung importiert keine Sprachdatei). */
+const TX = getMessages().simulator.app.day.log
+const eventLog = (res: SimResult, scn: Scenario) => rawLog(res, scn, TX, 'de-DE')
+const filterLog = (log: LogEntry[], q: string) => rawFilter(log, q, TX.filterPrefix)
 
 describe('Ereignis-Protokoll', () => {
   const runs = ALL_RUNS.map(([c, p]) => ({ c, p, res: simulate(c, p, SCENARIO) }))

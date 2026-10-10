@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG, SCENARIO_SEED, TYPICAL_DAYS, buildScenario, mixFromShares, simulate, MIX } from './cleaning-sim'
-import { dist, runBatch, runDay, summarize, workload, type SimMessage } from './sim-batch'
+import { dist, runBatch as rawBatch, runDay, summarize, workload, type SimMessage, type SimRequest } from './sim-batch'
+import { getMessages } from './i18n'
+
+/** Prüfmeldungen reisen in der Anfrage mit (der Worker importiert keine Sprachdatei). */
+const runBatch = (req: Omit<SimRequest, 'texts'>) => rawBatch({ ...req, texts: getMessages().simulator.app.validation })
 
 describe('Simulator über viele Tage', () => {
   it('Verteilung: nächster Rang, Median bei ungerader Zahl genau der mittlere Wert', () => {

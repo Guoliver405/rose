@@ -12,8 +12,12 @@
 
 import {
   LIMITS, buildScenario, middleSeed, paramsFor, simulate, validateConfig,
-  type Coordination, type Policy, type ScenarioConfig, type SimResult,
+  type Coordination, type Policy, type ScenarioConfig, type SimResult, type SimValidationTexts,
 } from './cleaning-sim'
+import { format } from './i18n/format'
+
+/** Prüfmeldungen eines Laufs — `simulator.app.validation` der Sprachdatei. */
+export type SimRunValidationTexts = SimValidationTexts & { daysTooMany: string }
 
 export type RunMetrics = SimResult['metrics']
 
@@ -160,25 +164,26 @@ export function workload(config: ScenarioConfig, policy: Policy): { needMinutes:
 // nächsten Lauf einen neuen — ein synchron rechnender Worker nähme eine
 // Abbruch-Nachricht ohnehin erst nach dem Lauf entgegen.
 
-export type SimRequest = { type: 'run'; id: number; config: ScenarioConfig; days: number; firstSeed?: number }
+/** `texts`: Prüfmeldungen in der Sprache der Seite — der Worker importiert keine Sprachdatei. */
+export type SimRequest = { type: 'run'; id: number; config: ScenarioConfig; days: number; firstSeed?: number; texts: SimRunValidationTexts }
 
 export type SimMessage =
   | { type: 'progress'; id: number; done: number; total: number }
   | { type: 'done'; id: number; runs: DayRun[]; summary: Summary }
   | { type: 'invalid'; id: number; errors: string[] }
 
-export function validateRun(config: ScenarioConfig, days: number): string[] {
-  const errs = validateConfig(config)
+export function validateRun(config: ScenarioConfig, days: number, tx: SimRunValidationTexts): string[] {
+  const errs = validateConfig(config, tx)
   const rooms = config.floors * config.roomsPerFloor
   const maxDays = Math.max(1, Math.min(LIMITS.days, Math.floor(LIMITS.roomDays / Math.max(1, rooms))))
-  if (!Number.isInteger(days) || days < 1 || days > LIMITS.days) errs.push(`Tage: ganze Zahl von 1 bis ${LIMITS.days}.`)
-  else if (days > maxDays) errs.push(`Bei ${rooms} Zimmern höchstens ${maxDays} Tage – sonst rechnet der Browser zu lange.`)
+  if (!Number.isInteger(days) || days < 1 || days > LIMITS.days) errs.push(format(tx.integer, { label: tx.labels.days, min: 1, max: LIMITS.days }))
+  else if (days > maxDays) errs.push(format(tx.daysTooMany, { rooms, max: maxDays }))
   return errs
 }
 
 /** Ein Lauf als Folge von Nachrichten: Fortschritt nach jedem Tag, am Ende das Ergebnis. */
 export function* runBatch(req: SimRequest): Generator<SimMessage> {
-  const errors = validateRun(req.config, req.days)
+  const errors = validateRun(req.config, req.days, req.texts)
   if (errors.length > 0) {
     yield { type: 'invalid', id: req.id, errors }
     return

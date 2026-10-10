@@ -36,7 +36,8 @@ Meldung ans Haus, Aufstellung, außer Betrieb, Zugang beenden.
 | Rezeption | **umgesetzt 11.10.2026** — `de/admin/*.ts` (Übersicht, Personal und Auswertung, Zimmer, Services, Einstellungen), Zimmer-Symbole `de/symbols.ts`, Wächter-Test `admin.test.ts`. Seiten heißen „Haus & Regeln“, „Gästezugang“, Anfragen-Seite „Anfragen“ |
 | Anmeldung, Registrierung, Passwort | **umgesetzt 11.10.2026** — `de/auth.ts`. „Neues Passwort“ siezt; veraltete Hinweise korrigiert (Zurücksetzen per E-Mail gibt es seit 12.09., Links gehen auf jedem Gerät) |
 | Konto | **umgesetzt 11.10.2026** — `de/account/` (Häuser, Plan & Abrechnung, Zahlungsweg, Rechnungstexte, Löschen, Logo-Meldungen). „Zahlungsweg“ durchgehend, „Karte bzw. Konto“ statt „Zahlungsmittel“; Ländernamen über `Intl.DisplayNames` |
-| Simulator, Fließtexte (Hilfe, Lotsen, Landing, Rechtstexte) | offen |
+| Simulator | **umgesetzt 11.10.2026** — `de/simulator/` (Werkzeug, Rechenkern-Texte, Konto). Rechenergebnisse unverändert (Tests), Werbe-Einwilligung wortgleich. Legende und Spaltentitel des Tagesbilds kommen aus der Landing-Komponente und ziehen mit der Landing Page um |
+| Fließtexte (Hilfe, Lotsen, Landing, Rechtstexte) | offen |
 
 ## Nächster Schritt
 

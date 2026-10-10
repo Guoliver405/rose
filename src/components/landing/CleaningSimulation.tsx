@@ -8,6 +8,8 @@ import {
 } from '@/lib/cleaning-sim'
 import { eventLog } from '@/lib/sim-log'
 import EventLog from '@/components/simulator/EventLog'
+import type { SimulatorMessages } from '@/lib/i18n'
+import { format } from '@/lib/i18n/format'
 
 /**
  * Reinigungs-Vergleich (25./26.09.2026): derselbe Tag zweimal nebeneinander —
@@ -35,11 +37,11 @@ const LEAD: Record<Coordination, Record<Policy, string>> = {
 const TITLE: Record<Coordination, string> = { paper: 'Ohne Steuerung', rose: 'Mit RoSe' }
 
 /** Sachliche Beschreibung für den Simulator — die Arbeitsweise ohne Software ist dort einstellbar. */
-function leadDetail(c: Coordination, b: Baseline): string {
-  if (c === 'rose') return 'Gemeinsames Board: Check-out, Wünsche, „frühestens ab“, „Nicht stören“ und Rückmeldungen an der Tür für alle Kräfte.'
-  const dep = b.departures === 'radio' ? 'Abreisen meldet die Rezeption per Funk' : 'Abreisen laut Papierliste ab der Check-out-Frist'
-  const fl = b.floors === 'free' ? 'Etagen frei gewählt, fertige Etagen per Funk gemeldet' : 'feste Etagen je Kraft'
-  return `${dep}; ${fl}; Abreisen zuerst. Was an der Tür gesagt wird, steht auf der Etagenliste.`
+function leadDetail(c: Coordination, b: Baseline, tx: SimulatorMessages['app']['day']['lead']): string {
+  if (c === 'rose') return tx.rose
+  const departures = b.departures === 'radio' ? tx.departuresRadio : tx.departuresList
+  const floorRule = b.floors === 'free' ? tx.floorsFree : tx.floorsFixed
+  return format(tx.paper, { departures, floorRule })
 }
 
 /** Simulationsminuten je Sekunde. */
@@ -101,7 +103,10 @@ function reducedMotion(): boolean {
 }
 const noSubscribe = () => () => {}
 
-export default function CleaningSimulation({ scenario = SCENARIO, caption, policy: controlled, detailLog = false }: {
+export default function CleaningSimulation({ scenario = SCENARIO, caption, policy: controlled, detailLog = false, texts, intlLocale }: {
+  /** Texte aus der Rechnung (Hinweise, Protokoll, Beschreibung) — `simulator.app.day` der Sprachdatei. */
+  texts: SimulatorMessages['app']['day']
+  intlLocale: string
   scenario?: Scenario
   /** Kleingedrucktes unter dem Vergleich; Vorgabe ist das der Landing Page. */
   caption?: ReactNode
@@ -115,8 +120,8 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption, polic
   const maids = scn.maidFloors.length
   const runs = useMemo(() => ALL_RUNS.map(([c, p]) => {
     const res = simulate(c, p, scn)
-    return { key: `${c}-${p}`, res, notes: detailLog ? [] : highlights(res, scn), log: detailLog ? eventLog(res, scn) : [] }
-  }), [scn, detailLog])
+    return { key: `${c}-${p}`, res, notes: detailLog ? [] : highlights(res, texts.highlights, intlLocale, scn), log: detailLog ? eventLog(res, scn, texts.log, intlLocale) : [] }
+  }), [scn, detailLog, texts, intlLocale])
   const [ownPolicy, setPolicy] = useState<Policy>('routine')
   const policy = controlled ?? ownPolicy
   const shown = (c: Coordination) => runs.find(r => r.key === `${c}-${policy}`)!
@@ -255,10 +260,11 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption, polic
           const run = shown(c)
           return (
             <div key={c} className="flex min-w-0 flex-col gap-4">
-              <Panel title={TITLE[c]} lead={detailLog ? leadDetail(c, scn.params.baseline) : LEAD[c][policy]} res={run.res} t={t} scn={scn} />
+              <Panel title={TITLE[c]} lead={detailLog ? leadDetail(c, scn.params.baseline, texts.lead) : LEAD[c][policy]} res={run.res} t={t} scn={scn} />
               {/* key: beim Umschalten neue Einträge, keine überblendeten alten */}
               {detailLog
-                ? <EventLog key={run.key} entries={run.log} t={t} clock={clock} onSeek={at => { stop(); setT(at) }} />
+                ? <EventLog key={run.key} entries={run.log} t={t} clock={clock} onSeek={at => { stop(); setT(at) }}
+                    m={texts.eventLog} filterPrefix={texts.log.filterPrefix} intlLocale={intlLocale} />
                 : <Log key={run.key} notes={run.notes} t={t} clock={clock} />}
             </div>
           )

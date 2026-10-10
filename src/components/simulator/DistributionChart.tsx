@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { clockLabel } from '@/lib/cleaning-sim'
 import { dist } from '@/lib/sim-batch'
 import { histograms } from '@/lib/sim-chart'
+import type { SimulatorMessages } from '@/lib/i18n'
+import { format, plural } from '@/lib/i18n/format'
 
 /**
  * Verteilung einer Uhrzeit über alle gerechneten Tage (Simulator Phase 3,
@@ -29,13 +31,15 @@ const GAP_ROWS = 22
 const TOP = 22
 const AXIS_H = 44
 
-export default function DistributionChart({ rows, horizon, shiftStart, checkinAt, title }: {
+export default function DistributionChart({ rows, horizon, shiftStart, checkinAt, title, m, intlLocale }: {
   rows: Row[]
   horizon: number
   shiftStart: number
   /** Senkrechte Linie (Schichtminute), z. B. der Check-in. */
   checkinAt?: number
   title: string
+  m: SimulatorMessages['app']['chart']
+  intlLocale: string
 }) {
   const [hover, setHover] = useState<{ row: number; bin: number } | null>(null)
   const hs = histograms(rows.map(r => r.values), { horizon, shiftStart })
@@ -61,8 +65,8 @@ export default function DistributionChart({ rows, horizon, shiftStart, checkinAt
     return {
       left: `${(left / W) * 100}%`,
       top: `${(rowTop(hover.row) / H) * 100}%`,
-      value: `${count} ${count === 1 ? 'Tag' : 'Tage'}`,
-      label: `${rows[hover.row].label} · ${isNotDone ? 'nicht fertig' : `${clock(b!.from)}–${clock(b!.to)}`}`,
+      value: plural(intlLocale, count, m.days, { count }),
+      label: format(m.tipLabel, { row: rows[hover.row].label, range: isNotDone ? m.notDone : format(m.range, { from: clock(b!.from), to: clock(b!.to) }) }),
     }
   })()
 
@@ -73,7 +77,7 @@ export default function DistributionChart({ rows, horizon, shiftStart, checkinAt
       <div className="overflow-x-auto">
       <div className="relative min-w-[600px]">
       <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img"
-        aria-label={`${title}: ${rows.map(r => `${r.label} Median ${clock(dist(r.values).median)}`).join(', ')}`}>
+        aria-label={format(m.summaryAria, { title, rows: rows.map(r => format(m.rowMedianAria, { row: r.label, time: clock(dist(r.values).median) })).join(', ') })}>
         {/* Stundenraster: Haarlinien, eine Stufe neben der Fläche */}
         {hours.map(m => (
           <g key={m}>
@@ -99,7 +103,7 @@ export default function DistributionChart({ rows, horizon, shiftStart, checkinAt
                     {b.count > 0 && <path d={barPath(bx, base, barW, hgt)} fill={r.color} opacity={hover && !active ? 0.55 : 1} />}
                     {b.count > 0 && (
                       <rect x={x(b.from)} y={rowTop(i)} width={slot} height={ROW_H} fill="transparent" tabIndex={0}
-                        aria-label={`${r.label}, ${clock(b.from)} bis ${clock(b.to)}: ${b.count} Tage`}
+                        aria-label={plural(intlLocale, b.count, m.barAria, { row: r.label, from: clock(b.from), to: clock(b.to), count: b.count })}
                         onPointerEnter={() => setHover({ row: i, bin: k })} onPointerLeave={() => setHover(null)}
                         onFocus={() => setHover({ row: i, bin: k })} onBlur={() => setHover(null)} className="outline-none" />
                     )}
@@ -110,7 +114,7 @@ export default function DistributionChart({ rows, horizon, shiftStart, checkinAt
                 <g>
                   <path d={barPath(notDoneX, base, 14, (h.notDone / h.maxCount) * (ROW_H - 4))} fill={r.color} />
                   <rect x={notDoneX - 6} y={rowTop(i)} width={26} height={ROW_H} fill="transparent" tabIndex={0}
-                    aria-label={`${r.label}, nicht fertig: ${h.notDone} Tage`}
+                    aria-label={plural(intlLocale, h.notDone, m.notDoneAria, { row: r.label, count: h.notDone })}
                     onPointerEnter={() => setHover({ row: i, bin: -1 })} onPointerLeave={() => setHover(null)}
                     onFocus={() => setHover({ row: i, bin: -1 })} onBlur={() => setHover(null)} className="outline-none" />
                 </g>
@@ -119,17 +123,17 @@ export default function DistributionChart({ rows, horizon, shiftStart, checkinAt
               {med < horizon && (
                 <g>
                   <path d={`M ${x(med)} ${base + 2} l -4 6 h 8 z`} className="fill-ink" />
-                  <text x={x(med) + 7} y={base + 14} className="fill-ink-soft text-[11px] tabular-nums">Median {clock(Math.round(med))}</text>
+                  <text x={x(med) + 7} y={base + 14} className="fill-ink-soft text-[11px] tabular-nums">{format(m.median, { time: clock(Math.round(med)) })}</text>
                 </g>
               )}
             </g>
           )
         })}
-        {showNotDone && <text x={notDoneX + 7} y={H - 6} textAnchor="middle" className="fill-ink-muted text-[10px]">nicht fertig</text>}
+        {showNotDone && <text x={notDoneX + 7} y={H - 6} textAnchor="middle" className="fill-ink-muted text-[10px]">{m.notDone}</text>}
         {checkinAt !== undefined && checkinAt > lo && checkinAt < hi && (
           <g>
             <line x1={x(checkinAt)} x2={x(checkinAt)} y1={TOP - 10} y2={H - AXIS_H + 20} className="stroke-ink-soft" strokeWidth={1.5} />
-            <text x={x(checkinAt) + 4} y={TOP - 12} className="fill-ink-soft text-[11px] font-semibold">Check-in {clock(checkinAt)}</text>
+            <text x={x(checkinAt) + 4} y={TOP - 12} className="fill-ink-soft text-[11px] font-semibold">{format(m.checkin, { time: clock(checkinAt) })}</text>
           </g>
         )}
       </svg>

@@ -6,10 +6,12 @@ import { confirmUrl, mailReady, sendSimConfirmMail, sendSimExistsMail, type Mail
 import {
   MARKETING_TEXT_VERSION, SIGNUP_WINDOW_MS, UNCONFIRMED_DAYS, isExpiredUnconfirmed, signupThrottled, type SimSignupInput,
 } from '@/lib/sim-account'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /*
- * Simulator-Konto — die Datenbankseite (Phase 2, 26.09.2026). Regeln und
- * Texte in `@/lib/sim-account`.
+ * Simulator-Konto — die Datenbankseite (Phase 2, 26.09.2026). Regeln in
+ * `@/lib/sim-account`, Texte in der Sprachdatei (`simulator.account`).
  *
  * **Die öffentliche Seite verrät nicht, ob es zu einer Adresse ein Konto
  * gibt.** Registrierung und „erneut senden" antworten immer gleich; was die
@@ -22,6 +24,8 @@ import {
  */
 
 type Admin = SupabaseClient
+
+async function messages() { return getMessages(await getLocale()).simulator.account.errors }
 
 export type SimSenders = {
   confirm: (m: { to: string; userId: string; url: string; marketing: boolean }) => Promise<MailResult>
@@ -147,8 +151,6 @@ async function probe(admin: Admin, email: string, password: string): Promise<Pro
   return Date.parse(link.user.created_at) >= startedAt - FRESH_MS ? { kind: 'new', userId, url } : { kind: 'unconfirmedOther' }
 }
 
-const FAILED = 'Das Konto konnte nicht angelegt werden. Bitte später erneut versuchen.'
-
 /** Hinweis „schon ein Zugang" — ohne Nutzer-ID, damit keine Suche nötig ist; die Drossel je IP genügt. */
 async function sendExists(email: string, senders: SimSenders): Promise<SimSignupResult> {
   const err = publicError(await senders.exists({ to: email, userId: null }))
@@ -162,17 +164,18 @@ export async function registerSimAccount(
   /** Abgelaufene unbestätigte Konten mit aufräumen — der Integrationstest schaltet das ab (fasst nur Eigenes an). */
   opts: { purge?: boolean } = {},
 ): Promise<SimSignupResult> {
+  const e = await messages()
   if (senders === realSenders && !mailReady()) {
-    return { error: 'Die Registrierung ist gerade nicht möglich (Mailversand nicht eingerichtet).' }
+    return { error: e.mailNotReady }
   }
   const admin = createAdminClient()
   if (await throttle(admin, ipHash)) {
-    return { error: 'Von diesem Anschluss kamen gerade zu viele Registrierungen. Bitte in einer Stunde erneut versuchen.' }
+    return { error: e.signupThrottled }
   }
   if (opts.purge !== false) await purgeExpiredUnconfirmed(admin)
 
   const p = await probe(admin, input.email, input.password)
-  if (p.kind === 'error') return { error: FAILED }
+  if (p.kind === 'error') return { error: e.signupFailed }
   // Bestätigter Zugang oder offene Einladung: nicht anfassen, nur der Hinweis.
   if (p.kind === 'confirmed' || p.kind === 'unconfirmedOther') return sendExists(input.email, senders)
   if (p.kind === 'unconfirmedSim') {
@@ -192,7 +195,7 @@ export async function registerSimAccount(
     const { data: raced } = await admin.from('sim_accounts').select('user_id').eq('user_id', p.userId).maybeSingle()
     if (!raced) await admin.auth.admin.deleteUser(p.userId)
     console.error('[sim-signup] sim_accounts:', insErr.message)
-    return { error: FAILED }
+    return { error: e.signupFailed }
   }
   const err = publicError(await senders.confirm({ to: input.email, userId: p.userId, url: p.url, marketing: input.marketing }))
   return err ? { error: err } : { sent: true }
@@ -205,9 +208,10 @@ export async function registerSimAccount(
  * gelöscht — für eine unbekannte Adresse geht keine Mail hinaus.
  */
 export async function resendSimConfirmation(email: string, ipHash: string, senders: SimSenders = realSenders): Promise<SimSignupResult> {
+  const e = await messages()
   const admin = createAdminClient()
   if (await throttle(admin, ipHash)) {
-    return { error: 'Von diesem Anschluss kamen gerade zu viele Anfragen. Bitte in einer Stunde erneut versuchen.' }
+    return { error: e.resendThrottled }
   }
   const address = email.trim().toLowerCase()
   const p = await probe(admin, address, `${randomUUID()}!Aa1`)
@@ -253,6 +257,7 @@ export async function markSimConfirmed(userId: string): Promise<void> {
  * aussähe.
  */
 export async function setSimMarketing(userId: string, on: boolean): Promise<{ error?: string }> {
+  const e = await messages()
   const admin = createAdminClient()
   const { data } = await admin.from('sim_accounts').select('confirmed_at').eq('user_id', userId).maybeSingle()
   const now = new Date().toISOString()
@@ -262,16 +267,16 @@ export async function setSimMarketing(userId: string, on: boolean): Promise<{ er
     const { error } = await admin.from('sim_accounts').insert({
       user_id: userId, confirmed_at: now, marketing_opt_in: true, marketing_opt_in_at: now, marketing_text_version: MARKETING_TEXT_VERSION,
     })
-    return error ? { error: 'Konnte nicht gespeichert werden.' } : {}
+    return error ? { error: e.notSaved } : {}
   }
-  if (!data.confirmed_at) return { error: 'Bitte zuerst die E-Mail-Adresse bestätigen.' }
+  if (!data.confirmed_at) return { error: e.confirmFirst }
   const { error } = await admin
     .from('sim_accounts')
     .update(on
       ? { marketing_opt_in: true, marketing_opt_in_at: now, marketing_text_version: MARKETING_TEXT_VERSION }
       : { marketing_opt_in: false, marketing_opt_in_at: null, marketing_text_version: null })
     .eq('user_id', userId)
-  return error ? { error: 'Konnte nicht gespeichert werden.' } : {}
+  return error ? { error: e.notSaved } : {}
 }
 
 /**
@@ -292,7 +297,7 @@ export async function deleteSimAccount(userId: string): Promise<{ error?: string
   const { error } = await admin.auth.admin.deleteUser(userId)
   if (error) {
     console.error('[sim-account] deleteUser:', error.message)
-    return { error: 'Das Konto konnte nicht gelöscht werden. Bitte später erneut versuchen.' }
+    return { error: (await messages()).deleteFailed }
   }
   return {}
 }
@@ -312,14 +317,15 @@ export type ConvertInput = {
  * Simulator-Konten ohne jede Rolle im Hotelprodukt.
  */
 export async function convertSimAccount(userId: string, input: ConvertInput): Promise<{ slug?: string; stripe?: boolean; error?: string }> {
+  const e = await messages()
   const admin = createAdminClient()
   const { data: sim } = await admin.from('sim_accounts').select('confirmed_at, converted_account_id').eq('user_id', userId).maybeSingle()
-  if (!sim?.confirmed_at) return { error: 'Nur für bestätigte Simulator-Konten.' }
+  if (!sim?.confirmed_at) return { error: e.convertConfirmedOnly }
   if (sim.converted_account_id || (await hasProductRole(admin, userId))) {
-    return { error: 'Zu diesem Zugang gibt es bereits ein Hotelkonto.' }
+    return { error: e.convertExists }
   }
   const created = await createHotelAccount({ userId, ...input })
-  if (created.error || !created.accountId) return { error: created.error ?? 'Das Hotelkonto konnte nicht angelegt werden.' }
+  if (created.error || !created.accountId) return { error: created.error ?? e.convertFailed }
   await admin.from('sim_accounts').update({ converted_account_id: created.accountId }).eq('user_id', userId)
   return { slug: created.slug, stripe: created.stripe }
 }

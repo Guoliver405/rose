@@ -4,6 +4,8 @@ import { useState, useTransition } from 'react'
 import { Building2 } from 'lucide-react'
 import type { Policy } from '@/lib/cleaning-sim'
 import type { SimForm } from '@/lib/sim-form'
+import type { SimulatorMessages } from '@/lib/i18n'
+import { format, plural } from '@/lib/i18n/format'
 import { convertToHotelAction } from './actions'
 
 const field = 'rounded-lg border border-edge bg-surface px-3 py-2 text-ink outline-none focus:border-active'
@@ -15,7 +17,13 @@ const field = 'rounded-lg border border-edge bg-surface px-3 py-2 text-ink outli
  * Solange die Registrierung geschlossen ist, braucht es den Einladungscode
  * wie auf `/registrieren`.
  */
-export default function ConvertCard({ form, policy, signupOpen }: { form: SimForm; policy: Policy; signupOpen: boolean }) {
+export default function ConvertCard({ form, policy, signupOpen, m, intlLocale }: {
+  form: SimForm
+  policy: Policy
+  signupOpen: boolean
+  m: SimulatorMessages['account']['convert']
+  intlLocale: string
+}) {
   const [open, setOpen] = useState(false)
   const [takeRooms, setTakeRooms] = useState(true)
   const [takeRules, setTakeRules] = useState(true)
@@ -28,26 +36,24 @@ export default function ConvertCard({ form, policy, signupOpen }: { form: SimFor
       <div className="flex flex-wrap items-center gap-3">
         <Building2 className="h-6 w-6 text-action-strong" aria-hidden />
         <div className="min-w-0 flex-1">
-          <h2 id="hotel-starten" className="text-lg font-bold text-ink">Als Hotel bei RoSe starten</h2>
+          <h2 id="hotel-starten" className="text-lg font-bold text-ink">{m.title}</h2>
           <p className="text-sm text-ink-soft">
-            Testen Sie RoSe mindestens einen Monat lang kostenlos – ohne Zahlungsdaten. Überzeugt es Sie nicht, löschen Sie das
-            Konto einfach vorher; es entstehen keine Kosten. Ihr Zugang und Ihre Szenarien bleiben dabei, wie sie sind.{' '}
+            {m.intro}{' '}
             {/* Beträge bewusst nur hinter dem Link (User, 26.09.2026): Zahlen an dieser Stelle hemmen den Klick. */}
-            <a href="/#preise" target="_blank" rel="noopener" className="font-semibold text-action-strong hover:underline">Preise</a>
+            <a href="/#preise" target="_blank" rel="noopener" className="font-semibold text-action-strong hover:underline">{m.prices}</a>
           </p>
         </div>
         {!open && (
           <button type="button" onClick={() => setOpen(true)}
             className="rounded-lg bg-action px-4 py-2 font-bold text-action-foreground hover:bg-action-strong">
-            Weiter
+            {m.next}
           </button>
         )}
       </div>
 
       {open && !signupOpen && (
         <p className="mt-4 rounded-lg border border-edge bg-surface-sunken p-3 text-sm text-ink">
-          Die Anmeldung als Hotel ist derzeit nur mit Einladung möglich und gerade nicht freigeschaltet. Schreiben Sie uns — die
-          Adresse steht im Impressum.
+          {m.closed}
         </p>
       )}
 
@@ -68,33 +74,33 @@ export default function ConvertCard({ form, policy, signupOpen }: { form: SimFor
         }}>
           <div className="grid gap-3 sm:grid-cols-3">
             <label className="flex flex-col gap-1">
-              <span className="text-sm font-semibold text-ink-soft">Name des Hauses</span>
+              <span className="text-sm font-semibold text-ink-soft">{m.houseName}</span>
               <input name="hotelName" required minLength={2} className={field} />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-sm font-semibold text-ink-soft">Ihr Name</span>
+              <span className="text-sm font-semibold text-ink-soft">{m.yourName}</span>
               <input name="displayName" required minLength={2} autoComplete="name" className={field} />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-sm font-semibold text-ink-soft">Einladungscode</span>
+              <span className="text-sm font-semibold text-ink-soft">{m.inviteCode}</span>
               <input name="code" required autoComplete="off" spellCheck={false} autoCapitalize="none" className={field} />
             </label>
           </div>
 
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-1 text-sm font-semibold text-ink-soft">Aus dem Simulator übernehmen</legend>
+            <legend className="mb-1 text-sm font-semibold text-ink-soft">{m.take}</legend>
             <label className="flex items-start gap-2.5">
               <input type="checkbox" checked={takeRooms} onChange={e => setTakeRooms(e.target.checked)} className="mt-1 h-4 w-4 accent-[var(--color-action)]" />
               <span className="text-sm text-ink">
-                {rooms} Zimmer auf {form.floors} Etagen, nummeriert 101, 102 … – im Zimmer-Setup jederzeit änderbar
+                {plural(intlLocale, form.floors, m.rooms, { rooms })}
               </span>
             </label>
             <label className="flex items-start gap-2.5">
               <input type="checkbox" checked={takeRules} onChange={e => setTakeRules(e.target.checked)} className="mt-1 h-4 w-4 accent-[var(--color-action)]" />
               <span className="text-sm text-ink">
-                Regeln: Bleibezimmer {policy === 'routine' ? `täglich reinigen ab ${form.times.stayRoutineFrom}` : 'nur auf Wunsch reinigen'},
-                Check-out bis {form.times.checkoutUntil}, Check-in ab {form.times.checkinFrom}
-                <span className="block text-xs text-ink-muted">Folgt dem Umschalter „täglich / nur auf Wunsch“ oben; unter „Hotel &amp; Regeln“ änderbar.</span>
+                {format(policy === 'routine' ? m.rulesDaily : m.rulesOnDemand,
+                  { from: form.times.stayRoutineFrom, checkout: form.times.checkoutUntil, checkin: form.times.checkinFrom })}
+                <span className="block text-xs text-ink-muted">{m.rulesHint}</span>
               </span>
             </label>
           </fieldset>
@@ -103,10 +109,10 @@ export default function ConvertCard({ form, policy, signupOpen }: { form: SimFor
           <div className="flex flex-wrap items-center gap-3">
             <button type="submit" disabled={pending}
               className="rounded-lg bg-action px-4 py-2 font-bold text-action-foreground hover:bg-action-strong disabled:opacity-60">
-              {pending ? 'Wird angelegt …' : 'Hotelkonto anlegen'}
+              {pending ? m.submitting : m.submit}
             </button>
-            <button type="button" onClick={() => setOpen(false)} className="text-sm font-semibold text-ink-soft hover:underline">Abbrechen</button>
-            <span className="text-xs text-ink-muted">Danach: Zahlungsweg (überspringbar) und Einrichtung. Es gelten die AGB.</span>
+            <button type="button" onClick={() => setOpen(false)} className="text-sm font-semibold text-ink-soft hover:underline">{m.cancel}</button>
+            <span className="text-xs text-ink-muted">{m.after}</span>
           </div>
         </form>
       )}

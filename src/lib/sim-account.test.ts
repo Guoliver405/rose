@@ -1,20 +1,25 @@
 import { describe, expect, it } from 'vitest'
 import {
-  MARKETING_TEXT, SIGNUP_MAX_PER_HOUR, SIGNUP_WINDOW_MS, isExpiredUnconfirmed, parseSignup, signupThrottled,
+  MARKETING_TEXT_VERSION, SIGNUP_MAX_PER_HOUR, SIGNUP_WINDOW_MS, isExpiredUnconfirmed, parseSignup, signupThrottled,
 } from './sim-account'
 import { simConfirmMail, simExistsMail } from './mail-templates'
+import { account } from './i18n/de/simulator/account'
+import { flattenMessages } from './i18n/format'
+
+const MARKETING_TEXT = account.marketing.text
+const e = account.errors
 
 const form = (v: Record<string, string>) => ({ get: (k: string) => v[k] ?? null })
 
 describe('Simulator-Konto', () => {
   it('Registrierung: Adresse klein, Passwortlänge, Häkchen nur bei „on“', () => {
-    expect(parseSignup(form({ email: ' Test@Example.COM ', password: 'geheim123' }))).toEqual({
+    expect(parseSignup(form({ email: ' Test@Example.COM ', password: 'geheim123' }), e)).toEqual({
       input: { email: 'test@example.com', password: 'geheim123', marketing: false },
     })
-    expect(parseSignup(form({ email: 'a@b.de', password: 'geheim123', marketing: 'on' })).input?.marketing).toBe(true)
-    expect(parseSignup(form({ email: 'kein-at', password: 'geheim123' })).error).toMatch(/E-Mail/)
-    expect(parseSignup(form({ email: 'a@b.de', password: 'kurz' })).error).toMatch(/8 Zeichen/)
-    expect(parseSignup(form({ email: 'a@b.de', password: 'x'.repeat(73) })).error).toMatch(/72/)
+    expect(parseSignup(form({ email: 'a@b.de', password: 'geheim123', marketing: 'on' }), e).input?.marketing).toBe(true)
+    expect(parseSignup(form({ email: 'kein-at', password: 'geheim123' }), e).error).toMatch(/E-Mail/)
+    expect(parseSignup(form({ email: 'a@b.de', password: 'kurz' }), e).error).toMatch(/8 Zeichen/)
+    expect(parseSignup(form({ email: 'a@b.de', password: 'x'.repeat(73) }), e).error).toMatch(/72/)
   })
 
   it('Drossel: fünf Versuche je Stunde, ältere zählen nicht', () => {
@@ -36,6 +41,22 @@ describe('Simulator-Konto', () => {
     expect(MARKETING_TEXT).toMatch(/ausschließlich zu RoSe/)
     expect(MARKETING_TEXT).toMatch(/nicht weitergegeben/)
     expect(MARKETING_TEXT).toMatch(/Abbestellen/)
+  })
+
+  it('Einwilligung: Wortlaut gehört zur Fassung — Text geändert ⇒ MARKETING_TEXT_VERSION hochzählen und hier nachziehen', () => {
+    expect(MARKETING_TEXT_VERSION).toBe('2026-09-26')
+    expect(MARKETING_TEXT).toBe(
+      'Ja, RoSe darf mich gelegentlich per E-Mail über neue Funktionen und besondere Angebote informieren – ausschließlich zu RoSe. Meine Adresse wird nicht weitergegeben. Abbestellen jederzeit mit einem Klick oder im Konto.',
+    )
+  })
+
+  it('Texte: gesiezt, „Haus & Regeln“, „E-Mail“, „…“ und „ – “ (Begriffs-Entscheidungen)', () => {
+    const all = flattenMessages(account)
+    const hits = (re: RegExp) => all.filter(([, t]) => re.test(t)).map(([k]) => k)
+    expect(hits(/\b(du|dein\w*|dich|dir)\b/i)).toEqual([])
+    expect(hits(/Hotel (&|und) Regeln|Login|einlogg/)).toEqual([])
+    expect(hits(/(?<!E-)\bMails?\b|Mailversand|Werbe-Mail/)).toEqual([])
+    expect(hits(/"|—|\.\.\./)).toEqual([])
   })
 
   it('Bestätigungsmail nennt die Einwilligung nur, wenn angekreuzt; Link in HTML und Text', () => {

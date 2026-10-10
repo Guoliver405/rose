@@ -1,5 +1,7 @@
 import { createAdminClient } from '@/utils/supabase/service'
 import { MAX_SCENARIOS, formFromSaved, toSaved, type SimForm } from '@/lib/sim-form'
+import { format, getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /*
  * Gespeicherte Szenarien des Housekeeping-Simulators (Phase 3, 26.09.2026).
@@ -7,6 +9,8 @@ import { MAX_SCENARIOS, formFromSaved, toSaved, type SimForm } from '@/lib/sim-f
  * den Admin-Client mit ausdrücklichem Filter auf den Nutzer — Supabase meldet
  * bei einem von RLS verschluckten UPDATE/DELETE keinen Fehler (AGENTS.md).
  */
+
+async function messages() { return getMessages(await getLocale()).simulator.account.errors }
 
 export type ScenarioItem = { id: string; name: string; updatedAt: string; form: SimForm }
 
@@ -24,35 +28,38 @@ const cleanName = (name: string) => name.replace(/\s+/g, ' ').trim().slice(0, 12
 
 /** Neu anlegen (ohne `id`) oder ein eigenes überschreiben (mit `id`). */
 export async function saveScenario(userId: string, name: string, form: SimForm, id?: string): Promise<{ id?: string; error?: string }> {
+  const e = await messages()
   const n = cleanName(name)
-  if (!n) return { error: 'Bitte einen Namen angeben.' }
+  if (!n) return { error: e.scenarioName }
   const admin = createAdminClient()
   const now = new Date().toISOString()
   if (id) {
     const { data, error } = await admin.from('sim_scenarios')
       .update({ name: n, config: toSaved(form), updated_at: now })
       .eq('id', id).eq('user_id', userId).select('id')
-    if (error || !data?.length) return { error: 'Das Szenario konnte nicht gespeichert werden.' }
+    if (error || !data?.length) return { error: e.scenarioSaveFailed }
     return { id }
   }
   const { count } = await admin.from('sim_scenarios').select('id', { count: 'exact', head: true }).eq('user_id', userId)
-  if ((count ?? 0) >= MAX_SCENARIOS) return { error: `Höchstens ${MAX_SCENARIOS} Szenarien — bitte zuerst eines löschen.` }
+  if ((count ?? 0) >= MAX_SCENARIOS) return { error: format(e.scenarioLimit, { max: MAX_SCENARIOS }) }
   const { data, error } = await admin.from('sim_scenarios')
     .insert({ user_id: userId, name: n, config: toSaved(form) }).select('id').single()
-  if (error || !data) return { error: 'Das Szenario konnte nicht gespeichert werden.' }
+  if (error || !data) return { error: e.scenarioSaveFailed }
   return { id: data.id }
 }
 
 export async function renameScenario(userId: string, id: string, name: string): Promise<{ error?: string }> {
+  const e = await messages()
   const n = cleanName(name)
-  if (!n) return { error: 'Bitte einen Namen angeben.' }
+  if (!n) return { error: e.scenarioName }
   const { data, error } = await createAdminClient().from('sim_scenarios')
     .update({ name: n, updated_at: new Date().toISOString() }).eq('id', id).eq('user_id', userId).select('id')
-  return error || !data?.length ? { error: 'Umbenennen fehlgeschlagen.' } : {}
+  return error || !data?.length ? { error: e.scenarioRenameFailed } : {}
 }
 
 export async function deleteScenario(userId: string, id: string): Promise<{ error?: string }> {
+  const e = await messages()
   const { data, error } = await createAdminClient().from('sim_scenarios')
     .delete().eq('id', id).eq('user_id', userId).select('id')
-  return error || !data?.length ? { error: 'Löschen fehlgeschlagen.' } : {}
+  return error || !data?.length ? { error: e.scenarioDeleteFailed } : {}
 }

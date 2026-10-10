@@ -54,6 +54,7 @@
 
 import { SCORE_WEIGHTS, departurePressure, departureWeight, shouldSwitchFloor } from './board'
 import { ROI_DEFAULTS } from './roi'
+import { format, plural, type PluralForms } from './i18n/format'
 
 export type Coordination = 'paper' | 'rose'
 export type Policy = 'routine' | 'onDemand'
@@ -375,46 +376,73 @@ export const LIMITS = {
   roomDays: 75_000,
 } as const
 
+/**
+ * Texte der Prüfmeldungen — Abschnitt `simulator.app.validation` der
+ * Sprachdatei. Als Parameter, weil die Prüfung auch im Web Worker läuft und
+ * dieses Modul keine Sprachdatei importiert.
+ */
+export type SimValidationTexts = {
+  integer: string
+  labels: { floors: string; roomsPerFloor: string; maids: string; days: string }
+  mixIntegers: string
+  mixTotal: string
+  guestShare: string
+  time: string
+  checkoutAfterDepart: string
+  checkoutAfterShift: string
+  checkinAfterCheckout: string
+  leaveWindow: string
+  dndGiveUp: string
+  complaintAfterShift: string
+  shiftEndAfterCheckout: string
+  shiftLength: string
+  dailyFrom: string
+  duration: string
+  durationsMin: string
+  retryMin: string
+  baseline: string
+}
+
 /** Prüft eine Konfiguration; leere Liste = gültig. Meldungen für die Oberfläche. */
-export function validateConfig(cfg: ScenarioConfig): string[] {
+export function validateConfig(cfg: ScenarioConfig, tx: SimValidationTexts): string[] {
   const errs: string[] = []
   const int = (v: number, min: number, max: number, label: string) => {
-    if (!Number.isInteger(v) || v < min || v > max) errs.push(`${label}: ganze Zahl von ${min} bis ${max}.`)
+    if (!Number.isInteger(v) || v < min || v > max) errs.push(format(tx.integer, { label, min, max }))
   }
-  int(cfg.floors, 1, LIMITS.floors, 'Etagen')
-  int(cfg.roomsPerFloor, 1, LIMITS.roomsPerFloor, 'Zimmer je Etage')
-  int(cfg.maids, 1, LIMITS.maids, 'Reinigungskräfte')
+  int(cfg.floors, 1, LIMITS.floors, tx.labels.floors)
+  int(cfg.roomsPerFloor, 1, LIMITS.roomsPerFloor, tx.labels.roomsPerFloor)
+  int(cfg.maids, 1, LIMITS.maids, tx.labels.maids)
   const rooms = cfg.floors * cfg.roomsPerFloor
   if (MIX_KEYS.some(k => !Number.isInteger(cfg.mix[k]) || cfg.mix[k] < 0)) {
-    errs.push('Belegung: nur ganze Zahlen ab 0.')
+    errs.push(tx.mixIntegers)
   } else if (MIX_KEYS.reduce((s, k) => s + cfg.mix[k], 0) !== rooms) {
-    errs.push(`Belegung: Die Zimmerarten müssen zusammen ${rooms} Zimmer ergeben (100 %).`)
+    errs.push(format(tx.mixTotal, { rooms }))
   }
   for (const [k, v] of Object.entries(cfg.guest)) {
-    if (!(v >= 0 && v <= 1)) errs.push(`Gästeverhalten (${k}): Anteil zwischen 0 und 100 %.`)
+    if (!(v >= 0 && v <= 1)) errs.push(format(tx.guestShare, { key: k }))
   }
   const t = cfg.times
   for (const [k, v] of Object.entries(t)) {
-    if (!Number.isInteger(v) || v < 0 || v >= 24 * 60) errs.push(`Uhrzeit (${k}) ungültig.`)
+    if (!Number.isInteger(v) || v < 0 || v >= 24 * 60) errs.push(format(tx.time, { key: k }))
   }
   const after = (a: number, b: number, msg: string) => { if (!(a > b)) errs.push(msg) }
-  after(t.checkoutUntil, t.departFrom, 'Die Check-out-Frist muss nach dem frühesten Check-out liegen.')
-  after(t.checkoutUntil, t.shiftStart, 'Die Check-out-Frist muss nach Schichtbeginn liegen.')
-  after(t.checkinFrom, t.checkoutUntil, 'Check-in muss nach der Check-out-Frist liegen.')
-  after(t.leaveUntil, t.leaveFrom, 'Das Fenster, in dem Gäste das Zimmer verlassen, braucht ein Ende nach dem Anfang.')
-  after(t.dndGiveUp, t.shiftStart, '„Nicht stören“ aufgeben muss nach Schichtbeginn liegen.')
-  after(t.complaintAt, t.shiftStart, 'Der Sonderfall muss nach Schichtbeginn gemeldet werden.')
-  after(t.shiftEnd, t.checkoutUntil, 'Das Arbeitsende muss nach der Check-out-Frist liegen.')
-  if (t.shiftEnd - t.shiftStart > 16 * 60) errs.push('Zwischen Schichtbeginn und Arbeitsende höchstens 16 Stunden.')
-  if (t.stayRoutineFrom < t.shiftStart) errs.push(`Tägliche Reinigung frühestens ab Schichtbeginn (${clockLabel(0, t.shiftStart)}).`)
+  after(t.checkoutUntil, t.departFrom, tx.checkoutAfterDepart)
+  after(t.checkoutUntil, t.shiftStart, tx.checkoutAfterShift)
+  after(t.checkinFrom, t.checkoutUntil, tx.checkinAfterCheckout)
+  after(t.leaveUntil, t.leaveFrom, tx.leaveWindow)
+  after(t.dndGiveUp, t.shiftStart, tx.dndGiveUp)
+  after(t.complaintAt, t.shiftStart, tx.complaintAfterShift)
+  after(t.shiftEnd, t.checkoutUntil, tx.shiftEndAfterCheckout)
+  if (t.shiftEnd - t.shiftStart > 16 * 60) errs.push(tx.shiftLength)
+  if (t.stayRoutineFrom < t.shiftStart) errs.push(format(tx.dailyFrom, { time: clockLabel(0, t.shiftStart) }))
   const d = cfg.duration
   for (const [k, v] of Object.entries(d)) {
-    if (!(Number.isFinite(v) && v >= 0 && v <= 240)) errs.push(`Dauer (${k}): 0 bis 240 Minuten.`)
+    if (!(Number.isFinite(v) && v >= 0 && v <= 240)) errs.push(format(tx.duration, { key: k }))
   }
-  if (d.departure < 1 || d.stay < 1 || d.complaint < 1) errs.push('Reinigungsdauern: mindestens 1 Minute.')
-  if (d.retry < 1) errs.push('Wieder hin nach frühestens 1 Minute.')
+  if (d.departure < 1 || d.stay < 1 || d.complaint < 1) errs.push(tx.durationsMin)
+  if (d.retry < 1) errs.push(tx.retryMin)
   if (!['list', 'radio'].includes(cfg.baseline?.departures) || !['fixed', 'free'].includes(cfg.baseline?.floors)) {
-    errs.push('Arbeitsweise ohne Software: unbekannte Einstellung.')
+    errs.push(tx.baseline)
   }
   return errs
 }
@@ -1269,9 +1297,45 @@ type OutGuest = Extract<SimRoom, { presence: 'out' }>
 const outGuests = (scn: Scenario) => scn.rooms.flatMap(r => (r.kind === 'stay' && r.presence === 'out' ? [r as OutGuest] : []))
 const firstBy = <T>(xs: T[], key: (x: T) => number) => [...xs].sort((a, b) => key(a) - key(b))[0]
 
-export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[] {
+/**
+ * Texte der Hinweise — Abschnitt `simulator.app.day.highlights` der
+ * Sprachdatei, als Parameter (dieses Modul läuft auch im Browser und
+ * importiert keine Sprachdatei).
+ */
+export type SimHighlightTexts = {
+  maid: string
+  noCleaningWanted: PluralForms
+  departuresReady: string
+  checkinLate: PluralForms
+  paper: {
+    checkedOutUnknown: string
+    earlyCheckouts: PluralForms
+    checkoutDeadline: string
+    dndLiftedUnseen: string
+    dndAtDoor: string
+    declinedAgain: string
+    laterAgain: string
+    hangerUnseen: string
+    patrol: string
+    complaint: string
+  }
+  rose: {
+    checkedOut: string
+    notBefore: string
+    dndLiftedWants: string
+    dndLifted: string
+    signal: string
+    pulled: string
+    later: string
+    declined: string
+    complaint: string
+  }
+}
+
+export function highlights(res: SimResult, tx: SimHighlightTexts, intlLocale: string, scn: Scenario = SCENARIO): Highlight[] {
   const P = scn.params
   const clock = (min: number) => clockLabel(min, P.shiftStart)
+  const kraft = (i: number) => format(tx.maid, { name: maidLabel(i) })
   const out: Highlight[] = []
   const deps = scn.rooms.flatMap(r => (r.kind === 'departure' ? [r] : []))
   const cleans = res.segments.filter(g => g.kind === 'clean').sort((a, b) => a.start - b.start)
@@ -1286,19 +1350,19 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
     const none = scn.rooms.filter(r => r.kind === 'stay' && (r.presence === 'declines' || (r.presence === 'out' && !r.wants))).length
     if (none > 0) {
       out.push({ at: P.checkoutAt + 1, tone: 'neutral',
-        text: `${none} Gäste möchten heute keine Reinigung – weniger Arbeit, Wasser und Waschmittel.` })
+        text: plural(intlLocale, none, tx.noCleaningWanted) })
     }
   }
 
   // Check-in: sind die Abreisen rechtzeitig fertig? Gilt für beide Bilder, der Ton folgt dem Ergebnis.
   const ready = m.departuresReadyAt
   if (ready !== null && ready <= P.checkinAt) {
-    out.push({ at: ready, tone: 'good', text: `Alle Abreisezimmer bezugsfertig – vor dem Check-in um ${clock(P.checkinAt)}.` })
+    out.push({ at: ready, tone: 'good', text: format(tx.departuresReady, { time: clock(P.checkinAt) }) })
   } else {
     const late = deps.filter(d => (res.doneAt[d.nr] ?? Infinity) > P.checkinAt).length
     if (late > 0) {
       out.push({ at: P.checkinAt, tone: 'bad',
-        text: `Check-in beginnt – ${late} Abreise${late === 1 ? 'zimmer ist' : 'zimmer sind'} noch nicht bezugsfertig.` })
+        text: plural(intlLocale, late, tx.checkinLate) })
     }
   }
 
@@ -1306,13 +1370,13 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
     const firstCheckout = firstBy(deps, d => d.checkoutAt)
     if (firstCheckout) {
       out.push({ at: Math.max(0, firstCheckout.checkoutAt), tone: 'bad',
-        text: `${firstCheckout.nr} ist bereits ausgecheckt – auf der Papierliste steht das nicht.` })
+        text: format(tx.paper.checkedOutUnknown, { nr: firstCheckout.nr }) })
     }
     const early = deps.filter(d => d.checkoutAt <= P.checkoutAt - 30).length
     if (early > 1) {
-      out.push({ at: P.checkoutAt - 30, tone: 'bad', text: `${early} Zimmer sind ausgecheckt – doch nur die Rezeption weiß es.` })
+      out.push({ at: P.checkoutAt - 30, tone: 'bad', text: plural(intlLocale, early, tx.paper.earlyCheckouts) })
     }
-    out.push({ at: P.checkoutAt, tone: 'neutral', text: 'Check-out-Frist: erst jetzt können diese Zimmer sicher gereinigt werden.' })
+    out.push({ at: P.checkoutAt, tone: 'neutral', text: tx.paper.checkoutDeadline })
     // „Nicht stören" abgenommen bzw. umgedreht — gesehen erst, wenn jemand vorbeikommt.
     const liftAt = (x: OutGuest) => x.dndUntil ?? x.notBefore
     const lifted = guests.filter(x => liftAt(x) !== null && liftAt(x)! >= 0 && firstClean(x.nr) !== undefined)
@@ -1320,19 +1384,19 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
       .sort((a, b) => (b.seen - b.at) - (a.seen - a.at))[0]
     if (lifted && lifted.seen - lifted.at >= 30) {
       out.push({ at: lifted.seen, tone: 'bad',
-        text: `Das „Nicht stören“ an ${lifted.nr} ist seit ${clock(lifted.at)} weg – gereinigt erst jetzt, niemand kam vorbei.` })
+        text: format(tx.paper.dndLiftedUnseen, { nr: lifted.nr, time: clock(lifted.at) }) })
     }
     const firstSkip = res.segments.filter(g => g.kind === 'skip').sort((a, b) => a.start - b.start)[0]
     if (firstSkip) {
       out.push({ at: firstSkip.start, tone: 'bad',
-        text: `Vor ${firstSkip.nr}: „Nicht stören“ – das sieht die Kraft erst an der Tür, später muss sie wieder hin.` })
+        text: format(tx.paper.dndAtDoor, { nr: firstSkip.nr }) })
     }
     const declines = res.segments.filter(g => g.kind === 'declined').sort((a, b) => a.start - b.start)
     const again = declines.find(g => g.again)
     if (again) {
       const knower = declines.find(g => !g.again && g.nr === again.nr)!
       out.push({ at: again.start, tone: 'bad',
-        text: `Kraft ${maidLabel(again.maid)} hilft aus und klopft bei ${again.nr} noch einmal – dass der Gast bei Kraft ${maidLabel(knower.maid)} abgelehnt hat, stand noch nicht auf der Etagenliste, als sie kam.` })
+        text: format(tx.paper.declinedAgain, { maid: kraft(again.maid), nr: again.nr, knower: kraft(knower.maid) }) })
     }
     // Nur, wenn die Kollegin wirklich geklopft hat — `again` entsteht auch nach einem „Nicht stören“-Schild.
     const told = (g: Segment) => res.segments.filter(o => o.kind === 'knock' && o.nr === g.nr && o.maid !== g.maid && o.start < g.start)
@@ -1341,7 +1405,7 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
     if (knockAgain) {
       const teller = told(knockAgain)
       out.push({ at: knockAgain.start, tone: 'bad',
-        text: `Kraft ${maidLabel(knockAgain.maid)} klopft bei ${knockAgain.nr} – dass der Gast Kraft ${maidLabel(teller.maid)} eben „später“ gesagt hat, stand noch nicht auf der Etagenliste.` })
+        text: format(tx.paper.laterAgain, { maid: kraft(knockAgain.maid), nr: knockAgain.nr, teller: kraft(teller.maid) }) })
     }
     // Türanhänger: der, der am längsten unbemerkt hing.
     const waits = Object.entries(res.noticedAt).flatMap(([nr, seen]) => {
@@ -1351,60 +1415,60 @@ export function highlights(res: SimResult, scn: Scenario = SCENARIO): Highlight[
     const longest = waits[0]
     if (longest && longest.seen - Math.max(0, longest.hung) >= 15) {
       out.push({ at: longest.seen, tone: 'bad',
-        text: `Der Anhänger „Bitte reinigen“ an ${longest.nr} hing seit ${clock(longest.hung)} – gesehen erst jetzt, als eine Kraft auf die Etage kam.` })
+        text: format(tx.paper.hangerUnseen, { nr: longest.nr, time: clock(longest.hung) }) })
     }
     const patrols = res.segments.filter(g => g.kind === 'patrol')
     if (patrols.length >= 3) {
-      out.push({ at: patrols[2].start, tone: 'bad', text: 'Nichts zu tun, also Etagen abgehen – ob irgendwo ein Anhänger hängt, weiß niemand.' })
+      out.push({ at: patrols[2].start, tone: 'bad', text: tx.paper.patrol })
     }
     if (c && m.complaintDoneAt !== null) {
       out.push({ at: m.complaintDoneAt, tone: 'bad',
-        text: `Sonderfall in ${c.nr}: Die Rezeption musste die zuständige Kraft erst erreichen – erledigt nach ${minutes} Minuten.` })
+        text: format(tx.paper.complaint, { nr: c.nr, minutes }) })
     }
   } else {
     const firstDep = cleans.find(g => deps.some(d => d.nr === g.nr))
     if (firstDep) {
       out.push({ at: firstDep.start, tone: 'good',
-        text: `${firstDep.nr} ausgecheckt – sofort auf dem Board und zur Reinigung eingereiht.` })
+        text: format(tx.rose.checkedOut, { nr: firstDep.nr }) })
     }
     // Eine Uhrzeit nach Schichtbeginn, sonst zeigt der Hinweis nichts.
     const nb = firstBy(guests.filter(x => x.notBefore !== null && x.notBefore >= 60 && (res.policy === 'routine' || x.wants)), x => x.notBefore!)
     if (nb) {
       out.push({ at: 0, tone: 'good',
-        text: `${nb.nr} hat im Portal „frühestens ab ${clock(nb.notBefore!)}“ angegeben – bis dahin klopft niemand, die Kräfte planen drumherum.` })
+        text: format(tx.rose.notBefore, { nr: nb.nr, time: clock(nb.notBefore!) }) })
     }
     const lift = firstBy(guests.filter(x => x.dndUntil !== null && x.dndUntil >= 0 && (res.policy === 'routine' || x.wants)), x => x.dndUntil!)
     if (lift) {
       out.push({ at: lift.dndUntil!, tone: 'good',
         text: lift.signals || res.policy === 'onDemand'
-          ? `${lift.nr} nimmt „Nicht stören“ zurück und wünscht Reinigung – sofort auf dem Board, für alle Kräfte.`
-          : `${lift.nr} nimmt „Nicht stören“ zurück – das Zimmer ist sofort wieder auf dem Board.` })
+          ? format(tx.rose.dndLiftedWants, { nr: lift.nr })
+          : format(tx.rose.dndLifted, { nr: lift.nr }) })
     }
     const firstSignal = firstBy(guests.filter(x => x.outAt >= 0 && x.notBefore === null && x.dndUntil === null
       && (res.policy === 'onDemand' ? x.wants : x.signals)), x => x.outAt)
     if (firstSignal) {
       out.push({ at: firstSignal.outAt, tone: 'good',
-        text: `${firstSignal.nr} tippt beim Gehen „Zimmer reinigen“ – das Board zieht die nächste freie Kraft auf diese Etage.` })
+        text: format(tx.rose.signal, { nr: firstSignal.nr }) })
     }
     const pull = res.segments.filter(g => g.kind === 'walk' && g.pulledFrom !== undefined).sort((a, b) => a.start - b.start)[0]
     if (pull) {
       out.push({ at: pull.start, tone: 'good',
-        text: `Abreisen drängen: Das Board holt Kraft ${maidLabel(pull.maid)} von der ${pull.pulledFrom}. auf die ${floorOf(pull.nr)}. Etage – je enger es bis zum Check-in wird, desto stärker.` })
+        text: format(tx.rose.pulled, { maid: kraft(pull.maid), from: pull.pulledFrom!, to: floorOf(pull.nr) }) })
     }
     const firstLater = res.segments.filter(g => g.kind === 'knock').sort((a, b) => a.start - b.start)[0]
     if (firstLater) {
       out.push({ at: firstLater.start, tone: 'good',
-        text: `${firstLater.nr}: Gast noch da – „In 30 Min“ getippt, bis dahin klopft keine Kollegin.` })
+        text: format(tx.rose.later, { nr: firstLater.nr }) })
     }
     // Ablehnung an der Tür: ein Tipp, und das Board kennt sie für alle Kräfte.
     const firstDecline = res.segments.filter(g => g.kind === 'declined').sort((a, b) => a.start - b.start)[0]
     if (firstDecline) {
       out.push({ at: firstDecline.start, tone: 'good',
-        text: `${firstDecline.nr} möchte an der Tür heute keine Reinigung – ein Tipp, und RoSe merkt es sich für alle Kräfte.` })
+        text: format(tx.rose.declined, { nr: firstDecline.nr }) })
     }
     if (c && m.complaintDoneAt !== null) {
       out.push({ at: m.complaintDoneAt, tone: 'good',
-        text: `Sonderfall in ${c.nr}: ein Klick der Rezeption, die nächste freie Kraft übernimmt – erledigt nach ${minutes} Minuten.` })
+        text: format(tx.rose.complaint, { nr: c.nr, minutes }) })
     }
   }
   return out.sort((a, b) => a.at - b.at)

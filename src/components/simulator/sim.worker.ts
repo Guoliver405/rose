@@ -1,7 +1,8 @@
 /**
  * Web Worker des Simulators: rechnet einen Lauf über viele Tage abseits des
  * Haupt-Threads. Die ganze Logik steckt in `runBatch` (sim-batch.ts, getestet),
- * hier werden nur die Nachrichten durchgereicht. Abbruch = `terminate()`.
+ * hier werden nur die Nachrichten durchgereicht. Die Prüfmeldungen
+ * kommen in der Anfrage mit (`SimRequest.texts`) — keine Sprachdatei im Worker. Abbruch = `terminate()`.
  */
 import { runBatch, type SimRequest } from '@/lib/sim-batch'
 

@@ -1,22 +1,24 @@
 /**
- * Konto des Housekeeping-Simulators (Phase 2, 26.09.2026) — Texte und Regeln
+ * Konto des Housekeeping-Simulators (Phase 2, 26.09.2026) — Regeln
  * ohne I/O. Die Datenbankseite liegt in `@/utils/sim-account`.
  *
  * Ein Simulator-Konto ist E-Mail + Passwort + Bestätigung, ohne Zahlungsdaten
  * und ohne Rechte im Produkt. Bauplan: Sessions/Simulator-Plan-2026-09-26.md.
  */
 
+import { format } from '@/lib/i18n/format'
+
 /** Name des Werkzeugs auf allen Seiten (Entscheidung des Users, 26.09.2026). */
 export const SIMULATOR_NAME = 'Housekeeping-Simulator'
 
 /**
- * Wortlaut der Werbe-Einwilligung. Ändert sich der Text, MUSS die Version
- * hochgezählt werden — gespeichert wird, welcher Fassung zugestimmt wurde.
- * Entscheidung des Users: ausschließlich RoSe, keine Weitergabe, nicht
- * vorausgewählt.
+ * Fassung der Werbe-Einwilligung. Der Wortlaut steht seit 11.10.2026 in der
+ * Sprachdatei (`i18n/de/simulator/account.ts`, `marketing.text`, wortgleich
+ * verschoben). Ändert sich der Text, MUSS die Version hochgezählt werden —
+ * gespeichert wird, welcher Fassung zugestimmt wurde; der Test hält Text und
+ * Version zusammen fest. Entscheidung des Users: ausschließlich RoSe, keine
+ * Weitergabe, nicht vorausgewählt.
  */
-export const MARKETING_TEXT =
-  'Ja, RoSe darf mich gelegentlich per E-Mail über neue Funktionen und besondere Angebote informieren – ausschließlich zu RoSe. Meine Adresse wird nicht weitergegeben. Abbestellen jederzeit mit einem Klick oder im Konto.'
 export const MARKETING_TEXT_VERSION = '2026-09-26'
 
 export const MIN_PASSWORD = 8
@@ -30,16 +32,24 @@ export const UNCONFIRMED_DAYS = 7
 
 export type SimSignupInput = { email: string; password: string; marketing: boolean }
 
+/** Prüfmeldungen der Registrierung — aus der Sprachdatei (`simulator.account.errors`). */
+export type SignupErrorTexts = { emailInvalid: string; passwordShort: string; passwordLong: string }
+
+export const MAX_PASSWORD = 72
+
 /** Eingaben aus dem Formular lesen und prüfen. */
-export function parseSignup(form: { get(name: string): unknown }): { input?: SimSignupInput; error?: string } {
+export function parseSignup(
+  form: { get(name: string): unknown },
+  e: SignupErrorTexts,
+): { input?: SimSignupInput; error?: string } {
   const email = String(form.get('email') ?? '').trim().toLowerCase()
   const password = String(form.get('password') ?? '')
   const marketing = form.get('marketing') === 'on'
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
-    return { error: 'Bitte eine gültige E-Mail-Adresse angeben.' }
+    return { error: e.emailInvalid }
   }
-  if (password.trim().length < MIN_PASSWORD) return { error: `Das Passwort braucht mindestens ${MIN_PASSWORD} Zeichen.` }
-  if (password.length > 72) return { error: 'Das Passwort darf höchstens 72 Zeichen haben.' }
+  if (password.trim().length < MIN_PASSWORD) return { error: format(e.passwordShort, { min: MIN_PASSWORD }) }
+  if (password.length > MAX_PASSWORD) return { error: format(e.passwordLong, { max: MAX_PASSWORD }) }
   return { input: { email, password, marketing } }
 }
 

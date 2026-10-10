@@ -5,7 +5,10 @@ import { useState, useTransition } from 'react'
 import { AlertTriangle, Clock, MailCheck } from 'lucide-react'
 import { useMailDispatch } from '@/components/mail/MailDispatch'
 import { MAIL_COOLDOWN_SECONDS } from '@/lib/mail-status'
-import { MARKETING_TEXT, MIN_PASSWORD } from '@/lib/sim-account'
+import { MIN_PASSWORD } from '@/lib/sim-account'
+import type { SimulatorMessages } from '@/lib/i18n'
+import { format } from '@/lib/i18n/format'
+import Rich from '@/components/i18n/Rich'
 import { simResendAction, simSignupAction } from '../actions'
 
 const field = 'rounded-lg border border-edge bg-surface px-3 py-2.5 text-ink outline-none focus:border-active'
@@ -16,7 +19,12 @@ const field = 'rounded-lg border border-edge bg-surface px-3 py-2.5 text-ink out
  * Konto gibt (siehe `@/utils/sim-account`). Deshalb wie bei „Passwort
  * vergessen" nur ein Countdown, kein Zustellstatus.
  */
-export default function SimSignupForm({ linkExpired, mailReady }: { linkExpired: boolean; mailReady: boolean }) {
+export default function SimSignupForm({ linkExpired, mailReady, m, marketingText }: {
+  linkExpired: boolean
+  mailReady: boolean
+  m: SimulatorMessages['account']['signup']
+  marketingText: SimulatorMessages['account']['marketing']
+}) {
   const [error, setError] = useState<string | null>(null)
   const [sent, setSent] = useState<string | null>(null)
   const [resendMode, setResendMode] = useState(linkExpired)
@@ -35,7 +43,7 @@ export default function SimSignupForm({ linkExpired, mailReady }: { linkExpired:
 
   if (!mailReady) {
     return <p className="max-w-md rounded-lg border border-edge bg-surface-sunken p-4 text-sm text-ink">
-      Die Registrierung ist gerade nicht möglich, weil der Mailversand nicht eingerichtet ist.
+      {m.mailNotReady}
     </p>
   }
 
@@ -43,19 +51,16 @@ export default function SimSignupForm({ linkExpired, mailReady }: { linkExpired:
     return (
       <div className="flex w-full max-w-md flex-col gap-3 rounded-xl border border-positive-pill-edge bg-positive-tint p-4">
         <p className="flex items-center gap-2 font-bold text-positive-deep">
-          <MailCheck className="h-5 w-5" aria-hidden /> Bitte bestätigen Sie Ihre Adresse
+          <MailCheck className="h-5 w-5" aria-hidden /> {m.sent.title}
         </p>
         <p className="text-sm text-positive-deep">
-          Wir haben eine E-Mail an <span className="font-mono">{sent}</span> geschickt. Der Link darin schaltet Ihr Konto frei
-          und meldet Sie an. Er lässt sich auf jedem Gerät öffnen.
+          <Rich text={m.sent.text} vars={{ email: sent }} tags={{ code: c => <span className="font-mono">{c}</span> }} />
         </p>
-        <p className="text-xs text-ink-muted">
-          Nichts angekommen? Auch den Spam-Ordner prüfen. Gibt es zu dieser Adresse schon einen Zugang, steht in der Mail, wie es weitergeht.
-        </p>
+        <p className="text-xs text-ink-muted">{m.sent.hint}</p>
         {error && <p className="text-sm font-semibold text-critical-strong">{error}</p>}
         <button type="button" disabled={mail.remaining > 0 || pending} onClick={() => resend(sent)}
           className="mt-1 flex items-center justify-center gap-1.5 rounded-lg border border-positive-pill-edge px-3 py-2 text-sm font-semibold text-positive-deep hover:bg-surface disabled:opacity-60">
-          {mail.remaining > 0 ? <><Clock className="h-4 w-4" aria-hidden /> Erneut senden in {mail.remaining} s</> : 'Mail erneut senden'}
+          {mail.remaining > 0 ? <><Clock className="h-4 w-4" aria-hidden /> {format(m.sent.againIn, { seconds: mail.remaining })}</> : m.sent.again}
         </button>
       </div>
     )
@@ -70,20 +75,20 @@ export default function SimSignupForm({ linkExpired, mailReady }: { linkExpired:
         {linkExpired && (
           <p className="flex items-start gap-2 rounded-lg border border-caution-tint-edge bg-caution-tint px-3 py-2 text-sm text-ink">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-caution-strong" aria-hidden />
-            Der Bestätigungslink ist abgelaufen oder wurde schon benutzt. Fordern Sie einen neuen an.
+            {m.resend.linkExpired}
           </p>
         )}
         <label className="flex flex-col gap-1">
-          <span className="text-sm font-semibold text-ink-soft">E-Mail</span>
+          <span className="text-sm font-semibold text-ink-soft">{m.email}</span>
           <input name="email" type="email" required autoComplete="email" className={field} />
         </label>
         {error && <ErrorBox text={error} />}
         <button type="submit" disabled={pending}
           className="rounded-lg bg-action px-4 py-2.5 font-bold text-action-foreground hover:bg-action-strong disabled:opacity-60">
-          Neuen Bestätigungslink senden
+          {m.resend.submit}
         </button>
         <button type="button" onClick={() => setResendMode(false)} className="text-sm font-semibold text-action-strong hover:underline">
-          Stattdessen neu registrieren
+          {m.resend.signupInstead}
         </button>
       </form>
     )
@@ -103,34 +108,36 @@ export default function SimSignupForm({ linkExpired, mailReady }: { linkExpired:
       })
     }}>
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-semibold text-ink-soft">E-Mail</span>
+        <span className="text-sm font-semibold text-ink-soft">{m.email}</span>
         <input name="email" type="email" required autoComplete="email" className={field} />
       </label>
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-semibold text-ink-soft">Passwort</span>
+        <span className="text-sm font-semibold text-ink-soft">{m.password}</span>
         <input name="password" type="password" required minLength={MIN_PASSWORD} autoComplete="new-password" className={field} />
-        <span className="text-xs text-ink-muted">Mindestens {MIN_PASSWORD} Zeichen.</span>
+        <span className="text-xs text-ink-muted">{format(m.passwordHint, { min: MIN_PASSWORD })}</span>
       </label>
       <label className="flex items-start gap-2.5 rounded-lg border border-edge p-3">
         <input name="marketing" type="checkbox" className="mt-1 h-4 w-4 shrink-0 accent-[var(--color-action)]" />
-        <span className="text-sm text-ink">{MARKETING_TEXT} <span className="text-ink-muted">(freiwillig)</span></span>
+        <span className="text-sm text-ink">{marketingText.text} <span className="text-ink-muted">{marketingText.optional}</span></span>
       </label>
       {error && <ErrorBox text={error} />}
       <button type="submit" disabled={pending}
         className="rounded-lg bg-action px-4 py-2.5 font-bold text-action-foreground hover:bg-action-strong disabled:opacity-60">
-        {pending ? 'Wird angelegt …' : 'Kostenlos registrieren'}
+        {pending ? m.submitting : m.submit}
       </button>
       <p className="text-xs text-ink-muted">
-        Mit der Registrierung gelten die{' '}
-        <Link href="/simulator-nutzung" className="font-semibold text-action-strong hover:underline">Nutzungsbedingungen des Simulators</Link>.
-        Wie wir mit Ihren Daten umgehen, steht in der{' '}
-        <Link href="/datenschutz#simulator" className="font-semibold text-action-strong hover:underline">Datenschutzerklärung</Link>.
+        <Rich text={m.terms} tags={{
+          terms: c => <Link href="/simulator-nutzung" className="font-semibold text-action-strong hover:underline">{c}</Link>,
+          privacy: c => <Link href="/datenschutz#simulator" className="font-semibold text-action-strong hover:underline">{c}</Link>,
+        }} />
       </p>
       <p className="text-center text-sm text-ink-muted">
-        Schon registriert? <Link href="/login" className="font-semibold text-action-strong hover:underline">Anmelden</Link>
+        <Rich text={m.haveAccount} tags={{
+          link: c => <Link href="/login" className="font-semibold text-action-strong hover:underline">{c}</Link>,
+        }} />
         {' · '}
         <button type="button" onClick={() => setResendMode(true)} className="font-semibold text-action-strong hover:underline">
-          Bestätigungslink erneut senden
+          {m.resendLink}
         </button>
       </p>
     </form>

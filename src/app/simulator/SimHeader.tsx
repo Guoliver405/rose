@@ -1,13 +1,16 @@
 import Link from 'next/link'
 import { SIMULATOR_NAME } from '@/lib/sim-account'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 import { simLogoutAction } from './actions'
 
 /** Kopfzeile aller Seiten des Housekeeping-Simulators. */
-export default function SimHeader({ signedIn, hotel = false }: {
+export default async function SimHeader({ signedIn, hotel = false }: {
   signedIn: boolean
   /** Zugang mit Hotelkonto: Rückweg ins Portal. */
   hotel?: boolean
 }) {
+  const m = getMessages(await getLocale()).simulator.app.header
   return (
     <header className="border-b border-edge bg-surface">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-3 px-4">
@@ -20,25 +23,25 @@ export default function SimHeader({ signedIn, hotel = false }: {
             <>
               {hotel && (
                 <Link href="/admin" className="rounded-lg px-2 py-1.5 font-semibold text-ink-soft hover:bg-surface-sunken hover:text-ink">
-                  Häuser
+                  {m.houses}
                 </Link>
               )}
               <Link href="/simulator/konto" className="rounded-lg px-2 py-1.5 font-semibold text-ink-soft hover:bg-surface-sunken hover:text-ink">
-                Mein Konto
+                {m.account}
               </Link>
               <form action={simLogoutAction}>
                 <button type="submit" className="rounded-lg border border-edge px-3 py-1.5 font-semibold text-ink hover:border-edge-strong">
-                  Abmelden
+                  {m.signOut}
                 </button>
               </form>
             </>
           ) : (
             <>
               <Link href="/login" className="rounded-lg border border-edge px-3 py-1.5 font-semibold text-ink hover:border-edge-strong">
-                Anmelden
+                {m.signIn}
               </Link>
               <Link href="/simulator/registrieren" className="hidden rounded-lg bg-action px-3 py-1.5 font-semibold text-action-foreground hover:bg-action-strong sm:block">
-                Kostenlos registrieren
+                {m.signup}
               </Link>
             </>
           )}

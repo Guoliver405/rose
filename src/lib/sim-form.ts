@@ -8,6 +8,7 @@ import {
   DEFAULT_BASELINE, DEFAULT_CONFIG, MIX_KEYS, mixFromShares,
   type Baseline, type MixKey, type ScenarioConfig, type SimDurations, type SimTimes,
 } from './cleaning-sim'
+import { format } from './i18n/format'
 
 export type GuestKey = keyof ScenarioConfig['guest']
 
@@ -69,10 +70,12 @@ export const sharesTotal = (f: SimForm) => Math.round(MIX_KEYS.reduce((s, k) => 
  * Meldung zurück statt einer stillen Normierung — sonst rechnete der
  * Simulator ein anderes Haus, als dasteht.
  */
-export function configFromForm(f: SimForm): { config: ScenarioConfig; errors: string[] } {
+export function configFromForm(f: SimForm, tx: { sharesTotal: string }, intlLocale: string): { config: ScenarioConfig; errors: string[] } {
   const errors: string[] = []
   const total = sharesTotal(f)
-  if (Math.abs(total - 100) > 0.05) errors.push(`Belegung: Die Anteile ergeben ${String(total).replace('.', ',')} % statt 100 %.`)
+  if (Math.abs(total - 100) > 0.05) {
+    errors.push(format(tx.sharesTotal, { total: new Intl.NumberFormat(intlLocale, { maximumFractionDigits: 1 }).format(total) }))
+  }
   const rooms = f.floors * f.roomsPerFloor
   const config: ScenarioConfig = {
     floors: f.floors,
@@ -203,8 +206,10 @@ export function randomFirstDay(rand: () => number = Math.random): number {
   return 1000 + Math.floor(rand() * 999_000)
 }
 
-/** „Tage 1–101“ bzw. „Tage 12 345–12 445“. */
-export function dayRangeLabel(firstDay: number, days: number): string {
-  const n = new Intl.NumberFormat('de-DE')
-  return days === 1 ? `Tag ${n.format(firstDay)}` : `Tage ${n.format(firstDay)}–${n.format(firstDay + days - 1)}`
+/** „Tage 1–101“ bzw. „Tage 12.345–12.445“; Wortlaut aus `run.dayRange` der Sprachdatei. */
+export function dayRangeLabel(firstDay: number, days: number, tx: { single: string; range: string }, intlLocale: string): string {
+  const n = new Intl.NumberFormat(intlLocale)
+  return days === 1
+    ? format(tx.single, { day: n.format(firstDay) })
+    : format(tx.range, { from: n.format(firstDay), to: n.format(firstDay + days - 1) })
 }

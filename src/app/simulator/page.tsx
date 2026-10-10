@@ -6,12 +6,19 @@ import { getSimContext } from '@/utils/auth'
 import { SIMULATOR_NAME } from '@/lib/sim-account'
 import { listScenarios } from '@/utils/sim-scenarios'
 import { hotelSignupOpen } from '@/utils/hotel-account'
+import { getMessages, intlLocale, type SimulatorMessages } from '@/lib/i18n'
+import { format } from '@/lib/i18n/format'
+import { getLocale } from '@/utils/locale'
+import Rich from '@/components/i18n/Rich'
 import SimHeader from './SimHeader'
 import SimulatorApp from './SimulatorApp'
 
-export const metadata: Metadata = {
-  title: `${SIMULATOR_NAME} – RoSe`,
-  description: 'Rechnen Sie Ihr Haus durch: Housekeeping ohne Steuerung und mit RoSe, über viele Tage.',
+export async function generateMetadata(): Promise<Metadata> {
+  const m = getMessages(await getLocale()).simulator.app.page
+  return {
+    title: format(m.metaTitle, { name: SIMULATOR_NAME }),
+    description: m.metaDescription,
+  }
 }
 
 /**
@@ -21,7 +28,9 @@ export const metadata: Metadata = {
  * auf der Landing Page.
  */
 export default async function SimulatorPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
-  const [ctx, sp] = await Promise.all([getSimContext(), searchParams])
+  const [ctx, sp, locale] = await Promise.all([getSimContext(), searchParams, getLocale()])
+  const messages = getMessages(locale).simulator
+  const m = messages.app
   const scenarios = ctx ? await listScenarios(ctx.userId) : []
 
   return (
@@ -30,40 +39,36 @@ export default async function SimulatorPage({ searchParams }: { searchParams: Pr
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8">
         {sp.willkommen && ctx && (
           <p className="flex items-center gap-2 rounded-xl border border-positive-pill-edge bg-positive-tint px-4 py-3 text-sm font-semibold text-positive-deep">
-            <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden /> Adresse bestätigt – willkommen im {SIMULATOR_NAME}.
+            <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden /> {format(m.page.welcome, { name: SIMULATOR_NAME })}
           </p>
         )}
         {sp.geloescht && ctx && (
           <p className="rounded-xl border border-edge bg-surface-sunken px-4 py-3 text-sm text-ink">
-            Ihre Simulator-Daten sind gelöscht. Ihr Hotelzugang bleibt bestehen.
+            {m.page.deleted}
           </p>
         )}
         <div>
           <h1 className="text-3xl font-black text-ink">{SIMULATOR_NAME}</h1>
           <p className="mt-2 max-w-3xl text-ink-soft">
-            Rechnen Sie Ihr Haus durch: Größe, Personal, Zeiten und Gästeverhalten. Der Simulator spielt viele Tage mit
-            jeweils anderen Gästen zweimal durch – ohne Steuerung und mit RoSe – und zeigt, was die Koordination bewirkt.
-            Die Regeln für „mit RoSe“ sind die des echten Reinigungsboards. Derzeit nur auf Deutsch.
+            {m.page.intro}
           </p>
         </div>
-        {ctx ? <SimulatorApp initialScenarios={scenarios} convert={ctx.kind === 'sim' ? { open: hotelSignupOpen() } : undefined} /> : <Intro />}
+        {ctx
+          ? <SimulatorApp initialScenarios={scenarios} m={m} intlLocale={intlLocale(locale)}
+              convert={ctx.kind === 'sim' ? { open: hotelSignupOpen(), m: messages.account.convert } : undefined} />
+          : <Intro m={m.page.teaser} />}
       </main>
       <LegalFooter />
     </>
   )
 }
 
-function Intro() {
-  const points = [
-    'Ihr Haus: Etagen, Zimmer, Belegung, Reinigungskräfte, Check-out und Check-in',
-    'Ihre Annahmen: Reinigungsdauern, Wege, wie Gäste Reinigung wünschen oder ablehnen',
-    'Viele Tage statt eines Beispieltags – Median und Spanne, verpasste Check-ins, eingesparte Stunden',
-    'Täglich oder nur auf Wunsch reinigen – beides auf denselben Gästen',
-  ]
+function Intro({ m }: { m: SimulatorMessages['app']['page']['teaser'] }) {
+  const points = m.points
   return (
     <section className="grid gap-6 rounded-2xl border border-edge bg-surface-elevated p-6 md:grid-cols-[1fr_auto] md:items-center">
       <div>
-        <h2 className="text-xl font-bold text-ink">Kostenlos, mit E-Mail-Adresse – ohne Zahlungsdaten</h2>
+        <h2 className="text-xl font-bold text-ink">{m.heading}</h2>
         <ul className="mt-3 flex flex-col gap-2 text-ink-soft">
           {points.map(p => (
             <li key={p} className="flex items-start gap-2">
@@ -72,17 +77,16 @@ function Intro() {
           ))}
         </ul>
         <p className="mt-4 text-sm text-ink-muted">
-          Einen festen Beispieltag ohne Anmeldung zeigt die{' '}
-          <Link href="/#vergleich" className="font-semibold text-action-strong hover:underline">Startseite</Link>.
+          <Rich text={m.example} tags={{ link: c => <Link href="/#vergleich" className="font-semibold text-action-strong hover:underline">{c}</Link> }} />
         </p>
       </div>
       <div className="flex flex-col gap-2">
         <Link href="/simulator/registrieren"
           className="rounded-lg bg-action px-5 py-3 text-center font-bold text-action-foreground hover:bg-action-strong">
-          Kostenlos registrieren
+          {m.signup}
         </Link>
         <Link href="/login" className="rounded-lg border border-edge px-5 py-2.5 text-center font-semibold text-ink hover:border-edge-strong">
-          Schon registriert? Anmelden
+          {m.signIn}
         </Link>
       </div>
     </section>

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_CONFIG } from './cleaning-sim'
-import { DEFAULT_FORM, SIM_DEFAULT_BASELINE, changedDetails, configFromForm, dayRangeLabel, randomFirstDay, formFromConfig, formFromSaved, fromClock, occupancyOf, sharesTotal, toClock, toSaved, withOccupancy } from './sim-form'
+import { DEFAULT_FORM, SIM_DEFAULT_BASELINE, changedDetails, configFromForm as rawConfig, dayRangeLabel as rawRange, randomFirstDay, formFromConfig, formFromSaved, fromClock, occupancyOf, sharesTotal, toClock, toSaved, withOccupancy } from './sim-form'
+import { getMessages } from './i18n'
+
+const TX = getMessages().simulator.app
+const configFromForm = (f: Parameters<typeof rawConfig>[0]) => rawConfig(f, TX.validation, 'de-DE')
+const dayRangeLabel = (first: number, days: number) => rawRange(first, days, TX.run.dayRange, 'de-DE')
 
 describe('Simulator-Formular', () => {
   it('die Vorgabe des Formulars ist die Konfiguration der Landing Page — nur mit Funk', () => {
