@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Coffee, Loader2, Sparkles, Timer } from 'lucide-react'
 import SlideAction from '@/components/SlideAction'
 import { formatDuration } from '@/lib/worklog'
+import { format, type ServiceMessages } from '@/lib/i18n'
 import {
   breakToggleAction, otherCleaningToggleAction, shiftEndAction, shiftStartAction,
 } from '../actions'
@@ -27,9 +28,6 @@ export type TodayTotals = {
   otherCleaningMs: number
 }
 
-function clockLabel(iso: string | null): string {
-  return iso ? new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : ''
-}
 
 export default function StatusPanel({
   hotelSlug,
@@ -37,6 +35,8 @@ export default function StatusPanel({
   shift,
   cleaning,
   today,
+  m,
+  intlLocale,
 }: {
   /** Mandant aus der URL — der Weg zurück aufs Board trägt ihn mit. */
   hotelSlug: string
@@ -44,8 +44,13 @@ export default function StatusPanel({
   shift: StatusShift
   cleaning: { roomNumber: string; startedAt: string | null } | null
   today: TodayTotals
+  m: ServiceMessages['status']
+  /** Sprach-Tag für Uhrzeiten („de-DE“). */
+  intlLocale: string
 }) {
   const router = useRouter()
+  const clockLabel = (iso: string | null): string =>
+    iso ? new Date(iso).toLocaleTimeString(intlLocale, { hour: '2-digit', minute: '2-digit' }) : ''
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
@@ -61,14 +66,14 @@ export default function StatusPanel({
   // Der markanteste Zustand gewinnt: Zimmerreinigung > Pause > sonstige
   // Reinigung > Schicht > frei.
   const current = cleaning
-    ? { label: `Du reinigst Zimmer ${cleaning.roomNumber}`, since: cleaning.startedAt, tone: 'bg-positive-pill text-positive-deepest' }
+    ? { kind: 'cleaning', label: format(m.youCleanRoom, { number: cleaning.roomNumber }), since: cleaning.startedAt, tone: 'bg-positive-pill text-positive-deepest' }
     : shift.onBreak
-      ? { label: 'Pause', since: shift.breakStartedAt, tone: 'bg-caution-pill text-caution-deepest' }
+      ? { kind: 'break', label: m.onBreak, since: shift.breakStartedAt, tone: 'bg-caution-pill text-caution-deepest' }
       : shift.onOther
-        ? { label: 'Sonstige Reinigung läuft', since: shift.otherStartedAt, tone: 'bg-attention-pill text-attention-deepest' }
+        ? { kind: 'other', label: m.onOther, since: shift.otherStartedAt, tone: 'bg-attention-pill text-attention-deepest' }
         : shift.onShift
-          ? { label: 'Auf Schicht', since: shift.shiftStartedAt, tone: 'bg-positive-pill text-positive-deepest' }
-          : { label: 'Nicht auf Schicht', since: null, tone: 'bg-surface-muted text-ink-soft' }
+          ? { kind: 'shift', label: m.onShift, since: shift.shiftStartedAt, tone: 'bg-positive-pill text-positive-deepest' }
+          : { kind: 'off', label: m.offShift, since: null, tone: 'bg-surface-muted text-ink-soft' }
 
   return (
     <div className="mx-auto flex w-full max-w-[600px] flex-col gap-4 p-4">
@@ -77,9 +82,9 @@ export default function StatusPanel({
           href={`/h/${hotelSlug}/service`}
           className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink"
         >
-          <ArrowLeft className="h-4 w-4" /> Board
+          <ArrowLeft className="h-4 w-4" /> {m.back}
         </Link>
-        <h1 className="text-xl font-black text-ink">Mein Status</h1>
+        <h1 className="text-xl font-black text-ink">{m.title}</h1>
         <span className="ml-auto text-sm font-semibold text-ink-muted">{displayName}</span>
       </div>
 
@@ -89,26 +94,26 @@ export default function StatusPanel({
           {current.label}
         </span>
         {current.since && (
-          <p className="mt-2 text-sm text-ink-muted">seit {clockLabel(current.since)} Uhr</p>
+          <p className="mt-2 text-sm text-ink-muted">{format(m.since, { time: clockLabel(current.since) })}</p>
         )}
-        {shift.onShift && !cleaning && shift.shiftStartedAt && current.label !== 'Auf Schicht' && (
-          <p className="text-xs text-ink-muted">Schicht seit {clockLabel(shift.shiftStartedAt)} Uhr</p>
+        {shift.onShift && !cleaning && shift.shiftStartedAt && current.kind !== 'shift' && (
+          <p className="text-xs text-ink-muted">{format(m.shiftSince, { time: clockLabel(shift.shiftStartedAt) })}</p>
         )}
       </section>
 
       {/* Tagesbilanz */}
       <section className="grid grid-cols-2 gap-2">
-        <Tile icon={<Timer className="h-4 w-4" />} label="Arbeitszeit heute" value={formatDuration(today.workMs)} />
-        <Tile icon={<Coffee className="h-4 w-4" />} label="Pause heute" value={formatDuration(today.breakMs)} />
+        <Tile icon={<Timer className="h-4 w-4" />} label={m.workToday} value={formatDuration(today.workMs)} />
+        <Tile icon={<Coffee className="h-4 w-4" />} label={m.breakToday} value={formatDuration(today.breakMs)} />
         <Tile
           icon={<Sparkles className="h-4 w-4" />}
-          label="Zimmer heute"
+          label={m.roomsToday}
           value={`${today.cleaningCount}`}
           hint={today.cleaningMs > 0 ? formatDuration(today.cleaningMs) : undefined}
         />
         <Tile
           icon={<Sparkles className="h-4 w-4" />}
-          label="Sonstige Reinigung"
+          label={m.otherCleaning}
           value={formatDuration(today.otherCleaningMs)}
         />
       </section>
@@ -121,11 +126,11 @@ export default function StatusPanel({
 
       {/* Zustandswechsel */}
       <section className="flex flex-col gap-3 rounded-xl border border-edge bg-surface p-4">
-        <h2 className="text-sm font-bold text-ink-soft">Status wechseln</h2>
+        <h2 className="text-sm font-bold text-ink-soft">{m.change}</h2>
 
         {!shift.onShift ? (
           <SlideAction
-            label="Schicht beginnen"
+            label={m.shiftStart}
             variant="success"
             disabled={pending}
             onConfirm={() => run(shiftStartAction)}
@@ -133,39 +138,38 @@ export default function StatusPanel({
         ) : (
           <>
             <SlideAction
-              label={shift.onBreak ? 'Pause beenden' : 'Pause beginnen'}
+              label={shift.onBreak ? m.breakEnd : m.breakStart}
               variant={shift.onBreak ? 'success' : 'warning'}
               disabled={pending}
               onConfirm={() => run(breakToggleAction)}
             />
 
             <SlideAction
-              label={shift.onOther ? 'Sonstige Reinigung beenden' : 'Sonstige Reinigung starten'}
+              label={shift.onOther ? m.otherEnd : m.otherStart}
               variant={shift.onOther ? 'success' : 'neutral'}
               disabled={pending || (shift.onBreak && !shift.onOther)}
               onConfirm={() => run(otherCleaningToggleAction)}
             />
             {shift.onBreak && !shift.onOther && (
               <p className="-mt-1 text-xs font-semibold text-ink-muted">
-                Erst die Pause beenden — Tätigkeiten dürfen sich nicht überschneiden.
+                {m.endBreakFirst}
               </p>
             )}
 
             <SlideAction
-              label="Schicht beenden"
+              label={m.shiftEnd}
               variant="danger"
               disabled={pending || Boolean(cleaning)}
               onConfirm={() => run(shiftEndAction)}
             />
             {cleaning && (
               <p className="-mt-1 text-xs font-semibold text-ink-muted">
-                Zimmer {cleaning.roomNumber} ist noch offen — erst im Board abschließen
-                oder abbrechen.
+                {format(m.roomStillOpen, { number: cleaning.roomNumber })}
               </p>
             )}
             {shift.onOther && !cleaning && (
               <p className="-mt-1 text-xs font-semibold text-ink-muted">
-                Die laufende sonstige Reinigung wird beim Schichtende automatisch beendet.
+                {m.otherEndsWithShift}
               </p>
             )}
           </>
@@ -173,7 +177,7 @@ export default function StatusPanel({
 
         {pending && (
           <p className="flex items-center gap-2 text-sm text-ink-muted">
-            <Loader2 className="h-4 w-4 animate-spin" /> wird gespeichert …
+            <Loader2 className="h-4 w-4 animate-spin" /> {m.saving}
           </p>
         )}
       </section>

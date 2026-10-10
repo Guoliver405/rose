@@ -1,5 +1,7 @@
 import { KeyRound, QrCode } from 'lucide-react'
 import LegalFooter from '@/components/LegalFooter'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /**
  * Mandantenfreie Reinigungs-Anmeldung — bewusst nur ein Hinweis.
@@ -18,6 +20,7 @@ export default async function ServiceGenericLoginPage({
 }) {
   const { error } = await searchParams
   const cardFailed = error === 'auto_login_failed'
+  const m = getMessages(await getLocale()).service
 
   return (
     <div className="flex min-h-screen flex-1 items-center justify-center bg-surface-sunken p-6">
@@ -27,25 +30,20 @@ export default async function ServiceGenericLoginPage({
             <KeyRound className="h-8 w-8 text-attention-strong" />
           </div>
           <h1 className="text-2xl font-black text-ink">
-            Ro<span className="text-blocked">Se</span> Reinigungsboard
+            Ro<span className="text-blocked">Se</span> {m.brand.board}
           </h1>
         </div>
 
         {cardFailed && (
           <div className="rounded-xl border border-critical-tint-edge bg-critical-tint px-4 py-3 text-center text-sm font-bold text-critical-strong">
-            QR-Code ist nicht mehr gültig. Bitte eine neue Zugangskarte beim
-            Management anfordern.
+            {m.login.cardInvalidNoHouse}
           </div>
         )}
 
         <div className="space-y-4 rounded-xl border border-edge bg-surface-elevated px-5 py-6 text-center">
           <QrCode className="mx-auto h-10 w-10 text-ink-muted" />
-          <p className="font-bold text-ink">Bitte die Zugangskarte scannen.</p>
-          <p className="text-sm leading-relaxed text-ink-soft">
-            Für die Anmeldung mit Benutzername und PIN wird die Adresse deines
-            Hotels gebraucht — sie steht auf der Zugangskarte. Das Management
-            kann jederzeit eine neue Karte drucken.
-          </p>
+          <p className="font-bold text-ink">{m.login.scanTitle}</p>
+          <p className="text-sm leading-relaxed text-ink-soft">{m.login.scanText}</p>
         </div>
         <LegalFooter />
       </div>

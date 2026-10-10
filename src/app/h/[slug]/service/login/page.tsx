@@ -8,6 +8,8 @@ import { requireHotelBySlug } from '@/utils/hotel'
 import { getMaidContext } from '@/utils/maid-auth'
 import { maidLoginAction } from './actions'
 import LegalFooter from '@/components/LegalFooter'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 export default async function ServiceLoginPage({
   params,
@@ -34,18 +36,15 @@ export default async function ServiceLoginPage({
   const maid = session ? await getMaidContext() : null
   if (maid?.hotelId === hotel.id && !error) redirect(`/h/${hotel.slug}/service`)
   const deactivated = Boolean(session) && !maid
+  const m = getMessages(await getLocale()).service
 
   const errorMessage =
-    error === 'invalid'
-      ? 'Benutzername oder PIN ist falsch. Der Benutzername ist der kurze Anmeldename von der Zugangskarte (hinter dem @), nicht der angezeigte Name.' :
-    error === 'missing' ? 'Bitte alle Felder ausfüllen.' :
-    error === 'auto_login_failed'
-      ? 'QR-Code ist nicht mehr gültig. Bitte mit Benutzername und PIN anmelden oder eine neue Karte beim Management anfordern.' :
+    error === 'invalid' ? m.login.invalid :
+    error === 'missing' ? m.login.missing :
+    error === 'auto_login_failed' ? m.login.cardInvalid :
     // Beendeter Zugang per QR: dieselbe Aussage wie beim PIN-Login — eine
     // neue Karte hilft hier nicht.
-    error === 'deactivated'
-      ? 'Dieser Zugang ist nicht mehr aktiv. Bitte wende dich an die Rezeption.'
-      : null
+    error === 'deactivated' ? m.login.deactivated : null
 
   return (
     <div className="flex min-h-screen flex-1 items-center justify-center bg-surface-sunken p-6">
@@ -55,7 +54,7 @@ export default async function ServiceLoginPage({
             <KeyRound className="h-8 w-8 text-attention-strong" />
           </div>
           <h1 className="text-2xl font-black text-ink">
-            Ro<span className="text-blocked">Se</span> Reinigungsboard
+            Ro<span className="text-blocked">Se</span> {m.brand.board}
           </h1>
           {/* Hotelname kommt aus dem Slug der URL — früher stand hier das
               erstbeste Hotel der Datenbank (limit(1)), also ein fremder Name. */}
@@ -64,7 +63,7 @@ export default async function ServiceLoginPage({
 
         {deactivated && !errorMessage && (
           <div className="rounded-xl border border-caution-pill-edge bg-caution-tint px-4 py-3 text-center text-sm font-bold text-caution-deepest">
-            Dieser Zugang ist nicht mehr aktiv. Bitte wende dich an die Rezeption.
+            {m.login.deactivated}
           </div>
         )}
 
@@ -79,7 +78,7 @@ export default async function ServiceLoginPage({
 
           <div className="space-y-1.5">
             <label htmlFor="username" className="text-xs font-bold uppercase tracking-wider text-ink-muted">
-              Benutzername
+              {m.login.username}
             </label>
             <div className="relative">
               <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
@@ -90,7 +89,7 @@ export default async function ServiceLoginPage({
                 required
                 autoComplete="username"
                 autoCapitalize="none"
-                placeholder="anmeldename"
+                placeholder={m.login.usernamePlaceholder}
                 aria-describedby="username-hint"
                 className="w-full rounded-xl border border-edge bg-surface-elevated py-4 pl-11 pr-4 text-lg font-bold text-ink placeholder:text-ink-muted focus:border-transparent focus:outline-none focus:ring-2 focus:ring-attention"
               />
@@ -99,14 +98,13 @@ export default async function ServiceLoginPage({
                 kurze Anmeldename, den das Management vergeben hat — er steht
                 auf der Zugangskarte hinter dem @. */}
             <p id="username-hint" className="text-xs leading-relaxed text-ink-muted">
-              Der kurze Anmeldename von deiner Zugangskarte (steht dort hinter
-              dem&nbsp;@), nicht dein angezeigter Name.
+              {m.login.usernameHint}
             </p>
           </div>
 
           <div className="space-y-1.5">
             <label htmlFor="pin" className="text-xs font-bold uppercase tracking-wider text-ink-muted">
-              PIN
+              {m.login.pin}
             </label>
             <div className="relative">
               <KeyRound className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
@@ -127,12 +125,12 @@ export default async function ServiceLoginPage({
             type="submit"
             className="mt-2 w-full rounded-xl bg-attention py-4 text-lg font-black text-attention-foreground shadow-lg transition-all hover:opacity-90 active:scale-95"
           >
-            Anmelden
+            {m.login.submit}
           </button>
         </form>
 
         <p className="text-center text-xs text-ink-muted">
-          Zugangskarte mit QR-Code verloren? Das Management kann jederzeit eine neue drucken.
+          {m.login.lostCard}
         </p>
         <LegalFooter />
       </div>

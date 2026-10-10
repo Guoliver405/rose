@@ -14,6 +14,9 @@ import {
   leaveFloorAction, startCleaningAction,
 } from './actions'
 import { floorSwitchHint, recommendFloor, type DoorChoice, type RecommendFloor } from '@/lib/board'
+import { format, plural, type ServiceMessages } from '@/lib/i18n'
+
+type M = ServiceMessages
 
 export type BoardRoom = {
   id: string
@@ -63,24 +66,27 @@ function floorKey(f: Pick<BoardFloor, 'building' | 'floor'>): string {
   return `${f.building ?? ''}#${f.floor}`
 }
 
-function floorLabel(f: Pick<BoardFloor, 'building' | 'floor'>): string {
-  return `${f.building ? `${f.building} · ` : ''}Etage ${f.floor}`
+function floorLabel(f: Pick<BoardFloor, 'building' | 'floor'>, m: M): string {
+  return f.building
+    ? format(m.common.floorInBuilding, { building: f.building, floor: f.floor })
+    : format(m.common.floor, { floor: f.floor })
 }
 
-function statusLabel(r: BoardRoom): string {
-  if (r.cleaningByMe && r.cleaningFresh) return 'Du reinigst dieses Zimmer'
-  if (r.cleaningByName && r.cleaningFresh) return `${r.cleaningByName} reinigt gerade`
+function statusLabel(r: BoardRoom, m: M): string {
+  const b = m.board
+  if (r.cleaningByMe && r.cleaningFresh) return b.youAreCleaning
+  if (r.cleaningByName && r.cleaningFresh) return format(b.someoneCleaning, { name: r.cleaningByName })
   const parts: string[] = []
-  if (r.priority) parts.push('Priorisiert')
-  if (r.checkoutPending) parts.push('Ausgecheckt')
-  if (r.guestSignal === 'please_clean') parts.push(r.cleanDeferredUntil ? `Reinigung ab ${r.cleanDeferredUntil}` : 'Reinigung gewünscht')
-  else if (r.cleanDeferredUntil) parts.push(`Reinigung ab ${r.cleanDeferredUntil}`)
-  if (r.dndLiftedAt) parts.push(`Nicht stören aufgehoben ${r.dndLiftedAt}`)
-  if (r.stayoverDue) parts.push('Routine fällig')
-  if (r.declinedToday) parts.push('Heute keine Reinigung')
-  if (r.guestSignal === 'dnd') parts.push('Nicht stören')
-  if (r.departureToday && !r.checkoutPending) parts.push('Abreise heute')
-  if (parts.length === 0) parts.push(r.occupied ? 'Belegt' : 'Frei')
+  if (r.priority) parts.push(b.state.priority)
+  if (r.checkoutPending) parts.push(b.state.checkout)
+  if (r.guestSignal === 'please_clean') parts.push(r.cleanDeferredUntil ? format(b.state.from, { time: r.cleanDeferredUntil }) : b.state.wanted)
+  else if (r.cleanDeferredUntil) parts.push(format(b.state.from, { time: r.cleanDeferredUntil }))
+  if (r.dndLiftedAt) parts.push(format(b.state.dndLifted, { time: r.dndLiftedAt }))
+  if (r.stayoverDue) parts.push(b.state.daily)
+  if (r.declinedToday) parts.push(b.state.declined)
+  if (r.guestSignal === 'dnd') parts.push(b.state.dnd)
+  if (r.departureToday && !r.checkoutPending) parts.push(b.state.departureToday)
+  if (parts.length === 0) parts.push(r.occupied ? b.state.occupied : b.state.vacant)
   return parts.join(' · ')
 }
 
@@ -129,6 +135,8 @@ export default function ServiceBoard({
   myCleaningRoomId,
   myFloorKey,
   myCleaningRoomNumber,
+  m,
+  intlLocale,
 }: {
   /** Mandant aus der URL — alle Portal-Links tragen ihn mit. */
   hotelSlug: string
@@ -138,8 +146,12 @@ export default function ServiceBoard({
   /** Etage, auf die ich eingebucht bin (maid_presence) — null = Etagen-Übersicht. */
   myFloorKey: string | null
   myCleaningRoomNumber: string | null
+  m: M
+  /** Sprach-Tag für Uhrzeiten und Pluralformen („de-DE“). */
+  intlLocale: string
 }) {
   const router = useRouter()
+  const b = m.board
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -178,20 +190,20 @@ export default function ServiceBoard({
   }
 
   const shiftStartedLabel = shift.shiftStartedAt
-    ? new Date(shift.shiftStartedAt).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+    ? new Date(shift.shiftStartedAt).toLocaleTimeString(intlLocale, { hour: '2-digit', minute: '2-digit' })
     : null
 
   // Statusleiste: der markanteste Zustand gewinnt (Zimmerreinigung > Pause >
   // sonstige Reinigung > Schicht > frei). Alle Wechsel liegen auf /service/status.
   const status = myCleaningRoomNumber
-    ? { label: `Du reinigst ${myCleaningRoomNumber}`, tone: 'bg-positive-pill text-positive-deepest' }
+    ? { label: format(b.youClean, { number: myCleaningRoomNumber }), tone: 'bg-positive-pill text-positive-deepest' }
     : shift.onBreak
-      ? { label: 'Pause', tone: 'bg-caution-pill text-caution-deepest' }
+      ? { label: b.onBreak, tone: 'bg-caution-pill text-caution-deepest' }
       : shift.onOther
-        ? { label: 'Sonstige Reinigung', tone: 'bg-attention-pill text-attention-deepest' }
+        ? { label: b.onOther, tone: 'bg-attention-pill text-attention-deepest' }
         : shift.onShift
-          ? { label: `Auf Schicht${shiftStartedLabel ? ` seit ${shiftStartedLabel}` : ''}`, tone: 'bg-positive-pill text-positive-deepest' }
-          : { label: 'Nicht auf Schicht', tone: 'bg-surface-muted text-ink-soft' }
+          ? { label: shiftStartedLabel ? format(b.onShiftSince, { time: shiftStartedLabel }) : b.onShift, tone: 'bg-positive-pill text-positive-deepest' }
+          : { label: b.offShift, tone: 'bg-surface-muted text-ink-soft' }
 
   return (
     <div className="flex flex-col gap-4">
@@ -202,11 +214,11 @@ export default function ServiceBoard({
         </span>
 
         <span className="rounded-full bg-surface-muted px-2.5 py-1 text-sm font-semibold text-ink-soft">
-          {openCount} offen
+          {format(b.openCount, { count: openCount })}
         </span>
         {inProgressCount > 0 && (
           <span className="rounded-full bg-positive-pill px-2.5 py-1 text-sm font-semibold text-positive-deepest">
-            {inProgressCount} in Arbeit
+            {format(b.inProgressCount, { count: inProgressCount })}
           </span>
         )}
 
@@ -215,26 +227,25 @@ export default function ServiceBoard({
             /* Reine Warnlampe — das Verlassen der Etage läuft über den
                Slider darunter, nie über einen versehentlichen Tipper. */
             <span
-              title={`Priorisierte Reinigung offen: ${priorityFloors.map(floorLabel).join(', ')}`}
+              title={format(b.priorityOpenTitle, { floors: priorityFloors.map(f => floorLabel(f, m)).join(', ') })}
               className="flex items-center gap-1.5 rounded-lg border border-accent-pill-edge bg-accent-tint px-2.5 py-1.5 text-sm font-bold text-accent-strong"
             >
               <Siren className="blink-icon h-4 w-4" />
-              <span className="hidden sm:inline">Prio offen</span>
+              <span className="hidden sm:inline">{b.priorityOpen}</span>
             </span>
           )}
           <Link
             href={`/h/${hotelSlug}/service/status`}
             className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-bold text-ink-soft hover:border-edge-strong hover:text-ink"
           >
-            <SlidersHorizontal className="h-4 w-4" /> Status
+            <SlidersHorizontal className="h-4 w-4" /> {b.statusLink}
           </Link>
         </div>
       </section>
 
       {!shift.onShift && (
         <p className="rounded-xl border border-attention-tint-edge bg-attention-tint px-4 py-3 text-sm font-semibold text-attention-deepest">
-          Du bist nicht auf Schicht — Reinigungen lassen sich erst nach dem
-          Schichtbeginn starten (Button &bdquo;Status&ldquo;).
+          {b.offShiftHint}
         </p>
       )}
 
@@ -258,6 +269,7 @@ export default function ServiceBoard({
               floor={f}
               pending={pending}
               recommended={floorKey(f) === recommendedKey}
+              m={m}
               onEnter={() => run(() => enterFloorAction(f.building, f.floor))}
             />
           ))}
@@ -268,7 +280,7 @@ export default function ServiceBoard({
           ein Fehltipper soll nicht aus der Etage werfen. */}
       {myFloor && (
         <SlideAction
-          label="Zurück zu allen Etagen"
+          label={b.backToFloors}
           variant="neutral"
           size="compact"
           direction="rtl"
@@ -281,11 +293,11 @@ export default function ServiceBoard({
       {myFloor && (
         <section className="rounded-xl border border-edge bg-surface px-4 py-3">
           <h2 className="mb-2 flex items-center gap-2 text-sm font-bold text-ink-soft">
-            {floorLabel(myFloor)}
+            {floorLabel(myFloor, m)}
             <span className="font-normal text-ink-muted">
               {myFloor.rooms.filter(r => r.active).length > 0
-                ? `${myFloor.rooms.filter(r => r.active).length} offen`
-                : 'nichts offen'}
+                ? format(b.openCount, { count: myFloor.rooms.filter(r => r.active).length })
+                : b.nothingOpen}
             </span>
             {myFloor.maids.length > 1 && (
               <span className="flex items-center gap-1 font-normal text-ink-muted">
@@ -305,13 +317,13 @@ export default function ServiceBoard({
               <p className="flex items-center gap-2 text-sm font-semibold text-ink">
                 <ArrowRightLeft className="h-4 w-4 shrink-0" />
                 {switchHint.reason === 'priority'
-                  ? `Priorisiertes Zimmer auf ${floorLabel(switchFloor)} – wechseln?`
+                  ? format(b.switchPriority, { floor: floorLabel(switchFloor, m) })
                   : switchHint.reason === 'departures'
-                    ? `${toRecommend(switchFloor).openDepartures === 1 ? 'Eine Abreise wartet' : `${toRecommend(switchFloor).openDepartures} Abreisen warten`} auf ${floorLabel(switchFloor)} – der Check-in rückt näher. Wechseln?`
-                    : `Auf ${floorLabel(switchFloor)} ist deutlich mehr zu tun – wechseln?`}
+                    ? plural(intlLocale, toRecommend(switchFloor).openDepartures, b.switchDepartures, { floor: floorLabel(switchFloor, m) })
+                    : format(b.switchLoad, { floor: floorLabel(switchFloor, m) })}
               </p>
               <SlideAction
-                label={`Auf ${floorLabel(switchFloor)} wechseln`}
+                label={format(b.switchTo, { floor: floorLabel(switchFloor, m) })}
                 variant={switchHint.reason === 'priority' ? 'priority' : 'neutral'}
                 size="compact"
                 disabled={pending}
@@ -321,7 +333,7 @@ export default function ServiceBoard({
           )}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {myFloor.rooms.map(room => (
-              <RoomTile key={room.id} room={room} onClick={() => { setError(null); setNotice(null); setSelectedId(room.id) }} />
+              <RoomTile key={room.id} room={room} m={m} onClick={() => { setError(null); setNotice(null); setSelectedId(room.id) }} />
             ))}
           </div>
         </section>
@@ -332,6 +344,7 @@ export default function ServiceBoard({
           key={selected.id}
           room={selected}
           shift={shift}
+          m={m}
           myCleaningRoomId={myCleaningRoomId}
           pending={pending}
           onStart={() => run(() => startCleaningAction(selected.id))}
@@ -352,8 +365,10 @@ function FloorRow({
   pending,
   recommended,
   onEnter,
+  m,
 }: {
   floor: BoardFloor
+  m: M
   pending: boolean
   /** Wegweiser: hier lohnt sich der Weg am meisten (genau eine Etage). */
   recommended: boolean
@@ -377,28 +392,28 @@ function FloorRow({
             : 'border-edge'
       } ${idle ? 'opacity-60' : ''}`}
     >
-      <span className="text-base font-black text-ink">{floorLabel(f)}</span>
+      <span className="text-base font-black text-ink">{floorLabel(f, m)}</span>
 
       {recommended && (
         <span className="flex items-center gap-1 rounded-full bg-action px-2.5 py-0.5 text-xs font-bold text-action-foreground">
           {/* Blinkt nur, wenn die Zeile nicht ohnehin schon wegen Prio blinkt. */}
-          <Target className={`h-3.5 w-3.5 ${prio ? '' : 'blink-icon'}`} /> Als Nächstes
+          <Target className={`h-3.5 w-3.5 ${prio ? '' : 'blink-icon'}`} /> {m.board.next}
         </span>
       )}
 
       <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
         open > 0 ? 'bg-attention-pill text-attention-deepest' : 'bg-positive-pill text-positive-deepest'
       }`}>
-        {open > 0 ? `${open} offen` : 'fertig'}
+        {open > 0 ? format(m.board.openCount, { count: open }) : m.board.done}
       </span>
       {prio && (
         <span className="flex items-center gap-1 rounded-full bg-accent-pill px-2.5 py-0.5 text-xs font-bold text-accent-deep">
-          <Flag className="h-3 w-3" /> Prio
+          <Flag className="h-3 w-3" /> {m.board.prio}
         </span>
       )}
       {inProgress > 0 && (
         <span className="flex items-center gap-1 rounded-full bg-positive-pill px-2.5 py-0.5 text-xs font-semibold text-positive-deepest">
-          <Loader2 className="h-3 w-3 animate-spin" /> {inProgress} in Arbeit
+          <Loader2 className="h-3 w-3 animate-spin" /> {format(m.board.inProgressCount, { count: inProgress })}
         </span>
       )}
 
@@ -414,13 +429,13 @@ function FloorRow({
   )
 }
 
-function RoomTile({ room, onClick }: { room: BoardRoom; onClick: () => void }) {
+function RoomTile({ room, onClick, m }: { room: BoardRoom; onClick: () => void; m: M }) {
   const grayed = !room.active && !room.cleaningFresh
   return (
     <button
       type="button"
       onClick={onClick}
-      title={statusLabel(room)}
+      title={statusLabel(room, m)}
       className={`flex flex-col overflow-hidden rounded-lg border bg-surface-elevated text-left shadow-sm hover:border-edge-strong ${
         room.priority && !room.cleaningFresh ? ROOM_RINGS.priority.className : 'border-edge'
       } ${grayed ? 'opacity-50' : ''}`}
@@ -432,7 +447,7 @@ function RoomTile({ room, onClick }: { room: BoardRoom; onClick: () => void }) {
             {room.number}
           </span>
           {room.occupied && <RoomSymbol id="occupied" size="md" />}
-          {room.departureToday && <RoomSymbol id="departure" size="md" aria-label="Abreise heute" />}
+          {room.departureToday && <RoomSymbol id="departure" size="md" aria-label={m.board.state.departureToday} />}
           {room.guestSignal === 'dnd' && <RoomSymbol id="dnd" size="md" />}
           {room.guestSignal === 'please_clean' && !room.cleanDeferredUntil && <RoomSymbol id="clean" size="md" />}
           {room.cleanDeferredUntil && <RoomSymbol id="deferred" size="md" />}
@@ -444,11 +459,11 @@ function RoomTile({ room, onClick }: { room: BoardRoom; onClick: () => void }) {
         </span>
         <span className="h-4 truncate text-xs font-semibold text-ink-muted">
           {room.cleaningFresh
-            ? (room.cleaningByMe ? 'Du bist hier' : room.cleaningByName)
+            ? (room.cleaningByMe ? m.board.youAreHere : room.cleaningByName)
             : room.cleaningStale
-              ? 'verwaist'
+              ? m.board.stale
               : room.active
-                ? statusLabel(room)
+                ? statusLabel(room, m)
                 : ''}
         </span>
       </span>
@@ -457,9 +472,10 @@ function RoomTile({ room, onClick }: { room: BoardRoom; onClick: () => void }) {
 }
 
 function RoomDialog({
-  room, shift, myCleaningRoomId, pending, error, onStart, onFinish, onAbort, onDoor, onClose,
+  room, shift, myCleaningRoomId, pending, error, onStart, onFinish, onAbort, onDoor, onClose, m,
 }: {
   room: BoardRoom
+  m: M
   shift: ShiftInfo
   myCleaningRoomId: string | null
   pending: boolean
@@ -480,6 +496,7 @@ function RoomDialog({
     !myCleaningRoomId
 
   const startVariant = room.priority ? 'priority' : 'warning'
+  const b = m.board
 
   return (
     <div
@@ -492,22 +509,22 @@ function RoomDialog({
       >
         <div className="mb-1 flex items-start justify-between">
           <div>
-            <h3 className="text-xl font-black text-ink">Zimmer {room.number}</h3>
+            <h3 className="text-xl font-black text-ink">{format(m.common.room, { number: room.number })}</h3>
             <p className="text-xs text-ink-muted">
-              {room.building ? `${room.building} · ` : ''}Etage {room.floor}
+              {floorLabel(room, m)}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
             className="rounded-lg p-1.5 text-ink-muted hover:bg-surface-muted hover:text-ink"
-            aria-label="Schließen"
+            aria-label={m.common.close}
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <p className="mb-4 text-sm font-semibold text-ink-soft">{statusLabel(room)}</p>
+        <p className="mb-4 text-sm font-semibold text-ink-soft">{statusLabel(room, m)}</p>
 
         {error && (
           <p className="mb-4 rounded-lg border border-critical-tint-edge bg-critical-tint px-3 py-2 text-sm font-semibold text-critical-strong">
@@ -519,7 +536,7 @@ function RoomDialog({
           {mineActive && (
             <>
               <SlideAction
-                label="Reinigung abschließen"
+                label={b.finish}
                 variant="success"
                 disabled={pending}
                 onConfirm={onFinish}
@@ -530,27 +547,26 @@ function RoomDialog({
                 onClick={onAbort}
                 className="self-start text-sm font-semibold text-ink-muted underline-offset-2 hover:text-ink hover:underline disabled:opacity-50"
               >
-                Reinigung abbrechen (Zimmer bleibt offen)
+                {b.abort}
               </button>
             </>
           )}
 
           {otherActive && (
             <p className="rounded-lg border border-positive-pill-edge bg-positive-tint px-3 py-2 text-sm font-semibold text-positive-deep">
-              {room.cleaningByName} ist gerade in diesem Zimmer.
+              {format(b.otherInRoom, { name: room.cleaningByName ?? m.common.someone })}
             </p>
           )}
 
           {room.cleaningStale && !room.cleaningFresh && (
             <p className="rounded-lg border border-caution-pill-edge bg-caution-tint px-3 py-2 text-sm font-semibold text-caution-deepest">
-              Die Reinigung von {room.cleaningByName ?? 'einer Kollegin'} wirkt verwaist
-              (Abschluss vergessen?) — das Zimmer gilt wieder als offen.
+              {room.cleaningByName ? format(b.staleNamed, { name: room.cleaningByName }) : b.staleUnnamed}
             </p>
           )}
 
           {canStart && (
             <SlideAction
-              label="Reinigung starten"
+              label={b.start}
               variant={startVariant}
               disabled={pending}
               onConfirm={onStart}
@@ -560,9 +576,9 @@ function RoomDialog({
           {/* Gast an der Tür: kein Start nötig — die Kraft steht davor. */}
           {room.canAnswerAtDoor && shift.onShift && (
             <div className="rounded-lg border border-edge bg-surface px-3 py-2.5">
-              <p className="mb-2 text-sm font-semibold text-ink-soft">Gast ist im Zimmer und möchte gerade nicht?</p>
+              <p className="mb-2 text-sm font-semibold text-ink-soft">{b.door.question}</p>
               <div className="grid grid-cols-3 gap-2">
-                {([['30', 'In 30 Min'], ['60', 'In 1 Std'], ['today', 'Heute nicht']] as [DoorChoice, string][]).map(([choice, label]) => (
+                {([['30', b.door.in30], ['60', b.door.in60], ['today', b.door.today]] as [DoorChoice, string][]).map(([choice, label]) => (
                   <button
                     key={choice}
                     type="button"
@@ -575,45 +591,44 @@ function RoomDialog({
                 ))}
               </div>
               <p className="mt-2 text-xs text-ink-muted">
-                „Später“ nimmt das Zimmer bis dahin für alle vom Board. „Heute nicht“ erledigt es für heute —
-                wünscht der Gast doch noch Reinigung, tippt er im Portal.
+                {b.door.hint}
               </p>
             </div>
           )}
 
           {room.active && !room.cleaningFresh && !shift.onShift && (
             <p className="text-sm font-semibold text-ink-muted">
-              Erst die Schicht beginnen, dann kannst du hier starten.
+              {b.startShiftFirst}
             </p>
           )}
 
           {room.active && !room.cleaningFresh && shift.onShift && myCleaningRoomId && !mineActive && (
             <p className="text-sm font-semibold text-ink-muted">
-              Du bist noch in einem anderen Zimmer — erst dort abschließen oder abbrechen.
+              {b.busyElsewhere}
             </p>
           )}
 
           {room.guestSignal === 'dnd' && (
             <p className="rounded-lg border border-blocked-pill-edge bg-blocked-tint px-3 py-2 text-sm font-semibold text-blocked-deepest">
-              Der Gast möchte nicht gestört werden.
+              {b.guestDnd}
             </p>
           )}
 
           {room.cleanDeferredUntil && !room.cleaningFresh && (
             <p className="rounded-lg border border-edge bg-surface-sunken px-3 py-2 text-sm font-semibold text-ink-soft">
-              Reinigung erst ab {room.cleanDeferredUntil} Uhr — dann steht das Zimmer von selbst wieder offen.
+              {format(b.deferredUntil, { time: room.cleanDeferredUntil })}
             </p>
           )}
 
           {room.declinedToday && !room.cleaningFresh && (
             <p className="rounded-lg border border-edge bg-surface-sunken px-3 py-2 text-sm font-semibold text-ink-soft">
-              Der Gast möchte heute keine Reinigung.
+              {b.guestDeclined}
             </p>
           )}
 
           {!room.active && !room.cleaningFresh && room.guestSignal !== 'dnd' && !room.cleanDeferredUntil && !room.declinedToday && (
             <p className="text-sm font-semibold text-ink-muted">
-              Für dieses Zimmer ist keine Reinigung offen.
+              {b.nothingToDo}
             </p>
           )}
         </div>

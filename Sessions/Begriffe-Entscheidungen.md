@@ -31,7 +31,8 @@ Meldung ans Haus, Aufstellung, außer Betrieb, Zugang beenden.
 | Bereich | Stand |
 |---|---|
 | Gästeportal | **umgesetzt 10.10.2026** — `src/lib/i18n/de/guest.ts`, Wächter-Test `src/lib/i18n/guest.test.ts` |
-| Reinigungsboard, Druckblätter, Mails, Rezeption, Konto, Simulator, Fließtexte | offen |
+| Reinigungsboard | **umgesetzt 10.10.2026** — `src/lib/i18n/de/service.ts`, Wächter-Test `service.test.ts`. Kachel sagt „Tägliche Reinigung“ (ohne „fällig“, sonst abgeschnitten); Karten-Hinweise nennen die Rezeption statt „Management“ |
+| Druckblätter, Mails, Rezeption (inkl. `room-symbols.ts`), Konto, Simulator, Fließtexte | offen |
 
 ## Nächster Schritt
 

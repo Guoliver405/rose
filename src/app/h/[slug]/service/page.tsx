@@ -14,6 +14,8 @@ import RealtimeListener from '@/components/RealtimeListener'
 import { formatHHMM, parseTimeZone } from '@/lib/tz'
 import { maidLogoutAction } from './login/actions'
 import ServiceBoard, { type BoardFloor, type BoardRoom } from './ServiceBoard'
+import { format, getMessages, intlLocale } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 export default async function ServiceBoardPage({
   params,
@@ -26,8 +28,9 @@ export default async function ServiceBoardPage({
   // Abgleich mit dem Hotel aus der URL verhindert, dass eine Kraft unter der
   // Adresse eines anderen Hauses ihr eigenes Board unter falschem Namen sieht.
   // Haus und Sitzung sind voneinander unabhängig → parallel.
-  const [hotel, ctx] = await Promise.all([requireHotelBySlug(slug), getMaidContext()])
+  const [hotel, ctx, locale] = await Promise.all([requireHotelBySlug(slug), getMaidContext(), getLocale()])
   if (!ctx || ctx.hotelId !== hotel.id) redirect(`/h/${hotel.slug}/service/login`)
+  const m = getMessages(locale).service
 
   // Board-Daten über den Admin-Client: die Maid-RLS sieht fremde profiles
   // nicht („Kollegin in Zimmer X" braucht aber deren Namen) und stays gar
@@ -177,7 +180,7 @@ export default async function ServiceBoardPage({
       active: isRoomActive(stateLike, now) || stayoverDue,
       score: roomScore(stateLike, stayoverDue, now, departureW, liftedAt !== null),
       cleaningByName: state?.cleaning_by
-        ? (nameByProfile.get(state.cleaning_by) ?? 'Kollegin')
+        ? (nameByProfile.get(state.cleaning_by) ?? m.common.someone)
         : null,
       cleaningByMe: state?.cleaning_by === ctx.profileId,
       cleaningFresh,
@@ -198,7 +201,7 @@ export default async function ServiceBoardPage({
   for (const p of freshPresence) {
     const key = `${p.building ?? ''}#${p.floor}`
     const list = maidsByFloor.get(key) ?? []
-    list.push(nameByProfile.get(p.profile_id) ?? 'Kollegin')
+    list.push(nameByProfile.get(p.profile_id) ?? m.common.someone)
     maidsByFloor.set(key, list)
   }
 
@@ -238,7 +241,7 @@ export default async function ServiceBoardPage({
           <span className="text-lg font-black text-ink">
             Ro<span className="text-blocked">Se</span>
             <span className="ml-2 hidden text-sm font-semibold text-ink-muted sm:inline">
-              Reinigungsboard · {ctx.hotelName}
+              {format(m.brand.boardOf, { hotel: ctx.hotelName })}
             </span>
           </span>
           <div className="ml-auto flex items-center gap-3">
@@ -250,7 +253,7 @@ export default async function ServiceBoardPage({
                 className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink"
               >
                 <LogOut className="h-4 w-4" />
-                Abmelden
+                {m.common.signOut}
               </button>
             </form>
           </div>
@@ -273,6 +276,8 @@ export default async function ServiceBoardPage({
           myCleaningRoomId={myCleaningRoomId}
           myCleaningRoomNumber={myCleaningRoomNumber}
           myFloorKey={myPresence ? `${myPresence.building ?? ''}#${myPresence.floor}` : null}
+          m={m}
+          intlLocale={intlLocale(locale)}
         />
       </main>
     </div>

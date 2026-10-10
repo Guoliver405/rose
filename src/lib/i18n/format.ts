@@ -23,6 +23,19 @@ export function format(template: string, vars: Vars = {}): string {
   )
 }
 
+/** Pluralformen nach den Regeln der Sprache (`Intl.PluralRules`); `other` ist Pflicht, weil jede Sprache sie kennt. */
+export type PluralForms = Partial<Record<Intl.LDMLPluralRule, string>> & { other: string }
+
+/**
+ * Form zur Anzahl wählen und `{count}` (plus weitere Werte) einsetzen.
+ * Deutsch braucht nur `one`/`other`, Polnisch oder Arabisch mehr — deshalb
+ * entscheidet `Intl`, nicht ein `n === 1` im Code.
+ */
+export function plural(intlLocale: string, count: number, forms: PluralForms, vars: Vars = {}): string {
+  const rule = new Intl.PluralRules(intlLocale).select(count)
+  return format(forms[rule] ?? forms.other, { count, ...vars })
+}
+
 /** Abschnitt eines Textes: schlichter Text oder der Inhalt eines Tags wie `<b>…</b>`. */
 export type RichPart = { text: string; tag?: string }
 
@@ -44,6 +57,18 @@ export function parseRich(template: string, vars: Vars = {}): RichPart[] {
   }
   if (last < text.length) parts.push({ text: text.slice(last) })
   return parts
+}
+
+/**
+ * Alle Texte einer Sprachdatei mit ihrem Schlüsselpfad (`signal.dnd.label`) —
+ * für die Wächter-Tests und für die Liste zum Gegenlesen.
+ */
+export function flattenMessages(obj: object, prefix = ''): [string, string][] {
+  return Object.entries(obj).flatMap(([k, v]) =>
+    typeof v === 'string'
+      ? [[`${prefix}${k}`, v] as [string, string]]
+      : flattenMessages(v as object, `${prefix}${k}.`),
+  )
 }
 
 /**

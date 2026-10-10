@@ -1,20 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { guest } from './de/guest'
 import { buildGuestSheet } from '../guest-guide'
-
-/** Alle Texte eines Sprach-Objekts mit ihrem Schlüsselpfad. */
-function texts(obj: object, prefix = ''): [string, string][] {
-  return Object.entries(obj).flatMap(([k, v]) =>
-    typeof v === 'string' ? [[`${prefix}${k}`, v] as [string, string]] : texts(v, `${prefix}${k}.`),
-  )
-}
+import { flattenMessages } from './format'
 
 /*
  * Die Entscheidungen aus `Sessions/Begriffe-Entscheidungen.md` als Wächter —
  * sie sollen nicht beim nächsten Feinschliff still zurückrutschen.
  */
 describe('Gästeportal — Begriffe und Schreibweise (deutsch)', () => {
-  const all = texts(guest)
+  const all = flattenMessages(guest)
 
   it('siezt den Gast (Entscheidung 1)', () => {
     const du = all.filter(([, t]) => /\b(du|dein\w*|dich|dir)\b/i.test(t))

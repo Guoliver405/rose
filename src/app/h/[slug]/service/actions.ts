@@ -14,8 +14,15 @@ import {
   DOOR_DEFER_MINUTES, canAnswerAtDoor, clampStaleMinutes, doorDeferUntil, isCleanDeferred,
   isCleaningFresh, isRoomActive, isStayoverDue, parseStayoverPolicy, todayStartIso, type DoorChoice,
 } from '@/lib/board'
+import { format, getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 type ActionResult = { error?: string }
+
+/** Meldungen des Reinigungsboards in der Sprache der Anfrage. */
+async function messages() {
+  return getMessages(await getLocale()).service.errors
+}
 
 /**
  * Board-Pfad des eigenen Mandanten. Die Revalidierung muss den Slug tragen —
@@ -64,7 +71,7 @@ async function logStitch(
     kind,
     session_id: sessionId,
   })
-  if (error) return { error: `Logging fehlgeschlagen: ${error.message}` }
+  if (error) return { error: format((await messages()).saveFailed, { message: error.message }) }
   return {}
 }
 
@@ -124,12 +131,13 @@ async function loadRoutine(
 // ── Schicht & Pause ──────────────────────────────────────────────────────────
 
 export async function shiftStartAction(): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getMaidContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!ctx) return { error: e.notSignedIn }
   const admin = createAdminClient()
 
   const shift = await loadShiftState(admin, ctx.profileId)
-  if (shift.onShift) return { error: 'Schicht läuft bereits.' }
+  if (shift.onShift) return { error: e.shiftRunning }
 
   // Team-Modus: Alles, was älter als 24 h ist, verliert jetzt seine Person
   // (Stale-Reaper, vergessene Schichtenden, Rezeptions-Stiche). Kein Cron —
@@ -143,17 +151,18 @@ export async function shiftStartAction(): Promise<ActionResult> {
 }
 
 export async function shiftEndAction(): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getMaidContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!ctx) return { error: e.notSignedIn }
   const admin = createAdminClient()
 
   const shift = await loadShiftState(admin, ctx.profileId)
-  if (!shift.onShift) return { error: 'Keine laufende Schicht.' }
+  if (!shift.onShift) return { error: e.noShift }
 
   // Slider-Rahmen: laufende Zimmer-Reinigung blockiert das Schichtende.
   const cleaningRoom = await findMyCleaningRoom(admin, ctx)
   if (cleaningRoom) {
-    return { error: 'Erst die laufende Reinigung abschließen (oder abbrechen).' }
+    return { error: e.finishCleaningFirst }
   }
 
   // Offene Pause bzw. sonstige Reinigung implizit schließen — ein
@@ -193,13 +202,14 @@ export async function enterFloorAction(
   building: string | null,
   floor: number,
 ): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getMaidContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
-  if (!Number.isInteger(floor)) return { error: 'Ungültige Etage.' }
+  if (!ctx) return { error: e.notSignedIn }
+  if (!Number.isInteger(floor)) return { error: e.invalidFloor }
   const admin = createAdminClient()
 
   const shift = await loadShiftState(admin, ctx.profileId)
-  if (!shift.onShift) return { error: 'Erst die Schicht beginnen.' }
+  if (!shift.onShift) return { error: e.startShiftFirst }
 
   const { error } = await admin.from('maid_presence').upsert(
     {
@@ -211,7 +221,7 @@ export async function enterFloorAction(
     },
     { onConflict: 'profile_id' },
   )
-  if (error) return { error: `Einbuchen fehlgeschlagen: ${error.message}` }
+  if (error) return { error: format(e.enterFloorFailed, { message: error.message }) }
 
   revalidatePath(boardPath(ctx))
   revalidatePath('/admin', 'layout')
@@ -220,8 +230,9 @@ export async function enterFloorAction(
 
 /** Etage verlassen (Zurück zur Etagen-Übersicht). */
 export async function leaveFloorAction(): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getMaidContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!ctx) return { error: e.notSignedIn }
   const admin = createAdminClient()
 
   await admin.from('maid_presence').delete().eq('profile_id', ctx.profileId)
@@ -232,12 +243,13 @@ export async function leaveFloorAction(): Promise<ActionResult> {
 }
 
 export async function breakToggleAction(): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getMaidContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!ctx) return { error: e.notSignedIn }
   const admin = createAdminClient()
 
   const shift = await loadShiftState(admin, ctx.profileId)
-  if (!shift.onShift) return { error: 'Pause nur während der Schicht.' }
+  if (!shift.onShift) return { error: e.breakOnlyOnShift }
 
   // Tätigkeiten dürfen sich nicht überlappen, sonst zählt die Auswertung
   // dieselbe Minute doppelt: Pausenbeginn beendet die sonstige Reinigung.
@@ -257,14 +269,15 @@ export async function breakToggleAction(): Promise<ActionResult> {
  * einzelner Stich ohne Ende — dadurch war die Dauer nicht auswertbar.
  */
 export async function otherCleaningToggleAction(): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getMaidContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!ctx) return { error: e.notSignedIn }
   const admin = createAdminClient()
 
   const shift = await loadShiftState(admin, ctx.profileId)
-  if (!shift.onShift) return { error: 'Nur während der Schicht.' }
+  if (!shift.onShift) return { error: e.onlyOnShift }
   if (!shift.onOther && shift.onBreak) {
-    return { error: 'Erst die Pause beenden.' }
+    return { error: e.endBreakFirst }
   }
 
   const res = await logStitch(admin, ctx, shift.onOther ? 'other_end' : 'other_start', null, shift.sessionId)
@@ -276,18 +289,19 @@ export async function otherCleaningToggleAction(): Promise<ActionResult> {
 // ── Zimmer-Reinigung ─────────────────────────────────────────────────────────
 
 export async function startCleaningAction(roomId: string): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getMaidContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!ctx) return { error: e.notSignedIn }
   const admin = createAdminClient()
 
   const shift = await loadShiftState(admin, ctx.profileId)
-  if (!shift.onShift) return { error: 'Erst die Schicht beginnen.' }
+  if (!shift.onShift) return { error: e.startShiftFirst }
 
   // Slider-Logik: nach „Reinigung starten" ist nur „abschließen" erlaubt —
   // kein zweites Zimmer parallel.
   const alreadyCleaning = await findMyCleaningRoom(admin, ctx)
   if (alreadyCleaning) {
-    return { error: 'Es läuft bereits eine Reinigung — erst abschließen oder abbrechen.' }
+    return { error: e.alreadyCleaning }
   }
 
   const { data: state } = await admin
@@ -295,23 +309,23 @@ export async function startCleaningAction(roomId: string): Promise<ActionResult>
     .select('room_id, hotel_id, guest_signal, clean_not_before, clean_declined_on, checkout_pending, priority, cleaning_by, cleaning_started_at')
     .eq('room_id', roomId)
     .maybeSingle()
-  if (!state || state.hotel_id !== ctx.hotelId) return { error: 'Zimmer nicht gefunden.' }
-  if (state.guest_signal === 'dnd') return { error: 'Der Gast möchte nicht gestört werden (DND).' }
+  if (!state || state.hotel_id !== ctx.hotelId) return { error: e.roomNotFound }
+  if (state.guest_signal === 'dnd') return { error: e.guestDnd }
   const tz = parseTimeZone(ctx.policies)
   if (isCleanDeferred(state)) {
-    return { error: `Der Gast möchte die Reinigung erst ab ${formatHHMM(new Date(state.clean_not_before as string), tz)} Uhr.` }
+    return { error: format(e.guestDeferred, { time: formatHHMM(new Date(state.clean_not_before as string), tz) }) }
   }
 
   // Neben den persistenten Signalen zählt auch die abgeleitete
   // Stayover-Routine als „offen" (gleiche Logik wie im Board-Loader).
   if (!isRoomActive(state)) {
     const { stayoverDue } = await loadRoutine(admin, ctx, roomId, state)
-    if (!stayoverDue) return { error: 'Für dieses Zimmer ist keine Reinigung offen.' }
+    if (!stayoverDue) return { error: e.nothingOpen }
   }
 
   const staleMinutes = clampStaleMinutes(ctx.policies.cleaningStaleMinutes)
   if (state.cleaning_by && isCleaningFresh(state, staleMinutes)) {
-    return { error: 'Zimmer wird bereits von einer Kollegin gereinigt.' }
+    return { error: e.takenByOther }
   }
   // Stale Besitzerin: erst den vergessenen Abschluss festschreiben
   // (clean_aborted, Quelle system), sonst verschwände ihr Start spurlos unter
@@ -337,7 +351,7 @@ export async function startCleaningAction(roomId: string): Promise<ActionResult>
   ).select('room_id')
   if (claimErr) return { error: claimErr.message }
   if (!claimed || claimed.length === 0) {
-    return { error: 'Zimmer wurde gerade von einer Kollegin übernommen.' }
+    return { error: e.justTaken }
   }
 
   // Zimmerreinigung beendet eine laufende sonstige Reinigung (keine
@@ -356,8 +370,9 @@ export async function startCleaningAction(roomId: string): Promise<ActionResult>
 }
 
 export async function finishCleaningAction(roomId: string): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getMaidContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!ctx) return { error: e.notSignedIn }
   const admin = createAdminClient()
 
   const [{ data: state }, shift] = await Promise.all([
@@ -368,10 +383,10 @@ export async function finishCleaningAction(roomId: string): Promise<ActionResult
       .maybeSingle(),
     loadShiftState(admin, ctx.profileId),
   ])
-  if (!state || state.hotel_id !== ctx.hotelId) return { error: 'Zimmer nicht gefunden.' }
+  if (!state || state.hotel_id !== ctx.hotelId) return { error: e.roomNotFound }
   // Auch stale Reinigungen dürfen von der Besitzerin regulär abgeschlossen werden.
   if (state.cleaning_by !== ctx.profileId) {
-    return { error: 'Diese Reinigung läuft nicht auf deinen Namen.' }
+    return { error: e.notYours }
   }
 
   const { error } = await admin
@@ -399,8 +414,9 @@ export async function finishCleaningAction(roomId: string): Promise<ActionResult
 
 /** Reinigung abbrechen: Zimmer fällt zurück auf offen, nichts wird erledigt. */
 export async function abortCleaningAction(roomId: string): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getMaidContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!ctx) return { error: e.notSignedIn }
   const admin = createAdminClient()
 
   const [{ data: state }, shift] = await Promise.all([
@@ -411,9 +427,9 @@ export async function abortCleaningAction(roomId: string): Promise<ActionResult>
       .maybeSingle(),
     loadShiftState(admin, ctx.profileId),
   ])
-  if (!state || state.hotel_id !== ctx.hotelId) return { error: 'Zimmer nicht gefunden.' }
+  if (!state || state.hotel_id !== ctx.hotelId) return { error: e.roomNotFound }
   if (state.cleaning_by !== ctx.profileId) {
-    return { error: 'Diese Reinigung läuft nicht auf deinen Namen.' }
+    return { error: e.notYours }
   }
 
   const { error } = await admin
@@ -443,22 +459,23 @@ export async function abortCleaningAction(roomId: string): Promise<ActionResult>
  * später doch „Zimmer reinigen", gilt das wieder.
  */
 export async function guestAtDoorAction(roomId: string, choice: DoorChoice): Promise<ActionResult> {
+  const e = await messages()
   const ctx = await getMaidContext()
-  if (!ctx) return { error: 'Nicht angemeldet.' }
+  if (!ctx) return { error: e.notSignedIn }
   if (choice !== 'today' && !DOOR_DEFER_MINUTES.includes(Number(choice) as 30 | 60)) {
-    return { error: 'Unbekannte Auswahl.' }
+    return { error: e.unknownChoice }
   }
   const admin = createAdminClient()
 
   const shift = await loadShiftState(admin, ctx.profileId)
-  if (!shift.onShift) return { error: 'Erst die Schicht beginnen.' }
+  if (!shift.onShift) return { error: e.startShiftFirst }
 
   const { data: state } = await admin
     .from('room_states')
     .select('room_id, hotel_id, guest_signal, clean_not_before, clean_declined_on, checkout_pending, priority, cleaning_by, cleaning_started_at')
     .eq('room_id', roomId)
     .maybeSingle()
-  if (!state || state.hotel_id !== ctx.hotelId) return { error: 'Zimmer nicht gefunden.' }
+  if (!state || state.hotel_id !== ctx.hotelId) return { error: e.roomNotFound }
 
   const staleMinutes = clampStaleMinutes(ctx.policies.cleaningStaleMinutes)
   const { occupied, stayoverDue } = await loadRoutine(admin, ctx, roomId, state)
@@ -470,7 +487,7 @@ export async function guestAtDoorAction(roomId: string, choice: DoorChoice): Pro
     deferred: isCleanDeferred(state),
     cleaningFresh: isCleaningFresh(state, staleMinutes),
   })
-  if (!allowed) return { error: 'Für dieses Zimmer ist gerade keine Reinigung offen.' }
+  if (!allowed) return { error: e.nothingOpenNow }
 
   if (choice === 'today') {
     const { error } = await admin

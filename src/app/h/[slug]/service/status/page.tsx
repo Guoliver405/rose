@@ -8,6 +8,8 @@ import { clampStaleMinutes, isCleaningFresh } from '@/lib/board'
 import { computeWorkStats, type StaffLogRow } from '@/lib/worklog'
 import { parseTimeZone, zonedDateKey, zonedDayRange } from '@/lib/tz'
 import StatusPanel from './StatusPanel'
+import { getMessages, intlLocale } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /**
  * „Mein Status" — alle Zustandswechsel der Reinigungskraft auf einer eigenen
@@ -66,6 +68,8 @@ export default async function ServiceStatusPage({
     : null
 
   const team = parseStaffTracking(ctx.policies) === 'team'
+  const locale = await getLocale()
+  const m = getMessages(locale).service.status
 
   return (
     <>
@@ -88,14 +92,15 @@ export default async function ServiceStatusPage({
         cleaningCount: stats.cleaningCount,
         otherCleaningMs: stats.otherCleaningMs,
       }}
+      m={m}
+      intlLocale={intlLocale(locale)}
     />
     {/* Team-Modus: Die Tagesbilanz liest die eigenen Stiche — nach dem
         Schichtende gehören sie niemandem mehr. Das soll niemand für einen
         Fehler halten. */}
     {team && (
       <p className="mt-3 rounded-xl border border-edge bg-surface-sunken px-4 py-3 text-xs text-ink-muted">
-        Dieses Haus wertet die Reinigung nur als Team aus. Deine Tagesbilanz siehst du während der
-        Schicht; mit dem Schichtende werden deine Stiche ohne deinen Namen gespeichert.
+        {m.teamMode}
       </p>
     )}
     </>
