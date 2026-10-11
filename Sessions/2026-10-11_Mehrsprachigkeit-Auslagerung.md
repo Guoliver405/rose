@@ -86,10 +86,30 @@ Glück“). Stand am Ende: 477 Unit-Tests grün.
 
 ## 7. Wiederaufnahme
 
-Die Oberfläche steht vollständig in Sprachdateien (Stand Abschnitt 8). Nächster Schritt: **Sprachwahl des
-Gastes** in `getLocale()` (`src/utils/locale.ts`) und **erste Übersetzung** – Englisch, Gästeportal zuerst
-(`en/guest.ts` mit `satisfies Shape<GuestMessages>`, in `MESSAGES` eintragen). Vorher `npm run verify`.
-Lokale Prüfung lief mit dem Testkonto `zz-stripe-test@rose.local` (Haus „stripe-testhaus“).
+**Stand:** Die ganze Oberfläche steht in deutschen Sprachdateien (`src/lib/i18n/de/**`), die erklärenden Texte
+sind gegengelesen (Abschnitt 9), alles gepusht. Übersetzt ist noch nichts – die einzige Ausnahme sind die
+gedruckten Blätter (`src/lib/i18n/{en,es,fr}/sheet.ts`), die schon vorher viersprachig waren.
+
+**Nächster Schritt – frische Sitzung: erste Übersetzung.** Vorschlag zum Einstieg, mit dem User zu klären:
+
+1. **Reihenfolge:** Gästeportal auf Englisch zuerst (`en/guest.ts` mit `satisfies Shape<GuestMessages>`,
+   Eintrag in `MESSAGES` und `LOCALES` in `src/lib/i18n/index.ts`, `intlLocale` ergänzen). Es ist die Fläche
+   mit den meisten Sprachen und braucht als einzige eine Sprachwahl je Gast.
+2. **Sprachwahl des Gastes** in `getLocale()` (`src/utils/locale.ts`): eigene Wahl im Portal (Cookie) vor
+   `Accept-Language`, unabhängig von der Sprache des Hauses. Offen: Wo steht der Umschalter (Kopf des Portals?),
+   gilt er auch für Anmeldeseite und Hinweisseiten, bleibt er nach dem Check-out erhalten?
+3. **Zusammenspiel mit den Blättern:** Die Legende des Check-in-Blatts liest die Knopf-Namen aus der Portal-
+   Sprache (`portalLocale` in `sheets.ts`, heute fest Deutsch). Sobald das Portal Englisch kann, muss
+   entschieden werden, welche Portal-Sprache die Legende zeigt.
+4. **Wer übersetzt, wer prüft:** Claude entwirft, der User (oder Muttersprachler) liest gegen. Liste zum
+   Gegenlesen aus `flattenMessages` erzeugen (de neben en).
+5. Danach Reinigungsboard (Kräfte sprechen oft andere Sprachen), dann Verwaltung; Rechtstexte erst nach der
+   anwaltlichen Prüfung der deutschen Fassung.
+
+**Arbeitsweise:** pro Schritt lokal committen, am Ende der Runde einmal pushen – vorher `npm run verify` **und**
+`npm run test:integration` (Integrationstests prüfen teils Meldungstexte). Wächter-Tests in
+`src/lib/i18n/*.test.ts` gelten für Deutsch; für weitere Sprachen eigene Regeln (Typografie der Sprache)
+festlegen. Lokale Prüfung mit dem Testkonto `zz-stripe-test@rose.local` (Haus „stripe-testhaus“).
 
 ## 8. Nachtrag 11.10.: Fließtexte
 

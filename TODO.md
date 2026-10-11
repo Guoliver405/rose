@@ -304,8 +304,9 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       Rechtstexte (`de/legal/`, Entscheidung des Users: trotz ausstehender Prüfung auslagern,
       nur Deutsch); Zimmer-Symbole lesen ihre Worte aus der Sprache der Anfrage.
       Protokoll: [2026-10-11_Mehrsprachigkeit-Auslagerung.md](Sessions/2026-10-11_Mehrsprachigkeit-Auslagerung.md).
-      **Nächste Session:** Sprachwahl des Gastes in `getLocale()` und erste Übersetzung
-      (Englisch) des Gästeportals; Liste zum Gegenlesen aus den Sprachdateien (`flattenMessages`).
+      **11.10. abends: erklärende Texte gemeinsam gegengelesen** (29 Blöcke, Protokoll Abschnitt 9).
+      **Nächste Session (frisch):** Sprachwahl des Gastes in `getLocale()` und erste Übersetzung
+      (Englisch) des Gästeportals – Einstieg und offene Fragen im Protokoll, Abschnitt 7.
       Rest: Rollennamen in der Einladungs-Mail, Stripe-`locale`, `service-templates.json`.
 - [ ] **Thailändisch als Belastungsprobe** — probehalber implementieren, um zu
       sehen, wie weit das Sprach-System trägt: nicht-lateinische Schrift,

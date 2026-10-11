@@ -43,4 +43,4 @@ Meldung ans Haus, Aufstellung, außer Betrieb, Zugang beenden.
 
 ## Nächster Schritt
 
-Alle 13 Punkte entschieden (10.10.2026). **Schritt 2:** Texte aus dem Code in eine Sprachdatei auslagern (Schlüssel je Text, zerstückelte Sätze mit Platzhaltern zusammenführen) und dabei diese Entscheidungen einarbeiten. **Schritt 3:** daraus die vollständige Liste zum Gegenlesen erzeugen; lange Fließtexte (Landing, Rechtstexte, Hilfe, Lotsen, Mails) als ganze Abschnitte.
+Alle 13 Punkte entschieden (10.10.2026). **Schritt 2 erledigt (10./11.10.):** alle Texte in Sprachdateien, Entscheidungen eingearbeitet. **Schritt 3 erledigt (11.10.):** statt einer vollständigen Liste wurden die erklärenden Texte gemeinsam gegengelesen (Protokoll [2026-10-11_Mehrsprachigkeit-Auslagerung.md](2026-10-11_Mehrsprachigkeit-Auslagerung.md), Abschnitt 9); dabei zusätzlich „Abschluss vergessen?“ statt „verwaist“, „entfallen“ statt „nicht erbracht“ gegenüber dem Gast, „Nützliche Links“, Aushang neutral „im Zimmer“. **Nächster Schritt:** erste Übersetzung (Gästeportal, Englisch).
