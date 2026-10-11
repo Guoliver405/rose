@@ -124,3 +124,28 @@ je ein Helfer, danach gemeinsam geprüft.
 Geprüft: `npm run verify` (494 Unit-Tests), Build, lokal im Browser Hub, Leiste, Lotsen-Karte,
 Einrichtungs-Band, Nachbau Reinigung, Themenseiten (Haus und Konto), Landing samt Tagesbild, alle vier
 Rechtsseiten (HTTP 200, Gliederung).
+
+## 9. Nachtrag 11.10. abends: Lese-Runde der erklärenden Texte
+
+Vor der ersten Übersetzung gemeinsam mit dem User gegengelesen – nicht alle Texte, sondern die, die erklären
+oder eine Einstellung verdeutlichen, in 29 Blöcken: Gästeportal, Check-in-Blatt und Zugangs-E-Mail (de, en,
+es, fr), Haus & Regeln, Gästezugang, Lösch-Dialoge, Service-Baukasten, Zimmer-Dialog, Personal, Auswertung,
+Reinigungsboard, alle Hilfe-Themen und alle Lotsen. Vorgehen: Claude zeigt nur auffällige Stellen mit
+Vorschlag, der User entscheidet je Block.
+
+- **Sachliche Fehler korrigiert:** Rechnungen bleiben bei Kontolöschung erhalten (der Löschtext sagte das
+  Gegenteil); Aushänge erst nach dem Check-out der laufenden Gäste abnehmen (vorher sofort); „Nur als Team“
+  ist zurückstellbar, nur die Anonymisierung nicht; Spam-Hinweis steht nicht auf dem Check-in-Blatt; kein
+  Aus- und Einchecken als Ausweg bei gesperrter PIN; „Einladungslink anzeigen“ nur nach gescheiterter
+  Zustellung; Manager ernennen keine Manager; „ab der zweiten Nacht“ → „ab dem Tag nach der Anreise“.
+- **Begriffe nachgezogen:** „Abschluss vergessen?“ statt „verwaist“, „entfallen“/„offen“ im Gästeportal,
+  „Nützliche Links“, „Trinkgeld fürs Reinigungsteam“, „Stattdessen …“ in Lösch-Dialogen, Themen „Anfragen“
+  und „Service-Baukasten“, Aushang neutral „im Zimmer“ (Aufsteller ist in Deutschland typisch, nicht die
+  Wand), keine Entwickler-Sprache (UTC, Cookie, Bounce, Bezug, Schicht-Schlüssel, ereignisgetrieben).
+- **Wächter:** „-Mail“ in Zusammensetzungen wird jetzt erkannt; ein Integrationstest prüfte den alten Wortlaut
+  der IP-Sperre (deshalb waren mehrere CI-Läufe rot – seither vor dem Push auch `test:integration`).
+- **Zwei Funktionen aus der Runde heraus** (je eigene Sitzung, gemergt): Anmelde-Adresse selbst ändern
+  ([2026-10-11_Email-aendern.md](2026-10-11_Email-aendern.md)), Schlussrechnung beim Löschen des Kontos
+  ([2026-10-11_Schlussrechnung-Kontoloeschung.md](2026-10-11_Schlussrechnung-Kontoloeschung.md)).
+
+**Nächster Schritt** unverändert: Sprachwahl des Gastes und erste Übersetzung des Gästeportals (Abschnitt 7).

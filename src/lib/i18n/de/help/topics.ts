@@ -371,7 +371,7 @@ export const topics = {
         eintraege: [
           {
             frage: 'Welches Verfahren passt zu uns?',
-            antwort: 'Fester QR + PIN, wenn Sie in den Zimmern einen Aushang aufstellen oder anbringen können und zwei Faktoren wollen (Code im Zimmer, PIN vom Tresen). Individueller Zugang, wenn Aushänge nicht möglich oder nicht gewünscht sind – bequemer für den Gast, aber wer das Blatt sieht, ist drin. Die Seite stellt beides ausführlich gegenüber.',
+            antwort: 'Fester QR + PIN, wenn Sie in den Zimmern einen Aushang aufstellen oder anbringen können und zwei Faktoren wollen (Code im Zimmer, PIN vom Tresen). Individueller Zugang, wenn Aushänge nicht möglich oder nicht gewünscht sind – bequemer für den Gast, aber wer das Blatt sieht, hat Zugang. Die Seite stellt beides ausführlich gegenüber.',
           },
           {
             frage: 'Was passiert mit laufenden Aufenthalten, wenn ich wechsle?',
@@ -794,7 +794,7 @@ export const topics = {
         eintraege: [
           {
             frage: 'Wie kommt der Gast ins Portal?',
-            antwort: 'Im PIN-Verfahren auf zwei gleichwertigen Wegen: Zimmer-QR scannen und PIN eingeben, oder die Adresse des Hauses aufrufen und Zimmernummer plus PIN eingeben (beides steht auf dem Check-in-Blatt). Beim individuellen Zugang öffnet er seinen QR-Code bzw. Link und ist ohne PIN drin. Danach bleibt er auf seinem Gerät angemeldet.',
+            antwort: 'Im PIN-Verfahren auf zwei gleichwertigen Wegen: Zimmer-QR scannen und PIN eingeben, oder die Adresse des Hauses aufrufen und Zimmernummer plus PIN eingeben (beides steht auf dem Check-in-Blatt). Beim individuellen Zugang öffnet er seinen QR-Code bzw. Link und ist ohne PIN angemeldet. Danach bleibt er auf seinem Gerät angemeldet.',
           },
           {
             frage: 'Der Gast hat sich ausgesperrt.',
@@ -826,7 +826,7 @@ export const topics = {
           },
           {
             frage: 'Was weiß RoSe über den Gast?',
-            antwort: 'Nichts. Ein Aufenthalt ist Zimmer, Zeitraum, PIN oder Link – kein Name, keine Adresse. Eine für die Zugangs-E-Mail eingegebene Adresse wird nicht gespeichert. Mit dem Check-out erlöschen PIN, Link und Cookie.',
+            antwort: 'Nichts. Ein Aufenthalt ist Zimmer, Zeitraum, PIN oder Link – kein Name, keine Adresse. Eine für die Zugangs-E-Mail eingegebene Adresse wird nicht gespeichert. Mit dem Check-out erlöschen PIN, Link und Anmeldung.',
           },
         ],
       },

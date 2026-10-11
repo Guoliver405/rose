@@ -105,7 +105,7 @@ export const lotsen = {
     },
     'gastzugang.wahl': {
       title: 'Zwei Wege ins Gästeportal',
-      body: 'Beim festen Zimmer-QR steht ein einmal gedruckter Code im Zimmer, und jeder Aufenthalt bekommt seine eigene PIN – zwei Faktoren. Beim individuellen Zugang entsteht je Aufenthalt ein eigener Link ohne PIN, der mit dem Check-out erlischt: bequemer, aber wer das Blatt sieht, ist drin.',
+      body: 'Beim festen Zimmer-QR steht ein einmal gedruckter Code im Zimmer, und jeder Aufenthalt bekommt seine eigene PIN – zwei Faktoren. Beim individuellen Zugang entsteht je Aufenthalt ein eigener Link ohne PIN, der mit dem Check-out erlischt: bequemer, aber wer das Blatt sieht, hat Zugang.',
     },
     'gastzugang.speichern': {
       title: 'Ein Wechsel ist folgenlos für laufende Aufenthalte',
@@ -158,7 +158,7 @@ export const lotsen = {
       tun: 'Offene Anfragen schließt der Check-out als „nicht erbracht“ – was tatsächlich erbracht wurde, haken Sie vorher im selben Kasten ab. Später kommen Sie über den Verlauf des Zimmers wieder an die Aufstellung: Der Eintrag „Check-out“ trägt den Link.',
     },
     'anfragen.zaehler': {
-      title: 'Alles, was Gäste bestellt haben',
+      title: 'Alles, was Gäste anfragen',
       body: 'Hier laufen die Anfragen aus dem Gästeportal auf. Dieselbe Zahl steht als Abzeichen an „Anfragen“ in der Navigation – sie blinkt rot, sobald mindestens eine Anfrage einen dringenden Service betrifft, und die betroffene Zimmer-Kachel bekommt eine Glocke.',
     },
     'anfragen.liste': {
@@ -167,7 +167,7 @@ export const lotsen = {
     },
     'anfragen.erledigt': {
       title: 'Der Haken entscheidet über den Betrag',
-      body: 'Eine Anfrage ist offen oder abgeschlossen; es gibt kein „in Bearbeitung“ und keine Zuweisung. Beim Abschluss zählt der Unterschied: „Erledigt“ heißt erbracht – und erscheint mit Betrag auf der Aufstellung beim Check-out. Was bis dahin offen bleibt, schließt RoSe als „nicht erbracht“: gekennzeichnet, aber nicht berechnet. Ausgenommen sind Meldungen ans Haus: Ein Defekt bleibt offen, bis ihn jemand abhakt – auch über den Check-out hinaus, und der nächste Check-in warnt davor.',
+      body: 'Eine Anfrage ist offen oder abgeschlossen; es gibt kein „in Bearbeitung“ und keine Zuweisung. Beim Abschluss zählt der Unterschied: „Erledigt“ heißt erbracht – und erscheint mit Betrag auf der Aufstellung beim Check-out. Was bis dahin offen bleibt, schließt RoSe als „nicht erbracht“: gekennzeichnet, aber nicht in der Summe. Ausgenommen sind Meldungen ans Haus: Ein Defekt bleibt offen, bis ihn jemand abhakt – auch über den Check-out hinaus, und der nächste Check-in warnt davor.',
       tun: 'Haken Sie eine erledigte Anfrage gleich ab – sonst fehlt sie am Ende in der Summe.',
     },
     'anfragen.verlauf': {
@@ -208,11 +208,11 @@ export const lotsen = {
     },
     'regeln.pin': {
       title: 'PIN-Länge und vergessene Abschlüsse',
-      body: 'Die PIN-Länge gilt für neu erzeugte Gast-PINs; laufende Aufenthalte behalten ihre. Der zweite Wert räumt vergessene Abschlüsse auf: Wird eine gestartete Reinigung nicht abgeschlossen, geht das Zimmer nach dieser Zeit von selbst wieder auf offen – und der Verlauf hält fest, dass das Zeitlimit gerissen ist.',
+      body: 'Die PIN-Länge gilt für neu erzeugte Gast-PINs; laufende Aufenthalte behalten ihre. Der zweite Wert räumt vergessene Abschlüsse auf: Wird eine gestartete Reinigung nicht abgeschlossen, geht das Zimmer nach dieser Zeit von selbst wieder auf offen – und der Verlauf hält fest, dass das Zeitlimit überschritten wurde.',
     },
     'regeln.adresse': {
       title: 'Die Adresse Ihres Hauses',
-      body: 'Unter dieser Adresse melden sich Gäste und Reinigungskräfte an. Sie steht in beiden Anmeldungen, weil Zimmernummern und Benutzernamen nur innerhalb des Hauses eindeutig sind. Gedruckte QR-Codes bleiben bei einer Änderung gültig – nur abgetippte Adressen auf älteren Check-in-Blätter stimmen dann nicht mehr.',
+      body: 'Unter dieser Adresse melden sich Gäste und Reinigungskräfte an. Sie steht in beiden Anmeldungen, weil Zimmernummern und Benutzernamen nur innerhalb des Hauses eindeutig sind. Gedruckte QR-Codes bleiben bei einer Änderung gültig – nur abgetippte Adressen auf älteren Check-in-Blättern stimmen dann nicht mehr.',
     },
     'gastzugang.sprachen': {
       title: 'Piktogramme statt Sprachliste',
@@ -225,7 +225,7 @@ export const lotsen = {
     },
     'aushang.karte': {
       title: 'Ein Aushang je Zimmer',
-      body: 'Der Aushang kommt ins Zimmer – in einen Aufsteller, einen Rahmen oder die Mappe: QR-Code, Zimmernummer, Hausname. Der Gast scannt sie und tippt nur noch seine PIN. Der Code gehört zum Zimmer, nicht zum Aufenthalt – er bleibt über alle Gäste hinweg gültig und wird genau einmal gedruckt.',
+      body: 'Der Aushang kommt ins Zimmer – in einen Aufsteller, einen Rahmen oder die Mappe: QR-Code, Zimmernummer, Hausname. Der Gast scannt den QR-Code und tippt nur noch seine PIN. Der Code gehört zum Zimmer, nicht zum Aufenthalt – er bleibt über alle Gäste hinweg gültig und wird genau einmal gedruckt.',
     },
     'aushang.knopf': {
       title: 'Erst erzeugen, dann drucken',
@@ -233,11 +233,11 @@ export const lotsen = {
     },
     'aushang.erneuern': {
       title: 'Erneuern macht den alten Aushang ungültig',
-      body: 'Kommt eine Karte abhanden oder soll ein Code aus anderem Grund weg, erzeugt „Code erneuern“ einen neuen – und der alte Aushang funktioniert ab dann nicht mehr. Deshalb liegt das nur bei Inhaber und Manager, und deshalb betrifft es immer nur ein Zimmer.',
+      body: 'Kommt ein Aushang abhanden oder soll ein Code aus anderem Grund weg, erzeugt „Code erneuern“ einen neuen – und der alte Aushang funktioniert ab dann nicht mehr. Deshalb liegt das nur bei Inhaber und Manager, und deshalb betrifft es immer nur ein Zimmer.',
     },
     'aushang.hinweis': {
       title: 'Nur im Verfahren mit festem Zimmer-QR',
-      body: 'Nutzt Ihr Haus individuelle Zugänge je Aufenthalt, führen diese Aushänge auf eine PIN-Eingabe, die neue Gäste gar nicht bedienen können – dann gehören sie nicht ins Zimmer. Die Seite sagt das oben ausdrücklich, statt sich einfach zu sperren.',
+      body: 'Nutzt Ihr Haus individuelle Zugänge je Aufenthalt, führen diese Aushänge auf eine PIN-Eingabe, die neue Gäste gar nicht bedienen können – dann gehören sie nicht ins Zimmer. Die Seite weist oben darauf hin.',
     },
     'aushang.blatt': {
       title: 'Das Check-in-Blatt entsteht beim Check-in',
@@ -250,7 +250,7 @@ export const lotsen = {
     },
     'personal.karte': {
       title: 'Zugangskarten mit QR',
-      body: 'Statt PIN-Eingabe kann sich die Reinigung über eine gedruckte Karte anmelden – einmal scannen, drin. Eine neu ausgegebene Karte macht die alte ungültig; genau das ist der Weg, wenn eine Karte abhandenkommt.',
+      body: 'Statt PIN-Eingabe kann sich die Reinigung über eine gedruckte Karte anmelden – einmal scannen, angemeldet. Eine neu ausgegebene Karte macht die alte ungültig; genau das ist der Weg, wenn eine Karte abhandenkommt.',
     },
     'personal.rezeption': {
       title: 'Rezeptions-Zugänge',
@@ -266,7 +266,7 @@ export const lotsen = {
     },
     'reinigung.login': {
       title: 'Anmeldung ohne E-Mail',
-      body: 'Eine Reinigungskraft hat Benutzernamen und PIN – oder scannt ihre gedruckte Zugangskarte und ist sofort angemeldet. Beides gilt nur in diesem Haus; dieselbe Namensvetterin darf es anderswo noch einmal geben.',
+      body: 'Eine Reinigungskraft hat Benutzernamen und PIN – oder scannt ihre gedruckte Zugangskarte und ist sofort angemeldet. Beides gilt nur in diesem Haus – derselbe Benutzername darf anderswo noch einmal vorkommen.',
     },
     'reinigung.schicht': {
       title: 'Erst Schichtbeginn, dann Arbeit',
@@ -296,7 +296,7 @@ export const lotsen = {
     },
     'reinigung.abschliessen': {
       title: 'Abschließen – und was passiert, wenn es jemand vergisst',
-      body: 'Zwischen Start und Abschluss steht das Zimmer für alle als „in Arbeit“. Wird der Abschluss vergessen, geht das Zimmer nach der eingestellten Zeit von selbst wieder auf offen, und der Verlauf hält fest, dass das Zeitlimit gerissen ist – statt dass ein halber Vorgang für immer stehen bleibt.',
+      body: 'Zwischen Start und Abschluss steht das Zimmer für alle als „in Arbeit“. Wird der Abschluss vergessen, geht das Zimmer nach der eingestellten Zeit von selbst wieder auf offen, und der Verlauf hält fest, dass das Zeitlimit überschritten wurde – statt dass ein halber Vorgang für immer stehen bleibt.',
     },
     'reinigung.status': {
       title: 'Pause, sonstige Reinigung, Schichtende',
@@ -308,11 +308,11 @@ export const lotsen = {
     },
     'gast.zugang': {
       title: 'Kein Konto, keine App',
-      body: 'Der Gast scannt den Aushang im Zimmer und gibt die PIN vom Check-in-Blatt ein – oder er öffnet den individuellen Link, den er beim Check-in bekommen hat, und ist ohne PIN drin. Welcher der beiden Wege gilt, entscheidet das Haus unter „Gästezugang“.',
+      body: 'Der Gast scannt den Aushang im Zimmer und gibt die PIN vom Check-in-Blatt ein – oder er öffnet den individuellen Link, den er beim Check-in bekommen hat, und ist ohne PIN angemeldet. Welcher der beiden Wege gilt, entscheidet das Haus unter „Gästezugang“.',
     },
     'gast.portal': {
       title: 'Ein Bildschirm, mehr nicht',
-      body: 'Nach der Anmeldung merkt sich ein Cookie den Aufenthalt – die PIN wird kein zweites Mal verlangt. Das Portal nennt Haus und Zimmer, damit niemand versehentlich für das Nachbarzimmer bestellt.',
+      body: 'Nach der Anmeldung bleibt der Gast auf seinem Gerät angemeldet – die PIN wird kein zweites Mal verlangt. Das Portal nennt oben Haus und Zimmer.',
     },
     'gast.reinigen': {
       title: 'Ein Tipp genügt',
@@ -341,11 +341,11 @@ export const lotsen = {
     },
     'gast.bestellt': {
       title: 'Und dann ist Schluss',
-      body: 'Offene Anfragen bleiben für den Gast sichtbar, bis die Rezeption sie erledigt. Mit dem Check-out erlöschen PIN, Link und Cookie sofort – der Aufenthalt bleibt anonym, es war nie ein Name im Spiel.',
+      body: 'Offene Anfragen bleiben für den Gast sichtbar, bis die Rezeption sie erledigt. Mit dem Check-out erlöschen PIN, Link und Anmeldung sofort – der Aufenthalt bleibt anonym, es war nie ein Name im Spiel.',
     },
     'auswertung.zeitraum': {
       title: 'Der Zeitraum steht in der Adresse',
-      body: 'Von–bis als ganz normales Formular, das den Zeitraum in die URL schreibt. Dadurch lässt sich ein Stand verlinken, weiterschicken und drucken – und beim Drucken fällt das Formular selbst weg.',
+      body: 'Von–bis als ganz normales Formular, das den Zeitraum in die Adresse schreibt. Dadurch lässt sich ein Stand verlinken, weiterschicken und drucken – und beim Drucken fällt das Formular selbst weg.',
     },
     'auswertung.kennzahlen': {
       title: 'Alles gerechnet, nichts gespeichert',
@@ -353,7 +353,7 @@ export const lotsen = {
     },
     'auswertung.auffaellig': {
       title: 'Unplausibles zählt nicht in den Summen',
-      body: 'Eine Schicht über 16 Stunden ist ein vergessenes Schichtende, eine Pause über vier Stunden dasselbe, und eine Reinigung ohne Abschluss zählt nicht als geleistete Arbeit. Solche Fälle werden hier gezählt statt eingerechnet – sonst schleppte eine offene Schicht die Arbeitszeit tagelang mit und machte die ganze Auswertung unbrauchbar.',
+      body: 'Eine Schicht über 16 Stunden ist ein vergessenes Schichtende, eine Pause über vier Stunden ein vergessenes Pausenende, und eine Reinigung ohne Abschluss zählt nicht als geleistete Arbeit. Solche Fälle werden hier gezählt statt eingerechnet – sonst schleppte eine offene Schicht die Arbeitszeit tagelang mit und machte die ganze Auswertung unbrauchbar.',
     },
     'auswertung.tabelle': {
       title: 'Je Kraft – auch ausgeschiedene',
@@ -373,15 +373,15 @@ export const lotsen = {
     },
     'konto.monate': {
       title: 'Abgeschlossene Monate liegen fest',
-      body: 'Sobald ein Monat vorbei ist, ändert sich sein Betrag nicht mehr – auch dann nicht, wenn Sie später Zimmer löschen: Vor jeder Löschung wird die Zimmerzahl der betroffenen Monate festgeschrieben. Solange nichts gelöscht wird, entsteht dafür keine einzige Zeile.',
+      body: 'Sobald ein Monat vorbei ist, ändert sich sein Betrag nicht mehr – auch dann nicht, wenn Sie später Zimmer löschen: Vor jeder Löschung wird die Zimmerzahl der betroffenen Monate festgeschrieben.',
     },
     'konto.zahlungsweg': {
       title: 'Zahlungsweg und Rechnungsdaten',
-      body: 'Karte oder SEPA-Lastschrift werden ohne Belastung hinterlegt und beim Monatslauf eingezogen; wer auf Rechnung zahlen will, bekommt eine Überweisung mit eigener Bankverbindung. Rechnungsempfänger, Anschrift und – außerhalb Deutschlands innerhalb der EU – die USt-IdNr. sind Pflicht, weil sonst die Steuer nicht richtig gerechnet werden kann.',
+      body: 'Karte oder SEPA-Lastschrift werden ohne Belastung hinterlegt und beim Monatslauf eingezogen; wer auf Rechnung zahlen will, überweist an die Bankverbindung, die auf der Rechnung steht. Rechnungsempfänger, Anschrift und – außerhalb Deutschlands innerhalb der EU – die USt-IdNr. sind Pflicht, weil sonst die Steuer nicht richtig gerechnet werden kann.',
     },
     'konto.rechnungen': {
       title: 'Rechnungen kommen am Monatsersten',
-      body: 'Für den Vormonat, elektronisch, zahlbar innerhalb von 14 Tagen. Jede Rechnung ist hier als PDF und als Ansichtsseite hinterlegt und bleibt es auch dann, wenn Sie das Konto später löschen – Belege müssen aufbewahrt werden.',
+      body: 'Für den Vormonat, elektronisch, zahlbar innerhalb von 14 Tagen. Jede Rechnung ist hier als PDF und als Ansichtsseite hinterlegt. Der Anbieter bewahrt sie auch nach einer Kontolöschung auf – laden Sie die PDFs vorher herunter, danach ist die Seite nicht mehr erreichbar.',
     },
   } satisfies Record<string, LotseStepText>,
 
