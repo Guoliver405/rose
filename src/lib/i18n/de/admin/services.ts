@@ -27,7 +27,7 @@ export const services = {
     linkExplanation:
       'Ein <b>Verweis</b> ist eine Kachel im Gästeportal, die einen Link nach außen öffnet – Trinkgeld-App für das Reinigungsteam, Lieferdienst, Taxi. Er erzeugt keine Anfrage und erscheint weder auf dem Board der Rezeption noch auf der Check-out-Aufstellung. Für Inhalt und Datenschutz des Ziels ist der Anbieter verantwortlich; das Portal bettet nichts ein, es verlinkt nur.',
     urgentExplanation:
-      'Dringende Anfragen werden der Rezeption hervorgehoben. Auswahl-Optionen (mit optionalem Preis) kommen pro Service dazu.',
+      'Dringende Anfragen blinken bei der Rezeption rot – an der Zimmer-Kachel und in der Navigation. Optionen und Preise legen Sie nach dem Anlegen am Service fest.',
     maintenanceExplanation:
       '<b>Meldung ans Haus</b> ist für Defekte und Instandhaltung gedacht – etwas am Zimmer, nicht am Aufenthalt. Solche Anfragen bleiben beim Check-out offen (ein Defekt verschwindet nicht mit dem Gast), erscheinen auf keiner Check-out-Aufstellung und warnen beim nächsten Check-in.',
   },
@@ -46,8 +46,8 @@ export const services = {
     linkBadge: 'Verweis',
     urgentOff: 'Dringend aus',
     urgentOn: 'Dringend an',
-    maintenanceOff: 'Keine Meldung',
-    maintenanceOn: 'Als Meldung',
+    maintenanceOff: 'Meldung ans Haus aus',
+    maintenanceOn: 'Meldung ans Haus an',
     archive: 'Archivieren',
     archiveConfirm:
       '„{name}“ archivieren? Der Service verschwindet aus dem Gästeportal; bestehende Anfragen bleiben erhalten.',
@@ -71,7 +71,7 @@ export const services = {
    */
   linkTemplates: {
     names: {
-      tip: 'Trinkgeld fürs Housekeeping',
+      tip: 'Trinkgeld fürs Reinigungsteam',
       food: 'Essen bestellen – {brand}',
     },
     descriptions: {

@@ -44,7 +44,7 @@ export const symbols = {
     },
     checkout: {
       label: 'Ausgecheckt – Reinigung offen',
-      text: 'Der Check-out ist erfolgt, das Zimmer ist noch nicht gereinigt. Es bleibt so lange offen, bis eine Reinigungskraft abschließt oder die Rezeption es als gereinigt markiert.',
+      text: 'Der Check-out ist erfolgt, das Zimmer ist noch nicht gereinigt. Es bleibt so lange offen, bis eine Reinigungskraft abschließt oder die Rezeption die Reinigung als erledigt markiert.',
     },
     priority: {
       label: 'Priorisiert',

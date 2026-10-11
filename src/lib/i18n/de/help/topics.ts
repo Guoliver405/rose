@@ -76,7 +76,7 @@ export const topics = {
         eintraege: [
           {
             frage: 'Warum ist ein Zimmer nach dem Check-out orange und nicht sofort grün?',
-            antwort: 'Der Zustand ist ereignisgetrieben: Der Check-out sagt „Reinigung offen“, und erst der Abschluss einer Reinigungskraft – oder Ihr „Als gereinigt markieren“ im Dialog – sagt „bereit“. RoSe rät nicht, ob inzwischen jemand da war.',
+            antwort: 'Der Zustand ist ereignisgetrieben: Der Check-out sagt „Reinigung offen“, und erst der Abschluss einer Reinigungskraft – oder Ihr „Reinigung als erledigt markieren“ im Dialog – sagt „bereit“. RoSe rät nicht, ob inzwischen jemand da war.',
           },
           {
             frage: 'Ich soll einchecken, das Zimmer ist aber nicht bereit. Geht das?',
@@ -873,8 +873,8 @@ export const topics = {
             antwort: 'Weil der Arbeitsnachweis das Ausscheiden überlebt. Wer den Zugang beendet hat, bleibt für seinen Zeitraum sichtbar. Nur endgültiges Löschen entfernt die Einträge – deshalb ist es ein Riegel mit abgetipptem Namen.',
           },
           {
-            frage: 'Zählt „Als gereinigt markieren“ der Rezeption mit?',
-            antwort: 'Es schreibt einen Reinigungs-Eintrag, damit die tägliche Reinigung als erledigt gilt – aber die Tabelle „Je Kraft“ zeigt nur Reinigungskräfte. Wer regelmäßig am Tresen „als gereinigt“ markiert, sollte wissen, dass die Auswertung diese Reinigungen keiner Reinigungskraft zurechnet.',
+            frage: 'Zählt „Reinigung als erledigt markieren“ der Rezeption mit?',
+            antwort: 'Es schreibt einen Reinigungs-Eintrag, damit die tägliche Reinigung als erledigt gilt – aber die Tabelle „Je Kraft“ zeigt nur Reinigungskräfte. Wer regelmäßig am Tresen Reinigungen als erledigt markiert, sollte wissen, dass die Auswertung diese Reinigungen keiner Reinigungskraft zurechnet.',
           },
           {
             frage: 'Warum fehlt die Tabelle „Je Kraft“?',

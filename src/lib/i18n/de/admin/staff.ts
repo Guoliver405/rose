@@ -38,9 +38,9 @@ export const staff = {
     receptionNamePlaceholder: 'z. B. Front Desk Früh',
     receptionEmailPlaceholder: 'z. B. rezeption@meinhotel.de',
     receptionHint:
-      'Rezeptions-Zugänge bedienen das Tagesgeschäft (Check-in/-out, Anfragen, Drucken) – Einstellungen, Zimmer-Setup und Services bleiben der Verwaltung vorbehalten. Die Person bekommt eine Einladung per E-Mail und vergibt ihr Passwort selbst.',
+      'Rezeptions-Zugänge bedienen das Tagesgeschäft (Check-in/-out, Anfragen, Drucken) – Einstellungen, Zimmer-Setup und Services bleiben Inhaber und Managern vorbehalten. Die Person bekommt eine Einladung per E-Mail und vergibt ihr Passwort selbst.',
     receptionInviteHint:
-      'Sobald die Einladung angenommen ist, verschwindet der Hinweis „Einladung offen“ aus der Liste. Kommt die E-Mail nicht an, hilft „Erneut senden“ an der Zeile.',
+      'Sobald die Einladung angenommen ist, verschwindet der Hinweis „Einladung offen“ aus der Liste. Kommt die E-Mail nicht an, hilft „Erneut senden“ an der Zeile. Ist die Zustellung gescheitert, bietet die Zeile außerdem „Einladungslink anzeigen“ – den Link können Sie selbst weitergeben, etwa per Messenger.',
     emptyReception: 'Noch keine Rezeptions-Zugänge angelegt.',
 
     // Manager anlegen und hinzufügen
@@ -48,14 +48,14 @@ export const staff = {
     managerNamePlaceholder: 'z. B. Nina Berg',
     managerEmailPlaceholder: 'z. B. nina@meinhotel.de',
     managerHint:
-      'Manager haben im Haus dieselben Rechte wie der Inhaber – ohne Zugriff auf das Konto. Die Person bekommt eine Einladung per E-Mail und vergibt ihr Passwort selbst.',
+      'Manager haben im Haus dieselben Rechte wie der Inhaber – ohne Zugriff auf das Konto und ohne weitere Manager ernennen zu können. Die Person bekommt eine Einladung per E-Mail und vergibt ihr Passwort selbst.',
     attachTitle: 'Vorhandenen Manager hinzufügen',
     attachLabel: 'Manager des Kontos',
     attachChoose: 'Bitte wählen …',
     attachOption: '{name} ({email})',
     attach: 'Hinzufügen',
     attachHint: 'Kein neuer Zugang – dieselbe Person betreut dann ein Haus mehr.',
-    managerInviteHint: 'Kommt die E-Mail nicht an, hilft „Erneut senden“ an der Zeile.',
+    managerInviteHint: 'Kommt die E-Mail nicht an, hilft „Erneut senden“ an der Zeile. Ist die Zustellung gescheitert, bietet die Zeile außerdem „Einladungslink anzeigen“ – den Link können Sie selbst weitergeben, etwa per Messenger.',
     emptyManagers: 'Für dieses Haus ist noch kein Manager eingetragen.',
 
     // Einladung und Testbetrieb

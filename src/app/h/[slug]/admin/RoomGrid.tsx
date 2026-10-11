@@ -571,7 +571,7 @@ function RoomDialog({
           <div className="mb-4 rounded-xl border border-action-tint-edge bg-action-tint p-4 text-center">
             {(freshMode ?? room.accessMode) === 'link' ? (
               <>
-                <p className="text-xs font-semibold tracking-wide text-action-deep">
+                <p className="text-xs font-semibold uppercase tracking-wide text-action-deep">
                   {freshMode ? d.link.headingFresh : d.link.heading}
                 </p>
                 <p className="mt-2 text-sm font-bold text-action-deep">
@@ -584,7 +584,7 @@ function RoomDialog({
               </>
             ) : (
               <>
-                <p className="text-xs font-semibold tracking-wide text-action-deep">
+                <p className="text-xs font-semibold uppercase tracking-wide text-action-deep">
                   {freshMode ? d.pin.headingFresh : d.pin.heading}
                 </p>
                 <p className="mt-1 font-mono text-4xl font-black tracking-[0.3em] text-action-deep">
