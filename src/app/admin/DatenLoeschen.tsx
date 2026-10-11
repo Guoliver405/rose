@@ -47,6 +47,8 @@ export default function DatenLoeschen({
   const [notice, setNotice] = useState<string | null>(null)
   const [target, setTarget] = useState<Target | null>(null)
   const [confirmInput, setConfirmInput] = useState('')
+  // Konto gelöscht, aber Rechnungen offen: letzter Bildschirm mit den Zahlungsseiten.
+  const [offeneRechnungen, setOffeneRechnungen] = useState<string[] | null>(null)
 
   function open(hotelId: string | undefined, label: string) {
     setError(null)
@@ -76,6 +78,7 @@ export default function DatenLoeschen({
       } else {
         const res = await deleteAccountAction(confirmInput)
         if (res.error) { setError(res.error); return }
+        if (res.openInvoiceUrls?.length) { setOffeneRechnungen(res.openInvoiceUrls); return }
         // Das eigene Anmeldekonto ist mit gelöscht — die Sitzung existiert
         // nicht mehr. Harter Wechsel statt router.push, damit kein Rest der
         // alten Sitzung im Client-Cache weiterlebt.
@@ -85,6 +88,27 @@ export default function DatenLoeschen({
   }
 
   const p = target?.preview
+
+  if (offeneRechnungen) {
+    return (
+      <div className="rounded-xl border border-edge bg-surface p-4 text-sm text-ink-soft">
+        <p className="font-bold text-ink">{m.accountDeleted}</p>
+        <p className="mt-2">{m.openInvoicesHint}</p>
+        <ul className="mt-2 flex flex-col gap-1">
+          {offeneRechnungen.map((url, i) => (
+            <li key={url}>
+              <a href={url} target="_blank" rel="noopener noreferrer" className="font-semibold text-action underline">
+                {format(m.openInvoiceLink, { n: String(i + 1) })}
+              </a>
+            </li>
+          ))}
+        </ul>
+        <a href="/login" className="mt-3 inline-block rounded-lg border border-edge px-3 py-2 font-semibold text-ink-soft">
+          {m.toLogin}
+        </a>
+      </div>
+    )
+  }
 
   return (
     <details className="rounded-xl border border-edge bg-surface">
@@ -179,6 +203,28 @@ export default function DatenLoeschen({
                 {n(p.authUsersKept, m.authUsersKept)}
               </p>
             )}
+
+            {!target.hotelId && p.finalBill && (p.finalBill.free || p.finalBill.cents > 0) && (() => {
+              const bill = p.finalBill
+              const month = new Date(`${bill.periodStart}T00:00:00`)
+                .toLocaleDateString(intlLocale, { month: 'long', year: 'numeric' })
+              return (
+                <p className="mt-3 rounded-lg border border-edge bg-surface-elevated p-3 text-sm text-ink-soft">
+                  {bill.free
+                    ? format(m.finalBillFree, { month })
+                    : (
+                      <Rich
+                        text={m.finalBill}
+                        vars={{
+                          month,
+                          amount: new Intl.NumberFormat(intlLocale, { style: 'currency', currency: 'EUR' }).format(bill.cents / 100),
+                          rooms: n(bill.rooms, m.finalBillRooms),
+                        }}
+                      />
+                    )}
+                </p>
+              )
+            })()}
 
             <label className="mt-3 flex flex-col gap-1 text-xs font-semibold text-ink-muted">
               {format(m.confirmLabel, { phrase: target.confirmPhrase })}

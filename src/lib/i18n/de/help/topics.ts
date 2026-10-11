@@ -979,7 +979,7 @@ export const topics = {
           },
           {
             frage: 'Was bedeutet „Daten löschen“?',
-            antwort: 'Das vollständige Entfernen eines Hauses oder des ganzen Kontos – mit bezifferter Vorschau und abgetipptem Namen, nicht umkehrbar. Anders als im Tagesgeschäft, wo Nachweise bewusst überleben, räumt es alles ab: auch Verlauf, Anmeldekonten und Logo. Nur die Rechnungsbelege bleiben, weil sie aufbewahrt werden müssen. Das Löschen des Kontos ist zugleich die Kündigung.',
+            antwort: 'Das vollständige Entfernen eines Hauses oder des ganzen Kontos – mit bezifferter Vorschau und abgetipptem Namen, nicht umkehrbar. Anders als im Tagesgeschäft, wo Nachweise bewusst überleben, räumt es alles ab: auch Verlauf, Anmeldekonten und Logo. Nur die Rechnungsbelege bleiben, weil sie aufbewahrt werden müssen. Das Löschen des Kontos ist zugleich die Kündigung zum Monatsende: Für den laufenden Monat entsteht beim Löschen noch eine Schlussrechnung, der Dialog nennt den Betrag vorher (im kostenlosen Monat nichts).',
           },
           {
             frage: 'Was passiert beim Anlegen eines weiteren Hauses?',
@@ -1042,7 +1042,7 @@ export const topics = {
           },
           {
             frage: 'Wie kündige ich?',
-            antwort: 'Zum Ende eines Kalendermonats – durch Löschen des Kontos unter „Daten löschen“ auf der Häuser-Seite oder in Textform, etwa per E-Mail an den Anbieter. Das Löschen wirkt sofort: Die Daten sind danach weg. Ein Haus außer Betrieb zu nehmen reicht nicht – Zimmer außer Betrieb zählen im laufenden Monat noch.',
+            antwort: 'Zum Ende eines Kalendermonats – durch Löschen des Kontos unter „Daten löschen“ auf der Häuser-Seite oder in Textform, etwa per E-Mail an den Anbieter. Der laufende Monat wird dabei noch berechnet: Beim Löschen entsteht sofort eine Schlussrechnung, eingezogen über den hinterlegten Zahlungsweg; ist sie danach noch offen (Überweisung), zeigt der Dialog zum Schluss die Zahlungsseite. Lässt sie sich nicht erstellen – etwa weil Rechnungsdaten fehlen –, wird das Konto nicht gelöscht. Das Löschen selbst wirkt sofort: Die Daten sind danach weg. Ein Haus außer Betrieb zu nehmen reicht nicht – Zimmer außer Betrieb zählen im laufenden Monat noch.',
           },
         ],
       },

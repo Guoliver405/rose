@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import type Stripe from 'stripe'
 import { createAdminClient } from '@/utils/supabase/service'
-import { savePaymentMethodFromSetupIntent, stripeClient, stripeReady } from '@/utils/stripe'
+import { deleteStripeCustomer, savePaymentMethodFromSetupIntent, stripeClient, stripeReady } from '@/utils/stripe'
 import { dateKeyFromUnix, mapStripeInvoiceStatus } from '@/lib/invoice'
 
 /**
@@ -17,6 +17,26 @@ import { dateKeyFromUnix, mapStripeInvoiceStatus } from '@/lib/invoice'
  * Liegt außerhalb des Proxy-Matchers — richtig so, hier gibt es keine Sitzung.
  */
 export const dynamic = 'force-dynamic'
+
+/**
+ * Beim Löschen eines Kontos bleibt der Stripe-Kunde stehen, solange eine
+ * Rechnung offen ist (Schlussrechnung per Überweisung, abgelehnte Karte).
+ * Ist die letzte erledigt und das Konto weg, entfernen wir ihn hier — Stripe
+ * behält die Rechnungen.
+ */
+async function aufraeumenNachLoeschung(
+  admin: ReturnType<typeof createAdminClient>,
+  inv: Stripe.Invoice,
+  accountId: string | undefined,
+) {
+  if (!accountId || !inv.customer || ['draft', 'open'].includes(mapStripeInvoiceStatus(inv.status))) return
+  const [{ data: acc }, { data: offen }] = await Promise.all([
+    admin.from('accounts').select('id').eq('id', accountId).maybeSingle(),
+    admin.from('invoices').select('id').eq('account_id', accountId).in('status', ['draft', 'open']).limit(1),
+  ])
+  if (acc || (offen ?? []).length > 0) return
+  await deleteStripeCustomer(typeof inv.customer === 'string' ? inv.customer : inv.customer.id)
+}
 
 export async function POST(request: Request) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET
@@ -76,6 +96,7 @@ async function handle(event: Stripe.Event): Promise<void> {
       const { data: byId } = await admin.from('invoices').select('id').eq('stripe_invoice_id', inv.id).maybeSingle()
       if (byId) {
         await admin.from('invoices').update(update).eq('id', byId.id)
+        await aufraeumenNachLoeschung(admin, inv, accountId)
         return
       }
       if (!accountId || !periodStart) return
