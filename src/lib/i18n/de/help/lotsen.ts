@@ -207,7 +207,7 @@ export const lotsen = {
       body: 'Außerhalb des Fensters kann der Gast keinen Wunsch mehr absetzen und sieht stattdessen Ihre Reinigungszeiten. „Bitte nicht stören“ und das Zurücknehmen eines Wunsches bleiben immer möglich – sonst säße jemand mit einem Wunsch fest, den er nicht mehr los wird.',
     },
     'regeln.pin': {
-      title: 'PIN-Länge und verwaiste Reinigungen',
+      title: 'PIN-Länge und vergessene Abschlüsse',
       body: 'Die PIN-Länge gilt für neu erzeugte Gast-PINs; laufende Aufenthalte behalten ihre. Der zweite Wert räumt vergessene Abschlüsse auf: Wird eine gestartete Reinigung nicht abgeschlossen, geht das Zimmer nach dieser Zeit von selbst wieder auf offen – und der Verlauf hält fest, dass das Zeitlimit gerissen ist.',
     },
     'regeln.adresse': {

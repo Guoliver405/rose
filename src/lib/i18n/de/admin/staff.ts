@@ -192,10 +192,10 @@ export const staff = {
 
     // Team-Modus
     teamNote:
-      'Dieses Haus wertet die Reinigung <b>nur als Team</b> aus (Einstellung unter Haus & Regeln): Die Kennzahlen oben sind die Summe über {shifts} im Zeitraum, eine Tabelle je Kraft und ein Tagesprotokoll gibt es nicht. Wer wann welches Zimmer gereinigt hat, steht im Zimmer-Verlauf als „Reinigungsteam“.',
+      'Dieses Haus wertet die Reinigung <b>nur als Team</b> aus (Einstellung unter Haus & Regeln): Die Kennzahlen oben sind die Summe über {shifts} im Zeitraum, die Tabelle „Je Kraft“ und ein Tagesprotokoll gibt es nicht. Wann welches Zimmer gereinigt wurde, steht im Zimmer-Verlauf; als Person erscheint dort „Reinigungsteam“.',
     teamUnpaired: {
-      one: 'Ein Eintrag aus der Zeit vor dem Team-Modus trägt keinen Schicht-Schlüssel mehr und ist in den Summen nicht enthalten.',
-      other: '{count} Einträge aus der Zeit vor dem Team-Modus tragen keinen Schicht-Schlüssel mehr und sind in den Summen nicht enthalten.',
+      one: 'Ein Eintrag aus der Zeit vor dem Umstellen lässt sich keiner Schicht mehr zuordnen und ist in den Summen nicht enthalten.',
+      other: '{count} Einträge aus der Zeit vor dem Umstellen lassen sich keiner Schicht mehr zuordnen und sind in den Summen nicht enthalten.',
     },
 
     // Tabelle je Reinigungskraft
@@ -267,7 +267,7 @@ export const staff = {
       /** 0 = Montag … 6 = Sonntag, wie `WeekdayBucket.weekday`. */
       weekdays: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'],
       note:
-        'Gezählt wird der Zeitpunkt, an dem ein Gast im Gästeportal tippt, und der Check-out-Klick der Rezeption – keine Wunschzeiten, sondern die tatsächliche Nachfrage. „Kräfte im Dienst“ kommt aus den Schicht-Einträgen, gemittelt über die Tage des Zeitraums. Liegen viele Wünsche in Stunden mit wenig oder keiner Kraft, ist das der Hinweis für die Schichtplanung.',
+        'Gezählt wird der Zeitpunkt, an dem ein Gast im Gästeportal tippt, und der Check-out-Klick der Rezeption – keine Wunschzeiten, sondern die tatsächliche Nachfrage. „Kräfte im Dienst“ kommt aus den Schicht-Einträgen, gemittelt über die Tage des Zeitraums. Liegen viele Wünsche in Stunden mit wenigen oder keinen Reinigungskräften, ist das der Hinweis für die Schichtplanung.',
       noteRules: 'Check-out-Frist {checkout} Uhr, tägliche Reinigung ab {daily} Uhr.',
       noteRulesOff: 'Check-out-Frist {checkout} Uhr, tägliche Reinigung aus.',
     },
