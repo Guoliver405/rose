@@ -252,7 +252,9 @@ describe('guestLoginAction — IP-Drossel über alle Häuser', () => {
     // Schwelle erreicht: die richtige PIN wird mit der IP-Meldung abgewiesen,
     // und es wird gar nicht erst gezählt oder am Aufenthalt gerührt.
     const gesperrt = await guestLoginAction({ hotelSlug: world.alpha.a1.slug, roomNumber: '102', pin: PIN.a102 })
-    expect(gesperrt.error).toMatch(/aus diesem Netz/)
+    // Nur die IP-Meldung verweist an die Rezeption – die Sperre eines einzelnen
+    // Aufenthalts nennt nur die Wartezeit (guest.errors.tooManyFromNetwork).
+    expect(gesperrt.error).toMatch(/an die Rezeption wenden/)
     expect((await stayZeile(world.alpha.a1.rooms['102'])).pin_attempts).toBe(0)
 
     // Eine andere IP ist nicht betroffen.

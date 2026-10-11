@@ -88,15 +88,15 @@ export const lotsen = {
     },
     'regeln.zeitzone': {
       title: 'Zeitzone zuerst',
-      body: 'Alle Uhrzeiten dieser Seite gelten in dieser Zeitzone – und die Server laufen in UTC. Steht hier das Falsche, wird die tägliche Reinigung „ab 10:00“ in Wahrheit erst um 12:00 fällig, und auch die Tagesgrenzen der Auswertung liegen daneben.',
+      body: 'Alle Uhrzeiten dieser Seite gelten in dieser Zeitzone. Steht hier die falsche, wird die tägliche Reinigung zur falschen Stunde fällig, und auch die Tagesgrenzen der Auswertung liegen daneben.',
     },
     'regeln.routine': {
       title: 'Reinigung nur auf Wunsch – oder täglich',
-      body: 'Ab Werk ist die tägliche Reinigung aus: Gereinigt wird, wenn der Gast es wünscht oder das Zimmer ausgecheckt ist. Das spart Wasser, Waschmittel und Arbeitszeit. Schalten Sie sie ein, erscheinen belegte Zimmer ab der zweiten Nacht ab der gewählten Uhrzeit von selbst auf dem Reinigungsboard.',
+      body: 'Ab Werk ist die tägliche Reinigung aus: Gereinigt wird, wenn der Gast es wünscht oder das Zimmer ausgecheckt ist. Das spart Wasser, Waschmittel und Arbeitszeit. Schalten Sie sie ein, erscheinen belegte Zimmer ab dem Tag nach der Anreise zur gewählten Uhrzeit von selbst auf dem Reinigungsboard.',
     },
     'regeln.checkout': {
       title: '„Check-out bis“ ist die Untergrenze der täglichen Reinigung',
-      body: 'RoSe kennt kein Buchungssystem. Ohne eingetragenes Abreisedatum wird die tägliche Reinigung deshalb nicht vor dieser Zeit fällig: Wer danach noch im Zimmer ist, bleibt. Sonst würde ein Abreisezimmer vor dem Check-out gereinigt – und danach gleich noch einmal. Trägt die Rezeption beim Check-in ein Abreisedatum ein, gilt an den Tagen davor schon die eingestellte Uhrzeit.',
+      body: 'Solange RoSe nicht weiß, ob der Gast heute abreist, wird die tägliche Reinigung nicht vor dieser Uhrzeit fällig. So wird kein Abreisezimmer vor dem Check-out gereinigt und danach noch einmal. Ist beim Aufenthalt ein Abreisedatum eingetragen, gilt an den Tagen davor die normale Uhrzeit, und am Abreisetag entfällt die tägliche Reinigung.',
     },
     'regeln.speichern': {
       title: 'Speichern nicht vergessen',
@@ -114,11 +114,11 @@ export const lotsen = {
     },
     'personal.reinigung': {
       title: 'Reinigungskräfte brauchen keine E-Mail',
-      body: 'Eine Reinigungskraft bekommt Benutzernamen und PIN – mehr nicht. Der Anzeigename steht auf Board und Karte, angemeldet wird mit dem Benutzernamen: Wer bei der Anmeldung den Anzeigenamen eintippt, wird abgewiesen. Beides gilt nur in diesem Haus; dieselbe Namensvetterin darf es in einem anderen Haus noch einmal geben.',
+      body: 'Eine Reinigungskraft bekommt Benutzernamen und PIN – mehr nicht. Der Anzeigename steht auf Board und Karte, angemeldet wird mit dem Benutzernamen: Wer bei der Anmeldung den Anzeigenamen eintippt, wird abgewiesen. Beides gilt nur in diesem Haus – derselbe Benutzername darf in einem anderen Haus noch einmal vorkommen.',
     },
     'personal.liste': {
       title: 'Zugang beenden statt löschen',
-      body: 'Scheidet jemand aus, beenden Sie den Zugang: Die Anmeldung ist sofort tot, auch eine offene Sitzung fliegt heraus, und der Arbeitsnachweis bleibt vollständig. Kommt die Person zurück, wird der Zugang wieder aktiviert – die Zugangskarte gilt weiter. Endgültiges Löschen gibt es auch, aber es nimmt bei der Reinigung die Einträge mit; der Dialog beziffert vorher, was verschwindet.',
+      body: 'Scheidet jemand aus, beenden Sie den Zugang: Die Anmeldung ist sofort gesperrt, auch eine offene Sitzung endet, und der Arbeitsnachweis bleibt vollständig. Kommt die Person zurück, wird der Zugang wieder aktiviert – die Zugangskarte gilt weiter. Endgültiges Löschen gibt es auch, aber es nimmt bei der Reinigung die Einträge mit; der Dialog beziffert vorher, was verschwindet.',
     },
     'services.anlegen': {
       title: 'Ein Service ist ein Baukasten',
@@ -128,7 +128,7 @@ export const lotsen = {
     'services.liste': {
       title: 'Preise landen beim Check-out auf der Aufstellung',
       body: 'Optionen dürfen einen Preis tragen; der Gast sieht ihn bei der Anfrage. Beim Check-out zeigt der Zimmer-Dialog die Summe der erbrachten Leistungen – deshalb lohnt es sich, die Preise gleich hier zu pflegen. Ohne Preis steht eine Anfrage auf keiner Aufstellung, und Meldungen ans Haus stehen dort auch mit Preis nicht: Sie sind keine Leistung an den Gast. RoSe bucht und kassiert nichts, es rechnet nur zusammen.',
-      tun: 'Tragen Sie bei einer Option einen Preis ein – ab der nächsten Anfrage steht sie damit beim Check-out auf dem Blatt.',
+      tun: 'Tragen Sie bei einer Option einen Preis ein – ab der nächsten Anfrage steht sie damit beim Check-out auf der Aufstellung.',
     },
     'einrichtung.ende': {
       title: 'Geschafft – und hier geht es weiter',
