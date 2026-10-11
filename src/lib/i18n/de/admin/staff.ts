@@ -133,12 +133,12 @@ export const staff = {
       checkIns: { one: '{count} Check-in', other: '{count} Check-ins' },
       ordersDone: { one: '{count} erledigte Anfrage', other: '{count} erledigte Anfragen' },
       logEntries: { one: '{count} Eintrag im Tätigkeitsprotokoll', other: '{count} Einträge im Tätigkeitsprotokoll' },
-      keptMaid: '{list} <b>bleiben erhalten</b> – sie verlieren nur den Namen.',
-      kept: '{list} <b>bleiben erhalten</b>.',
+      keptMaid: '<b>Erhalten bleiben:</b> {list} – sie verlieren nur den Namen.',
+      kept: '<b>Erhalten bleiben:</b> {list}.',
       confirmPrompt: 'Zum Bestätigen „{phrase}“ eingeben',
       deleting: 'Löschen …',
       confirmDelete: 'Ja, endgültig löschen',
-      endInstead: 'Lieber Zugang beenden – Arbeitsnachweis bleibt',
+      endInstead: 'Stattdessen Zugang beenden – der Arbeitsnachweis bleibt erhalten',
     },
 
     // Rückmeldungen nach einem Vorgang

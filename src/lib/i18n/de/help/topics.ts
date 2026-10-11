@@ -330,7 +330,7 @@ export const topics = {
           },
           {
             frage: 'Was ändert „Tätigkeiten der Reinigung: nur als Team“?',
-            antwort: 'Die Auswertung zeigt nur noch die Hausbilanz (Summe über die Schichten), keine Tabelle „Je Kraft“ und kein Tagesprotokoll; im Zimmer-Verlauf steht „Reinigungsteam“ statt eines Namens. Die Einträge verlieren ihre Person beim Schichtende, spätestens nach 24 Stunden – auch der Bestand, nicht umkehrbar. Was bleibt: wann welches Zimmer gereinigt wurde, wie viele Schichten liefen, und die Live-Anzeigen zur Koordination (wer gerade auf welcher Etage ist). Ist nur eine Reinigungskraft im Dienst, ist die Zuordnung trotzdem offensichtlich – das kann keine Einstellung ändern.',
+            antwort: 'Die Auswertung zeigt nur noch die Hausbilanz (Summe über die Schichten), keine Tabelle „Je Kraft“ und kein Tagesprotokoll; im Zimmer-Verlauf steht „Reinigungsteam“ statt eines Namens. Die Einträge verlieren ihre Person beim Schichtende, spätestens nach 24 Stunden – beim Umstellen auch alle bisherigen. Die Einstellung lässt sich zurückstellen; die Namen anonymisierter Einträge lassen sich aber nicht wiederherstellen. Was bleibt: wann welches Zimmer gereinigt wurde, wie viele Schichten liefen, und die Live-Anzeigen zur Koordination (wer gerade auf welcher Etage ist). Ist nur eine Reinigungskraft im Dienst, ist die Zuordnung trotzdem offensichtlich – das kann keine Einstellung ändern.',
           },
           {
             frage: 'Welche Anforderungen hat das Logo?',

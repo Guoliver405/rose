@@ -63,7 +63,7 @@ export const houses = {
   deletion: {
     summary: 'Daten löschen',
     summaryHint: 'Haus oder Konto endgültig entfernen',
-    intro: 'Entfernt <b>alles</b>: Zimmer, Aufenthalte, Anfragen, Reinigungsnachweise, Zimmer-Verlauf, Abrechnungsbelege und die Anmeldekonten der betroffenen Personen. Nicht rückgängig zu machen und nicht wiederherstellbar – es gibt keine Sicherung.',
+    intro: 'Entfernt <b>alles</b>: Zimmer, Aufenthalte, Anfragen, Reinigungsnachweise, Zimmer-Verlauf und die Anmeldekonten der betroffenen Personen. Nicht rückgängig zu machen und nicht wiederherstellbar – es gibt keine Sicherung. <b>Erhalten bleiben nur die Rechnungen</b>, weil sie aufbewahrt werden müssen.',
     singleHouse: 'Einzelnes Haus',
     delete: 'Löschen',
     deleteAccount: 'Gesamtes Konto löschen',
@@ -76,7 +76,7 @@ export const houses = {
     rooms: { one: '{count} Zimmer', other: '{count} Zimmer' },
     stays: { one: '{count} Aufenthalt', other: '{count} Aufenthalte' },
     orders: { one: '{count} Anfrage', other: '{count} Anfragen' },
-    staffLog: { one: '{count} Eintrag im Tätigkeits-Protokoll', other: '{count} Einträge im Tätigkeits-Protokoll' },
+    staffLog: { one: '{count} Eintrag im Tätigkeitsprotokoll', other: '{count} Einträge im Tätigkeitsprotokoll' },
     transitions: { one: '{count} Eintrag im Zimmer-Verlauf', other: '{count} Einträge im Zimmer-Verlauf' },
     snapshots: { one: '{count} festgeschriebener Abrechnungsmonat', other: '{count} festgeschriebene Abrechnungsmonate' },
     authUsers: { one: '{count} Anmeldekonto samt E-Mail-Adresse', other: '{count} Anmeldekonten samt E-Mail-Adresse' },

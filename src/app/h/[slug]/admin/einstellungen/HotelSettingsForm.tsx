@@ -150,6 +150,7 @@ function SettingsForm({ hotelSlug, initial, m, onDiscard }: {
             defaultValue={initial.cleaningStaleMinutes} className={`${inputClass} w-28`}
           />
         </label>
+        <p className="w-full text-xs text-ink-muted">{m.staleHint}</p>
       </div>
 
       <div data-lotse="regeln.routine" className="rounded-lg border border-edge bg-surface-sunken p-3">
@@ -247,6 +248,9 @@ function SettingsForm({ hotelSlug, initial, m, onDiscard }: {
             <span>
               <span className="font-semibold">{m.tracking.team.label}</span>
               <span className="block text-xs text-ink-muted">{m.tracking.team.hint}</span>
+              <span className="mt-1 block text-xs text-ink-soft">
+                <Rich text={m.tracking.team.warning} tags={{ b: c => <strong className="font-semibold text-ink">{c}</strong> }} />
+              </span>
             </span>
           </label>
         </div>

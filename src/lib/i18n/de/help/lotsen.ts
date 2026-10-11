@@ -200,7 +200,7 @@ export const lotsen = {
     },
     'regeln.personenbezug': {
       title: 'Je Kraft oder nur als Team',
-      body: 'Darf oder soll die Arbeit einzelner Reinigungskräfte bei Ihnen nicht gemessen werden, wählen Sie „Nur als Team“: Die Auswertung zeigt dann nur die Hausbilanz, im Zimmer-Verlauf steht „Reinigungsteam“, und die Einträge verlieren beim Schichtende ihre Person. Das ist nicht umkehrbar – und bei einer einzigen Reinigungskraft im Dienst ohnehin nur formal.',
+      body: 'Darf oder soll die Arbeit einzelner Reinigungskräfte bei Ihnen nicht gemessen werden, wählen Sie „Nur als Team“: Die Auswertung zeigt dann nur die Hausbilanz, im Zimmer-Verlauf steht „Reinigungsteam“, und die Einträge verlieren beim Schichtende ihre Person – beim Umstellen auch alle bisherigen. Zurückstellen geht, die Namen anonymisierter Einträge kommen aber nicht zurück. Bei einer einzigen Reinigungskraft im Dienst ist der Schutz ohnehin nur formal.',
     },
     'regeln.fenster': {
       title: 'Reinigungswunsch nur zu festen Zeiten',

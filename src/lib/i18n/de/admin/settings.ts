@@ -62,17 +62,18 @@ export const settings = {
       hint: 'Zimmernummern und Benutzernamen sind nur innerhalb des Hauses eindeutig – deshalb steht die Adresse in beiden Anmeldungen. Gedruckte QR-Codes (Aushang, Zugangskarte) bleiben bei einer Änderung gültig; nur die abgetippte Adresse auf älteren Check-in-Blättern stimmt dann nicht mehr.',
     },
     pinLength: 'Länge der Gast-PIN (4–8)',
-    staleMinutes: 'Reinigung gilt als verwaist nach (Minuten)',
+    staleMinutes: 'Vergessener Abschluss: Zimmer wieder freigeben nach … Minuten',
+    staleHint: 'Wurde eine Reinigung gestartet, aber nicht abgeschlossen, steht das Zimmer nach dieser Zeit wieder offen auf dem Board. Im Verlauf steht dann „Reinigung nicht abgeschlossen (Zeitlimit)“.',
     daily: {
       label: 'Belegte Zimmer täglich reinigen',
-      hint: 'Ab der zweiten Nacht erscheinen belegte Zimmer (ohne „Bitte nicht stören“) ab der gewählten Uhrzeit automatisch auf dem Reinigungsboard – bis sie an dem Tag gereinigt wurden.',
+      hint: 'Belegte Zimmer erscheinen ab dem Tag nach der Anreise zur gewählten Uhrzeit von selbst auf dem Reinigungsboard, bis sie an dem Tag gereinigt wurden. Ausgenommen sind „Bitte nicht stören“, „Heute keine Reinigung“ und der Abreisetag.',
       /** `<time></time>` ist das Uhrzeit-Feld. */
       from: 'täglich ab <time></time> Uhr',
     },
     checkoutUntil: {
       /** `<time></time>` ist das Uhrzeit-Feld. */
       label: 'Check-out bis <time></time> Uhr',
-      hint: 'Ohne bekanntes Abreisedatum wird die tägliche Reinigung nicht vor dieser Zeit fällig – wer danach noch im Zimmer ist, bleibt. So wird ein Abreisezimmer nicht vor dem Check-out gereinigt und danach noch einmal. Trägt die Rezeption beim Check-in ein Abreisedatum ein, gilt an den Tagen davor schon die Uhrzeit der täglichen Reinigung, und am Abreisetag setzt die tägliche Reinigung ganz aus.',
+      hint: 'Solange RoSe nicht weiß, ob der Gast heute abreist, wird die tägliche Reinigung nicht vor dieser Uhrzeit fällig. So wird kein Abreisezimmer vor dem Check-out gereinigt und danach noch einmal. Ist beim Aufenthalt ein Abreisedatum eingetragen, gilt an den Tagen davor die normale Uhrzeit, und am Abreisetag entfällt die tägliche Reinigung.',
     },
     checkinFrom: {
       label: 'Check-in ab <time></time> Uhr',
@@ -86,7 +87,7 @@ export const settings = {
     },
     timeZone: {
       label: 'Zeitzone des Hauses',
-      hint: 'Alle Uhrzeiten dieser Seite – tägliche Reinigung, Check-out bis, Zeitfenster, Grenze fürs Aufschieben – und die Tagesgrenzen der Auswertung gelten in dieser Zeitzone. Die Server laufen in UTC; ohne diese Angabe lägen die Regeln um ein bis zwei Stunden daneben.',
+      hint: 'Alle Uhrzeiten dieser Seite und die Tagesgrenzen der Auswertung gelten in dieser Zeitzone. Steht hier die falsche, liegen alle Regeln um den Zeitunterschied daneben.',
     },
     tracking: {
       heading: 'Tätigkeiten der Reinigung',
@@ -96,9 +97,10 @@ export const settings = {
       },
       team: {
         label: 'Nur als Team',
-        hint: 'Das Haus sieht weiterhin, wann welches Zimmer gereinigt wurde und wie viel das Team leistet – aber nicht, wer. Keine Tabelle je Reinigungskraft, kein Tagesprotokoll, im Zimmer-Verlauf steht „Reinigungsteam“. Die Einträge verlieren ihre Person beim Schichtende, spätestens nach 24 Stunden; das gilt auch für den Bestand und ist nicht umkehrbar. Für Länder und Betriebe, in denen die Arbeit einzelner Reinigungskräfte nicht gemessen werden darf oder soll.',
+        hint: 'Für Länder und Betriebe, in denen die Arbeit einzelner Reinigungskräfte nicht gemessen werden darf oder soll. Das Haus sieht weiterhin, wann welches Zimmer gereinigt wurde und wie viel das Team leistet – aber nicht, wer: keine Tabelle je Reinigungskraft, kein Tagesprotokoll, im Zimmer-Verlauf steht „Reinigungsteam“.',
+        warning: '<b>Achtung:</b> Beim Umstellen verlieren auch alle bisherigen Einträge ihre Person, neue spätestens nach 24 Stunden. Sie können später wieder auf „Je Kraft“ zurückstellen, dann werden neue Schichten wieder mit Namen erfasst. Die Namen bereits anonymisierter Einträge lassen sich aber nicht wiederherstellen.',
       },
-      note: 'Unverändert bleiben die Live-Anzeigen zur Koordination (wer gerade auf welcher Etage ist, wer gerade ein Zimmer reinigt) – sie sind mit der Schicht weg. Ehrlich gesagt: Ist nur eine Reinigungskraft im Dienst, lässt sich „Zimmer 204 um 10:30 gereinigt“ ihr zuordnen wie ein Dienstplan auf Papier. Das kann keine Einstellung verstecken, ohne den Betriebswert zu zerstören.',
+      note: 'Unverändert bleiben die Live-Anzeigen zur Koordination (wer gerade auf welcher Etage ist, wer welches Zimmer reinigt) – sie verschwinden mit dem Schichtende. Ist nur eine Reinigungskraft im Dienst, lässt sich ein gereinigtes Zimmer trotzdem ihr zuordnen, wie bei einem Dienstplan auf Papier. Das ließe sich nur verhindern, indem auch die Uhrzeiten wegfielen.',
     },
     window: {
       label: 'Reinigungswunsch nur innerhalb fester Zeiten',
@@ -125,7 +127,7 @@ export const settings = {
           'Danach bleibt er auf seinem Gerät angemeldet und muss nichts mehr eingeben.',
         ],
         pros: [
-          'Der Zugang hängt im Zimmer und geht nicht verloren – auch wenn der Gast sein Blatt wegwirft.',
+          'Der QR-Code hängt im Zimmer und geht nicht verloren; die PIN kann die Rezeption jederzeit noch einmal nennen.',
           'Es muss nichts gedruckt werden: Die PIN kann auch mündlich genannt werden.',
           'Die QR-Codes werden einmal gedruckt und bleiben dauerhaft gültig.',
           'Jedes Gerät einer Reisegruppe meldet sich selbst an.',
@@ -157,7 +159,7 @@ export const settings = {
           'Per E-Mail zustellbar: Der Gast hat ihn auf dem Handy, bevor er das Zimmer betritt.',
         ],
         cons: [
-          'Der Zugang IST der Link – wer ihn sieht, kann das Gästeportal dieses Zimmers bedienen, bis ausgecheckt wird. Ein liegengelassener Ausdruck ist ein offener Zugang.',
+          'Der Link ist der Zugang: Wer ihn sieht, kann das Gästeportal dieses Zimmers bedienen, bis ausgecheckt wird. Ein liegengelassener Ausdruck ist ein offener Zugang.',
           'Der Gast braucht Blatt oder E-Mail. Verliert er beides, muss die Rezeption neu ausgeben.',
           'Bei jedem Check-in muss etwas ausgehändigt werden.',
           'Ohne E-Mail-Adresse des Gastes bleibt nur der Ausdruck.',
@@ -178,13 +180,13 @@ export const settings = {
     switching: {
       heading: 'Was beim Umstellen passiert',
       running: '<b>Laufende Aufenthalte bleiben unberührt.</b> Wer bereits eingecheckt ist, behält seinen ausgegebenen Zugang bis zum Check-out. Erst der nächste Check-in folgt dem neuen Verfahren.',
-      toLink: 'Beim Wechsel auf <b>individuelle Zugänge</b> sollten die Aushänge aus den Zimmern verschwinden – sie führen sonst auf eine PIN-Eingabe, die niemand mehr bedienen kann.',
+      toLink: 'Beim Wechsel auf <b>individuelle Zugänge</b> können die Aushänge aus einem Zimmer, sobald der dortige Gast ausgecheckt hat – danach führen sie auf eine PIN-Eingabe, die niemand mehr bedienen kann.',
       toPin: 'Beim Wechsel auf <b>feste QR-Codes je Zimmer</b> brauchen Sie die Aushänge im Zimmer. Sie erscheinen dann unten auf dieser Seite.',
     },
-    linkWarning: 'Beim individuellen Zugang gibt es keinen zweiten Faktor: Der Link ist der Schlüssel. Weisen Sie Ihre Gäste darauf hin, das Blatt wie einen Zimmerschlüssel zu behandeln.',
+    linkWarning: 'Beim individuellen Zugang gibt es keinen zweiten Faktor: Der Link ist der Schlüssel. Das Check-in-Blatt weist den Gast darauf hin; am Tresen gehören ausgedruckte Blätter behandelt wie Zimmerschlüssel.',
     notices: {
       confirmed: 'Verfahren bestätigt – es gilt weiter wie bisher. Der Punkt „Gästezugang“ in der Einrichtung ist damit erledigt.',
-      switchedToLink: 'Umgestellt auf individuelle Zugänge. Ab dem nächsten Check-in bekommt jeder Gast seinen eigenen QR-Code – bitte die Aushänge aus den Zimmern nehmen.',
+      switchedToLink: 'Umgestellt auf individuelle Zugänge. Ab dem nächsten Check-in bekommt jeder Gast seinen eigenen QR-Code. Die Aushänge nehmen Sie aus einem Zimmer, sobald der dortige Gast ausgecheckt hat.',
       switchedToPin: 'Umgestellt auf feste QR-Codes je Zimmer. Ab dem nächsten Check-in gilt wieder QR-Code im Zimmer plus PIN – die Aushänge finden Sie jetzt unten auf dieser Seite.',
     },
     confirmHint: 'Bisher gilt die Vorgabe (fester QR-Code je Zimmer). Bestätigen Sie die Wahl einmal – auch wenn Sie dabei bleiben. Erst dann hält das Haus das Verfahren fest, und der Punkt gilt in der Einrichtung als erledigt.',

@@ -105,7 +105,7 @@ export const rooms = {
       other: '{count} Zimmer sind belegt und lassen sich nicht löschen – bitte zuerst auschecken.',
     },
     confirmLabel: 'Zum Bestätigen „{phrase}“ eingeben',
-    deactivateInstead: 'Lieber außer Betrieb nehmen – Belege bleiben erhalten',
+    deactivateInstead: 'Stattdessen außer Betrieb nehmen – die Historie bleibt erhalten',
 
     reactivated: {
       one: '{count} Zimmer wieder in Betrieb.',
