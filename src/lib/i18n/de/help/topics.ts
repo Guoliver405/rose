@@ -505,7 +505,7 @@ export const topics = {
           {
             zeichen: { art: 'icon', id: 'userminus', ton: 'caution' },
             label: 'Zugang beenden',
-            text: 'Anmeldung sofort tot, auch eine offene Sitzung. Nichts geht verloren; „Wieder aktivieren“ macht es rückgängig.',
+            text: 'Anmeldung sofort gesperrt, auch eine offene Sitzung endet. Nichts geht verloren; „Wieder aktivieren“ macht es rückgängig.',
           },
           {
             zeichen: { art: 'icon', id: 'trash', ton: 'critical' },
@@ -527,11 +527,11 @@ export const topics = {
           },
           {
             frage: 'Die Einladung ist nicht angekommen.',
-            antwort: 'Unter dem Sende-Knopf steht der Zustellstatus: übergeben, zugestellt oder abgewiesen – mit dem Grund des Empfänger-Servers. Meist ist es ein Tippfehler in der Adresse. Nach einem Bounce lässt sich die Adresse freigeben und erneut senden; und es gibt „Einladungslink anzeigen“, um den Link per Messenger oder auf Papier zu übergeben. Zwischen zwei Sendungen an denselben Bezug liegt eine Minute Wartezeit.',
+            antwort: 'Unter dem Sende-Knopf steht der Zustellstatus: übergeben, zugestellt oder abgewiesen – mit dem Grund des Empfänger-Servers. Meist ist es ein Tippfehler in der Adresse. Nach einer Abweisung lässt sich die Adresse freigeben und erneut senden; und es gibt „Einladungslink anzeigen“, um den Link per Messenger oder auf Papier zu übergeben. Zwischen zwei Sendungen an dieselbe Person liegt eine Minute Wartezeit.',
           },
           {
             frage: 'Zugang beenden oder löschen?',
-            antwort: 'Beenden, fast immer. Der Arbeitsnachweis bleibt vollständig, die Auswertung zeigt die Person weiter, und die Rückkehr ist ein Klick. Löschen nimmt bei der Reinigung die Einträge mit – deshalb der abgetippte Benutzername als Riegel. Beim Management bleibt das Anmeldekonto stehen, sobald Vorgänge daran hängen; der Dialog sagt das vorher.',
+            antwort: 'Beenden, fast immer. Der Arbeitsnachweis bleibt vollständig, die Auswertung zeigt die Person weiter, und die Rückkehr ist ein Klick. Löschen nimmt bei der Reinigung die Einträge mit – deshalb der abgetippte Benutzername als Riegel. Bei Rezeption und Managern bleibt das Anmeldekonto stehen, sobald Vorgänge daran hängen; der Dialog sagt das vorher.',
           },
           {
             frage: 'Was darf die Rezeption, was der Manager?',
@@ -543,7 +543,7 @@ export const topics = {
           },
           {
             frage: 'Warum brauchen Reinigungskräfte keine E-Mail?',
-            antwort: 'Sie melden sich mit Benutzername und PIN oder per Karte an; ein Postfach wäre eine Hürde ohne Nutzen. Der Benutzername ist nur in diesem Haus eindeutig – dieselbe Namensvetterin darf es in einem anderen Haus geben.',
+            antwort: 'Sie melden sich mit Benutzername und PIN oder per Karte an; ein Postfach wäre eine Hürde ohne Nutzen. Der Benutzername ist nur in diesem Haus eindeutig – derselbe darf in einem anderen Haus noch einmal vorkommen.',
           },
         ],
       },
@@ -571,7 +571,7 @@ export const topics = {
       {
         art: 'text',
         absaetze: [
-          'Ein Service ist ein Baukasten: oben der Name („Wäscheservice“), darunter die Optionen, aus denen der Gast wählt, jede wahlweise mit Preis. Zwei Kennzeichen steuern den Ablauf, sonst nichts – keine Kategorien, keine Zuständigkeiten.',
+          'Ein Service ist mit wenigen Angaben angelegt: Er besteht aus einem Namen („Wäscheservice“) und den Optionen, aus denen der Gast wählt, jede wahlweise mit Preis. Zwei Kennzeichen steuern den Ablauf, sonst nichts – keine Kategorien, keine Zuständigkeiten.',
         ],
       },
       {
@@ -581,7 +581,7 @@ export const topics = {
           {
             zeichen: { art: 'pille', text: 'dringend', ton: 'critical', icon: 'siren' },
             label: 'Dringend – wie laut',
-            text: 'Anfragen dazu blinken rot: auf der Zimmer-Kachel, auf dem Anfragen-Board und als Zahl in der Navigation. Für alles, was nicht warten kann.',
+            text: 'Anfragen dazu blinken rot: auf der Zimmer-Kachel, auf der Seite „Anfragen“ und als Zahl in der Navigation. Für alles, was nicht warten kann.',
           },
           {
             zeichen: { art: 'pille', text: 'Meldung ans Haus', ton: 'neutral' },
@@ -603,7 +603,7 @@ export const topics = {
           },
           {
             frage: 'Archivieren oder löschen?',
-            antwort: 'Archivieren. Der Service verschwindet aus dem Portal, alte Anfragen behalten ihren Bezug. Die Beispiel-Services sind ganz normale Services und lassen sich genauso archivieren.',
+            antwort: 'Archivieren. Der Service verschwindet aus dem Portal, alte Anfragen bleiben vollständig erhalten. Die Beispiel-Services sind ganz normale Services und lassen sich genauso archivieren.',
           },
           {
             frage: 'Kann ein Service mehrere Optionen zugleich erlauben?',
@@ -611,11 +611,11 @@ export const topics = {
           },
           {
             frage: 'Sieht der Gast auch Services ohne Optionen?',
-            antwort: 'Ja, dann bestellt er den Service als Ganzes. Der technische Dienst braucht keine Optionen, ein Wäscheservice schon.',
+            antwort: 'Ja, dann wählt er den Service als Ganzes – bestellt ihn oder meldet, etwa beim technischen Dienst, der keine Optionen braucht.',
           },
           {
             frage: 'Was ist ein „Verweis“?',
-            antwort: 'Eine Kachel im Gästeportal, die einen Link nach außen öffnet – etwa die Trinkgeld-App fürs Housekeeping-Team, ein Lieferdienst oder ein Taxi. Ein Verweis erzeugt keine Anfrage: nichts auf dem Board, nichts auf der Aufstellung. Vorlagen füllen das Formular vor; die Adresse passen Sie auf Ihr Konto oder Ihre Stadt an. Das Portal bettet nichts ein, es verlinkt nur – für das Ziel ist der Anbieter verantwortlich.',
+            antwort: 'Eine Kachel im Gästeportal, die einen Link nach außen öffnet – etwa die Trinkgeld-App fürs Reinigungsteam, ein Lieferdienst oder ein Taxi. Ein Verweis erzeugt keine Anfrage: nichts auf dem Board, nichts auf der Aufstellung. Vorlagen füllen das Formular vor; die Adresse passen Sie auf Ihr Konto oder Ihre Stadt an. Das Portal bettet nichts ein, es verlinkt nur – für das Ziel ist der Anbieter verantwortlich.',
           },
           {
             frage: 'Kann der Gast der Reinigungskraft persönlich Trinkgeld geben?',

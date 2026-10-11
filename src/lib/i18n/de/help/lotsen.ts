@@ -266,7 +266,7 @@ export const lotsen = {
     },
     'reinigung.login': {
       title: 'Anmeldung ohne E-Mail',
-      body: 'Eine Reinigungskraft hat Benutzernamen und PIN – oder scannt ihre gedruckte Zugangskarte und ist sofort drin. Beides gilt nur in diesem Haus; dieselbe Namensvetterin darf es anderswo noch einmal geben.',
+      body: 'Eine Reinigungskraft hat Benutzernamen und PIN – oder scannt ihre gedruckte Zugangskarte und ist sofort angemeldet. Beides gilt nur in diesem Haus; dieselbe Namensvetterin darf es anderswo noch einmal geben.',
     },
     'reinigung.schicht': {
       title: 'Erst Schichtbeginn, dann Arbeit',
@@ -352,7 +352,7 @@ export const lotsen = {
       body: 'Die Zahlen entstehen aus den Einträgen der Reinigungskräfte: Schichtbeginn und -ende, Pause, sonstige Reinigung, Start und Abschluss je Zimmer. „Netto-Arbeitszeit“ ist die Schicht ohne Pause, „Übrige Zeit“ das, was weder Zimmer- noch sonstige Reinigung war – Wege und Rüstzeit.',
     },
     'auswertung.auffaellig': {
-      title: 'Unplausibles fliegt aus den Summen',
+      title: 'Unplausibles zählt nicht in den Summen',
       body: 'Eine Schicht über 16 Stunden ist ein vergessenes Schichtende, eine Pause über vier Stunden dasselbe, und eine Reinigung ohne Abschluss zählt nicht als geleistete Arbeit. Solche Fälle werden hier gezählt statt eingerechnet – sonst schleppte eine offene Schicht die Arbeitszeit tagelang mit und machte die ganze Auswertung unbrauchbar.',
     },
     'auswertung.tabelle': {

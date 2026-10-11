@@ -59,7 +59,7 @@ export const mail = {
     complained: 'Der Empfänger hat die E-Mail als Spam gemeldet.',
     bounced: 'Vom Empfänger-Server abgewiesen.',
     bouncedDetail: 'Vom Empfänger-Server abgewiesen: {detail}',
-    suppressed: 'Nicht zugestellt: Die Adresse steht nach einem früheren Bounce auf der Sperrliste des Versanddienstes. Erst freigeben, dann erneut senden.',
+    suppressed: 'Nicht zugestellt: Die Adresse steht nach einer früheren Abweisung auf der Sperrliste des Versanddienstes. Erst freigeben, dann erneut senden.',
     failed: 'Konnte nicht verschickt werden.',
     failedDetail: 'Konnte nicht verschickt werden: {detail}',
   },
