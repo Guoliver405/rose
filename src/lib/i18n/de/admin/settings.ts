@@ -30,7 +30,7 @@ export const settings = {
       },
       myAccess: {
         title: 'Mein Zugang',
-        description: 'Eigenen Anzeigenamen und das Passwort für die Anmeldung ändern',
+        description: 'Eigene Anmelde-Adresse, Anzeigenamen und Passwort ändern',
       },
       testScenario: {
         title: 'Test-Szenario',
@@ -242,7 +242,54 @@ export const settings = {
       heading: 'Anmeldung',
       email: 'E-Mail (Anmeldung)',
       role: 'Rolle in diesem Haus',
-      hint: 'Die Anmelde-Adresse lässt sich hier nicht ändern – dafür wäre ein neuer Zugang nötig.',
+      hint: 'Mit dieser Adresse melden Sie sich an. Ändern lässt sie sich weiter unten.',
+    },
+    email: {
+      heading: 'Anmelde-Adresse ändern',
+      current: 'Aktuelles Passwort',
+      next: 'Neue E-Mail-Adresse',
+      hint: 'An die neue Adresse geht ein Bestätigungslink; erst der Klick darauf stellt um. Bis dahin melden Sie sich weiter mit der bisherigen Adresse an. Danach bekommt die bisherige Adresse einen Hinweis. Passwort, Rollen und Verlauf bleiben, wie sie sind.',
+      ownerHint: 'Als Inhaber bekommen Sie Rechnungen künftig an die neue Adresse. Rechnungsdaten, Zahlungsweg und Plan bleiben unverändert.',
+      send: 'Bestätigungslink senden',
+      releaseAndResend: 'Adresse freigeben und erneut senden',
+      sentTo: 'Bestätigungslink an {email} verschickt. Bitte im Postfach dieser Adresse auf den Link klicken – er gilt {hours} Stunden.',
+      pending: 'Offene Änderung: Bestätigung an {email} ausstehend, gültig bis {until}.',
+      cancel: 'Änderung abbrechen',
+      cancelled: 'Änderung abgebrochen. Der verschickte Link gilt nicht mehr.',
+      notConfigured: 'Der E-Mail-Versand ist nicht eingerichtet – ohne Bestätigungslink lässt sich die Adresse nicht ändern.',
+      errors: {
+        invalid: 'Bitte eine gültige E-Mail-Adresse angeben.',
+        same: 'Das ist bereits Ihre Anmelde-Adresse.',
+        currentMissing: 'Bitte das aktuelle Passwort eingeben.',
+        currentWrong: 'Das aktuelle Passwort stimmt nicht.',
+        notAllowed: 'Für diesen Zugang lässt sich die Adresse hier nicht ändern.',
+        failed: 'Die Änderung konnte nicht angelegt werden: {message}',
+      },
+    },
+    /** Seite hinter dem Bestätigungslink (`/auth/email-bestaetigen`). */
+    confirm: {
+      title: 'Neue Anmelde-Adresse bestätigen',
+      intro: 'Ab dem Bestätigen melden Sie sich bei RoSe mit <b>{email}</b> an. Passwort und Rollen bleiben, wie sie sind.',
+      button: 'Adresse bestätigen',
+      done: 'Erledigt – Ihre Anmelde-Adresse lautet jetzt <b>{email}</b>. Melden Sie sich ab sofort damit an.',
+      toLogin: 'Zur Anmeldung',
+      invalid: 'Dieser Link ist ungültig, abgelaufen oder wurde schon benutzt. Fordern Sie unter „Mein Zugang“ einen neuen an.',
+      taken: 'Zu dieser Adresse gibt es bereits einen Zugang zu RoSe. Eine Adresse kann nur zu einem Zugang gehören – die Anmelde-Adresse wurde nicht geändert.',
+      failed: 'Die Umstellung ist fehlgeschlagen. Bitte später erneut versuchen oder unter „Mein Zugang“ einen neuen Link anfordern.',
+    },
+    /** E-Mails des Ablaufs: Bestätigung an die neue Adresse, Hinweis an die bisherige. */
+    mails: {
+      confirm: {
+        subject: 'Bitte bestätigen: neue Anmelde-Adresse für RoSe',
+        intro: 'für Ihren RoSe-Zugang wurde diese Adresse als neue Anmelde-Adresse angegeben. Erst mit dem Klick auf den Knopf wird sie wirksam.',
+        button: 'Adresse bestätigen',
+        note: 'Der Link gilt {hours} Stunden. Haben Sie diese Änderung nicht veranlasst, ignorieren Sie die E-Mail einfach – dann ändert sich nichts.',
+      },
+      changed: {
+        subject: 'Ihre Anmelde-Adresse für RoSe wurde geändert',
+        intro: 'die Anmelde-Adresse Ihres RoSe-Zugangs wurde soeben geändert. Neue Adresse: <b>{email}</b>. An diese Adresse gehen künftig alle E-Mails von RoSe, auch Links zum Zurücksetzen des Passworts.',
+        notYou: 'Waren Sie das nicht? Dann hat jemand Ihr Passwort benutzt. Wenden Sie sich sofort an den Inhaber Ihres Hauses; ist der Inhaberzugang selbst betroffen, an uns – die Kontaktadresse steht im Impressum: {imprint}',
+      },
     },
     displayName: {
       heading: 'Anzeigename',

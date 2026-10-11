@@ -17,6 +17,8 @@ import { removeHotelLogo, uploadHotelLogo } from '@/utils/logo'
 import { isValidSlug, SLUG_MAX_LENGTH } from '@/lib/slug'
 import { format, getMessages } from '@/lib/i18n'
 import { getLocale } from '@/utils/locale'
+import { cancelEmailChange, requestEmailChange } from '@/utils/email-change'
+import type { MailResult } from '@/utils/mail'
 
 type ActionResult = { error?: string }
 
@@ -218,6 +220,52 @@ export async function changePasswordAction(slug: string, formData: FormData): Pr
     if (error.code === 'same_password') return { error: e.samePassword }
     return { error: error.message }
   }
+  return {}
+}
+
+/**
+ * Anmelde-Adresse ändern, erster Schritt: Link an die neue Adresse
+ * (11.10.2026, Ablauf und Begründung in `utils/email-change.ts`). Wie beim
+ * Passwort wird das aktuelle Passwort verlangt. `release` gibt eine Adresse
+ * auf der Sperrliste vorher frei (Entscheidung der Person am Bildschirm).
+ */
+export async function requestEmailChangeAction(
+  slug: string,
+  formData: FormData,
+  release = false,
+): Promise<{ error?: string; email?: string; expiresAt?: string | null; mail?: MailResult }> {
+  const t = getMessages(await getLocale()).admin.settings.myAccess.email
+  const e = await messages()
+  const ctx = await getManagementContext(slug)
+  if (!ctx) return { error: e.notSignedIn }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user?.email || user.id !== ctx.userId) return { error: e.notSignedIn }
+
+  const res = await requestEmailChange({
+    userId: ctx.userId,
+    currentEmail: user.email,
+    password: (formData.get('currentPassword') as string) ?? '',
+    newEmail: (formData.get('newEmail') as string) ?? '',
+    release,
+  })
+  if (res.kind === 'error') {
+    if (res.reason === 'notConfigured') return { error: t.notConfigured }
+    if (res.reason === 'failed') return { error: format(t.errors.failed, { message: res.message ?? '' }) }
+    return { error: t.errors[res.reason] }
+  }
+  revalidatePath(`/h/${ctx.hotelSlug}/admin/einstellungen/zugang`)
+  return { email: res.email, expiresAt: res.expiresAt, mail: res.mail }
+}
+
+/** Offene Änderung der Anmelde-Adresse verwerfen — der verschickte Link gilt danach nicht mehr. */
+export async function cancelEmailChangeAction(slug: string): Promise<ActionResult> {
+  const e = await messages()
+  const ctx = await getManagementContext(slug)
+  if (!ctx) return { error: e.notSignedIn }
+  await cancelEmailChange(ctx.userId)
+  revalidatePath(`/h/${ctx.hotelSlug}/admin/einstellungen/zugang`)
   return {}
 }
 

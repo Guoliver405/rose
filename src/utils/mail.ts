@@ -32,7 +32,9 @@ import { guideLines, type GuestGuide } from '@/lib/guest-guide'
 import { format, getMessages } from '@/lib/i18n'
 import { getLocale } from '@/utils/locale'
 import { SHEETS } from '@/lib/i18n/sheets'
-import { inviteMail, plainText, recoveryMail, richHtml, simConfirmMail, simExistsMail } from '@/lib/mail-templates'
+import {
+  emailChangeConfirmMail, emailChangedNoticeMail, inviteMail, plainText, recoveryMail, richHtml, simConfirmMail, simExistsMail,
+} from '@/lib/mail-templates'
 import { SIMULATOR_NAME } from '@/lib/sim-account'
 import {
   advance, domainPattern, MAIL_COOLDOWN_SECONDS, MAIL_LOG_RETENTION_DAYS,
@@ -576,6 +578,32 @@ export function sendRecoveryMail(m: {
     hotelId: m.hotelId,
     userId: m.userId,
     release: m.release,
+  })
+}
+
+// ─── Anmelde-Adresse ändern ──────────────────────────────────────────────────
+
+/** Bestätigungslink an die neue Anmelde-Adresse — gedrosselt je Person wie jede Mail. */
+export async function sendEmailChangeConfirmMail(m: { to: string; userId: string; url: string; hours: number }): Promise<MailResult> {
+  const texts = getMessages(await getLocale()).admin.settings.myAccess.mails
+  return dispatch({
+    purpose: 'email_change',
+    to: m.to,
+    fromName: 'RoSe',
+    ...emailChangeConfirmMail({ url: m.url, hours: m.hours, texts }),
+    userId: m.userId,
+  })
+}
+
+/** Hinweis an die bisherige Adresse, nachdem umgestellt wurde. */
+export async function sendEmailChangedNoticeMail(m: { to: string; userId: string; newEmail: string }): Promise<MailResult> {
+  const texts = getMessages(await getLocale()).admin.settings.myAccess.mails
+  return dispatch({
+    purpose: 'email_changed',
+    to: m.to,
+    fromName: 'RoSe',
+    ...emailChangedNoticeMail({ newEmail: m.newEmail, imprintUrl: `${siteBase()}/impressum`, texts }),
+    userId: m.userId,
   })
 }
 

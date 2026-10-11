@@ -21,7 +21,10 @@ import { format } from './i18n/format'
 import type { MailMessages } from './i18n'
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
 
-export type MailPurpose = 'invite' | 'recovery' | 'guest_access' | 'sim_confirm'
+export type MailPurpose =
+  | 'invite' | 'recovery' | 'guest_access' | 'sim_confirm'
+  // Anmelde-Adresse ändern (11.10.2026): Link an die neue, Hinweis an die alte Adresse.
+  | 'email_change' | 'email_changed'
 
 export type MailStatus =
   | 'queued'      // Zeile angelegt, Resend noch nicht gefragt

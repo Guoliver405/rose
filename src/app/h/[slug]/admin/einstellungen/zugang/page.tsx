@@ -6,9 +6,14 @@ import { createClient } from '@/utils/supabase/server'
 import ZugangForm from '../ZugangForm'
 import { getMessages } from '@/lib/i18n'
 import { getLocale } from '@/utils/locale'
+import { pendingEmailChange } from '@/utils/email-change'
+import { mailReady } from '@/utils/mail'
+import { EMAIL_CHANGE_TTL_HOURS } from '@/lib/email-change'
+import { parseTimeZone } from '@/lib/tz'
 
 /**
- * „Mein Zugang" — Anzeigename und Passwort der angemeldeten Person.
+ * „Mein Zugang" — Anmelde-Adresse, Anzeigename und Passwort der angemeldeten Person.
+ * Die Anmelde-Adresse ist seit 11.10.2026 selbst änderbar (`utils/email-change.ts`).
  *
  * Löst die frühere Seite `…/einstellungen/passwort` ab. Der Anzeigename kam
  * dazu, weil er bis dahin **gar nicht** änderbar war: die Kontoinhaber der
@@ -31,6 +36,15 @@ export default async function ZugangPage({
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  const offen = user ? await pendingEmailChange(user.id) : null
+  // Ablaufzeit hier formatieren, in der Zeitzone des Hauses — im Browser
+  // gerechnet, wiche sie zwischen Server- und Client-Render ab.
+  const pending = offen && {
+    email: offen.email,
+    until: new Intl.DateTimeFormat('de-DE', {
+      dateStyle: 'short', timeStyle: 'short', timeZone: parseTimeZone(ctx.policies),
+    }).format(new Date(offen.expiresAt)),
+  }
 
   return (
     <div className="flex max-w-2xl flex-col gap-5">
@@ -49,6 +63,10 @@ export default async function ZugangPage({
         displayName={ctx.displayName}
         email={user?.email ?? '—'}
         rolle={m.myAccess.roles[ctx.role]}
+        isOwner={ctx.isOwner}
+        pending={pending}
+        mailReady={mailReady()}
+        ttlHours={EMAIL_CHANGE_TTL_HOURS}
         m={m.myAccess}
       />
     </div>
