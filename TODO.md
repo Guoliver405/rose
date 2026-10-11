@@ -14,8 +14,11 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
       Innengesellschaft im selben Vertrag, Lizenz als Kette „Nettoerlöse −
       Kosten − Pauschale, Rest hälftig", Auslaufphase für Hotels, Konten
       bleiben bei den Lizenzgebern. AGB § 12 Abs. 3 (Vertragsübergang) dazu in
-      Produktion. **Wartet auf Bernd:** Registerauszug, Pauschale,
-      Abrechnungsrhythmus, Wortmarke; danach Steuerberater und Anwalt.
+      Produktion. ~~**Wartet auf Bernd:** Registerauszug, Pauschale,
+      Abrechnungsrhythmus, Wortmarke~~ — **11.10.: Gegenentwurf von Bernd**
+      (unentgeltliche Lizenz), angereichert mit Änderungsverfolgung und
+      Antwort-Mail ([Protokoll](Sessions/2026-10-11_Lizenzvertrag-Gegenentwurf.md)).
+      **Wartet auf Bernd** (Telefonat); danach Steuerberater und Anwalt.
 
 - [x] ~~**Login-Actions testen**~~ — 05.09. erledigt:
       [login.test.ts](tests/integration/login.test.ts) fährt beide Actions
