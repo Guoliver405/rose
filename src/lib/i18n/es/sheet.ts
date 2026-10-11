@@ -36,7 +36,7 @@ export const sheet = {
   services:
     'Pida toallas limpias, comunique una avería o solicite otros servicios directamente en el portal: recepción ve su solicitud al instante.',
   cleaningRoutine:
-    'Su habitación se limpia a diario a partir de las {due} — no tiene que solicitar nada; el día de salida, después del check-out. ¿Desea limpieza antes? Solicítela en el portal.',
+    'Su habitación se limpia a diario a partir de las {due}; el día de salida, después del check-out. No tiene que solicitar nada. ¿Desea una limpieza adicional? Solicítela en el portal.',
   cleaningOnRequest:
     'Su habitación se limpia cuando usted lo pide: solicite la limpieza en el portal cuando le venga bien — sin solicitud, no entramos en la habitación.',
   window: ' El portal admite solicitudes de limpieza a diario de {start} a {end}.',
@@ -46,7 +46,7 @@ export const sheet = {
   sustainabilityOnRequest:
     'Menos limpieza, menos consumo: cada limpieza que no hace falta ahorra agua, detergente y energía. Por eso solo vamos cuando usted lo desea.',
   access: {
-    link: 'El código QR o el enlace es su acceso personal, sin PIN. Solo es válido para esta estancia y caduca con el check-out.',
+    link: 'Este acceso es personal y no necesita PIN; por favor, no lo comparta. Solo es válido para esta estancia y caduca con el check-out.',
     pinDeep: 'Escanee el código QR e introduzca el PIN; después permanecerá conectado. El PIN es válido hasta el check-out.',
     pinManual: 'Abra la dirección, introduzca el número de habitación y el PIN; después permanecerá conectado. El PIN es válido hasta el check-out.',
   },
@@ -56,7 +56,7 @@ export const sheet = {
     intro: 'aquí tiene su acceso al portal de huéspedes de <b>{hotel}</b>, habitación <b>{room}</b>.',
     open: 'Abrir el portal de huéspedes',
     pin: 'Su PIN:',
-    fallback: 'Si el botón no se abre:',
+    fallback: 'Si el botón no funciona, abra esta dirección:',
     howTo: 'Cómo funciona el portal',
   },
 } satisfies Shape<SheetMessages>

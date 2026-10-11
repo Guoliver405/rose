@@ -46,7 +46,7 @@ describe('buildGuestGuide — Reinigung', () => {
 describe('buildGuestGuide — Zugang', () => {
   it('Link-Verfahren: ohne PIN, erlischt mit dem Check-out', () => {
     const g = buildGuestGuide({}, { accessMode: 'link', deepLink: true })
-    expect(g.access).toMatch(/ohne PIN/)
+    expect(g.access).toMatch(/braucht keine PIN/)
     expect(g.access).toMatch(/erlischt mit dem Check-out/)
     expect(g.access).not.toMatch(/PIN eingeben/)
   })

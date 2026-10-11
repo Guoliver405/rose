@@ -28,7 +28,7 @@ export const guest = {
     linkModeHint:
       'Unser Haus arbeitet mit persönlichen Zugängen: Bitte scannen Sie den QR-Code auf dem Blatt, das Sie beim Check-in erhalten haben, oder öffnen Sie den Link aus Ihrer E-Mail. Das Formular unten gilt nur, wenn Sie beim Check-in eine PIN erhalten haben.',
     invalidLink: 'Dieser Link ist ungültig.',
-    invalidLinkHint: 'Bitte wenden Sie sich an die Rezeption – oder melden Sie sich mit Zimmernummer und PIN an.',
+    invalidLinkHint: 'Bitte wenden Sie sich an die Rezeption.',
   },
 
   /** Mandantenfreie Hinweisseite `/guest` — hier spricht RoSe, nicht ein bestimmtes Haus. */
@@ -64,7 +64,7 @@ export const guest = {
     },
     done: {
       title: 'Ihr Zimmer wurde heute um {time} Uhr gereinigt.',
-      text: 'Brauchen Sie noch etwas? Dann tippen Sie auf „Zimmer reinigen“.',
+      text: 'Soll noch einmal gereinigt werden? Dann tippen Sie auf „Zimmer reinigen“.',
     },
     declined: {
       title: 'Heute keine Reinigung.',
@@ -72,11 +72,11 @@ export const guest = {
     },
     departure: {
       title: 'Heute ist Ihr Abreisetag.',
-      text: 'Das Zimmer wird nach dem Check-out gereinigt. Brauchen Sie vorher etwas, tippen Sie auf „Zimmer reinigen“.',
+      text: 'Das Zimmer wird nach dem Check-out gereinigt. Soll vorher noch gereinigt werden, tippen Sie auf „Zimmer reinigen“.',
     },
     none: {
       title: 'Heute ist keine Reinigung vorgesehen.',
-      firstDay: 'Ab morgen reinigt unser Haus täglich ab {time} Uhr. Wenn Sie heute etwas brauchen, tippen Sie auf „Zimmer reinigen“.',
+      firstDay: 'Ab morgen reinigt unser Haus täglich ab {time} Uhr. Möchten Sie heute schon eine Reinigung, tippen Sie auf „Zimmer reinigen“.',
       onRequest: 'Unser Haus reinigt auf Wunsch – tippen Sie auf „Zimmer reinigen“, wenn Sie es möchten.',
     },
   },
@@ -98,11 +98,11 @@ export const guest = {
         'Sie können die Reinigung bis spätestens <b>{limit} Uhr</b> aufschieben – vorher kommt niemand. Diese Grenze legt unser Haus fest, damit die Reinigung noch am selben Tag stattfinden kann.',
     },
     window:
-      'Reinigungswünsche nehmen wir täglich zwischen <b>{start}</b> und <b>{end}</b> Uhr entgegen. Bitte melden Sie sich in diesem Zeitraum noch einmal – oder wenden Sie sich an die Rezeption.',
+      'Reinigungswünsche nehmen wir täglich zwischen <b>{start}</b> und <b>{end}</b> Uhr entgegen. Tippen Sie in diesem Zeitraum einfach noch einmal auf „Zimmer reinigen“ – oder wenden Sie sich an die Rezeption.',
     skip: {
       label: 'Heute keine Reinigung',
       active: 'Danke! Gilt nur für heute – erneut tippen zum Zurücknehmen',
-      idle: 'Bestellungen kommen trotzdem. Morgen wird wieder gereinigt.',
+      idle: 'Services kommen trotzdem. Morgen wird wieder gereinigt.',
     },
     dnd: {
       label: 'Bitte nicht stören',
@@ -113,7 +113,7 @@ export const guest = {
 
   services: {
     heading: 'Service bestellen',
-    links: 'Angebote',
+    links: 'Nützliche Links',
     opensExternally: '{host} · öffnet in einem neuen Fenster',
     orders: 'Ihre Anfragen',
     notePlaceholder: 'Anmerkung (optional)',
@@ -123,9 +123,9 @@ export const guest = {
     sent: 'Ihre Anfrage ist bei der Rezeption.',
     fallbackName: 'Service',
     orderStatus: {
-      open: 'in Bearbeitung',
+      open: 'offen',
       done: 'erledigt',
-      cancelled: 'nicht erbracht',
+      cancelled: 'entfallen',
     },
   },
 
@@ -133,11 +133,11 @@ export const guest = {
     loginFailed: 'Anmeldung fehlgeschlagen – Zimmernummer oder PIN falsch.',
     pinFormat: 'Bitte die PIN eingeben (nur Ziffern).',
     tooManyAttempts: 'Zu viele Fehlversuche – bitte in {minutes} Min. erneut versuchen.',
-    tooManyFromNetwork: 'Zu viele Fehlversuche aus diesem Netz – bitte in {minutes} Min. erneut versuchen.',
-    sessionExpired: 'Sitzung abgelaufen – bitte neu anmelden.',
+    tooManyFromNetwork: 'Zu viele Fehlversuche – bitte in {minutes} Min. erneut versuchen oder an die Rezeption wenden.',
+    sessionExpired: 'Ihre Anmeldung ist abgelaufen – bitte melden Sie sich neu an.',
     invalidSignal: 'Ungültige Auswahl.',
     outsideWindow: 'Reinigungswünsche sind nur zwischen {start} und {end} Uhr möglich.',
-    deferNotAllowed: 'Aufschieben ist hier nicht möglich.',
+    deferNotAllowed: 'Unser Haus bietet das Aufschieben nicht an.',
     deferPast: 'Die gewählte Uhrzeit ist schon vorbei.',
     deferTooLate: 'Aufschieben ist nur bis {time} Uhr möglich.',
     saveFailed: 'Speichern fehlgeschlagen – bitte erneut versuchen.',

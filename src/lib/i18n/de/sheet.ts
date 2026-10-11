@@ -44,13 +44,13 @@ export const sheet = {
   },
   purpose:
     'Über das Gästeportal erreichen Sie die Rezeption direkt vom Zimmer aus – rund um die Uhr, ohne Anruf.',
-  dnd: '„Bitte nicht stören“ im Portal hält das Personal von Ihrem Zimmer fern, bis Sie es wieder zurücknehmen.',
+  dnd: '„Bitte nicht stören“ im Portal hält das Personal von Ihrem Zimmer fern, bis Sie es zurücknehmen.',
   services:
     'Wünsche wie frische Handtücher bestellen und Defekte melden Sie direkt im Portal – die Rezeption sieht Ihre Anfrage sofort.',
   cleaningRoutine:
-    'Ihr Zimmer wird täglich ab {due} Uhr gereinigt – Sie müssen nichts anfordern; am Abreisetag nach dem Check-out. Möchten Sie zwischendurch eine Reinigung, fordern Sie sie im Portal an.',
+    'Ihr Zimmer wird täglich ab {due} Uhr gereinigt, am Abreisetag nach dem Check-out – Sie müssen nichts anfordern. Möchten Sie zwischendurch eine weitere Reinigung, tippen Sie im Portal auf „Zimmer reinigen“.',
   cleaningOnRequest:
-    'Ihr Zimmer wird auf Wunsch gereinigt: Bitte fordern Sie die Reinigung im Portal an, sobald es Ihnen passt – ohne Anforderung bleibt das Zimmer unberührt.',
+    'Ihr Zimmer wird auf Wunsch gereinigt: Bitte fordern Sie die Reinigung im Portal an, sobald es Ihnen passt – ohne Ihren Wunsch kommt niemand ins Zimmer.',
   window: ' Reinigungswünsche nimmt das Portal täglich von {start} bis {end} Uhr entgegen.',
   defer: ' Im Portal können Sie die Reinigung auch bis spätestens {limit} Uhr aufschieben – vorher kommt dann niemand.',
   sustainabilityRoutine:
@@ -58,7 +58,7 @@ export const sheet = {
   sustainabilityOnRequest:
     'Weniger Reinigung, weniger Verbrauch: Jede Reinigung, die nicht nötig ist, spart Wasser, Waschmittel und Energie. Deshalb kommen wir nur, wenn Sie es möchten.',
   access: {
-    link: 'Der QR-Code bzw. Link ist Ihr persönlicher Zugang – ohne PIN. Er gilt nur für diesen Aufenthalt und erlischt mit dem Check-out.',
+    link: 'Dieser Zugang ist persönlich und braucht keine PIN – bitte geben Sie ihn nicht weiter. Er gilt nur für diesen Aufenthalt und erlischt mit dem Check-out.',
     pinDeep: 'QR-Code scannen und PIN eingeben – danach bleiben Sie angemeldet. Die PIN gilt bis zum Check-out.',
     pinManual: 'Adresse öffnen, Zimmernummer und PIN eingeben – danach bleiben Sie angemeldet. Die PIN gilt bis zum Check-out.',
   },
@@ -68,7 +68,7 @@ export const sheet = {
     intro: 'hier ist Ihr Zugang zum Gästeportal von <b>{hotel}</b>, Zimmer <b>{room}</b>.',
     open: 'Gästeportal öffnen',
     pin: 'Ihre PIN:',
-    fallback: 'Falls sich der Knopf nicht öffnen lässt:',
+    fallback: 'Falls der Knopf nicht funktioniert, öffnen Sie diese Adresse:',
     howTo: 'So funktioniert das Portal',
   },
 }
