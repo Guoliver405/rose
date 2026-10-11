@@ -862,7 +862,7 @@ export const topics = {
         eintraege: [
           {
             frage: 'Was bedeuten Netto-Arbeitszeit und Übrige Zeit?',
-            antwort: 'Netto = Schicht ohne Pausen. Übrige Zeit = Netto minus Zimmerreinigung minus sonstige Reinigung – also Wege, Rüstzeit, Warten. Eine hohe übrige Zeit ist nicht Faulheit, sondern meist weite Wege oder Leerlauf zwischen Wünschen.',
+            antwort: 'Netto = Schicht ohne Pausen. Übrige Zeit = Netto minus Zimmerreinigung minus sonstige Reinigung – also Wege, Rüstzeit, Warten. Eine hohe übrige Zeit bedeutet meist weite Wege oder Leerlauf zwischen Wünschen.',
           },
           {
             frage: 'Was zählt als „auffällig“?',
@@ -886,7 +886,7 @@ export const topics = {
           },
           {
             frage: 'In welcher Zeit werden die Stunden gebildet?',
-            antwort: 'In der Zeitzone des Hauses (Haus & Regeln). Ist sie falsch, verrutschen Tagesgrenzen und Stunden um die Differenz zur Serverzeit.',
+            antwort: 'In der Zeitzone des Hauses (Haus & Regeln). Ist sie falsch, verrutschen Tagesgrenzen und Stunden um den Zeitunterschied.',
           },
         ],
       },
@@ -924,11 +924,11 @@ export const topics = {
           },
           {
             frage: 'Passwort vergessen?',
-            antwort: 'Abmelden und auf der Anmeldeseite „Passwort vergessen“ wählen. Der Link kommt per E-Mail und lässt sich auf jedem Gerät öffnen. Kommt keine E-Mail, kann der Inhaber oder ein Manager unter Personal den Passwort-Link erneut senden oder direkt anzeigen.',
+            antwort: 'Abmelden und auf der Anmeldeseite „Passwort vergessen“ wählen. Der Link kommt per E-Mail und lässt sich auf jedem Gerät öffnen. Kommt keine E-Mail, kann der Inhaber oder ein Manager unter Personal den Passwort-Link erneut senden; ist die Zustellung gescheitert, lässt sich der Link auch anzeigen und selbst weitergeben.',
           },
           {
             frage: 'Kann ich die E-Mail-Adresse ändern?',
-            antwort: 'Hier nicht – die Adresse ist der Anmeldename. Bei einem Wechsel legt Inhaber oder Manager unter Personal einen neuen Zugang an und beendet den alten.',
+            antwort: 'Hier nicht – die Adresse ist der Anmeldename. Bei Rezeption und Managern legt der Inhaber einen neuen Zugang an und beendet den alten (die Rezeption kann auch ein Manager neu anlegen). Die Adresse des Inhabers selbst lässt sich derzeit nicht ändern.',
           },
         ],
       },
