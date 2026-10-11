@@ -11,7 +11,7 @@
  * hier steht nur noch der Aufbau. I/O-frei und getestet: HTML und Reintext
  * entstehen aus denselben Sätzen, damit sie nicht auseinanderlaufen.
  */
-import { format, getMessages, parseRich, type Vars } from './i18n'
+import { format, getMessages, parseRich, type AdminMessages, type Vars } from './i18n'
 
 export type MailContent = { subject: string; html: string; text: string }
 
@@ -155,5 +155,44 @@ export function simExistsMail(m: { loginUrl: string; resetUrl: string; toolName:
 </body></html>`
 
   const text = [t().greeting, '', satz, '', format(v.buttonText, { url: m.loginUrl }), '', `${v.forgot} ${m.resetUrl}`, '', v.note].join('\n')
+  return { subject: v.subject, html, text }
+}
+
+type EmailChangeMails = AdminMessages['settings']['myAccess']['mails']
+
+/**
+ * Bestätigungslink an die NEUE Anmelde-Adresse (11.10.2026). Erst der Klick
+ * stellt um; die Texte stehen unter „Mein Zugang“ in der Sprachdatei.
+ */
+export function emailChangeConfirmMail(m: { url: string; hours: number; texts: EmailChangeMails }): MailContent {
+  const v = m.texts.confirm
+  const note = format(v.note, { hours: m.hours })
+
+  const html = `<!doctype html>
+<html lang="de"><body style="${STYLE_BODY}">
+  <p>${escapeHtml(t().greeting)}</p>
+  <p>${escapeHtml(v.intro)}</p>
+  ${knopf(m.url, v.button)}
+  ${linkZeile(m.url)}
+  <p style="${STYLE_SMALL}">${escapeHtml(note)}</p>
+</body></html>`
+
+  const text = [t().greeting, '', v.intro, '', m.url, '', note].join('\n')
+  return { subject: v.subject, html, text }
+}
+
+/** Hinweis an die BISHERIGE Adresse, nachdem umgestellt wurde. */
+export function emailChangedNoticeMail(m: { newEmail: string; imprintUrl: string; texts: EmailChangeMails }): MailContent {
+  const v = m.texts.changed
+  const vars = { email: m.newEmail, imprint: m.imprintUrl }
+
+  const html = `<!doctype html>
+<html lang="de"><body style="${STYLE_BODY}">
+  <p>${escapeHtml(t().greeting)}</p>
+  <p>${richHtml(v.intro, vars)}</p>
+  <p>${richHtml(v.notYou, vars)}</p>
+</body></html>`
+
+  const text = [t().greeting, '', plainText(v.intro, vars), '', plainText(v.notYou, vars)].join('\n')
   return { subject: v.subject, html, text }
 }

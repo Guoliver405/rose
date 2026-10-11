@@ -1,10 +1,14 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { CheckCircle2, KeyRound, UserRound } from 'lucide-react'
-import { changePasswordAction, updateDisplayNameAction } from './actions'
+import { AtSign, CheckCircle2, KeyRound, RotateCw, UserRound } from 'lucide-react'
+import {
+  cancelEmailChangeAction, changePasswordAction, requestEmailChangeAction, updateDisplayNameAction,
+} from './actions'
 import type { AdminMessages } from '@/lib/i18n'
+import { format } from '@/lib/i18n/format'
+import { auswegButton, beginFrom, MailStatusLine, sendLabel, useMailDispatch } from '@/components/mail/MailDispatch'
 
 const inputClass =
   'rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink placeholder:text-ink-muted focus:border-action focus:outline-none'
@@ -14,6 +18,10 @@ export default function ZugangForm({
   displayName,
   email,
   rolle,
+  isOwner,
+  pending: offen,
+  mailReady,
+  ttlHours,
   m,
 }: {
   hotelSlug: string
@@ -21,6 +29,12 @@ export default function ZugangForm({
   email: string
   /** Klartext-Bezeichnung der Rolle in DIESEM Haus. */
   rolle: string
+  isOwner: boolean
+  /** Offene Änderung der Anmelde-Adresse, falls eine auf Bestätigung wartet. */
+  pending: { email: string; until: string } | null
+  /** Ohne E-Mail-Versand gibt es keinen Bestätigungslink und damit keine Änderung. */
+  mailReady: boolean
+  ttlHours: number
   m: AdminMessages['settings']['myAccess']
 }) {
   const router = useRouter()
@@ -30,6 +44,28 @@ export default function ZugangForm({
   const [nameSaved, setNameSaved] = useState(false)
   const [pwError, setPwError] = useState<string | null>(null)
   const [pwSaved, setPwSaved] = useState(false)
+  const [mailError, setMailError] = useState<string | null>(null)
+  const [mailNote, setMailNote] = useState<string | null>(null)
+  const mail = useMailDispatch()
+  // Formularinhalt für „freigeben und erneut senden“ — das Passwort steht
+  // danach nicht mehr im Feld, wohl aber hier, bis die Seite verlassen wird.
+  const letzteAnfrage = useRef<FormData | null>(null)
+
+  function sendeAdresse(formData: FormData, release: boolean, form?: HTMLFormElement) {
+    setMailError(null)
+    setMailNote(null)
+    letzteAnfrage.current = formData
+    startTransition(async () => {
+      const res = await requestEmailChangeAction(hotelSlug, formData, release)
+      if (res.error) { setMailError(res.error); return }
+      if (res.mail) mail.begin(beginFrom(res.mail, res.email))
+      if (res.expiresAt && res.email) {
+        form?.reset()
+        setMailNote(format(m.email.sentTo, { email: res.email, hours: ttlHours }))
+        router.refresh()
+      }
+    })
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -48,6 +84,92 @@ export default function ZugangForm({
         </dl>
         <p className="mt-2 text-xs text-ink-muted">{m.signIn.hint}</p>
       </section>
+
+      {/* ── Anmelde-Adresse ────────────────────────────────────────────── */}
+      <form
+        onSubmit={e => {
+          e.preventDefault()
+          sendeAdresse(new FormData(e.currentTarget), false, e.currentTarget)
+        }}
+        className="flex flex-col gap-4 rounded-xl border border-edge bg-surface p-4"
+      >
+        <h2 className="flex items-center gap-1.5 text-sm font-bold text-ink-soft">
+          <AtSign className="h-4 w-4" /> {m.email.heading}
+        </h2>
+
+        {!mailReady ? (
+          <p className="text-xs text-ink-muted">{m.email.notConfigured}</p>
+        ) : (
+          <>
+            {offen && (
+              <div className="flex flex-wrap items-center gap-3 rounded-lg border border-attention-tint-edge bg-attention-tint px-3 py-2 text-sm text-attention-deepest">
+                <span>
+                  {format(m.email.pending, { email: offen.email, until: offen.until })}
+                </span>
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => startTransition(async () => {
+                    const res = await cancelEmailChangeAction(hotelSlug)
+                    if (res.error) { setMailError(res.error); return }
+                    mail.reset()
+                    setMailNote(m.email.cancelled)
+                    router.refresh()
+                  })}
+                  className={auswegButton}
+                >
+                  {m.email.cancel}
+                </button>
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-4">
+              <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+                {m.email.next}
+                <input name="newEmail" type="email" required autoComplete="email" className={`${inputClass} w-64`} />
+              </label>
+              <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+                {m.email.current}
+                <input name="currentPassword" type="password" required autoComplete="current-password" className={`${inputClass} w-64`} />
+              </label>
+            </div>
+
+            <p className="text-xs text-ink-muted">{m.email.hint}</p>
+            {isOwner && <p className="text-xs text-ink-muted">{m.email.ownerHint}</p>}
+
+            {mailError && (
+              <p className="rounded-lg border border-critical-tint-edge bg-critical-tint px-3 py-2 text-sm font-semibold text-critical-strong">
+                {mailError}
+              </p>
+            )}
+            {mailNote && !mailError && (
+              <p className="flex items-center gap-1.5 rounded-lg border border-positive-pill-edge bg-positive-tint px-3 py-2 text-sm font-semibold text-positive-deep">
+                <CheckCircle2 className="h-4 w-4 shrink-0" /> {mailNote}
+              </p>
+            )}
+            <MailStatusLine mail={mail}>
+              {mail.failed && mail.run?.blocked?.canRelease !== false && (
+                <button
+                  type="button"
+                  disabled={pending || mail.remaining > 0}
+                  onClick={() => { if (letzteAnfrage.current) sendeAdresse(letzteAnfrage.current, true) }}
+                  className={`${auswegButton} text-critical-strong`}
+                >
+                  <RotateCw className="h-3.5 w-3.5" /> {m.email.releaseAndResend}
+                </button>
+              )}
+            </MailStatusLine>
+
+            <button
+              type="submit"
+              disabled={pending || mail.remaining > 0}
+              className="self-start rounded-lg border border-edge px-4 py-2 text-sm font-bold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
+            >
+              {sendLabel(m.email.send, mail)}
+            </button>
+          </>
+        )}
+      </form>
 
       {/* ── Anzeigename ───────────────────────────────────────────────── */}
       <form

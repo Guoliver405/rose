@@ -134,6 +134,33 @@ async function ownerEmail(accountId: string): Promise<string | undefined> {
   return data.user?.email ?? undefined
 }
 
+/**
+ * Neue Anmelde-Adresse des Inhabers an seine Stripe-Kunden weitergeben
+ * (11.10.2026) — an diese Adresse schickt Stripe die Rechnungen. Nur die
+ * E-Mail: Kunden-ID, Zahlungsweg und Rechnungsdaten bleiben, wie sie sind.
+ * Konten ohne Stripe-Kunden werden übersprungen; den legt `ensureStripeCustomer`
+ * später ohnehin mit der dann gültigen Adresse an. Fehler werden protokolliert
+ * und nicht weitergereicht — die Umstellung der Anmeldung ist schon passiert.
+ */
+export async function syncOwnerStripeEmail(userId: string, email: string): Promise<void> {
+  if (!stripeReady()) return
+  const admin = createAdminClient()
+  const { data: owned } = await admin
+    .from('account_members').select('account_id').eq('user_id', userId).eq('role', 'owner')
+  const ids = (owned ?? []).map(r => r.account_id as string)
+  if (ids.length === 0) return
+  const { data: accounts } = await admin.from('accounts').select('id, stripe_customer_id').in('id', ids)
+  const stripe = stripeClient()
+  for (const a of accounts ?? []) {
+    if (!a.stripe_customer_id) continue
+    try {
+      await stripe.customers.update(a.stripe_customer_id as string, { email })
+    } catch (err) {
+      if (!isMissing(err)) console.error('[stripe] E-Mail des Kunden nicht aktualisiert:', a.id, err instanceof Error ? err.message : err)
+    }
+  }
+}
+
 function isMissing(err: unknown): boolean {
   return err instanceof Stripe.errors.StripeError && err.code === 'resource_missing'
 }

@@ -909,7 +909,7 @@ export const topics = {
   },
   zugang: {
     title: 'Mein Zugang',
-    subtitle: 'Anzeigename und Passwort der angemeldeten Person',
+    subtitle: 'Anmelde-Adresse, Anzeigename und Passwort der angemeldeten Person',
     bloecke: [
       {
         art: 'fragen',
@@ -928,7 +928,15 @@ export const topics = {
           },
           {
             frage: 'Kann ich die E-Mail-Adresse ändern?',
-            antwort: 'Hier nicht – die Adresse ist der Anmeldename. Bei Rezeption und Managern legt der Inhaber einen neuen Zugang an und beendet den alten (die Rezeption kann auch ein Manager neu anlegen). Die Adresse des Inhabers selbst lässt sich derzeit nicht ändern.',
+            antwort: 'Ja, hier unter „Anmelde-Adresse ändern“ – für Inhaber, Manager und Rezeption. Sie geben Ihr aktuelles Passwort und die neue Adresse ein; an die neue Adresse geht ein Bestätigungslink, erst der Klick darauf stellt um. Bis dahin melden Sie sich weiter mit der alten Adresse an. Nach der Umstellung bekommt die alte Adresse einen Hinweis.',
+          },
+          {
+            frage: 'Was bleibt bei einer neuen Anmelde-Adresse gleich?',
+            antwort: 'Alles außer der Adresse: Passwort, Rollen in allen Häusern, Anzeigename und Verlauf. Beim Inhaber gehen Rechnungen künftig an die neue Adresse; Rechnungsdaten, Zahlungsweg und Plan bleiben unverändert.',
+          },
+          {
+            frage: 'Ich habe eine Benachrichtigung über eine geänderte Adresse bekommen, war es aber nicht.',
+            antwort: 'Dann hat jemand Ihr Passwort benutzt. Wenden Sie sich sofort an den Inhaber Ihres Hauses – bei Rezeption und Managern kann er den Zugang unter Personal beenden. Ist der Inhaberzugang selbst betroffen, wenden Sie sich an uns – die Kontaktadresse steht im Impressum.',
           },
         ],
       },
