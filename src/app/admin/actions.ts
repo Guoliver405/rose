@@ -177,7 +177,7 @@ export async function deleteHotelAction(
  * Das gesamte Konto entfernen. Löscht auch das eigene Anmeldekonto — die
  * Sitzung ist danach ungültig, der Aufrufer muss auf `/login` führen.
  */
-export async function deleteAccountAction(confirmPhrase: string): Promise<Result> {
+export async function deleteAccountAction(confirmPhrase: string): Promise<Result & { openInvoiceUrls?: string[] }> {
   const e = await messages()
   const ctx = await getAccountContext()
   if (!ctx) return { error: e.ownerOnlyDeleteAccount }
@@ -186,8 +186,9 @@ export async function deleteAccountAction(confirmPhrase: string): Promise<Result
   }
 
   const res = await deleteAccountData(ctx.accountId)
+  if (res.finalInvoiceError) return { error: format(e.finalInvoiceFailed, { message: res.finalInvoiceError }) }
   if (res.error) return { error: format(e.deleteFailed, { message: res.error }) }
 
   revalidatePath('/admin')
-  return {}
+  return res.openInvoiceUrls?.length ? { openInvoiceUrls: res.openInvoiceUrls } : {}
 }

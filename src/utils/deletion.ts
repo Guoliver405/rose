@@ -27,6 +27,7 @@
 import { createAdminClient } from '@/utils/supabase/service'
 import { purgeHotelLogos } from '@/utils/logo'
 import { deleteStripeCustomer } from '@/utils/stripe'
+import { finalBillPreview, settleAccountBeforeDeletion, type InvoiceGateway } from '@/utils/invoicing'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export type DeletionPreview = {
@@ -45,6 +46,12 @@ export type DeletionPreview = {
    * weitere Häuser betreut.
    */
   authUsersKept: number
+  /**
+   * Nur bei der Konto-Löschung: was die Schlussrechnung für den laufenden
+   * Monat ergibt (`null` = kein Zahlungssystem eingerichtet, es wird nichts
+   * berechnet).
+   */
+  finalBill?: { periodStart: string; rooms: number; cents: number; free: boolean } | null
 }
 
 /** Alle Auth-Konten, die mit diesen Häusern zu tun haben. */
@@ -153,7 +160,11 @@ export async function previewAccountDeletion(accountId: string): Promise<Deletio
     if (!bekannt.has(o.user_id as string)) zusaetzlich++
   }
 
-  return { ...preview, authUsers: preview.authUsers + zusaetzlich }
+  return {
+    ...preview,
+    authUsers: preview.authUsers + zusaetzlich,
+    finalBill: await finalBillPreview(accountId),
+  }
 }
 
 /**
@@ -263,8 +274,16 @@ export async function deleteHotelData(hotelId: string): Promise<{ error?: string
  * Löscht auch das eigene Anmeldekonto des Inhabers; die Sitzung ist danach
  * ungültig, die aufrufende Seite muss auf die Anmeldung führen.
  */
-export async function deleteAccountData(accountId: string): Promise<{ error?: string }> {
+export async function deleteAccountData(
+  accountId: string,
+  opts: { now?: Date; gateway?: InvoiceGateway } = {},
+): Promise<{ error?: string; finalInvoiceError?: string; openInvoiceUrls?: string[] }> {
   const admin = createAdminClient()
+
+  // Zuerst die Schlussrechnung — sie braucht Zimmer und Rechnungsdaten, die
+  // gleich verschwinden. Scheitert sie, bleibt alles stehen.
+  const settled = await settleAccountBeforeDeletion(accountId, opts)
+  if (settled.error) return { finalInvoiceError: settled.error }
 
   const { data: hotels } = await admin.from('hotels').select('id').eq('account_id', accountId)
   const alle = (hotels ?? []).map(h => h.id as string)
@@ -279,9 +298,12 @@ export async function deleteAccountData(accountId: string): Promise<{ error?: st
   const ownerIds = (owners ?? []).map(o => o.user_id as string)
 
   // Stripe-Kunde mit entfernen; Stripe behält dessen Rechnungen (Belege),
-  // RoSe die Spiegel-Zeilen in `invoices` (ohne Fremdschlüssel).
+  // RoSe die Spiegel-Zeilen in `invoices` (ohne Fremdschlüssel). Ist noch eine
+  // Rechnung offen (Überweisung, abgelehnte Karte), bleibt der Kunde stehen,
+  // damit Zahlungsseite und Einzugsversuche weiter funktionieren — der
+  // Stripe-Webhook entfernt ihn, sobald die letzte Rechnung erledigt ist.
   const { data: acc } = await admin.from('accounts').select('stripe_customer_id').eq('id', accountId).maybeSingle()
-  if (acc?.stripe_customer_id) await deleteStripeCustomer(acc.stripe_customer_id as string)
+  if (acc?.stripe_customer_id && !settled.openInvoices) await deleteStripeCustomer(acc.stripe_customer_id as string)
 
   const { error } = await admin.from('accounts').delete().eq('id', accountId)
   if (error) return { error: `accounts: ${error.message}` }
@@ -292,5 +314,5 @@ export async function deleteAccountData(accountId: string): Promise<{ error?: st
     if (authErr) console.error('[deletion] Auth-Konto blieb stehen:', userId, authErr.message)
   }
 
-  return {}
+  return settled.openInvoiceUrls?.length ? { openInvoiceUrls: settled.openInvoiceUrls } : {}
 }

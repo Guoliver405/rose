@@ -7,7 +7,7 @@ import {
 import { billingLine } from '@/lib/pricing'
 import { getMessages } from '@/lib/i18n'
 import { getLocale } from '@/utils/locale'
-import { periodKey, type BillingPeriod } from '@/lib/rooms'
+import { countBillableRooms, monthPeriod, periodKey, type BillingPeriod } from '@/lib/rooms'
 import {
   INVOICE_DUE_DAYS, SAAS_TAX_CODE, dateKeyFromUnix, invoiceFooter, invoiceIdempotencyKey,
   invoiceLineDescription, invoiceMemo, invoicePeriodFieldName, mapStripeInvoiceStatus, periodRangeLabel, previousMonthPeriod,
@@ -216,6 +216,8 @@ export async function ensureInvoiceForPeriod(
   accountId: string,
   period: BillingPeriod,
   gateway: InvoiceGateway,
+  /** Zimmerzahl vorgeben statt aus dem Snapshot lesen — nur für den laufenden Monat der Schlussrechnung. */
+  opts: { rooms?: number } = {},
 ): Promise<'created' | 'skipped' | 'failed'> {
   const admin = createAdminClient()
   const pk = periodKey(period)
@@ -230,7 +232,7 @@ export async function ensureInvoiceForPeriod(
 
   const { data: acc } = await admin.from('accounts').select('created_at').eq('id', accountId).maybeSingle()
   if (!acc) throw new Error('Konto nicht gefunden.')
-  const rooms = await roomsFromSnapshots(accountId, period)
+  const rooms = opts.rooms ?? await roomsFromSnapshots(accountId, period)
   const line = billingLine(rooms, new Date(acc.created_at as string), period.start)
   if (line.cents <= 0) return 'skipped'
 
@@ -353,6 +355,100 @@ export async function ensureInvoicesForAccount(accountId: string): Promise<void>
     await runMonthlyInvoicing({ accountIds: [accountId] })
   } catch (err) {
     console.error('[invoicing] Nachlauf für Konto fehlgeschlagen:', accountId, err instanceof Error ? err.message : err)
+  }
+}
+
+/** Zimmerzahl eines Kontos in einer noch offenen Periode — live aus den Zimmern, es gibt noch keinen Snapshot. */
+async function roomsLive(accountId: string, period: BillingPeriod): Promise<number> {
+  const admin = createAdminClient()
+  const { data: hotels } = await admin.from('hotels').select('id').eq('account_id', accountId)
+  const hotelIds = (hotels ?? []).map(h => h.id as string)
+  if (hotelIds.length === 0) return 0
+  const { data: rooms } = await admin
+    .from('rooms').select('created_at, deactivated_at').in('hotel_id', hotelIds)
+  return countBillableRooms((rooms ?? []) as { created_at: string; deactivated_at: string | null }[], period)
+}
+
+/** Was eine Schlussrechnung für den laufenden Monat ergäbe — für die Vorschau im Löschdialog. */
+export async function finalBillPreview(
+  accountId: string,
+  now: Date = new Date(),
+): Promise<{ periodStart: string; rooms: number; cents: number; free: boolean } | null> {
+  if (!stripeReady()) return null
+  const admin = createAdminClient()
+  const { data: acc } = await admin.from('accounts').select('created_at').eq('id', accountId).maybeSingle()
+  if (!acc) return null
+  const period = monthPeriod(now)
+  const line = billingLine(await roomsLive(accountId, period), new Date(acc.created_at as string), period.start)
+  return { periodStart: periodKey(period), rooms: line.rooms, cents: line.cents, free: line.free }
+}
+
+/**
+ * Schlussrechnung vor dem Löschen des Kontos (§ 7 Abs. 1 und 2 AGB: Kündigung
+ * zum Monatsende, auch durch Löschen; die Vergütung des Löschmonats bleibt
+ * geschuldet). Ohne sie fände der Monatslauf am Ersten kein Konto mehr, und
+ * der angebrochene Monat bliebe unberechnet.
+ *
+ * Zwei Perioden: der Vormonat, falls der Monatslauf ihn noch nicht abgerechnet
+ * hat (Löschen am Ersten vor dem Cron), und der laufende Monat — dessen
+ * Zimmerzahl live, weil er nie festgeschrieben wird und die Zimmer gleich
+ * verschwinden. Freimonat und Mindestbetrag regelt `billingLine` wie immer;
+ * 0 € ⇒ keine Rechnung. Rechnung und Einzug laufen wie im Monatslauf, Stripe
+ * behält die Rechnung, `invoices` hat keinen Fremdschlüssel.
+ *
+ * `openInvoices` sagt dem Aufrufer, ob noch eine Rechnung des Kontos offen ist
+ * (`openInvoiceUrls`: deren Zahlungsseiten)
+ * — dann muss der Stripe-Kunde stehen bleiben, sonst laufen Zahlungsseite und
+ * Mahnung ins Leere (der Webhook entfernt ihn, sobald alles bezahlt ist).
+ * Scheitert die Rechnung, wird nicht gelöscht: Geschuldetes darf nicht still
+ * mit dem Konto verschwinden.
+ */
+export async function settleAccountBeforeDeletion(
+  accountId: string,
+  opts: { now?: Date; gateway?: InvoiceGateway } = {},
+): Promise<{ openInvoices: boolean; openInvoiceUrls?: string[]; error?: string }> {
+  const gateway = opts.gateway ?? (stripeReady() ? stripeGateway() : null)
+  if (!gateway) return { openInvoices: false }
+  const now = opts.now ?? new Date()
+  const admin = createAdminClient()
+
+  const current = monthPeriod(now)
+  const perioden: [BillingPeriod, number | undefined][] = [
+    [previousMonthPeriod(now), undefined],
+    [current, await roomsLive(accountId, current)],
+  ]
+  for (const [period, rooms] of perioden) {
+    let error: string | null = null
+    try {
+      if (await ensureInvoiceForPeriod(accountId, period, gateway, { rooms }) === 'failed') {
+        const { data } = await admin.from('invoices').select('last_error')
+          .eq('account_id', accountId).eq('period_start', periodKey(period)).maybeSingle()
+        error = (data?.last_error as string | null) ?? 'unbekannter Fehler'
+      }
+    } catch (err) {
+      error = err instanceof Error ? err.message : String(err)
+    }
+    if (error === null) continue
+    // Der laufende Monat ist noch veränderlich: eine liegengebliebene Spiegel-
+    // Zeile ohne Stripe-Rechnung fröre seine Zimmerzahl ein, falls das Konto
+    // doch bestehen bleibt. Der Vormonat bleibt als `draft` mit Grund stehen
+    // wie im Monatslauf.
+    if (period === current) {
+      await admin.from('invoices').delete()
+        .eq('account_id', accountId).eq('period_start', periodKey(current)).is('stripe_invoice_id', null)
+    }
+    return { openInvoices: true, error }
+  }
+
+  // Offene Rechnungen samt Zahlungsseite: Nach dem Löschen gibt es keine
+  // Konto-Seite mehr, der Dialog zeigt die Links ein letztes Mal.
+  const { data: offen } = await admin.from('invoices').select('hosted_invoice_url')
+    .eq('account_id', accountId).in('status', ['draft', 'open']).order('period_start')
+  const rows = offen ?? []
+  if (rows.length === 0) return { openInvoices: false }
+  return {
+    openInvoices: true,
+    openInvoiceUrls: rows.map(r => r.hosted_invoice_url as string | null).filter((u): u is string => Boolean(u)),
   }
 }
 
