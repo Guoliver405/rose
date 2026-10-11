@@ -76,7 +76,7 @@ export const topics = {
         eintraege: [
           {
             frage: 'Warum ist ein Zimmer nach dem Check-out orange und nicht sofort grün?',
-            antwort: 'Der Zustand ist ereignisgetrieben: Der Check-out sagt „Reinigung offen“, und erst der Abschluss einer Reinigungskraft – oder Ihr „Reinigung als erledigt markieren“ im Dialog – sagt „bereit“. RoSe rät nicht, ob inzwischen jemand da war.',
+            antwort: 'RoSe zeigt nur, was tatsächlich gemeldet wurde: Der Check-out sagt „Reinigung offen“, und erst der Abschluss einer Reinigungskraft – oder Ihr „Reinigung als erledigt markieren“ im Dialog – sagt „bereit“. RoSe rät nicht, ob inzwischen jemand da war.',
           },
           {
             frage: 'Ich soll einchecken, das Zimmer ist aber nicht bereit. Geht das?',
@@ -96,7 +96,7 @@ export const topics = {
           },
           {
             frage: 'Was passiert beim Check-out genau?',
-            antwort: 'PIN, Link und die Sitzung des Gastes sind sofort tot, das Zimmer geht auf „Reinigung offen“. Offene Service-Anfragen dieses Aufenthalts werden als „nicht erbracht“ geschlossen – was tatsächlich erbracht wurde, haken Sie vorher im selben Kasten ab. Meldungen ans Haus (Defekte) bleiben offen. Hat der Gast Kostenpflichtiges bestellt, steht die Summe vor der Bestätigung im Dialog.',
+            antwort: 'PIN, Link und die Sitzung des Gastes sind sofort ungültig, das Zimmer geht auf „Reinigung offen“. Offene Service-Anfragen dieses Aufenthalts werden als „nicht erbracht“ geschlossen – was tatsächlich erbracht wurde, haken Sie vorher im selben Kasten ab. Meldungen ans Haus (Defekte) bleiben offen. Hat der Gast Kostenpflichtiges bestellt, steht die Summe vor der Bestätigung im Dialog.',
           },
           {
             frage: 'Wo finde ich die Aufstellung später wieder?',
@@ -116,7 +116,7 @@ export const topics = {
         art: 'verweise',
         eintraege: [
           {
-            label: 'Service-Anfragen',
+            label: 'Anfragen',
             hinweis: 'Was hinter Glocke und Zahl steckt',
             ziel: { art: 'thema', id: 'anfragen' },
           },
@@ -162,7 +162,7 @@ export const topics = {
           {
             zeichen: { art: 'pille', text: 'Erledigt', ton: 'positive', icon: 'check' },
             label: 'Erledigt',
-            text: 'Erbracht. Trägt die Anfrage einen Preis, erscheint sie damit auf der Aufstellung beim Check-out. Der Zeitpunkt und Ihr Name werden festgehalten.',
+            text: 'Die Leistung wurde erbracht. Trägt die Anfrage einen Preis, erscheint sie damit auf der Aufstellung beim Check-out. Der Zeitpunkt und Ihr Name werden festgehalten.',
           },
           {
             zeichen: { art: 'symbol', id: 'orders' },
@@ -176,7 +176,7 @@ export const topics = {
         eintraege: [
           {
             frage: 'Ich habe versehentlich „Erledigt“ gedrückt. Kann ich das zurücknehmen?',
-            antwort: 'Nein – es gibt bewusst keinen Rückweg, der Haken ist ein Ereignis mit Zeitpunkt und Namen. Die Anfrage steht dann mit Betrag auf der Aufstellung; klären Sie den Posten beim Check-out mit dem Gast. Wenn das öfter passiert, ist das eine Rückmeldung an uns wert.',
+            antwort: 'Nein – es gibt bewusst keinen Rückweg, der Haken ist ein Ereignis mit Zeitpunkt und Namen. Die Anfrage steht dann mit Betrag auf der Aufstellung; klären Sie den Posten beim Check-out mit dem Gast.',
           },
           {
             frage: 'Warum ist eine Anfrage nach dem Check-out weg?',
@@ -196,7 +196,7 @@ export const topics = {
           },
           {
             frage: 'Der Gast sagt, er habe bestellt, hier steht nichts.',
-            antwort: 'Prüfen Sie im Verlauf des Zimmers, ob eine Anfrage angekommen ist. Häufigste Ursache: Der Gast war im Portal eines anderen Zimmers (das Portal nennt Haus und Zimmer im Kopf) oder hat vor dem Absenden abgebrochen.',
+            antwort: 'Prüfen Sie im Verlauf des Zimmers, ob eine Anfrage angekommen ist. Häufigste Ursachen: Der Gast hat vor dem Absenden abgebrochen, oder er hat eine Kachel unter „Nützliche Links“ benutzt, etwa einen Lieferdienst – die führt nach außen und erzeugt keine Anfrage.',
           },
         ],
       },
@@ -257,7 +257,7 @@ export const topics = {
           },
           {
             frage: 'Neue Zimmer, aber kein Aushang?',
-            antwort: 'Der Aushang wird je Zimmer erzeugt. Nach dem Anlegen einmal zu den Aushängen gehen: Der Knopf dort erzeugt die fehlenden Codes auf einen Schlag.',
+            antwort: 'Nur im Verfahren mit festem QR-Code je Zimmer: Der Aushang wird je Zimmer erzeugt. Nach dem Anlegen einmal zu den Aushängen gehen (unten auf der Seite Gästezugang) – der Knopf dort erzeugt die fehlenden Codes auf einen Schlag.',
           },
         ],
       },
@@ -294,15 +294,15 @@ export const topics = {
         eintraege: [
           {
             frage: 'Warum ist die Zeitzone so wichtig?',
-            antwort: 'Alle Uhrzeiten dieser Seite gelten in ihr – und die Server laufen in UTC. Mit falscher Zeitzone wird eine tägliche Reinigung „ab 10:00“ tatsächlich erst um 12:00 fällig, das Zeitfenster liegt daneben, „heute gereinigt“ kippt nachts zur falschen Stunde und die Tagesgrenzen der Auswertung stimmen nicht.',
+            antwort: 'Alle Uhrzeiten dieser Seite gelten in ihr. Mit falscher Zeitzone wird die tägliche Reinigung zur falschen Stunde fällig, das Zeitfenster liegt daneben, „heute gereinigt“ wechselt nachts zur falschen Stunde, und die Tagesgrenzen der Auswertung stimmen nicht.',
           },
           {
             frage: 'Belegte Zimmer täglich reinigen – ja oder nein?',
-            antwort: 'Ab Werk aus: Gereinigt wird auf Wunsch des Gastes und nach dem Check-out. Das spart Wasser, Waschmittel und Arbeitszeit und ist Teil des Nachhaltigkeits-Versprechens. Eingeschaltet erscheinen belegte Zimmer ab der zweiten Nacht ab der Uhrzeit von selbst auf dem Board – außer bei „Bitte nicht stören“, bei einem Gast-Wunsch (der Gast hat entschieden), am Abreisetag und wenn heute schon gereinigt wurde.',
+            antwort: 'Ab Werk aus: Gereinigt wird auf Wunsch des Gastes und nach dem Check-out. Das spart Wasser, Waschmittel und Arbeitszeit und ist Teil des Nachhaltigkeits-Versprechens. Eingeschaltet erscheinen belegte Zimmer ab dem Tag nach der Anreise zur gewählten Uhrzeit von selbst auf dem Board – außer bei „Bitte nicht stören“, „Heute keine Reinigung“, am Abreisetag und wenn heute schon gereinigt wurde. Hat der Gast selbst einen Wunsch gesetzt, gilt sein Wunsch.',
           },
           {
             frage: 'Was bewirkt „Check-out bis“?',
-            antwort: 'Es ist die Untergrenze der täglichen Reinigung, solange RoSe nicht weiß, ob der Gast heute abreist: Dann wird sie nicht vor dieser Zeit fällig – wer danach noch da ist, bleibt. Sonst würde ein Abreisezimmer vor dem Check-out gereinigt und danach noch einmal. Ist beim Aufenthalt ein Abreisedatum eingetragen, gilt an den Tagen davor schon die eingestellte Uhrzeit. Das Check-in-Blatt nennt die Zeit ohne Abreisedatum.',
+            antwort: 'Solange RoSe nicht weiß, ob der Gast heute abreist, wird die tägliche Reinigung nicht vor dieser Uhrzeit fällig. So wird kein Abreisezimmer vor dem Check-out gereinigt und danach noch einmal. Ist beim Aufenthalt ein Abreisedatum eingetragen, gilt an den Tagen davor die normale Uhrzeit, und am Abreisetag entfällt die tägliche Reinigung. Das Check-in-Blatt nennt die Uhrzeit, die ohne Abreisedatum gilt.',
           },
           {
             frage: 'Wozu dient „Check-in ab“?',
@@ -310,7 +310,7 @@ export const topics = {
           },
           {
             frage: '„Frühestens ab“ – wie wähle ich die Grenze?',
-            antwort: 'Der Gast wünscht Reinigung, aber nicht vor einer Uhrzeit. Er darf volle Stunden zwischen jetzt und Ihrer Grenze wählen. Legen Sie sie so, dass die Reinigung danach noch in die Schicht fällt: Housekeeping bis 15:00 heißt Grenze 13:00. Ausschalten geht auch, dann gibt es im Portal nur „jetzt“.',
+            antwort: 'Der Gast wünscht Reinigung, aber nicht vor einer Uhrzeit. Er darf volle Stunden zwischen jetzt und Ihrer Grenze wählen. Legen Sie sie so, dass die Reinigung danach noch in die Schicht fällt: Housekeeping bis 15:00 heißt Grenze 13:00. Ausschalten geht auch – dann bietet das Portal keine Uhrzeit an, der Wunsch gilt sofort.',
           },
           {
             frage: 'Wozu ein Zeitfenster für den Reinigungswunsch?',
@@ -627,7 +627,7 @@ export const topics = {
         art: 'verweise',
         eintraege: [
           {
-            label: 'Service-Anfragen',
+            label: 'Anfragen',
             hinweis: 'Was aus den Anfragen wird',
             ziel: { art: 'thema', id: 'anfragen' },
           },
