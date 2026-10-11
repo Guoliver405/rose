@@ -1002,7 +1002,7 @@ export const topics = {
       {
         art: 'text',
         absaetze: [
-          'Ein Preis, keine Pakete: je Zimmer und Kalendermonat, mit einem Mindestbetrag je Konto. Alle Funktionen sind enthalten. Die Seite rechnet nichts selbst – Anzeige und Rechnung nutzen dieselbe Regel, damit nie zwei Zahlen im Raum stehen.',
+          'Ein Preis, keine Pakete: je Zimmer und Kalendermonat, mit einem Mindestbetrag je Konto. Alle Funktionen sind enthalten. Anzeige und Rechnung folgen derselben Regel.',
         ],
       },
       {
@@ -1022,7 +1022,7 @@ export const topics = {
           },
           {
             frage: 'Welche Zahlungswege gibt es?',
-            antwort: 'Karte oder SEPA-Lastschrift, ohne Belastung hinterlegt und beim Monatslauf eingezogen – oder Überweisung auf Rechnung mit eigener Bankverbindung, zahlbar in 14 Tagen. Rechnungsempfänger und Anschrift sind Pflicht, weil sonst die Steuer nicht gerechnet werden kann; in der EU außerhalb Deutschlands zusätzlich die USt-IdNr.',
+            antwort: 'Karte oder SEPA-Lastschrift, ohne Belastung hinterlegt und beim Monatslauf eingezogen – oder Überweisung auf Rechnung an die Bankverbindung, die auf der Rechnung steht, zahlbar in 14 Tagen. Rechnungsempfänger und Anschrift sind Pflicht, weil sonst die Steuer nicht gerechnet werden kann; in der EU außerhalb Deutschlands zusätzlich die USt-IdNr.',
           },
           {
             frage: 'Wann kommt die Rechnung, und wo finde ich sie?',
@@ -1034,7 +1034,7 @@ export const topics = {
           },
           {
             frage: 'Wie kündige ich?',
-            antwort: 'Monatlich zum Monatsende, durch Löschen des Kontos auf der Häuser-Seite. Ein Haus außer Betrieb zu nehmen reicht nicht – Zimmer außer Betrieb zählen im laufenden Monat noch.',
+            antwort: 'Zum Ende eines Kalendermonats – durch Löschen des Kontos unter „Daten löschen“ auf der Häuser-Seite oder in Textform, etwa per E-Mail an den Anbieter. Das Löschen wirkt sofort: Die Daten sind danach weg. Ein Haus außer Betrieb zu nehmen reicht nicht – Zimmer außer Betrieb zählen im laufenden Monat noch.',
           },
         ],
       },
