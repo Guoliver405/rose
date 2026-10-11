@@ -730,15 +730,15 @@ export const topics = {
             antwort: 'Es ist nicht gesperrt, sondern ohne Auftrag: unbelegt, belegt ohne Wunsch, „Bitte nicht stören“, heute keine Reinigung gewünscht (Blatt) oder eine Reinigung, die erst später gilt („ab 11:00“). Sichtbar bleibt es, damit die Etage vollständig ist. Zur Uhrzeit wechselt ein aufgeschobener Wunsch von selbst nach offen.',
           },
           {
-            frage: 'Ich klopfe, der Gast ist da und möchte gerade keine Reinigung.',
-            antwort: 'Zimmer antippen, ohne zu starten: „In 30 Min“, „In 1 Std“ oder „Heute nicht“. Später nimmt das Zimmer bis zur Uhrzeit vom Board – für das ganze Team, niemand klopft zwischendurch noch einmal –, danach ist es von selbst wieder offen. „Heute nicht“ erledigt das Zimmer für heute, ohne dass es als Reinigung zählt. Wünscht der Gast doch noch Reinigung, tippt er im Portal; dann ist es wieder offen.',
+            frage: 'Der Gast ist im Zimmer und möchte gerade keine Reinigung – was tut die Reinigungskraft?',
+            antwort: 'Zimmer antippen, ohne zu starten: „In 30 Min“, „In 1 Std“ oder „Heute nicht“. „In 30 Min“ und „In 1 Std“ nehmen das Zimmer bis zur Uhrzeit vom Board – für das ganze Team, niemand klopft zwischendurch noch einmal –, danach ist es von selbst wieder offen. „Heute nicht“ erledigt das Zimmer für heute, ohne dass es als Reinigung zählt. Wünscht der Gast doch noch Reinigung, tippt er im Portal; dann ist es wieder offen.',
           },
           {
             frage: 'Der Abschluss wurde vergessen.',
             antwort: 'Nach dem vom Haus eingestellten Zeitlimit (Vorgabe 90 Minuten) geht das Zimmer von selbst wieder auf offen; im Verlauf steht „Reinigung nicht abgeschlossen (Zeitlimit, Name)“. Die Reinigung zählt in der Auswertung dann nicht als geleistet – deshalb lohnt der Abschluss-Schieber immer.',
           },
           {
-            frage: 'Was heißt „Bitte nicht stören“ aufgehoben 9:40?',
+            frage: 'Was bedeutet die Anzeige „Bitte nicht stören“ aufgehoben 9:40?',
             antwort: 'Der Gast hat heute um 9:40 sein „Bitte nicht stören“ zurückgenommen, und seitdem wurde das Zimmer nicht gereinigt. Meist heißt das: Er ist gerade gegangen. Das Board zählt das Zimmer deshalb wie einen Reinigungswunsch – das Fenster kann sich wieder schließen, wenn der Gast zurückkommt und das Schild erneut aufhängt, etwa nach dem Mittagessen.',
           },
           {
@@ -750,7 +750,7 @@ export const topics = {
             antwort: 'Die Etage wählen heißt einbuchen: Team und Rezeption sehen, wer wo arbeitet, und die Empfehlung „Als Nächstes“ rechnet damit. Ein Fehltipper soll niemanden aus der Etage werfen, deshalb ist der Rückweg ein Schieber.',
           },
           {
-            frage: 'Kann ich Pause und sonstige Reinigung zugleich haben?',
+            frage: 'Gehen Pause und sonstige Reinigung zugleich?',
             antwort: 'Nein – beides sind Zeiträume innerhalb der Schicht und dürfen sich mit nichts überschneiden. Der Pausenbeginn beendet eine laufende sonstige Reinigung, das Schichtende beendet beides. Alle Wechsel liegen auf der Seite „Status“, nicht auf dem Board.',
           },
           {
@@ -758,8 +758,8 @@ export const topics = {
             antwort: 'Im Feld steht der Anzeigename statt des kurzen Benutzernamens – der steht auf der Zugangskarte unter „Zugangsdaten“. Oder der Zugang wurde beendet; dann sagt die Seite das. Die Karte scannen ist der Weg ohne Tippen.',
           },
           {
-            frage: 'Woher weiß die Rezeption, was ich gemacht habe?',
-            antwort: 'Aus den Einträgen: Schichtbeginn und -ende, Pause, sonstige Reinigung, Start und Abschluss je Zimmer. Daraus rechnet die Auswertung Arbeits- und Reinigungszeiten; der Zimmer-Verlauf zeigt jede Reinigung mit Namen.',
+            frage: 'Woher weiß die Rezeption, was gearbeitet wurde?',
+            antwort: 'Aus den Einträgen: Schichtbeginn und -ende, Pause, sonstige Reinigung, Start und Abschluss je Zimmer. Daraus rechnet die Auswertung Arbeits- und Reinigungszeiten; der Zimmer-Verlauf zeigt jede Reinigung mit Namen – im Team-Modus als „Reinigungsteam“.',
           },
         ],
       },
@@ -794,11 +794,11 @@ export const topics = {
         eintraege: [
           {
             frage: 'Wie kommt der Gast ins Portal?',
-            antwort: 'Im PIN-Verfahren auf zwei gleichwertigen Wegen: Zimmer-QR scannen und PIN eingeben, oder die Adresse des Hauses aufrufen und Zimmernummer plus PIN eingeben (beides steht auf dem Check-in-Blatt). Beim individuellen Zugang öffnet er seinen QR-Code bzw. Link und ist ohne PIN drin. Danach merkt sich ein Cookie den Aufenthalt.',
+            antwort: 'Im PIN-Verfahren auf zwei gleichwertigen Wegen: Zimmer-QR scannen und PIN eingeben, oder die Adresse des Hauses aufrufen und Zimmernummer plus PIN eingeben (beides steht auf dem Check-in-Blatt). Beim individuellen Zugang öffnet er seinen QR-Code bzw. Link und ist ohne PIN drin. Danach bleibt er auf seinem Gerät angemeldet.',
           },
           {
             frage: 'Der Gast hat sich ausgesperrt.',
-            antwort: 'Nach fünf falschen PINs ist der Aufenthalt 15 Minuten gesperrt – auch für die richtige PIN. Das gilt nur für dieses Zimmer, nicht für das Haus. Die PIN steht im Zimmer-Dialog; ein Wechsel der PIN ist nicht vorgesehen, bei Bedarf hilft aus- und wieder einchecken.',
+            antwort: 'Nach fünf falschen PINs ist der Aufenthalt 15 Minuten gesperrt – auch für die richtige PIN. Das gilt nur für dieses Zimmer, nicht für das Haus. Danach geht es wieder; die richtige PIN steht im Zimmer-Dialog. Aus- und wieder einchecken ist kein guter Ausweg: Der Check-out schließt offene Anfragen und setzt das Zimmer auf „Reinigung offen“.',
           },
           {
             frage: 'Was bewirkt „Zimmer reinigen“?',
@@ -818,7 +818,7 @@ export const topics = {
           },
           {
             frage: 'Bezahlt der Gast im Portal?',
-            antwort: 'Nein. Er sieht Preise als Anzeige und bestellt mit einem Tipp; die Anfrage landet auf Ihrem Board. Beim Check-out zeigt RoSe die Summe des Erbrachten – kassiert wird am Tresen wie bisher.',
+            antwort: 'Nein. Er sieht Preise als Anzeige und bestellt mit einem Tipp; die Anfrage landet bei Ihnen unter „Anfragen“. Beim Check-out zeigt RoSe die Summe des Erbrachten – kassiert wird am Tresen wie bisher.',
           },
           {
             frage: 'In welcher Sprache ist das Portal?',
