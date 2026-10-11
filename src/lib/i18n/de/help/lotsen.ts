@@ -105,7 +105,7 @@ export const lotsen = {
     },
     'gastzugang.wahl': {
       title: 'Zwei Wege ins Gästeportal',
-      body: 'Beim festen Zimmer-QR klebt ein einmal gedruckter Code im Zimmer, und jeder Aufenthalt bekommt seine eigene PIN – zwei Faktoren. Beim individuellen Zugang entsteht je Aufenthalt ein eigener Link ohne PIN, der mit dem Check-out erlischt: bequemer, aber wer das Blatt sieht, ist drin.',
+      body: 'Beim festen Zimmer-QR steht ein einmal gedruckter Code im Zimmer, und jeder Aufenthalt bekommt seine eigene PIN – zwei Faktoren. Beim individuellen Zugang entsteht je Aufenthalt ein eigener Link ohne PIN, der mit dem Check-out erlischt: bequemer, aber wer das Blatt sieht, ist drin.',
     },
     'gastzugang.speichern': {
       title: 'Ein Wechsel ist folgenlos für laufende Aufenthalte',
@@ -217,7 +217,7 @@ export const lotsen = {
     'gastzugang.sprachen': {
       title: 'Piktogramme statt Sprachliste',
       body: 'Die gedruckten Blätter erklären das Portal mit Bildern seiner Knöpfe – daneben steht Text in einer Hauptsprache und wahlweise einer zweiten. Mehr Sprachen aufs Papier zu drucken hilft weniger, als es an Platz kostet: Wer weder Ihre Landessprache noch Englisch liest, kommt über die Bilder und den QR-Code weiter und übersetzt im Portal mit dem Handy.',
-      tun: 'Die erste Sprache ist zugleich die der Zugangs-Mail – die zweite steht nur auf dem Ausdruck.',
+      tun: 'Die erste Sprache ist zugleich die der Zugangs-E-Mail – die zweite steht nur auf dem Ausdruck.',
     },
     'gastzugang.aushang': {
       title: 'Die Aushänge für die Zimmer',
@@ -225,11 +225,11 @@ export const lotsen = {
     },
     'aushang.karte': {
       title: 'Ein Aushang je Zimmer',
-      body: 'Die Karte hängt im Zimmer: QR-Code, Zimmernummer, Hausname. Der Gast scannt sie und tippt nur noch seine PIN. Der Code gehört zum Zimmer, nicht zum Aufenthalt – er bleibt über alle Gäste hinweg gültig und wird genau einmal gedruckt.',
+      body: 'Der Aushang kommt ins Zimmer – in einen Aufsteller, einen Rahmen oder die Mappe: QR-Code, Zimmernummer, Hausname. Der Gast scannt sie und tippt nur noch seine PIN. Der Code gehört zum Zimmer, nicht zum Aufenthalt – er bleibt über alle Gäste hinweg gültig und wird genau einmal gedruckt.',
     },
     'aushang.knopf': {
       title: 'Erst erzeugen, dann drucken',
-      body: 'Zimmer ohne Code sammeln sich hier: Der Knopf erzeugt die fehlenden auf einmal. Sind alle da, wird er zum Druck-Knopf – eine Seite je Karte, damit man sie einzeln aufhängen kann. Neu angelegte Zimmer brauchen also einen zweiten Durchgang.',
+      body: 'Zimmer ohne Code sammeln sich hier: Der Knopf erzeugt die fehlenden auf einmal. Sind alle da, wird er zum Druck-Knopf – eine Seite je Zimmer, damit sich jeder Aushang einzeln verwenden lässt. Neu angelegte Zimmer brauchen also einen zweiten Durchgang.',
     },
     'aushang.erneuern': {
       title: 'Erneuern macht den alten Aushang ungültig',

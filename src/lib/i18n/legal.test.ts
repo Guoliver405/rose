@@ -33,6 +33,6 @@ describe('Rechtstexte – Schreibweise (deutsch)', () => {
   })
 
   it('schreibt „E-Mail“, nicht „Mail“ (Entscheidung 13)', () => {
-    expect(hits(/(?<![-\w])Mails?\b/)).toEqual([])
+    expect(hits(/(?<![-\w])Mails?\b|(?<!E)-Mails?\b/)).toEqual([])
   })
 })

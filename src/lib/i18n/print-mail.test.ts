@@ -20,7 +20,7 @@ describe('Druck und Mail — Begriffe und Schreibweise (deutsch)', () => {
   })
 
   it('schreibt „E-Mail“, nicht „Mail“ (Entscheidung 13)', () => {
-    expect(all.filter(([, t]) => /(?<![-\w])Mails?\b/.test(t))).toEqual([])
+    expect(all.filter(([, t]) => /(?<![-\w])Mails?\b|(?<!E)-Mails?\b/.test(t))).toEqual([])
   })
 
   it('setzt deutsche Anführungszeichen und den kurzen Gedankenstrich (Entscheidung 13)', () => {

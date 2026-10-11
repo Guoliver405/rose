@@ -45,6 +45,6 @@ describe('Landing Page — Begriffe und Schreibweise (deutsch)', () => {
   it('setzt deutsche Anführungszeichen, den kurzen Gedankenstrich und „E-Mail“ (Entscheidung 13)', () => {
     expect(hits(/"|—/)).toEqual([])
     expect(all.filter(([, t]) => (t.match(/„/g) ?? []).length !== (t.match(/“/g) ?? []).length)).toEqual([])
-    expect(hits(/(?<![-\w])Mails?\b/)).toEqual([])
+    expect(hits(/(?<![-\w])Mails?\b|(?<!E)-Mails?\b/)).toEqual([])
   })
 })

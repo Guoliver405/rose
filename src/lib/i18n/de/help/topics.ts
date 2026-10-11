@@ -362,7 +362,7 @@ export const topics = {
       {
         art: 'text',
         absaetze: [
-          'Zwei Wege ins Gästeportal, Wahl je Haus. Beim festen Zimmer-QR klebt ein einmal gedruckter Code im Zimmer, und jeder Aufenthalt bekommt seine PIN. Beim individuellen Zugang entsteht je Aufenthalt ein eigener Code bzw. Link ohne PIN, der mit dem Check-out erlischt.',
+          'Zwei Wege ins Gästeportal, Wahl je Haus. Beim festen Zimmer-QR steht ein einmal gedruckter Code im Zimmer, und jeder Aufenthalt bekommt seine PIN. Beim individuellen Zugang entsteht je Aufenthalt ein eigener Code bzw. Link ohne PIN, der mit dem Check-out erlischt.',
           'Verfahren und Sprachen werden erst mit Speichern wirksam. Ist etwas geändert, steht unten am Bildschirm eine Leiste „Ungespeicherte Änderungen“, die beide Abschnitte zusammen speichert oder verwirft. Nur das Bestätigen der Vorgabe geht über den Knopf unter den beiden Karten.',
         ],
       },
@@ -371,7 +371,7 @@ export const topics = {
         eintraege: [
           {
             frage: 'Welches Verfahren passt zu uns?',
-            antwort: 'Fester QR + PIN, wenn Sie Aushänge in den Zimmern anbringen können und zwei Faktoren wollen (Code im Zimmer, PIN vom Tresen). Individueller Zugang, wenn Aushänge nicht möglich oder nicht gewünscht sind – bequemer für den Gast, aber wer das Blatt sieht, ist drin. Die Seite stellt beides ausführlich gegenüber.',
+            antwort: 'Fester QR + PIN, wenn Sie in den Zimmern einen Aushang aufstellen oder anbringen können und zwei Faktoren wollen (Code im Zimmer, PIN vom Tresen). Individueller Zugang, wenn Aushänge nicht möglich oder nicht gewünscht sind – bequemer für den Gast, aber wer das Blatt sieht, ist drin. Die Seite stellt beides ausführlich gegenüber.',
           },
           {
             frage: 'Was passiert mit laufenden Aufenthalten, wenn ich wechsle?',
@@ -387,7 +387,7 @@ export const topics = {
           },
           {
             frage: 'Warum nur ein bis zwei Sprachen auf dem Papier?',
-            antwort: 'Die Blätter erklären das Portal mit Bildern seiner Knöpfe; Text steht in einer Hauptsprache und wahlweise einer zweiten. Vier Sprachen halfen dem italienischen oder polnischen Gast auch nicht und machten das Blatt zum Formular. Wer keine der beiden liest, kommt über Bilder und QR ins Portal und übersetzt dort mit dem Handy. Die erste Sprache ist zugleich die der Zugangs-Mail.',
+            antwort: 'Die Blätter erklären das Portal mit Bildern seiner Knöpfe; Text steht in einer Hauptsprache und wahlweise einer zweiten. Mehr Sprachen helfen wenig: Für jede, die auf dem Blatt steht, fehlen viele andere – und das Blatt wird zum Formular. Wer keine der beiden liest, kommt über Bilder und QR ins Portal und übersetzt dort mit dem Handy. Die erste Sprache ist zugleich die der Zugangs-E-Mail.',
           },
           {
             frage: 'Wo sind die Aushänge hin?',
@@ -432,7 +432,7 @@ export const topics = {
           },
           {
             frage: 'Warum steht auf dem Aushang keine Reinigungszeit?',
-            antwort: 'Der Aushang hängt dauerhaft. Eine gedruckte Regel veraltet stillschweigend, sobald das Haus seine Reinigungsregeln umstellt – 200 Blätter lügen dann an der Wand. Regel und Uhrzeiten stehen nur auf dem Check-in-Blatt, das je Check-in frisch entsteht.',
+            antwort: 'Der Aushang hängt dauerhaft. Eine gedruckte Regel veraltet stillschweigend, sobald das Haus seine Reinigungsregeln umstellt – dann stimmen 200 Aushänge nicht mehr. Regel und Uhrzeiten stehen nur auf dem Check-in-Blatt, das je Check-in frisch entsteht.',
           },
           {
             frage: 'Der Ausdruck kommt ohne Farben aus dem Drucker.',
@@ -443,8 +443,8 @@ export const topics = {
             antwort: '„Code erneuern“ erzeugt einen neuen Code für genau dieses Zimmer; der alte Aushang ist ab dann ungültig. Nur Inhaber und Manager können das, und es betrifft immer nur ein Zimmer. Danach neu drucken.',
           },
           {
-            frage: 'Die Zugangs-Mail landet beim Gast im Spam.',
-            antwort: 'Das ist Sendereputation, kein Fehler – das Check-in-Blatt weist darauf hin. Bei einer abgewiesenen Adresse steht der Grund unter dem Knopf; ein Tippfehler in der Adresse ist der häufigste. Der Ausweg ist immer der Druck.',
+            frage: 'Die Zugangs-E-Mail landet beim Gast im Spam.',
+            antwort: 'Neue Absender landen bei manchen E-Mail-Anbietern anfangs öfter im Spam – das liegt nicht am Haus. Bitten Sie den Gast, dort nachzusehen. Bei einer abgewiesenen Adresse steht der Grund unter dem Knopf; ein Tippfehler in der Adresse ist der häufigste. Der Ausweg ist immer der Druck.',
           },
           {
             frage: 'Eine Zugangskarte ist verloren.',
@@ -826,7 +826,7 @@ export const topics = {
           },
           {
             frage: 'Was weiß RoSe über den Gast?',
-            antwort: 'Nichts. Ein Aufenthalt ist Zimmer, Zeitraum, PIN oder Link – kein Name, keine Adresse. Eine für die Zugangs-Mail eingegebene Adresse wird nicht gespeichert. Mit dem Check-out erlöschen PIN, Link und Cookie.',
+            antwort: 'Nichts. Ein Aufenthalt ist Zimmer, Zeitraum, PIN oder Link – kein Name, keine Adresse. Eine für die Zugangs-E-Mail eingegebene Adresse wird nicht gespeichert. Mit dem Check-out erlöschen PIN, Link und Cookie.',
           },
         ],
       },

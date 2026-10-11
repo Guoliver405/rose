@@ -119,7 +119,7 @@ export const settings = {
     modes: {
       pin: {
         title: 'Fester QR-Code je Zimmer',
-        subtitle: 'Standard – der QR-Code hängt im Zimmer, der Gast tippt seine PIN',
+        subtitle: 'Standard – der QR-Code steht im Zimmer, der Gast tippt seine PIN',
         steps: [
           'Jedes Zimmer bekommt einmalig einen QR-Code zum Aushängen oder Aufstellen.',
           'Beim Check-in erhält der Gast eine PIN – ausgedruckt oder mündlich.',
@@ -127,7 +127,7 @@ export const settings = {
           'Danach bleibt er auf seinem Gerät angemeldet und muss nichts mehr eingeben.',
         ],
         pros: [
-          'Der QR-Code hängt im Zimmer und geht nicht verloren; die PIN kann die Rezeption jederzeit noch einmal nennen.',
+          'Der QR-Code bleibt im Zimmer und geht nicht verloren; die PIN kann die Rezeption jederzeit noch einmal nennen.',
           'Es muss nichts gedruckt werden: Die PIN kann auch mündlich genannt werden.',
           'Die QR-Codes werden einmal gedruckt und bleiben dauerhaft gültig.',
           'Jedes Gerät einer Reisegruppe meldet sich selbst an.',

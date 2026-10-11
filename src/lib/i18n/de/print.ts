@@ -46,7 +46,7 @@ export const print = {
       other: 'Alle drucken ({count} Seiten)',
     },
     hint:
-      'Einmal drucken, im Zimmer aufhängen oder in die Mappe legen – der Gast scannt und tippt nur noch seine PIN, die er beim Check-in bekommt. Das kompakte Format lässt sich auseinanderschneiden. Ein neuer Code macht den alten Aushang des Zimmers ungültig.',
+      'Einmal drucken, im Zimmer aufstellen, aufhängen oder in die Mappe legen – der Gast scannt und tippt nur noch seine PIN, die er beim Check-in bekommt. Das kompakte Format lässt sich auseinanderschneiden. Ein neuer Code macht den alten Aushang des Zimmers ungültig.',
     noRooms: 'Noch keine Zimmer angelegt.',
     allHaveCodes: 'Alle Zimmer haben bereits einen QR-Code.',
     created: {
