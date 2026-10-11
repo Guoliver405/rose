@@ -1,8 +1,8 @@
 /**
  * Zeichensprache der Zimmer-Kacheln — deutsche Beschriftungen und Legenden-
  * texte (ausgelagert 11.10.2026). Struktur, Farbklassen und Icons stehen in
- * `room-symbols.ts`; hier nur die Worte, die Boards, Tooltips und die Legende
- * der Hilfe teilen.
+ * `room-symbols.ts`; hier nur die Worte – gelesen von der Legende der Hilfe
+ * über `getMessages(…).symbols`, Schlüssel sind die IDs aus `room-symbols.ts`.
  *
  * Begriffe nach `Sessions/Begriffe-Entscheidungen.md`: „tägliche Reinigung“
  * statt „Routine“, „Bitte nicht stören“, „Haus & Regeln“, „jemand aus dem

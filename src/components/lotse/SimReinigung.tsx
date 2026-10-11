@@ -6,10 +6,15 @@ import {
   KeyRound, Loader2, QrCode, SlidersHorizontal, Sparkles, Target, Users,
 } from 'lucide-react'
 import SlideAction from '@/components/SlideAction'
+import { format } from '@/lib/i18n/format'
+import type { HelpMessages, ServiceMessages } from '@/lib/i18n'
 import { szeneFuerSchritt } from '@/lib/lotsen'
 import { SCORE_WEIGHTS } from '@/lib/board'
 import { useLotseSchritt } from './schritt'
 import SimFrame from './SimFrame'
+
+/** Texte des echten Reinigungsboards, die der Nachbau wortgleich zeigt. */
+export type SimServiceTexts = Pick<ServiceMessages, 'brand' | 'common' | 'board' | 'status' | 'login'>
 
 /**
  * Das Reinigungsboard, nachgebaut.
@@ -33,6 +38,10 @@ import SimFrame from './SimFrame'
  * Bedienung hängt am Schritt-Schlüssel und gilt, bis der nächste Schritt
  * kommt. Kein Effekt zieht Zustand nach — dieselbe Ableitung wie im
  * `LotsePilot`.
+ *
+ * **Texte:** Was das echte Board auch zeigt, kommt wortgleich aus dessen
+ * Sprachdatei (`service`), nur Erklärzeilen und Beispielwerte aus
+ * `help.sim` – beides reicht die Server-Seite herein.
  */
 
 const KRAFT = 'Maria'
@@ -184,14 +193,14 @@ function balken(r: Zimmer): string {
   return 'bg-positive'
 }
 
-function zustand(r: Zimmer): string {
-  if (r.reinigtVon) return r.reinigtVon === KRAFT ? 'Du bist hier' : r.reinigtVon
-  if (r.prio) return 'priorisiert'
-  if (r.checkout) return 'ausgecheckt'
-  if (r.heuteNicht) return 'heute keine Reinigung'
-  if (r.abUhr) return `Reinigung ab ${r.abUhr}`
-  if (r.signal === 'clean') return 'Reinigung gewünscht'
-  if (r.signal === 'dnd') return 'nicht stören'
+function zustand(r: Zimmer, b: SimServiceTexts['board']): string {
+  if (r.reinigtVon) return r.reinigtVon === KRAFT ? b.youAreHere : r.reinigtVon
+  if (r.prio) return b.state.priority
+  if (r.checkout) return b.state.checkout
+  if (r.heuteNicht) return b.state.declined
+  if (r.abUhr) return format(b.state.from, { time: r.abUhr })
+  if (r.signal === 'clean') return b.state.wanted
+  if (r.signal === 'dnd') return b.state.dnd
   return ''
 }
 
@@ -222,7 +231,17 @@ function empfohlen(s: Board): number | null {
   return beste
 }
 
-export default function SimReinigung() {
+export default function SimReinigung({
+  m,
+  service,
+}: {
+  /** `help.sim` – Rahmen, Erklärzeilen, Beispielwerte. */
+  m: HelpMessages['sim']
+  service: SimServiceTexts
+}) {
+  const t = m.reinigung
+  const b = service.board
+  const st = service.status
   const { lotse, schritt, key } = useLotseSchritt()
   const szene = (lotse === 'reinigung' ? szeneFuerSchritt(lotse, schritt) : null) ?? 'login'
 
@@ -234,23 +253,23 @@ export default function SimReinigung() {
 
   if (!s.angemeldet) {
     return (
-      <SimFrame titel="Reinigung — Anmeldung" geraet="handy">
+      <SimFrame titel={t.frame.login} badge={m.frame.badge} geraet="handy">
         <div data-lotse="reinigung.login" className="flex flex-col gap-3 rounded-xl border border-edge bg-surface-elevated p-4">
-          <p className="text-center text-sm font-black text-ink">Hotel Alpenblick</p>
+          <p className="text-center text-sm font-black text-ink">{m.house}</p>
           <button
             type="button"
             onClick={() => tu({ t: 'anmelden' })}
             className="flex items-center justify-center gap-2 rounded-lg bg-action px-3 py-3 text-sm font-bold text-action-foreground hover:bg-action-strong"
           >
-            <QrCode className="h-5 w-5" /> Login-Karte scannen
+            <QrCode className="h-5 w-5" /> {t.scanCard}
           </button>
-          <p className="text-center text-xs text-ink-muted">oder</p>
+          <p className="text-center text-xs text-ink-muted">{t.or}</p>
           <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-            Benutzername
+            {service.login.username}
             <span className="rounded-lg border border-edge bg-surface px-3 py-2 font-mono text-sm text-ink">maria</span>
           </label>
           <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-            PIN
+            {service.login.pin}
             <span className="rounded-lg border border-edge bg-surface px-3 py-2 font-mono text-sm tracking-widest text-ink">••••••</span>
           </label>
           <button
@@ -258,7 +277,7 @@ export default function SimReinigung() {
             onClick={() => tu({ t: 'anmelden' })}
             className="flex items-center justify-center gap-2 rounded-lg border border-edge px-3 py-2 text-sm font-bold text-ink-soft hover:border-edge-strong hover:text-ink"
           >
-            <KeyRound className="h-4 w-4" /> Anmelden
+            <KeyRound className="h-4 w-4" /> {service.login.submit}
           </button>
         </div>
       </SimFrame>
@@ -267,13 +286,13 @@ export default function SimReinigung() {
 
   if (s.status) {
     return (
-      <SimFrame titel="Reinigung — Status" geraet="handy">
+      <SimFrame titel={t.frame.status} badge={m.frame.badge} geraet="handy">
         <button
           type="button"
           onClick={() => tu({ t: 'status', auf: false })}
           className="mb-3 flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink"
         >
-          <ArrowLeft className="h-3.5 w-3.5" /> Zum Board
+          <ArrowLeft className="h-3.5 w-3.5" /> {st.back}
         </button>
 
         <p className={`inline-flex rounded-full px-3 py-1 text-sm font-bold ${
@@ -282,11 +301,11 @@ export default function SimReinigung() {
               : s.aufSchicht ? 'bg-positive-pill text-positive-deepest'
                 : 'bg-surface-muted text-ink-soft'
         }`}>
-          {s.pause ? 'Pause' : s.sonstige ? 'Sonstige Reinigung läuft' : s.aufSchicht ? 'Auf Schicht' : 'Nicht auf Schicht'}
+          {s.pause ? st.onBreak : s.sonstige ? st.onOther : s.aufSchicht ? st.onShift : st.offShift}
         </p>
 
         <div className="mt-3 grid grid-cols-3 gap-2">
-          {[['Arbeitszeit', '3:12'], ['Pause heute', '0:20'], ['Zimmer', '7']].map(([l, v]) => (
+          {[[st.workToday, '3:12'], [st.breakToday, '0:20'], [st.roomsToday, '7']].map(([l, v]) => (
             <div key={l} className="rounded-lg border border-edge bg-surface-elevated px-2 py-2 text-center">
               <p className="text-sm font-black text-ink">{v}</p>
               <p className="text-[10px] text-ink-muted">{l}</p>
@@ -295,38 +314,36 @@ export default function SimReinigung() {
         </div>
 
         <div data-lotse="reinigung.status" className="mt-3 flex flex-col gap-2 rounded-xl border border-edge bg-surface-elevated p-3">
-          <h3 className="text-xs font-bold text-ink-soft">Status wechseln</h3>
+          <h3 className="text-xs font-bold text-ink-soft">{st.change}</h3>
           {!s.aufSchicht ? (
             <div data-lotse="reinigung.schicht">
               <SlideAction
-                label="Schicht beginnen" variant="success" size="compact"
+                label={st.shiftStart} variant="success" size="compact"
                 onConfirm={() => tu({ t: 'schicht', an: true })}
               />
             </div>
           ) : (
             <>
               <SlideAction
-                label={s.pause ? 'Pause beenden' : 'Pause beginnen'}
+                label={s.pause ? st.breakEnd : st.breakStart}
                 variant="warning" size="compact"
                 onConfirm={() => tu({ t: 'pause' })}
               />
               <SlideAction
-                label={s.sonstige ? 'Sonstige Reinigung beenden' : 'Sonstige Reinigung starten'}
+                label={s.sonstige ? st.otherEnd : st.otherStart}
                 variant="warning" size="compact"
                 disabled={s.pause}
                 onConfirm={() => tu({ t: 'sonstige' })}
               />
               {s.pause && (
-                <p className="text-[11px] text-ink-muted">
-                  Erst die Pause beenden — Tätigkeiten dürfen sich nicht überschneiden.
-                </p>
+                <p className="text-[11px] text-ink-muted">{st.endBreakFirst}</p>
               )}
               <SlideAction
-                label="Schicht beenden" variant="danger" size="compact"
+                label={st.shiftEnd} variant="danger" size="compact"
                 onConfirm={() => tu({ t: 'schicht', an: false })}
               />
               <p className="flex items-center gap-1.5 text-[11px] text-ink-muted">
-                <Coffee className="h-3.5 w-3.5" /> Pause und sonstige Reinigung laufen innerhalb der Schicht.
+                <Coffee className="h-3.5 w-3.5" /> {t.withinShift}
               </p>
             </>
           )}
@@ -342,20 +359,20 @@ export default function SimReinigung() {
   const inArbeit = s.zimmer.filter(r => r.reinigtVon).length
 
   return (
-    <SimFrame titel="Reinigungsboard" geraet="handy">
+    <SimFrame titel={service.brand.board} badge={m.frame.badge} geraet="handy">
       {/* Kompakte Statusleiste */}
       <section className="flex flex-wrap items-center gap-1.5 rounded-lg border border-edge bg-surface-elevated px-2 py-1.5">
         <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
           s.pause ? 'bg-caution-pill text-caution-deepest' : 'bg-positive-pill text-positive-deepest'
         }`}>
-          {s.pause ? 'Pause' : 'Auf Schicht'}
+          {s.pause ? b.onBreak : b.onShift}
         </span>
         <span className="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-semibold text-ink-soft">
-          {offeneGesamt} offen
+          {format(b.openCount, { count: offeneGesamt })}
         </span>
         {inArbeit > 0 && (
           <span className="rounded-full bg-positive-pill px-2 py-0.5 text-[11px] font-semibold text-positive-deepest">
-            {inArbeit} in Arbeit
+            {format(b.inProgressCount, { count: inArbeit })}
           </span>
         )}
         <button
@@ -363,7 +380,7 @@ export default function SimReinigung() {
           onClick={() => tu({ t: 'status', auf: true })}
           className="ml-auto flex items-center gap-1 rounded-md border border-edge px-2 py-1 text-[11px] font-bold text-ink-soft hover:border-edge-strong hover:text-ink"
         >
-          <SlidersHorizontal className="h-3.5 w-3.5" /> Status
+          <SlidersHorizontal className="h-3.5 w-3.5" /> {b.statusLink}
         </button>
       </section>
 
@@ -384,23 +401,23 @@ export default function SimReinigung() {
                   prio ? 'border-accent blink-ring-priority' : empfehlung === e ? 'border-action' : 'border-edge'
                 } ${offeneEtage === 0 && leute.length === 0 ? 'opacity-60' : ''}`}
               >
-                <span className="text-sm font-black text-ink">Etage {e}</span>
+                <span className="text-sm font-black text-ink">{format(service.common.floor, { floor: e })}</span>
                 {empfehlung === e && (
                   <span
                     data-lotse="reinigung.naechstes"
                     className="flex items-center gap-1 rounded-full bg-action px-2 py-0.5 text-[10px] font-bold text-action-foreground"
                   >
-                    <Target className={`h-3 w-3 ${prio ? '' : 'blink-icon'}`} /> Als Nächstes
+                    <Target className={`h-3 w-3 ${prio ? '' : 'blink-icon'}`} /> {b.next}
                   </span>
                 )}
                 <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                   offeneEtage > 0 ? 'bg-attention-pill text-attention-deepest' : 'bg-positive-pill text-positive-deepest'
                 }`}>
-                  {offeneEtage > 0 ? `${offeneEtage} offen` : 'fertig'}
+                  {offeneEtage > 0 ? format(b.openCount, { count: offeneEtage }) : b.done}
                 </span>
                 {prio && (
                   <span className="flex items-center gap-1 rounded-full bg-accent-pill px-2 py-0.5 text-[10px] font-bold text-accent-deep">
-                    <Flag className="h-3 w-3" /> Prio
+                    <Flag className="h-3 w-3" /> {b.prio}
                   </span>
                 )}
                 <span className="ml-auto flex items-center gap-2">
@@ -422,16 +439,16 @@ export default function SimReinigung() {
         <div className="relative mt-2 flex flex-col gap-2">
           <div data-lotse="reinigung.verlassen">
             <SlideAction
-              label="Zurück zu allen Etagen" variant="neutral" size="compact" direction="rtl"
+              label={b.backToFloors} variant="neutral" size="compact" direction="rtl"
               onConfirm={() => tu({ t: 'etage', nr: null })}
             />
           </div>
 
           <section className="rounded-lg border border-edge bg-surface-elevated px-3 py-2">
             <h3 className="mb-1.5 flex items-center gap-2 text-xs font-bold text-ink-soft">
-              Etage {meineEtage}
+              {format(service.common.floor, { floor: meineEtage })}
               <span className="font-normal text-ink-muted">
-                {s.zimmer.filter(r => r.etage === meineEtage && offen(r)).length} offen
+                {format(b.openCount, { count: s.zimmer.filter(r => r.etage === meineEtage && offen(r)).length })}
               </span>
               {kraefte(s, meineEtage).length > 1 && (
                 <span className="flex items-center gap-1 font-normal text-ink-muted">
@@ -447,7 +464,7 @@ export default function SimReinigung() {
                     key={r.nr}
                     type="button"
                     onClick={() => tu({ t: 'dialog', nr: r.nr })}
-                    title={zustand(r) || 'nichts zu tun'}
+                    title={zustand(r, b) || t.nothingToDo}
                     className={`flex flex-col overflow-hidden rounded-md border bg-surface text-left hover:border-edge-strong ${
                       r.prio && !r.reinigtVon ? 'border-accent blink-ring-priority' : 'border-edge'
                     } ${grau ? 'opacity-50' : ''}`}
@@ -465,7 +482,7 @@ export default function SimReinigung() {
                         {r.prio && <Flag className="h-3 w-3 text-accent-strong" />}
                         {r.reinigtVon && <Loader2 className="h-3 w-3 animate-spin text-positive-strong" />}
                       </span>
-                      <span className="h-3.5 truncate text-[10px] font-semibold text-ink-muted">{zustand(r)}</span>
+                      <span className="h-3.5 truncate text-[10px] font-semibold text-ink-muted">{zustand(r, b)}</span>
                     </span>
                   </button>
                 )
@@ -477,45 +494,43 @@ export default function SimReinigung() {
           {dialogZimmer && (
             <div className="absolute inset-x-0 top-8 z-10 rounded-xl border border-edge-strong bg-surface p-3 shadow-lg">
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-base font-black text-ink">Zimmer {dialogZimmer.nr}</span>
+                <span className="text-base font-black text-ink">{format(service.common.room, { number: dialogZimmer.nr })}</span>
                 <button
                   type="button"
                   onClick={() => tu({ t: 'dialog', nr: null })}
                   className="text-xs font-semibold text-ink-muted hover:text-ink"
                 >
-                  schließen
+                  {service.common.close}
                 </button>
               </div>
               <p className="mb-2 text-xs text-ink-muted">
-                Etage {dialogZimmer.etage} · {zustand(dialogZimmer) || 'nichts zu tun'}
+                {format(service.common.floor, { floor: dialogZimmer.etage })} · {zustand(dialogZimmer, b) || t.nothingToDo}
               </p>
               {dialogZimmer.reinigtVon ? (
                 <div data-lotse="reinigung.abschliessen">
                   <SlideAction
-                    label="Reinigung abschließen" variant="success" size="compact"
+                    label={b.finish} variant="success" size="compact"
                     onConfirm={() => tu({ t: 'fertig', nr: dialogZimmer.nr })}
                   />
                 </div>
               ) : offen(dialogZimmer) ? (
                 <div data-lotse="reinigung.starten">
                   <SlideAction
-                    label="Reinigung starten"
+                    label={b.start}
                     variant={dialogZimmer.prio ? 'priority' : 'warning'}
                     size="compact"
                     disabled={s.pause || inArbeit > 0}
                     onConfirm={() => tu({ t: 'start', nr: dialogZimmer.nr })}
                   />
                   {inArbeit > 0 && (
-                    <p className="mt-1 text-[11px] text-ink-muted">
-                      Erst die laufende Reinigung abschließen.
-                    </p>
+                    <p className="mt-1 text-[11px] text-ink-muted">{b.busyElsewhere}</p>
                   )}
                   {/* Gast an der Tür — wie im echten Board ohne vorherigen Start. */}
                   {dialogZimmer.belegt && !dialogZimmer.checkout && (
                     <div data-lotse="reinigung.tuer" className="mt-2 rounded-lg border border-edge bg-surface-elevated px-2.5 py-2">
-                      <p className="mb-1.5 text-[11px] font-semibold text-ink-soft">Gast ist im Zimmer und möchte gerade nicht?</p>
+                      <p className="mb-1.5 text-[11px] font-semibold text-ink-soft">{b.door.question}</p>
                       <div className="grid grid-cols-3 gap-1.5">
-                        {([['spaeter30', 'In 30 Min'], ['spaeter60', 'In 1 Std'], ['heute', 'Heute nicht']] as const).map(([wahl, label]) => (
+                        {([['spaeter30', b.door.in30], ['spaeter60', b.door.in60], ['heute', b.door.today]] as const).map(([wahl, label]) => (
                           <button
                             key={wahl}
                             type="button"
@@ -532,8 +547,7 @@ export default function SimReinigung() {
                 </div>
               ) : (
                 <p className="rounded-lg border border-edge bg-surface-sunken px-3 py-2 text-[11px] text-ink-soft">
-                  Für dieses Zimmer liegt kein Auftrag vor — es ist nicht gesperrt, es gibt nur
-                  gerade nichts zu tun.
+                  {t.noTask}
                 </p>
               )}
             </div>

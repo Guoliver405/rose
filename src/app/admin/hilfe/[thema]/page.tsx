@@ -2,6 +2,8 @@ import { notFound, redirect } from 'next/navigation'
 import { getAccountContext, listAccessibleHotels } from '@/utils/auth'
 import HilfeThema from '@/components/hilfe/HilfeThema'
 import { themaBereich, themaById } from '@/lib/hilfe'
+import { getMessages } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 import KontoShell from '../../KontoShell'
 
 /**
@@ -22,6 +24,7 @@ export default async function KontoHilfePage({
   const hotels = await listAccessibleHotels()
   if (hotels.length === 0) redirect('/login')
 
+  const m = getMessages(await getLocale())
   const thema = themaById(themaId)
   if (!thema || themaBereich(thema) !== 'konto') notFound()
 
@@ -32,9 +35,11 @@ export default async function KontoHilfePage({
     <KontoShell who={account?.displayName ?? hotels[0]?.name} istInhaber={account !== null}>
       <HilfeThema
         thema={thema}
+        m={m.help}
+        symbols={m.symbols}
         // Konto-Themen brauchen keinen Slug; Verweise ins Haus gibt es dort nicht.
         slug={hotels[0]?.slug ?? ''}
-        zurueck={{ href: '/admin', label: 'Häuser' }}
+        zurueck={{ href: '/admin', label: m.help.ui.topic.backHouses }}
       />
     </KontoShell>
   )

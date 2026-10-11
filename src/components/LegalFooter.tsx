@@ -1,5 +1,7 @@
 import Link from 'next/link'
+import { format, getMessages } from '@/lib/i18n'
 import { PROVIDER } from '@/lib/provider'
+import { getLocale } from '@/utils/locale'
 
 /**
  * Fußzeile mit den Pflichtlinks — Impressum, Datenschutz, AGB — und der
@@ -16,16 +18,20 @@ import { PROVIDER } from '@/lib/provider'
  * © ist ein Hinweis, wem die Seite gehört, kein Schutz des Logos. Der Name
  * wird über eine Wortmarke geschützt (TODO), und erst mit deren Eintragung
  * dürfte ein ® ans Logo; ein ® ohne Eintragung wäre irreführend (§ 5 UWG).
+ *
+ * Server-Komponente (Texte aus `legal.common`); darf deshalb nur in
+ * Server-Komponenten gerendert werden.
  */
-export default function LegalFooter({ className = '' }: { className?: string }) {
+export default async function LegalFooter({ className = '' }: { className?: string }) {
+  const m = getMessages(await getLocale()).legal.common
   return (
     <footer className={`px-4 py-4 text-center text-xs text-ink-muted ${className}`}>
       <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-        <Link href="/impressum" className="hover:text-ink hover:underline">Impressum</Link>
-        <Link href="/datenschutz" className="hover:text-ink hover:underline">Datenschutz</Link>
-        <Link href="/agb" className="hover:text-ink hover:underline">AGB</Link>
+        <Link href="/impressum" className="hover:text-ink hover:underline">{m.nav.impressum}</Link>
+        <Link href="/datenschutz" className="hover:text-ink hover:underline">{m.nav.datenschutz}</Link>
+        <Link href="/agb" className="hover:text-ink hover:underline">{m.nav.agb}</Link>
       </nav>
-      <p className="mt-1.5">© {new Date().getFullYear()} {PROVIDER.name}</p>
+      <p className="mt-1.5">{format(m.copyright, { year: new Date().getFullYear(), name: PROVIDER.name })}</p>
     </footer>
   )
 }

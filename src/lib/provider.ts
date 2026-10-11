@@ -36,7 +36,7 @@ export const PROVIDER = {
    */
   vatId: 'DE434570609' as string | null,
   /** Produktname und Domain, unter der der Dienst läuft. */
-  product: 'RoSe — RoomService',
+  product: 'RoSe – RoomService',
   domain: 'rose-roomservice.app',
 } as const
 

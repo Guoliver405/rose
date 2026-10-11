@@ -8,8 +8,9 @@ import {
 } from '@/lib/cleaning-sim'
 import { eventLog } from '@/lib/sim-log'
 import EventLog from '@/components/simulator/EventLog'
-import type { SimulatorMessages } from '@/lib/i18n'
+import type { LandingMessages, SimulatorMessages } from '@/lib/i18n'
 import { format } from '@/lib/i18n/format'
+import Rich from '@/components/i18n/Rich'
 
 /**
  * Reinigungs-Vergleich (25./26.09.2026): derselbe Tag zweimal nebeneinander —
@@ -24,17 +25,8 @@ import { format } from '@/lib/i18n/format'
  * Szenario (`scenario`) und eigenem Kleingedruckten (`caption`).
  */
 
-const LEAD: Record<Coordination, Record<Policy, string>> = {
-  paper: {
-    routine: 'Papierliste je Etage. Wann jemand abreist, weiß niemand; was an den Türen hängt und was ein Gast gesagt hat, erfährt nur, wer auf die Etage kommt.',
-    onDemand: 'Papierliste und Türanhänger „Bitte reinigen“ – zu sehen nur für den, der im Flur steht.',
-  },
-  rose: {
-    routine: 'Gemeinsames Board: Check-out, Wunsch, „frühestens ab“, „Nicht stören“ und „später“ – sofort für alle.',
-    onDemand: 'Gäste tippen „Zimmer reinigen“ oder „frühestens ab“ – sofort auf dem Board, für alle.',
-  },
-}
-const TITLE: Record<Coordination, string> = { paper: 'Ohne Steuerung', rose: 'Mit RoSe' }
+/** Oberfläche des Tagesbilds — `landing.day` der Sprachdatei (Beschreibung je Bild in `lead`, Titel in `titles`). */
+type DayM = LandingMessages['day']
 
 /** Sachliche Beschreibung für den Simulator — die Arbeitsweise ohne Software ist dort einstellbar. */
 function leadDetail(c: Coordination, b: Baseline, tx: SimulatorMessages['app']['day']['lead']): string {
@@ -84,18 +76,8 @@ const BAR: Partial<Record<TileState, string>> = {
  */
 const LATER_TILE = 'border-edge-strong bg-surface-muted text-ink'
 
-const LEGEND: { state: TileState; label: string }[] = [
-  { state: 'occupied', label: 'Gast im Zimmer' },
-  { state: 'departed', label: 'ausgecheckt' },
-  { state: 'wants', label: 'Gast weg, Reinigung offen' },
-  { state: 'dnd', label: 'Bitte nicht stören' },
-  { state: 'declined', label: 'abgelehnt – heute keine Reinigung' },
-  { state: 'deferred', label: '„frühestens ab“ – mit RoSe als Uhrzeit bekannt' },
-  { state: 'skipped', label: 'keine Reinigung gewünscht' },
-  { state: 'empty', label: 'leer' },
-  { state: 'cleaning', label: 'wird gereinigt' },
-  { state: 'done', label: 'fertig' },
-]
+/** Reihenfolge der Legende; Beschriftung aus `legend.states`. */
+const LEGEND: TileState[] = ['occupied', 'departed', 'wants', 'dnd', 'declined', 'deferred', 'skipped', 'empty', 'cleaning', 'done']
 
 function reducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -103,9 +85,11 @@ function reducedMotion(): boolean {
 }
 const noSubscribe = () => () => {}
 
-export default function CleaningSimulation({ scenario = SCENARIO, caption, policy: controlled, detailLog = false, texts, intlLocale }: {
+export default function CleaningSimulation({ scenario = SCENARIO, caption, policy: controlled, detailLog = false, texts, m, intlLocale }: {
   /** Texte aus der Rechnung (Hinweise, Protokoll, Beschreibung) — `simulator.app.day` der Sprachdatei. */
   texts: SimulatorMessages['app']['day']
+  /** Oberfläche, Legende und Spaltentitel — `landing.day` der Sprachdatei. */
+  m: DayM
   intlLocale: string
   scenario?: Scenario
   /** Kleingedrucktes unter dem Vergleich; Vorgabe ist das der Landing Page. */
@@ -213,9 +197,9 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption, polic
   return (
     <div ref={container} className="rounded-2xl border border-edge bg-surface-elevated p-4 sm:p-6">
       {!controlled && <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <span className="text-sm font-semibold text-ink-soft">Bleibezimmer reinigen:</span>
-        <div role="group" aria-label="Reinigung der Bleibezimmer" className="inline-flex rounded-lg border border-edge bg-surface p-0.5">
-          {([['routine', 'täglich'], ['onDemand', 'nur auf Wunsch']] as const).map(([p, label]) => (
+        <span className="text-sm font-semibold text-ink-soft">{m.policy.label}</span>
+        <div role="group" aria-label={m.policy.aria} className="inline-flex rounded-lg border border-edge bg-surface p-0.5">
+          {([['routine', m.policy.routine], ['onDemand', m.policy.onDemand]] as const).map(([p, label]) => (
             <button key={p} type="button" aria-pressed={policy === p} onClick={() => setPolicy(p)}
               className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-bold ${
                 policy === p ? 'bg-action text-action-foreground' : 'text-ink-soft hover:bg-surface-sunken'
@@ -225,7 +209,7 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption, polic
             </button>
           ))}
         </div>
-        <span className="text-xs text-ink-muted">gilt für beide Bilder – verglichen wird nur die Koordination</span>
+        <span className="text-xs text-ink-muted">{m.policy.note}</span>
       </div>}
 
       <div className="flex flex-wrap items-center gap-3">
@@ -233,24 +217,24 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption, polic
         <button type="button" onClick={togglePlay}
           className="flex items-center gap-1.5 rounded-lg bg-action px-3 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong">
           {running ? <Pause className="h-4 w-4" aria-hidden /> : <Play className="h-4 w-4" aria-hidden />}
-          {running ? 'Pause' : t >= end ? 'Noch einmal' : 'Abspielen'}
+          {running ? m.controls.pause : t >= end ? m.controls.again : m.controls.play}
         </button>
         <button type="button" onClick={() => { stop(); setT(START) }}
           className="flex items-center gap-1.5 rounded-lg border border-edge px-3 py-2 text-sm font-medium text-ink-soft hover:bg-surface-sunken">
-          <RotateCcw className="h-4 w-4" aria-hidden /> Zurück auf {clock(START)}
+          <RotateCcw className="h-4 w-4" aria-hidden /> {format(m.controls.reset, { time: clock(START) })}
         </button>
         {/* Minutenweise durchklicken (Wunsch des Users, 26.09.2026) — hält die Wiedergabe an. */}
         <div className="flex min-w-60 flex-1 items-center gap-1.5">
-          <button type="button" onClick={() => step(-1)} disabled={t <= START} aria-label="Eine Minute zurück"
+          <button type="button" onClick={() => step(-1)} disabled={t <= START} aria-label={m.controls.minuteBack}
             className="flex shrink-0 items-center rounded-lg border border-edge px-1.5 py-1.5 text-xs font-semibold text-ink-soft hover:bg-surface-sunken disabled:opacity-40">
-            <ChevronLeft className="h-4 w-4" aria-hidden /><span className="pr-0.5">1 Min</span>
+            <ChevronLeft className="h-4 w-4" aria-hidden /><span className="pr-0.5">{m.controls.minute}</span>
           </button>
-          <input type="range" min={START} max={end} step={1} value={Math.round(t)} aria-label="Uhrzeit"
+          <input type="range" min={START} max={end} step={1} value={Math.round(t)} aria-label={m.controls.clock}
             onChange={ev => { stop(); setT(Number(ev.target.value)) }}
             className="min-w-24 flex-1 accent-[var(--color-action)]" />
-          <button type="button" onClick={() => step(1)} disabled={t >= end} aria-label="Eine Minute vor"
+          <button type="button" onClick={() => step(1)} disabled={t >= end} aria-label={m.controls.minuteForward}
             className="flex shrink-0 items-center rounded-lg border border-edge px-1.5 py-1.5 text-xs font-semibold text-ink-soft hover:bg-surface-sunken disabled:opacity-40">
-            <span className="pl-0.5">1 Min</span><ChevronRight className="h-4 w-4" aria-hidden />
+            <span className="pl-0.5">{m.controls.minute}</span><ChevronRight className="h-4 w-4" aria-hidden />
           </button>
         </div>
       </div>
@@ -260,7 +244,7 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption, polic
           const run = shown(c)
           return (
             <div key={c} className="flex min-w-0 flex-col gap-4">
-              <Panel title={TITLE[c]} lead={detailLog ? leadDetail(c, scn.params.baseline, texts.lead) : LEAD[c][policy]} res={run.res} t={t} scn={scn} />
+              <Panel title={m.titles[c]} lead={detailLog ? leadDetail(c, scn.params.baseline, texts.lead) : m.lead[c][policy]} res={run.res} t={t} scn={scn} m={m} />
               {/* key: beim Umschalten neue Einträge, keine überblendeten alten */}
               {detailLog
                 ? <EventLog key={run.key} entries={run.log} t={t} clock={clock} onSeek={at => { stop(); setT(at) }}
@@ -272,69 +256,61 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption, polic
       </div>
 
       <ul className="mt-6 flex flex-wrap gap-x-4 gap-y-2 text-xs text-ink-soft">
-        {LEGEND.map(l => (
-          <li key={l.state} className="flex items-center gap-1.5">
-            <span className={`relative inline-block h-3 w-3 overflow-hidden rounded border ${TILE[l.state]}`} aria-hidden>
-              {BAR[l.state] && <span className={`absolute inset-x-0 bottom-0 h-1 ${BAR[l.state]}`} />}
+        {LEGEND.map(state => (
+          <li key={state} className="flex items-center gap-1.5">
+            <span className={`relative inline-block h-3 w-3 overflow-hidden rounded border ${TILE[state]}`} aria-hidden>
+              {BAR[state] && <span className={`absolute inset-x-0 bottom-0 h-1 ${BAR[state]}`} />}
             </span>
-            <LegendIcon state={l.state} />
-            {l.label}
+            <LegendIcon state={state} />
+            {m.legend.states[state]}
           </li>
         ))}
         <li className="flex items-center gap-1.5">
           <span className={`inline-block h-3 w-3 rounded border ${LATER_TILE}`} aria-hidden />
           <DoorClosed className="-ml-1 h-3 w-3" aria-hidden />
-          Gast noch da – „später“ (ohne Software weiß es nur, wer geklopft hat)
+          {m.legend.later}
         </li>
         <li className="flex items-center gap-1.5">
-          <span className="inline-block h-3 w-3 rounded border-2 border-critical" aria-hidden /> klopft erneut, obwohl eine Kollegin es schon gehört hat
+          <span className="inline-block h-3 w-3 rounded border-2 border-critical" aria-hidden /> {m.legend.repeat}
         </li>
         <li className="flex items-center gap-1.5">
-          <span className="inline-block h-3 w-3 rounded border-2 border-accent" aria-hidden /> Sonderfall (priorisiert)
+          <span className="inline-block h-3 w-3 rounded border-2 border-accent" aria-hidden /> {m.legend.priority}
         </li>
         <li className="flex items-center gap-1.5">
           <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-edge bg-surface-elevated text-[8px] font-black text-ink" aria-hidden>A</span>
-          Reinigungskraft {maids === 1 ? 'A' : `A–${maidLabel(maids - 1)}`}
+          {format(m.legend.maids, { range: maids === 1 ? 'A' : `A–${maidLabel(maids - 1)}` })}
         </li>
         <li className="flex items-center gap-1.5">
           <span className="flex h-3.5 items-center gap-px rounded-full border border-edge bg-surface-sunken px-0.5 text-[8px] font-black text-ink-muted" aria-hidden>
             <Coffee className="h-2 w-2" />A
           </span>
-          wartet – gerade nichts zu tun
+          {m.legend.idle}
         </li>
         <li className="flex items-center gap-1.5">
           <span className="flex h-3.5 items-center gap-px rounded-full border border-edge bg-surface-elevated px-0.5 text-[8px] font-black text-ink" aria-hidden>
             <Footprints className="h-2 w-2" />A
           </span>
-          geht Etagen ab und sucht Arbeit
+          {m.legend.search}
         </li>
       </ul>
 
       {caption !== undefined ? <div className="mt-4 text-xs text-ink-muted">{caption}</div> : <p className="mt-4 text-xs text-ink-muted">
-        Ohne Steuerung zeigt ein typisches herkömmliches Verfahren: Papierliste vom Morgen, feste Etagen je Kraft,
-        Abreisen zuerst, sobald sie laut Liste frei sind. Andere Verfahren – etwa Check-outs per Funk von der Rezeption
-        oder frei gewählte Etagen – stellt der{' '}
-        <a href="/simulator" className="font-semibold text-action-strong hover:underline">Housekeeping-Simulator</a>{' '}
-        gegenüber, mit den Zahlen Ihres Hauses.{' '}
-        Ein gewöhnlicher Tag: der mittlere aus 101 durchgerechneten, gemessen am Vorsprung bei den Abreisen in beiden
-        Stellungen des Umschalters. {SCENARIO.rooms.length} Zimmer auf {SCENARIO.floors} Etagen, {SCENARIO.maidFloors.length} Reinigungskräfte
-        ab 8:00 (ohne Software je zwei feste Etagen), Check-out bis 11:00, Check-in ab 15:00. Dieselben Gäste in beiden Bildern: Sie reisen zwischen 7:00 und 11:00 ab
-        bzw. verlassen das Zimmer, gleichverteilt – je später, desto eher lohnt das Klopfen. Täglich: Bleibezimmer in
-        beiden Bildern ab 8:00, ohne Software laut Liste, mit RoSe über das beim Check-in eingetragene Abreisedatum.
-        Annahmen zum Gästeverhalten: {Math.round(GUEST.signals * 100)} % der Gäste mit Reinigungswunsch zeigen ihn beim
-        Gehen an (auf Wunsch: alle), {Math.round(GUEST.notBefore * 100)} % nennen in RoSe „frühestens ab“,
-        {' '}{Math.round(GUEST.dndMorning * 100)} % haben morgens „Nicht stören“ an der Tür, ein Drittel davon den ganzen
-        Tag. Ohne Software sieht eine Kraft Anhänger und Schilder erst auf der Etage; was ein Gast an der Tür sagt,
-        steht auf einer Liste, die auf der Etage bleibt – wer dorthin kommt, liest sie (2 min), wer aushilft, fragt die
-        Kollegin. Mit RoSe steht all das sofort für alle auf dem Board.
-        Etagenwechsel mit Wagen 5 min. Reinigungsdauer als Annahme, eher knapp: Abreise 30 min, Bleibe 18 min — gemessen
-        wurden 35–43 bzw. 20–25 min (Quellen Q4 und Q7 im Nutzenrechner).
+        <Rich text={m.caption} vars={{
+          rooms: SCENARIO.rooms.length,
+          floors: SCENARIO.floors,
+          maids: SCENARIO.maidFloors.length,
+          signals: Math.round(GUEST.signals * 100),
+          notBefore: Math.round(GUEST.notBefore * 100),
+          dnd: Math.round(GUEST.dndMorning * 100),
+        }} tags={{
+          link: c => <a href="/simulator" className="font-semibold text-action-strong hover:underline">{c}</a>,
+        }} />
       </p>}
     </div>
   )
 }
 
-function Panel({ title, lead, res, t, scn }: { title: string; lead: string; res: SimResult; t: number; scn: Scenario }) {
+function Panel({ title, lead, res, t, scn, m }: { title: string; lead: string; res: SimResult; t: number; scn: Scenario; m: DayM }) {
   const clock = (min: number) => clockLabel(min, scn.params.shiftStart)
   const tiles = tilesAt(res, t, scn)
   const maids = maidsAt(res, t)
@@ -357,10 +333,10 @@ function Panel({ title, lead, res, t, scn }: { title: string; lead: string; res:
           <div key={f} className="flex items-center gap-0.5 sm:gap-1">
             {/* Schmal nur die Etage und in der Kachel die Zimmernummer auf der Etage — „1001" passt dort nicht. */}
             <span className="w-4 shrink-0 text-[10px] font-semibold text-ink-muted lg:w-8">
-              {f}<span className="hidden lg:inline">. OG</span>
+              {f}<span className="hidden lg:inline">{m.panel.floorSuffix}</span>
             </span>
             {tiles.filter(x => x.floor === f).map(x => (
-              <RoomTile key={x.nr} tile={x} compact={compact} acts={acts} maidsHere={maids.flatMap((nr, i) => (nr === x.nr ? [i] : []))} />
+              <RoomTile key={x.nr} tile={x} compact={compact} acts={acts} m={m} maidsHere={maids.flatMap((nr, i) => (nr === x.nr ? [i] : []))} />
             ))}
           </div>
         ))}
@@ -373,19 +349,15 @@ function Panel({ title, lead, res, t, scn }: { title: string; lead: string; res:
           ? (rose ? <Check className="h-5 w-5 text-positive-strong" aria-hidden /> : <Clock className="h-5 w-5 text-ink-muted" aria-hidden />)
           : <Loader2 className="h-5 w-5 animate-spin text-ink-muted" aria-hidden />}
         <div className="flex-1 text-sm text-ink-soft">
-          <div>Abreisen bezugsfertig</div>
+          <div>{m.panel.departuresReady}</div>
           <div className="text-xs">
-            Alles fertig{' '}
-            <span className="font-semibold tabular-nums text-ink">
-              {done ? clock(res.metrics.finishedAt) : '…'}
-            </span>
-            {' · '}vergeblich an der Tür{' '}
-            <span className="font-semibold tabular-nums text-ink">{away}×</span>
+            <Rich text={m.panel.status} vars={{ time: done ? clock(res.metrics.finishedAt) : '…', count: away }}
+              tags={{ b: c => <span className="font-semibold tabular-nums text-ink">{c}</span> }} />
           </div>
         </div>
         {depsDone && <span className="text-2xl font-black tabular-nums text-ink">{clock(deps!)}</span>}
       </div>
-      <Activity acts={acts} res={res} t={t} />
+      <Activity acts={acts} res={res} t={t} m={m} />
     </div>
   )
 }
@@ -423,15 +395,6 @@ function Log({ notes, t, clock }: { notes: Highlight[]; t: number; clock: (min: 
   )
 }
 
-const ACTIVITY_LABEL: Record<Exclude<MaidActivity, 'off'>, string> = {
-  clean: 'reinigen',
-  door: 'an der Tür',
-  walk: 'unterwegs',
-  search: 'suchen Arbeit',
-  radio: 'am Funk',
-  idle: 'warten',
-  done: 'fertig',
-}
 const ACTIVITY_ORDER: Exclude<MaidActivity, 'off'>[] = ['clean', 'door', 'walk', 'search', 'radio', 'idle', 'done']
 
 /**
@@ -439,22 +402,21 @@ const ACTIVITY_ORDER: Exclude<MaidActivity, 'off'>[] = ['clean', 'door', 'walk',
  * Tür und im Warten — erklärt das morgendliche Treiben, bei dem kaum gereinigt
  * wird, weil die Gäste noch da sind (User, 27.09.2026).
  */
-function Activity({ acts, res, t }: { acts: MaidActivity[]; res: SimResult; t: number }) {
+function Activity({ acts, res, t, m }: { acts: MaidActivity[]; res: SimResult; t: number; m: DayM }) {
   const counts = ACTIVITY_ORDER.map(a => [a, acts.filter(x => x === a).length] as const).filter(([, n]) => n > 0)
   const door = Math.round(minutesUntil(res, t, 'knock', 'declined', 'skip'))
   const idle = Math.round(minutesUntil(res, t, 'idle'))
   const search = Math.round(minutesUntil(res, t, 'patrol'))
+  const b = (c: string) => <span className="font-semibold tabular-nums text-ink">{c}</span>
   return (
     <div className="mt-2 px-1 text-xs text-ink-soft">
       <div>
-        <span className="font-semibold text-ink">Jetzt: </span>
-        {counts.length === 0 ? 'noch niemand unterwegs'
-          : counts.map(([a, n], i) => <span key={a}>{i > 0 && ' · '}<span className="font-semibold tabular-nums text-ink">{n}</span> {ACTIVITY_LABEL[a]}</span>)}
+        <span className="font-semibold text-ink">{m.activity.now}</span>
+        {counts.length === 0 ? m.activity.nobody
+          : counts.map(([a, n], i) => <span key={a}>{i > 0 && ' · '}<Rich text={m.activity.item} vars={{ count: n, label: m.activity.labels[a] }} tags={{ b }} /></span>)}
       </div>
       <div className="mt-0.5">
-        Bisher an der Tür <span className="font-semibold tabular-nums text-ink">{door} min</span>
-        {' · '}gewartet <span className="font-semibold tabular-nums text-ink">{idle} min</span>
-        {search > 0 && <>{' · '}Etagen abgesucht <span className="font-semibold tabular-nums text-ink">{search} min</span></>}
+        <Rich text={search > 0 ? m.activity.totalsSearch : m.activity.totals} vars={{ door, idle, search }} tags={{ b }} />
       </div>
     </div>
   )
@@ -473,7 +435,7 @@ function LegendIcon({ state }: { state: TileState }) {
   return I ? <I className="-ml-1 h-3 w-3" aria-hidden /> : null
 }
 
-function RoomTile({ tile, maidsHere, acts, compact }: { tile: Tile; maidsHere: number[]; acts: MaidActivity[]; compact: boolean }) {
+function RoomTile({ tile, maidsHere, acts, compact, m }: { tile: Tile; maidsHere: number[]; acts: MaidActivity[]; compact: boolean; m: DayM }) {
   const ring = tile.repeat ? 'ring-2 ring-critical blink-ring-overdue'
     : tile.knock ? 'ring-2 ring-critical' : tile.priority ? 'ring-2 ring-accent' : ''
   const look = tile.later ? LATER_TILE : TILE[tile.state]
@@ -484,7 +446,7 @@ function RoomTile({ tile, maidsHere, acts, compact }: { tile: Tile; maidsHere: n
   // Bei 10 Kacheln je Zeile ist für Symbole erst ab `lg` Platz; die Farbe trägt den Zustand.
   const icon = 'hidden h-2.5 w-2.5 shrink-0 lg:inline'
   return (
-    <div title={laterTitle(tile, compact)}
+    <div title={laterTitle(tile, compact, m)}
       className={`relative flex min-w-0 flex-1 items-center justify-center gap-px rounded border text-[9px] font-bold tabular-nums sm:text-[10px] ${compact ? 'h-4' : 'h-7'} ${look} ${ring}`}>
       {bar && <span className={`absolute inset-x-0 bottom-0 ${compact ? 'h-0.5' : 'h-1'} rounded-b-[3px] ${bar}`} aria-hidden />}
       {!compact && <>
@@ -510,9 +472,9 @@ function RoomTile({ tile, maidsHere, acts, compact }: { tile: Tile; maidsHere: n
   )
 }
 
-function laterTitle(tile: Tile, compact: boolean): string | undefined {
+function laterTitle(tile: Tile, compact: boolean, m: DayM): string | undefined {
   const base = compact ? tile.nr : undefined
   if (!tile.later) return base
-  const who = tile.later.by === null ? 'alle wissen es' : `nur Kraft ${maidLabel(tile.later.by)} weiß es`
-  return `${tile.nr}: Gast noch da, „später“ – ${who}`
+  const who = tile.later.by === null ? m.later.all : format(m.later.one, { name: maidLabel(tile.later.by) })
+  return format(m.later.title, { nr: tile.nr, who })
 }

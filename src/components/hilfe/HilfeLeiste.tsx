@@ -5,9 +5,10 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { BookOpen, ChevronRight, Compass, ExternalLink, List, X } from 'lucide-react'
 import {
-  hilfeUrl, istHilfeSeite, relativerPfad, themaBereich, themaById, themaFuerPfad, themenFuer,
+  hilfeUrl, istHilfeSeite, relativerPfad, themaBereich, themaById, themaFuerPfad, themaText, themenFuer,
   type HilfeThema,
 } from '@/lib/hilfe'
+import { useHelpMessages } from './HelpMessages'
 import { lotseById, lotseStart } from '@/lib/lotsen'
 import { HilfeBloecke } from './HilfeThema'
 import { schliesseLeiste, setzeNutzer, useLeiste, waehleThema } from './leiste'
@@ -43,6 +44,8 @@ export default function HilfeLeiste({
 }) {
   const pathname = usePathname()
   const { offen, wahl } = useLeiste()
+  const { help, symbols } = useHelpMessages()
+  const t = help.ui.sidebar
   useEffect(() => { setzeNutzer(nutzer) }, [nutzer])
 
   // Esc schließt die Leiste — dieselbe Erwartung wie beim Lotsen. Der
@@ -69,7 +72,7 @@ export default function HilfeLeiste({
 
   return (
     <aside
-      aria-label="Hilfe"
+      aria-label={t.label}
       className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[420px] flex-col overflow-y-auto border-l border-edge bg-surface shadow-xl print:hidden lg:sticky lg:top-[53px] lg:z-auto lg:h-[calc(100vh-53px)] lg:w-[400px] lg:max-w-none lg:shrink-0 lg:shadow-none"
     >
       <div className="flex flex-col gap-4 p-4">
@@ -78,18 +81,18 @@ export default function HilfeLeiste({
             <button
               type="button"
               onClick={() => waehleThema(pathname, null)}
-              title="Alle Themen"
+              title={t.allTopics}
               className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted hover:bg-surface-muted hover:text-ink"
             >
               <List className="h-4 w-4" />
             </button>
           )}
-          <span className="flex-1 text-xs font-bold uppercase tracking-wide text-ink-muted">Hilfe</span>
+          <span className="flex-1 text-xs font-bold uppercase tracking-wide text-ink-muted">{t.label}</span>
           <button
             type="button"
             onClick={schliesseLeiste}
-            title="Hilfe schließen (Esc)"
-            aria-label="Hilfe schließen"
+            title={t.closeHint}
+            aria-label={t.close}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted hover:bg-surface-muted hover:text-ink"
           >
             <X className="h-4 w-4" />
@@ -99,27 +102,29 @@ export default function HilfeLeiste({
         {thema ? (
           <>
             <div>
-              <h2 className="text-lg font-black leading-tight text-ink">{thema.title}</h2>
-              <p className="mt-1 text-sm text-ink-soft">{thema.subtitle}</p>
+              <h2 className="text-lg font-black leading-tight text-ink">{themaText(help.topics, thema).title}</h2>
+              <p className="mt-1 text-sm text-ink-soft">{themaText(help.topics, thema).subtitle}</p>
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold">
               {lotse && kannVerlinken(thema) && (
                 <Link href={lotseStart(lotse, slugFuerUrl ?? '')} className="flex items-center gap-1 text-action hover:underline">
-                  <Compass className="h-3.5 w-3.5" /> Lotse starten
+                  <Compass className="h-3.5 w-3.5" /> {t.startLotse}
                 </Link>
               )}
               {kannVerlinken(thema) && (
                 <Link
                   href={hilfeUrl(thema, slugFuerUrl ?? '')}
-                  title="Zum Drucken oder Teilen"
+                  title={t.asPageHint}
                   className="flex items-center gap-1 text-ink-muted hover:text-ink hover:underline"
                 >
-                  <ExternalLink className="h-3.5 w-3.5" /> Als Seite öffnen
+                  <ExternalLink className="h-3.5 w-3.5" /> {t.asPage}
                 </Link>
               )}
             </div>
             <HilfeBloecke
               thema={thema}
+              m={help}
+              symbols={symbols}
               slug={slugFuerUrl ?? ''}
               kompakt
               onThema={id => waehleThema(pathname, id)}
@@ -128,23 +133,20 @@ export default function HilfeLeiste({
         ) : (
           <>
             {!themaDerSeite && !eigeneWahl && (
-              <p className="text-sm text-ink-soft">
-                Zu dieser Seite gibt es kein eigenes Thema. Wählen Sie eines aus der Liste — die
-                Leiste bleibt offen, bis Sie sie schließen.
-              </p>
+              <p className="text-sm text-ink-soft">{t.noTopic}</p>
             )}
             <ul className="flex flex-col divide-y divide-edge rounded-xl border border-edge bg-surface">
-              {themenFuer(istVerwaltung, istInhaber).map(t => (
-                <li key={t.id}>
+              {themenFuer(istVerwaltung, istInhaber).map(th => (
+                <li key={th.id}>
                   <button
                     type="button"
-                    onClick={() => waehleThema(pathname, t.id)}
+                    onClick={() => waehleThema(pathname, th.id)}
                     className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-surface-sunken"
                   >
                     <BookOpen className="h-4 w-4 shrink-0 text-ink-muted" />
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-bold text-ink">{t.title}</span>
-                      <span className="block text-xs text-ink-muted">{t.subtitle}</span>
+                      <span className="block text-sm font-bold text-ink">{themaText(help.topics, th).title}</span>
+                      <span className="block text-xs text-ink-muted">{themaText(help.topics, th).subtitle}</span>
                     </span>
                     <ChevronRight className="h-4 w-4 shrink-0 text-ink-muted" />
                   </button>

@@ -4,6 +4,7 @@ import { symbols } from './de/symbols'
 import { auth } from './de/auth'
 import { account } from './de/account'
 import { simulator } from './de/simulator'
+import { help } from './de/help'
 import { flattenMessages } from './format'
 
 /*
@@ -11,13 +12,14 @@ import { flattenMessages } from './format'
  * Rezeption (alle Bereiche) und die Zeichensprache der Zimmer-Kacheln.
  * Die Verwaltung wird gesiezt.
  */
-describe('Rezeption, Anmeldung, Konto und Simulator — Begriffe und Schreibweise (deutsch)', () => {
+describe('Rezeption, Anmeldung, Konto, Simulator und Hilfe — Begriffe und Schreibweise (deutsch)', () => {
   const all = [
     ...flattenMessages(admin).map(([k, t]) => [`admin.${k}`, t] as const),
     ...flattenMessages(symbols).map(([k, t]) => [`symbols.${k}`, t] as const),
     ...flattenMessages(auth).map(([k, t]) => [`auth.${k}`, t] as const),
     ...flattenMessages(account).map(([k, t]) => [`account.${k}`, t] as const),
     ...flattenMessages(simulator).map(([k, t]) => [`simulator.${k}`, t] as const),
+    ...flattenMessages(help).map(([k, t]) => [`help.${k}`, t] as const),
   ]
   const hits = (re: RegExp) => all.filter(([, t]) => re.test(t))
 

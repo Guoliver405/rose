@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
-  title: "RoSe — RoomService",
+  title: "RoSe – RoomService",
   description: "Leichtgewichtiges Zimmerservice- und Reinigungs-Portal",
 };
 

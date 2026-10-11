@@ -10,10 +10,13 @@
  */
 export default function SimFrame({
   titel,
+  badge,
   geraet = 'handy',
   children,
 }: {
   titel: string
+  /** Kennzeichnung „Nachbau“ aus der Sprachdatei (`help.sim.frame.badge`). */
+  badge: string
   /** `handy` begrenzt auf Telefonbreite, `breit` lässt den Inhalt laufen. */
   geraet?: 'handy' | 'breit'
   children: React.ReactNode
@@ -26,7 +29,7 @@ export default function SimFrame({
         <span className="h-2 w-2 rounded-full bg-edge-strong" />
         <span className="ml-2 truncate text-[11px] font-semibold text-ink-muted">{titel}</span>
         <span className="ml-auto shrink-0 rounded-full bg-surface-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-ink-muted">
-          Nachbau
+          {badge}
         </span>
       </div>
       <div className="p-3">{children}</div>

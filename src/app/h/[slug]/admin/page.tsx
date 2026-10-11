@@ -190,7 +190,7 @@ export default async function AdminOverviewPage({
       </div>
 
       {ctx.role !== 'reception' && (
-        <SetupBanner base={`/h/${ctx.hotelSlug}/admin`} konfig={konfig} m={m.setup} />
+        <SetupBanner base={`/h/${ctx.hotelSlug}/admin`} konfig={konfig} m={m.setup} texte={{ m: getMessages(locale).help.lotsen.setup, intl: intlLocale(locale) }} />
       )}
 
       {total === 0 ? (

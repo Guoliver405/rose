@@ -11,22 +11,27 @@ import { PROVIDER } from '@/lib/provider'
 import LiveDemo from '@/components/landing/LiveDemo'
 import RoiCalculator from '@/components/landing/RoiCalculator'
 import CleaningSimulation from '@/components/landing/CleaningSimulation'
-import { getMessages, intlLocale } from '@/lib/i18n'
+import Rich from '@/components/i18n/Rich'
+import { getMessages, intlLocale, type LandingMessages, type SimulatorMessages } from '@/lib/i18n'
+import { format } from '@/lib/i18n/format'
 import { getLocale } from '@/utils/locale'
 
-export const metadata: Metadata = {
-  title: 'RoSe — RoomService für Hotels jeder Größe',
-  description:
-    'Reinigungswünsche, „Bitte nicht stören" und Service-Bestellungen der Gäste landen live bei Rezeption und Housekeeping — ohne Gast-App, ohne PMS-Projekt. 0,50 € je Zimmer und Monat, mindestens ein voller Monat frei.',
-  openGraph: {
-    title: 'RoSe — RoomService für Hotels jeder Größe',
-    description:
-      'Check-in per Klick, Gäste per QR-Code, Reinigung im Takt. Drei Portale für Rezeption, Housekeeping und Gäste.',
-    type: 'website',
-    locale: 'de_DE',
-    siteName: 'RoSe — RoomService',
-  },
-  twitter: { card: 'summary_large_image' },
+type M = LandingMessages['page']
+
+export async function generateMetadata(): Promise<Metadata> {
+  const m = getMessages(await getLocale()).landing.page.meta
+  return {
+    title: m.title,
+    description: format(m.description, { price: formatCents(PRICE_PER_ROOM_CENTS) }),
+    openGraph: {
+      title: m.title,
+      description: m.ogDescription,
+      type: 'website',
+      locale: m.ogLocale,
+      siteName: m.siteName,
+    },
+    twitter: { card: 'summary_large_image' },
+  }
 }
 
 /**
@@ -42,25 +47,30 @@ export const metadata: Metadata = {
  * zwischen täglicher Reinigung und Reinigung auf Wunsch (Rechnung in `cleaning-sim.ts`). Preise kommen aus `pricing.ts`,
  * damit Landing Page, AGB und Konto dieselben Zahlen zeigen.
  */
-export default function LandingPage() {
+export default async function LandingPage() {
+  const locale = await getLocale()
+  const messages = getMessages(locale)
+  const lm = messages.landing
+  const m = lm.page
+  const intl = intlLocale(locale)
   return (
     <div className="flex flex-1 flex-col bg-surface">
-      <Header />
+      <Header m={m.header} />
       <main className="flex-1">
-        <Hero />
-        <PainPoints />
-        <Formula />
-        <Sustainability />
-        <ProductPreview />
-        <Flow />
-        <DayComparison />
-        <FeatureGrid />
-        <UseCases />
-        <Pricing />
-        <Faq />
-        <SignupTeaser />
+        <Hero m={m.hero} />
+        <PainPoints m={m.painPoints} />
+        <Formula m={m.formula} />
+        <Sustainability m={m.sustainability} />
+        <ProductPreview m={m.product} demo={lm.demo} intlLocale={intl} />
+        <Flow m={m.flow} />
+        <DayComparison m={m.comparison} day={lm.day} texts={messages.simulator.app.day} intlLocale={intl} />
+        <FeatureGrid m={m.features} />
+        <UseCases m={m.useCases} />
+        <Pricing m={m.pricing} roi={lm.roi} intlLocale={intl} />
+        <Faq m={m.faq} />
+        <SignupTeaser m={m.signup} />
       </main>
-      <Footer />
+      <Footer m={m.footer} />
     </div>
   )
 }
@@ -75,31 +85,31 @@ function Brand() {
   )
 }
 
-function Header() {
+function Header({ m }: { m: M['header'] }) {
   return (
     <header className="sticky top-0 z-20 border-b border-edge bg-surface/85 backdrop-blur">
       <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-4 px-4">
-        <Link href="/" aria-label="RoSe — Startseite">
+        <Link href="/" aria-label={m.homeAria}>
           <Brand />
         </Link>
         <nav className="hidden items-center gap-5 text-sm font-medium text-ink-soft sm:flex">
-          <a href="#produkt" className="hover:text-ink">Produkt</a>
-          <a href="#ablauf" className="hover:text-ink">So funktioniert&rsquo;s</a>
-          <a href="#preise" className="hover:text-ink">Preise</a>
-          <a href="#faq" className="hover:text-ink">FAQ</a>
+          <a href="#produkt" className="hover:text-ink">{m.nav.product}</a>
+          <a href="#ablauf" className="hover:text-ink">{m.nav.flow}</a>
+          <a href="#preise" className="hover:text-ink">{m.nav.pricing}</a>
+          <a href="#faq" className="hover:text-ink">{m.nav.faq}</a>
         </nav>
         <div className="flex items-center gap-2">
           <Link
             href="/login"
             className="rounded-lg border border-edge bg-surface-elevated px-3 py-1.5 text-sm font-semibold text-ink hover:border-edge-strong"
           >
-            Anmelden
+            {m.signIn}
           </Link>
           <Link
             href="/registrieren"
             className="hidden rounded-lg bg-action px-3 py-1.5 text-sm font-semibold text-action-foreground hover:bg-action-strong sm:block"
           >
-            Kostenlos starten
+            {m.start}
           </Link>
         </div>
       </div>
@@ -107,59 +117,41 @@ function Header() {
   )
 }
 
-function Hero() {
+function Hero({ m }: { m: M['hero'] }) {
   return (
     <section className="mx-auto w-full max-w-5xl px-4 pb-16 pt-14 text-center sm:pt-20">
       <p className="mx-auto mb-4 w-fit rounded-full border border-action-tint-edge bg-action-tint px-3 py-1 text-xs font-semibold text-action-deep">
-        Vom Gasthof bis zur Hotelkette
+        {m.badge}
       </p>
       <h1 className="mx-auto max-w-3xl text-4xl font-black leading-tight text-ink sm:text-5xl">
-        Reinigung steuern und Services anbieten —{' '}
-        <span className="text-blocked">digital und effizient</span>
+        <Rich text={m.title} tags={{ hl: c => <span className="text-blocked">{c}</span> }} />
       </h1>
       <p className="mx-auto mt-4 max-w-2xl text-lg text-ink-soft">
-        Der Gast tippt „Zimmer reinigen“, die Rezeption sieht es sofort, das
-        Housekeeping arbeitet es vom Board ab. RoSe verbindet alle Bereiche in
-        Echtzeit — in einem intuitiven System, ohne Schulung, Datenprobleme oder
-        PMS-Projekt.
+        {m.text}
       </p>
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
         <Link
           href="/registrieren"
           className="rounded-xl bg-action px-6 py-3 font-bold text-action-foreground shadow-sm hover:bg-action-strong"
         >
-          Kostenlos starten
+          {m.start}
         </Link>
         <a
           href="#produkt"
           className="rounded-xl border border-edge bg-surface-elevated px-6 py-3 font-bold text-ink shadow-sm hover:border-edge-strong"
         >
-          Produkt Demo
+          {m.demo}
         </a>
       </div>
     </section>
   )
 }
 
-function PainPoints() {
-  const items = [
-    {
-      pain: '„Zimmer 204 wollte doch keine Reinigung?"',
-      fix: 'Gäste melden Reinigungswunsch oder „Bitte nicht stören" selbst — das Board zeigt es live, ohne Zuruf über den Flur und ohne Türhänger.',
-    },
-    {
-      pain: '„Wer ist gerade in welchem Zimmer?"',
-      fix: 'Reinigungskräfte bestätigen Start und Abschluss mit einem Wisch — Rezeption und Kolleginnen sehen sofort, wo gearbeitet wird.',
-    },
-    {
-      pain: '„Noch ein System, noch eine Schulung …"',
-      fix: 'Drei aufgeräumte Portale, jedes zeigt nur, was die Rolle braucht. Reinigungskräfte melden sich per QR-Karte an, Gäste brauchen gar kein Konto.',
-    },
-  ]
+function PainPoints({ m }: { m: M['painPoints'] }) {
   return (
     <section className="border-y border-edge bg-surface-sunken">
       <div className="mx-auto grid w-full max-w-5xl gap-6 px-4 py-12 sm:grid-cols-3">
-        {items.map((it) => (
+        {m.map((it) => (
           <div key={it.pain}>
             <p className="font-bold text-ink">{it.pain}</p>
             <p className="mt-2 text-sm text-ink-soft">{it.fix}</p>
@@ -179,29 +171,26 @@ function PainPoints() {
  * weiterer Nutzen, sondern der Grund, es auszuprobieren, und steht darunter.
  * Farbe nur als Linie und Tönung (Farbsprache der Boards).
  */
-function Formula() {
+function Formula({ m }: { m: M['formula'] }) {
   const terms = [
     {
       href: '#produkt',
       icon: Smartphone,
-      means: 'Mobiles Gästeportal',
-      effect: 'bessere Servicequalität',
+      ...m.terms.portal,
       box: 'border-fresh-tint-edge bg-fresh-tint hover:border-fresh-bar',
       tone: 'text-fresh-deep',
     },
     {
       href: '#vergleich',
       icon: Sparkles,
-      means: 'Gesteuerte Zimmerreinigung',
-      effect: 'spart Kosten, schont die Umwelt',
+      ...m.terms.cleaning,
       box: 'border-positive-tint-edge bg-positive-tint hover:border-positive-bar',
       tone: 'text-positive-deep',
     },
     {
       href: '#ablauf',
       icon: ClipboardCheck,
-      means: 'Digitaler Informationsfluss',
-      effect: 'Übersicht und Nachvollziehbarkeit',
+      ...m.terms.flow,
       box: 'border-accent-tint-edge bg-accent-tint hover:border-accent-bar',
       tone: 'text-accent-deep',
     },
@@ -209,7 +198,7 @@ function Formula() {
   return (
     <section id="formel" className="mx-auto w-full max-w-5xl scroll-mt-20 px-4 pt-16">
       <h2 className="text-center text-sm font-bold uppercase tracking-widest text-ink-muted">
-        Die RoSe-Formel
+        {m.heading}
       </h2>
       <div className="mt-6 flex flex-col items-stretch gap-2 md:flex-row md:items-center">
         {terms.map((t, i) => (
@@ -235,9 +224,7 @@ function Formula() {
         <Brand />
       </p>
       <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-ink-muted">
-        Kein PMS-Projekt, keine Schulung, in wenigen Minuten eingerichtet —{' '}
-        {formatCents(PRICE_PER_ROOM_CENTS)} je Zimmer im Monat, einen Monat
-        kostenlos testen.
+        {format(m.footnote, { price: formatCents(PRICE_PER_ROOM_CENTS) })}
       </p>
     </section>
   )
@@ -252,11 +239,11 @@ function Formula() {
  * als nachhaltig gelten, genießen ein gutes Image (User, 05.09.2026). Die
  * einzige Zahl (70 %) ist dieselbe wie Quelle Q1 des Rechners (AHLA 2022).
  */
-function Sustainability() {
+function Sustainability({ m }: { m: M['sustainability'] }) {
   const wins = [
-    { icon: Droplets, title: 'Wasser und Waschmittel', text: 'Jede ausgelassene Zwischenreinigung spart eine Ladung Bettwäsche und Handtücher — und die Chemie dazu.' },
-    { icon: Leaf, title: 'Energie und Wege', text: 'Kein Staubsauger, kein Wagen über den Flur, keine Fahrt zur Wäscherei für ein Zimmer, das niemand gereinigt haben wollte.' },
-    { icon: Sparkles, title: 'Gäste entscheiden selbst', text: 'Ein Tipp im Gäste-Portal statt Türhänger. Wer Reinigung möchte, bekommt sie — wer nicht, wird nicht gestört.' },
+    { icon: Droplets, ...m.wins.water },
+    { icon: Leaf, ...m.wins.energy },
+    { icon: Sparkles, ...m.wins.guests },
   ]
   return (
     <section id="nachhaltig" className="mx-auto w-full max-w-5xl scroll-mt-20 px-4 py-16">
@@ -265,23 +252,18 @@ function Sustainability() {
           {/* Plakette */}
           <div className="mx-auto flex h-40 w-40 shrink-0 flex-col items-center justify-center rounded-full border-4 border-positive bg-surface-elevated text-center shadow-sm">
             <Leaf className="h-9 w-9 text-positive-strong" aria-hidden />
-            <span className="mt-1 text-[11px] font-black uppercase tracking-widest text-positive-deepest">Reinigung</span>
-            <span className="text-[11px] font-black uppercase tracking-widest text-positive-deepest">auf Wunsch</span>
+            <span className="mt-1 text-[11px] font-black uppercase tracking-widest text-positive-deepest">{m.sealTop}</span>
+            <span className="text-[11px] font-black uppercase tracking-widest text-positive-deepest">{m.sealBottom}</span>
           </div>
           <div>
             <p className="w-fit rounded-full bg-positive px-3 py-1 text-xs font-bold text-positive-foreground">
-              Nachhaltig gastgeben
+              {m.badge}
             </p>
             <h2 className="mt-3 text-3xl font-black text-ink">
-              Reinigung nur, wenn der Gast sie möchte
+              {m.heading}
             </h2>
             <p className="mt-3 max-w-2xl text-ink-soft">
-              Die tägliche Zimmerreinigung ist Gewohnheit, kein Wunsch: 70 % der Gäste
-              brauchen sie nicht jeden Tag. Mit RoSe wird „Reinigung auf Wunsch“ zum
-              Standard eures Hauses — die Gäste tippen, wenn sie etwas möchten, und
-              alles andere bleibt unangetastet. Das spart Wasser, Waschmittel und
-              Energie, und es ist ein Nachhaltigkeits-Argument, das ihr Gästen und
-              Buchungsportalen sichtbar machen könnt.
+              {m.text}
             </p>
             <ul className="mt-6 grid gap-4 sm:grid-cols-3">
               {wins.map((w) => (
@@ -293,8 +275,7 @@ function Sustainability() {
               ))}
             </ul>
             <p className="mt-4 text-xs text-ink-muted">
-              Die Routine-Reinigung ab der zweiten Nacht bleibt als Option einschaltbar —
-              das Haus entscheidet, nicht die Software.
+              {m.footnote}
             </p>
           </div>
         </div>
@@ -305,53 +286,22 @@ function Sustainability() {
 
 /* ── Produktvorschau: interaktive Szene ─────────────────────────── */
 
-function ProductPreview() {
+function ProductPreview({ m, demo, intlLocale }: { m: M['product']; demo: LandingMessages['demo']; intlLocale: string }) {
   const portals = [
-    {
-      icon: User,
-      bar: 'bg-action',
-      title: 'Rezeption',
-      lead: 'Ein Klick checkt ein, ein Klick checkt aus.',
-      points: [
-        'Check-in erzeugt sofort den Gast-Zugang — PIN am Bildschirm, Handout zum Drucken oder Mailen',
-        'Zimmer-Übersicht mit Live-Status; Prioritäten für Beschwerden und Sonderfälle',
-        'Service-Anfragen als Aufgabenliste, Dringende blinken rot',
-      ],
-    },
-    {
-      icon: QrCode,
-      bar: 'bg-positive',
-      title: 'Gäste',
-      lead: 'QR scannen — fertig. Keine App, kein Konto.',
-      points: [
-        'Zimmer-QR plus PIN, oder ein persönlicher Link je Aufenthalt — das Haus wählt',
-        '„Zimmer reinigen" oder „Bitte nicht stören" mit einem Tipp',
-        'Services bestellen — vom Wäscheservice bis zum Frühstück aufs Zimmer',
-      ],
-    },
-    {
-      icon: Sparkles,
-      bar: 'bg-attention',
-      title: 'Housekeeping',
-      lead: 'Ein Board für das ganze Team.',
-      points: [
-        'Etagen-Ansicht: Wünsche, Abreisen, Prioritäten — mit Empfehlung, wo es sich zu starten lohnt',
-        'Start und Abschluss per Wisch; „Kollegin in Zimmer X" ist live sichtbar',
-        'Anmeldung per QR-Karte, Schicht und Pause mit zwei Fingertipps, Auswertung inklusive',
-      ],
-    },
+    { icon: User, bar: 'bg-action', ...m.portals.reception },
+    { icon: QrCode, bar: 'bg-positive', ...m.portals.guests },
+    { icon: Sparkles, bar: 'bg-attention', ...m.portals.housekeeping },
   ]
   return (
     <section id="produkt" className="mx-auto w-full max-w-5xl scroll-mt-20 px-4 py-16">
       <h2 className="text-center text-3xl font-black text-ink">
-        Drei Portale, drei Benutzertypen, ein Zusammenwirken
+        {m.heading}
       </h2>
       <p className="mx-auto mt-3 max-w-2xl text-center text-ink-soft">
-        Jede Rolle bekommt genau die Oberfläche, die sie braucht — verbunden in
-        Echtzeit. Hier läuft es live: ein Tipp, alle sehen es.
+        {m.intro}
       </p>
       <div className="mt-10">
-        <LiveDemo />
+        <LiveDemo m={demo} intlLocale={intlLocale} />
       </div>
       <div className="mt-8 grid gap-6 md:grid-cols-3">
         {portals.map((p) => (
@@ -381,53 +331,22 @@ function ProductPreview() {
 
 /* ── Ablauf als Bildergeschichte ────────────────────────────────── */
 
-function Flow() {
+function Flow({ m }: { m: M['flow'] }) {
   const panels = [
-    {
-      icon: MousePointerClick,
-      tone: 'text-action bg-action-tint border-action-tint-edge',
-      who: 'Rezeption',
-      title: 'Check-in per Klick',
-      text: 'Ein Klick auf das Zimmer — RoSe legt den anonymen Aufenthalt an und erzeugt den Zugang.',
-    },
-    {
-      icon: QrCode,
-      tone: 'text-positive-strong bg-positive-tint border-positive-tint-edge',
-      who: 'Gast',
-      title: 'Zugang in der Hand',
-      text: 'PIN auf dem Handout, QR-Aushang im Zimmer oder Link per Mail — kein Konto, keine App.',
-    },
-    {
-      icon: Smartphone,
-      tone: 'text-attention-deepest bg-attention-tint border-attention-tint-edge',
-      who: 'Gast',
-      title: 'Ein Tipp im Zimmer',
-      text: '„Zimmer reinigen", „Bitte nicht stören" oder eine Bestellung aus dem Service-Baukasten.',
-    },
-    {
-      icon: BellRing,
-      tone: 'text-critical-strong bg-critical-tint border-critical-tint-edge',
-      who: 'Rezeption',
-      title: 'Sofort sichtbar',
-      text: 'Die Glocke an der Zimmer-Kachel, die Anfrage in der Liste — Dringendes blinkt rot.',
-    },
-    {
-      icon: ClipboardCheck,
-      tone: 'text-accent bg-accent-tint border-accent-tint-edge',
-      who: 'Housekeeping',
-      title: 'Gezielt und gesteuert',
-      text: 'Priorisiert und zuvorkommend — automatisch am Bedarf ausgerichtet und in Abstimmung der Mitarbeitenden.',
-    },
+    { icon: MousePointerClick, tone: 'text-action bg-action-tint border-action-tint-edge', ...m.panels.checkin },
+    { icon: QrCode, tone: 'text-positive-strong bg-positive-tint border-positive-tint-edge', ...m.panels.access },
+    { icon: Smartphone, tone: 'text-attention-deepest bg-attention-tint border-attention-tint-edge', ...m.panels.tap },
+    { icon: BellRing, tone: 'text-critical-strong bg-critical-tint border-critical-tint-edge', ...m.panels.visible },
+    { icon: ClipboardCheck, tone: 'text-accent bg-accent-tint border-accent-tint-edge', ...m.panels.board },
   ]
   return (
     <section id="ablauf" className="scroll-mt-20 border-y border-edge bg-surface-sunken">
       <div className="mx-auto w-full max-w-5xl px-4 py-16">
         <h2 className="text-center text-3xl font-black text-ink">
-          So funktioniert&rsquo;s
+          {m.heading}
         </h2>
         <p className="mx-auto mt-3 max-w-2xl text-center text-ink-soft">
-          Vom Check-in bis zur fertigen Reinigung — fünf Schritte, kein Zuruf,
-          kein Zettel.
+          {m.intro}
         </p>
         <ol className="relative mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
           <span className="absolute left-0 right-0 top-7 hidden h-0.5 bg-edge lg:block" aria-hidden />
@@ -446,8 +365,7 @@ function Flow() {
           ))}
         </ol>
         <p className="mx-auto mt-10 max-w-2xl text-center text-sm text-ink-muted">
-          Check-out ist wieder ein Klick: der Zugang erlischt sofort, das Zimmer
-          wandert als „ausgecheckt“ aufs Board.
+          {m.checkout}
         </p>
       </div>
     </section>
@@ -456,51 +374,54 @@ function Flow() {
 
 /* ── Derselbe Tag, mit und ohne RoSe ───────────────────────────────────────── */
 
-async function DayComparison() {
-  const locale = await getLocale()
+function DayComparison({ m, day, texts, intlLocale }: {
+  m: M['comparison']
+  day: LandingMessages['day']
+  texts: SimulatorMessages['app']['day']
+  intlLocale: string
+}) {
   return (
     <section id="vergleich" className="mx-auto w-full max-w-6xl scroll-mt-20 px-4 py-16">
-      <h2 className="text-center text-3xl font-black text-ink">Derselbe Tag, mit und ohne RoSe</h2>
+      <h2 className="text-center text-3xl font-black text-ink">{m.heading}</h2>
       <p className="mx-auto mt-3 max-w-2xl text-center text-ink-soft">
-        100 Zimmer, gleiche Gäste, gleiche Reinigungskräfte. Der Unterschied ist allein, was sie
-        wissen und wonach sie das nächste Zimmer wählen – ob Ihr Haus täglich reinigt oder nur auf Wunsch.
+        {m.intro}
       </p>
       <div className="mt-10">
-        <CleaningSimulation texts={getMessages(locale).simulator.app.day} intlLocale={intlLocale(locale)} />
+        <CleaningSimulation texts={texts} m={day} intlLocale={intlLocale} />
       </div>
       {/* Simulator Phase 3 (26.09.2026): derselbe Rechenkern mit den Zahlen des eigenen Hauses. */}
       <div className="mt-8 flex flex-col items-center gap-3 rounded-2xl border border-edge bg-surface-elevated px-6 py-6 text-center sm:flex-row sm:text-left">
         <div className="flex-1">
-          <p className="text-lg font-bold text-ink">Mit den Zahlen Ihres Hauses rechnen</p>
+          <p className="text-lg font-bold text-ink">{m.simulatorTitle}</p>
           <p className="mt-1 text-sm text-ink-soft">
-            Etagen, Zimmer, Personal, Zeiten und Gästeverhalten einstellen – der Housekeeping-Simulator rechnet viele Tage
-            durch. Kostenlos, mit E-Mail-Adresse, ohne Zahlungsdaten.
+            {m.simulatorText}
           </p>
         </div>
         <Link href="/simulator"
           className="shrink-0 rounded-lg bg-action px-5 py-3 font-bold text-action-foreground hover:bg-action-strong">
-          Zum Simulator
+          {m.simulatorLink}
         </Link>
       </div>
     </section>
   )
 }
 
-function FeatureGrid() {
+function FeatureGrid({ m }: { m: M['features'] }) {
+  const f = m.items
   const features = [
-    { icon: QrCode, title: 'QR-Codes je nach Bedarf', text: 'Gäste-Zugänge je Zimmer mit PIN, oder je Aufenthalt individuell generieren. Alles mit einem Klick.' },
-    { icon: KeyRound, title: 'Sicher ohne Konten', text: 'Unerratbare Zimmer-Codes, PIN je Aufenthalt, Sperre nach Fehlversuchen — auch gegen Durchprobieren aus dem Netz.' },
-    { icon: Moon, title: 'DND wird respektiert', text: '„Bitte nicht stören" lässt das Zimmer fürs Housekeeping verschwinden — niemand klopft umsonst.' },
-    { icon: Clock, title: 'Stayover-Routine', text: 'Optional: ab der zweiten Nacht setzt RoSe die Routine-Reinigung zur Wunschzeit aufs Board — auch in einem Zeitfenster.' },
-    { icon: BedDouble, title: 'Service-Baukasten', text: 'Eigene Services mit Optionen, Preisen und Priorisierung anlegen — Gäste bestellen digital und ohne Verzögerung.' },
-    { icon: Printer, title: 'Druckfertig', text: 'Gast-Handout beim Check-in, QR-Aushänge und Login-Karten fürs Team — alles aus dem Browser, oder per Mail.' },
-    { icon: Leaf, title: 'Nachhaltig auf Wunsch', text: 'Reinigung nur, wenn der Gast sie möchte — weniger Wasser, Waschmittel und Wege, und ein sichtbares Argument für euer Nachhaltigkeits-Profil.' },
-    { icon: ShieldCheck, title: 'Nachweis statt Bauchgefühl', text: 'Zimmer-Verlauf und Arbeitszeit-Auswertung je Kraft — für Beschwerden, Lohnabrechnung und Personalplanung.' },
+    { icon: QrCode, ...f.qr },
+    { icon: KeyRound, ...f.secure },
+    { icon: Moon, ...f.dnd },
+    { icon: Clock, ...f.daily },
+    { icon: BedDouble, ...f.services },
+    { icon: Printer, ...f.print },
+    { icon: Leaf, ...f.green },
+    { icon: ShieldCheck, ...f.proof },
   ]
   return (
     <section className="mx-auto w-full max-w-5xl px-4 py-16">
       <h2 className="text-center text-3xl font-black text-ink">
-        Durchdacht bis ins Detail
+        {m.heading}
       </h2>
       <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {features.map((f) => (
@@ -515,40 +436,22 @@ function FeatureGrid() {
   )
 }
 
-function UseCases() {
-  const cases = [
-    {
-      title: 'Pension, Gasthof & Ferienwohnungen',
-      text: 'Die Rezeption ist oft gleichzeitig Küche, Service und Housekeeping. RoSe hält den Überblick: Wer reist ab, wo wird Reinigung gewünscht, was wurde bestellt — ohne Zettelwirtschaft. Ab 5 € im Monat.',
-    },
-    {
-      title: 'Boutique- & Aparthotel',
-      text: 'Längere Aufenthalte, wechselnde Reinigungskräfte: QR-Login-Karten statt Passwort-Chaos, die Stayover-Automatik erinnert ab der zweiten Nacht, DND und Wünsche steuern die Gäste selbst.',
-    },
-    {
-      title: 'Stadthotel mit mehreren Etagen',
-      text: 'Eigenes oder externes Housekeeping: Das Etagen-Board empfiehlt, wo es sich zu starten lohnt, und die Rezeption sieht live, wer wo arbeitet. Die Auswertung liefert Arbeits- und Reinigungszeiten je Kraft.',
-    },
-    {
-      title: 'Hotelkette & Resort',
-      text: 'Ein Konto, beliebig viele Häuser; Manager sehen ihre Häuser, die Rezeption nur ihr eigenes. Prioritäten lenken bei Beschwerden sofort um, vergessene Abschlüsse verfallen automatisch — ohne Zimmer-Limit.',
-    },
-  ]
+function UseCases({ m }: { m: M['useCases'] }) {
+  const cases = [m.items.small, m.items.boutique, m.items.city, m.items.chain]
   return (
     <section className="border-y border-edge bg-surface-sunken">
       <div className="mx-auto w-full max-w-5xl px-4 py-16">
         <h2 className="text-center text-3xl font-black text-ink">
-          Gemacht für Häuser jeder Größe
+          {m.heading}
         </h2>
         <p className="mx-auto mt-3 max-w-2xl text-center text-ink-soft">
-          Vom Familienbetrieb bis zur Kette — RoSe skaliert mit, ohne dass
-          irgendwo eine IT-Abteilung nötig wird.
+          {m.intro}
         </p>
         <div className="mt-10 grid gap-6 sm:grid-cols-2">
           {cases.map((c) => (
             <div key={c.title} className="rounded-xl border border-edge bg-surface-elevated p-6">
               <h3 className="font-bold text-ink">{c.title}</h3>
-              <p className="mt-2 text-sm text-ink-soft">{c.text}</p>
+              <p className="mt-2 text-sm text-ink-soft">{format(c.text, { min: formatCents(MIN_MONTHLY_CENTS) })}</p>
             </div>
           ))}
         </div>
@@ -559,37 +462,29 @@ function UseCases() {
 
 /* ── Preise und Nutzen ──────────────────────────────────────────── */
 
-function Pricing() {
-  const included = [
-    'Alle drei Portale — Rezeption, Housekeeping, Gäste',
-    'Beliebig viele Häuser, Zugänge und Reinigungskräfte',
-    'Service-Baukasten, Stayover-Routine, Zeitfenster',
-    'QR-Aushänge, Handouts, Login-Karten, Gast-Mail',
-    'Zimmer-Verlauf und Arbeitszeit-Auswertung',
-    'Hell, dunkel, barrierearm — auf jedem Gerät',
-  ]
+function Pricing({ m, roi, intlLocale }: { m: M['pricing']; roi: LandingMessages['roi']; intlLocale: string }) {
+  const label = (c: string) => <span className="font-semibold text-ink-soft">{c}</span>
   return (
     <section id="preise" className="mx-auto w-full max-w-5xl scroll-mt-20 px-4 py-16">
-      <h2 className="text-center text-3xl font-black text-ink">Ein Preis. Keine Pakete.</h2>
+      <h2 className="text-center text-3xl font-black text-ink">{m.heading}</h2>
       <p className="mx-auto mt-3 max-w-xl text-center text-ink-soft">
-        RoSe kostet je Zimmer — nicht je Funktion. Alles ist immer drin, egal ob
-        acht Zimmer oder achthundert.
+        {m.intro}
       </p>
       <div className="mt-10 grid gap-6 md:grid-cols-5">
         <div className="flex flex-col rounded-2xl border border-action bg-surface-elevated p-6 shadow-sm ring-1 ring-action md:col-span-2">
           <p className="w-fit rounded-full bg-action-pill px-2.5 py-0.5 text-xs font-bold text-action-deep">
-            Mindestens ein voller Monat kostenlos
+            {m.badge}
           </p>
           <p className="mt-4">
             <span className="text-5xl font-black text-ink">{formatCents(PRICE_PER_ROOM_CENTS)}</span>
           </p>
-          <p className="text-sm text-ink-soft">je Zimmer und Monat, zzgl. USt.</p>
+          <p className="text-sm text-ink-soft">{m.perRoom}</p>
           <p className="mt-3 text-sm text-ink-soft">
-            Mindestbetrag <span className="font-semibold text-ink">{formatCents(MIN_MONTHLY_CENTS)}</span> im
-            Monat — bis {MIN_COVERS_ROOMS} Zimmer zahlt ihr also einen Festpreis.
+            <Rich text={m.minimum} vars={{ min: formatCents(MIN_MONTHLY_CENTS), rooms: MIN_COVERS_ROOMS }}
+              tags={{ b: c => <span className="font-semibold text-ink">{c}</span> }} />
           </p>
           <ul className="mt-5 flex-1 space-y-2 text-sm text-ink-soft">
-            {included.map((f) => (
+            {m.included.map((f) => (
               <li key={f} className="flex gap-2">
                 <Check className="mt-0.5 h-4 w-4 shrink-0 text-positive-strong" aria-hidden />
                 {f}
@@ -598,79 +493,44 @@ function Pricing() {
           </ul>
           <div className="mt-5 space-y-2 text-xs text-ink-muted">
             <p>
-              <span className="font-semibold text-ink-soft">Was zählt als Zimmer?</span> Jedes Zimmer,
-              das im Monat auch nur vorübergehend in Betrieb war. Zimmer außer Betrieb
-              (Renovierung, Saison) zählen nicht.
+              <Rich text={m.whatCounts} tags={{ b: label }} />
             </p>
             <p>
-              <span className="font-semibold text-ink-soft">Keine Laufzeit.</span> Monatlich kündbar,
-              Abrechnung nachträglich je Kalendermonat. Der Mindestbetrag gilt je Konto,
-              nicht je Haus. Details in den{' '}
-              <Link href="/agb" className="underline hover:text-ink">AGB</Link>.
+              <Rich text={m.terms} tags={{
+                b: label,
+                link: c => <Link href="/agb" className="underline hover:text-ink">{c}</Link>,
+              }} />
             </p>
           </div>
           <Link
             href="/registrieren"
             className="mt-6 rounded-xl bg-action px-4 py-2.5 text-center font-bold text-action-foreground hover:bg-action-strong"
           >
-            Kostenlos starten
+            {m.start}
           </Link>
         </div>
 
         <div className="md:col-span-3">
-          <RoiCalculator />
+          <RoiCalculator m={roi} intlLocale={intlLocale} />
         </div>
       </div>
     </section>
   )
 }
 
-function Faq() {
-  const items = [
-    {
-      q: 'Brauchen Gäste eine App oder ein Konto?',
-      a: 'Nein. Gäste scannen den QR-Code im Zimmer und geben die PIN vom Check-in ein — oder öffnen ihren persönlichen Link vom Handout bzw. aus der Mail. Alles läuft im Browser.',
-    },
-    {
-      q: 'Ersetzt RoSe unser Buchungssystem oder PMS?',
-      a: 'Bewusst nicht. RoSe kümmert sich um den Aufenthalt im Haus — Reinigung, Wünsche, Services. Buchung, Preise und Abrechnung bleiben, wo sie sind. Es gibt nichts zu integrieren.',
-    },
-    {
-      q: 'Welche Daten speichert RoSe über Gäste?',
-      a: 'Keine Namen, keine Kontaktdaten. Ein Aufenthalt ist anonym: Zimmer, Zeitraum, Zugang. Beim Check-out erlischt der Zugang sofort. Auch eine Mail-Adresse für den Zugangs-Link wird nicht gespeichert.',
-    },
-    {
-      q: 'Wo liegen die Daten?',
-      a: 'Datenbank und Serverfunktionen laufen in der EU (Irland). Zugriffe sind je Haus getrennt, Verbindungen verschlüsselt. Details stehen in der Datenschutzerklärung.',
-    },
-    {
-      q: 'Was brauchen die Reinigungskräfte?',
-      a: 'Ein beliebiges Smartphone oder Tablet. Anmeldung per gedruckter QR-Karte oder Benutzername + PIN — keine E-Mail-Adressen nötig.',
-    },
-    {
-      q: 'Was kostet RoSe genau?',
-      a: `${formatCents(PRICE_PER_ROOM_CENTS)} je Zimmer und Monat, mindestens ${formatCents(MIN_MONTHLY_CENTS)} im Monat, zzgl. USt. Frei sind der Kalendermonat der Registrierung und der erste volle Monat danach — mindestens ein voller Monat. Keine Pakete, keine Zimmergrenzen, monatlich kündbar.`,
-    },
-    {
-      q: 'Wie lange dauert die Einrichtung?',
-      a: 'Zimmer anlegen (auch als Bereich „301–310"), Aushänge drucken, Team-Karten drucken — realistisch wenige Minuten. Beispiel-Services sind schon da. Es gibt nichts zu installieren.',
-    },
-    {
-      q: 'Kann ich RoSe jetzt schon ausprobieren?',
-      a: 'Ja. In der Testphase ist die Registrierung noch auf eingeladene Häuser beschränkt — mit Einladungscode ist euer Konto in einer Minute angelegt, mindestens der erste volle Monat ist frei.',
-    },
-  ]
+function Faq({ m }: { m: M['faq'] }) {
+  const prices = { price: formatCents(PRICE_PER_ROOM_CENTS), min: formatCents(MIN_MONTHLY_CENTS) }
   return (
     <section id="faq" className="scroll-mt-20 border-y border-edge bg-surface-sunken">
       <div className="mx-auto w-full max-w-3xl px-4 py-16">
         <h2 className="text-center text-3xl font-black text-ink">
-          Häufige Fragen
+          {m.heading}
         </h2>
         <div className="mt-10 space-y-6">
-          {items.map((it) => (
+          {m.items.map((it) => (
             <div key={it.q}>
               <h3 className="font-bold text-ink">{it.q}</h3>
-              <p className="mt-1 text-sm text-ink-soft">{it.a}</p>
+              <p className="mt-1 text-sm text-ink-soft">{format(it.a, prices)}</p>
             </div>
           ))}
         </div>
@@ -679,30 +539,28 @@ function Faq() {
   )
 }
 
-function SignupTeaser() {
+function SignupTeaser({ m }: { m: M['signup'] }) {
   return (
     <section id="registrierung" className="mx-auto w-full max-w-5xl scroll-mt-20 px-4 py-16">
       <div className="rounded-2xl border border-action-tint-edge bg-action-tint p-8 text-center sm:p-12">
         <h2 className="text-2xl font-black text-ink sm:text-3xl">
-          Haus in einer Minute anlegen
+          {m.heading}
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-ink-soft">
-          Konto, Haus und Beispiel-Services entstehen in einem Zug — danach nur
-          noch die Zimmer eintragen. Mindestens der erste volle Monat ist frei; in
-          der Testphase braucht ihr dafür einen Einladungscode.
+          {m.text}
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <Link
             href="/registrieren"
             className="rounded-xl bg-action px-6 py-3 font-bold text-action-foreground hover:bg-action-strong"
           >
-            Kostenlos starten
+            {m.start}
           </Link>
           <Link
             href="/login"
             className="rounded-xl border border-edge bg-surface-elevated px-6 py-3 font-bold text-ink hover:border-edge-strong"
           >
-            Ich habe schon einen Zugang
+            {m.haveAccess}
           </Link>
         </div>
       </div>
@@ -710,23 +568,23 @@ function SignupTeaser() {
   )
 }
 
-function Footer() {
+function Footer({ m }: { m: M['footer'] }) {
   return (
     <footer className="border-t border-edge bg-surface-sunken">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-8 text-sm text-ink-muted sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Brand />
-          <span>— RoomService, leichtgewichtig.</span>
+          <span>{m.tagline}</span>
         </div>
         <nav className="flex flex-wrap gap-4">
-          <Link href="/login" className="hover:text-ink">Rezeption</Link>
-          <Link href="/service/login" className="hover:text-ink">Housekeeping</Link>
-          <Link href="/guest" className="hover:text-ink">Gäste-Portal</Link>
+          <Link href="/login" className="hover:text-ink">{m.reception}</Link>
+          <Link href="/service/login" className="hover:text-ink">{m.housekeeping}</Link>
+          <Link href="/guest" className="hover:text-ink">{m.guests}</Link>
         </nav>
         <nav className="flex flex-wrap gap-4">
-          <Link href="/impressum" className="hover:text-ink">Impressum</Link>
-          <Link href="/datenschutz" className="hover:text-ink">Datenschutz</Link>
-          <Link href="/agb" className="hover:text-ink">AGB</Link>
+          <Link href="/impressum" className="hover:text-ink">{m.imprint}</Link>
+          <Link href="/datenschutz" className="hover:text-ink">{m.privacy}</Link>
+          <Link href="/agb" className="hover:text-ink">{m.terms}</Link>
         </nav>
       </div>
       <p className="mx-auto w-full max-w-5xl px-4 pb-6 text-xs text-ink-muted">

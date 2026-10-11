@@ -2,6 +2,9 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ArrowLeft, Compass } from 'lucide-react'
 import { getManagementContext } from '@/utils/auth'
+import { getLocale } from '@/utils/locale'
+import { getMessages } from '@/lib/i18n'
+import Rich from '@/components/i18n/Rich'
 import SimReinigung from '@/components/lotse/SimReinigung'
 
 /**
@@ -11,6 +14,9 @@ import SimReinigung from '@/components/lotse/SimReinigung'
  * die kann es nur dort geben, wo der Nachbau tatsächlich gerendert wird. Jede
  * Rolle darf her: Auch die Rezeption erklärt Kolleginnen das Board, und
  * gesehen hat sie es sonst nie.
+ *
+ * Texte: der Rahmen aus `help.sim`, die Beschriftungen des Boards wortgleich
+ * aus `service` – der Nachbau soll nie anders sprechen als das Original.
  */
 export default async function SimReinigungPage({
   params,
@@ -22,36 +28,35 @@ export default async function SimReinigungPage({
   if (!ctx) redirect('/admin')
 
   const base = `/h/${ctx.hotelSlug}/admin`
+  const msg = getMessages(await getLocale())
+  const m = msg.help.sim
+  const { brand, common, board, status, login } = msg.service
 
   return (
     <div className="flex max-w-4xl flex-col gap-5">
       <div className="flex flex-wrap items-center gap-3">
         <Link href={`${base}/hilfe`} className="flex items-center gap-1 text-sm font-semibold text-ink-muted hover:text-ink">
-          <ArrowLeft className="h-4 w-4" /> Hilfe
+          <ArrowLeft className="h-4 w-4" /> {msg.help.ui.topic.backHub}
         </Link>
-        <h1 className="text-xl font-black text-ink">Das Reinigungsboard</h1>
+        <h1 className="text-xl font-black text-ink">{m.reinigung.page.title}</h1>
         <Link
           href={`${base}/hilfe/reinigung?lotse=reinigung&schritt=0`}
           className="ml-auto flex items-center gap-1.5 rounded-lg bg-action px-3 py-1.5 text-sm font-bold text-action-foreground hover:bg-action-strong"
         >
-          <Compass className="h-4 w-4" /> Lotse starten
+          <Compass className="h-4 w-4" /> {msg.help.ui.topic.startLotse}
         </Link>
       </div>
 
-      <p className="max-w-2xl text-sm text-ink-soft">
-        So sieht das Board aus, das Ihre Reinigungskräfte am Handy bedienen. Es ist ein Nachbau
-        mit Beispiel-Zimmern — hier wird nichts gespeichert und niemand benachrichtigt. Probieren
-        Sie ruhig alles aus; der Lotse stellt zu jedem Schritt die passende Ansicht wieder her.
-      </p>
+      <p className="max-w-2xl text-sm text-ink-soft">{m.reinigung.page.intro}</p>
 
-      <SimReinigung />
+      <SimReinigung m={m} service={{ brand, common, board, status, login }} />
 
       <p className="max-w-2xl text-xs text-ink-muted">
-        Warum ein Nachbau und keine Führung durch das echte Board? Das Reinigungs-Portal hat
-        eigene Anmeldung und eigene Sitzung — aus der Rezeption heraus ist es nicht erreichbar.
-        Wer es wirklich sehen will, meldet sich unter{' '}
-        <span className="font-mono text-ink-soft">/h/{ctx.hotelSlug}/service/login</span> mit einem
-        Reinigungs-Zugang an.
+        <Rich
+          text={m.reinigung.page.why}
+          vars={{ path: `/h/${ctx.hotelSlug}/service/login` }}
+          tags={{ code: c => <span className="font-mono text-ink-soft">{c}</span> }}
+        />
       </p>
 
       {/* Die Erklärung zum Board liegt in der Hilfe-Leiste („?" oben rechts):

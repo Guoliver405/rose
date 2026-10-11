@@ -6,7 +6,10 @@
  * und `ServiceBoard` (Reinigung) je einmal verdrahtet. Seit die Kontexthilfe
  * eine Legende zeichnet, gibt es einen dritten Ort, der dasselbe sagen muss —
  * und eine Legende, die vom Board abweicht, ist schlimmer als keine. Deshalb
- * hier: IDs, Beschriftung, Bedeutung und Farbklasse als reine Strings. Welches
+ * hier: IDs und Farbklassen als reine Strings; Beschriftung und Bedeutung
+ * stehen seit 11.10.2026 in der Sprachdatei (`i18n/<sprache>/symbols.ts`,
+ * dieselben IDs als Schlüssel) und kommen über `getMessages(…).symbols` in
+ * die Legende. Die Boards brauchen nur Farbe und Icon. Welches
  * Lucide-Icon dazugehört, entscheidet `components/RoomSymbol.tsx` über ein
  * `Record` über alle IDs — ein neues Symbol, das dort fehlt, fällt beim
  * Type-Check auf, nicht erst im Browser.
@@ -19,20 +22,12 @@
  * Routine, Orange = ausgecheckt, Grün = bereit bzw. in Arbeit, Blau = belegt.
  */
 
-// Beschriftungen und Legendentexte stehen seit 11.10.2026 in der Sprachdatei.
-// Vorerst fest Deutsch: Boards und Legende lesen diese Tabellen direkt; die
-// Umstellung auf die Sprache der Anfrage folgt mit der Hilfe.
-import { symbols as T } from './i18n/de/symbols'
 
 export type RoomSymbolId =
   | 'deactivated' | 'occupied' | 'departure' | 'dnd' | 'clean' | 'deferred' | 'declined'
   | 'routine' | 'checkout' | 'priority' | 'cleaning' | 'orders' | 'urgent'
 
 export type RoomSymbol = {
-  /** Kurzform, wie sie auch der Tooltip der Kachel benutzt. */
-  label: string
-  /** Was das Zeichen bedeutet und was daraus folgt — der Text der Legende. */
-  text: string
   /** Farbklasse des Icons; `blink-icon` gehört bei „dringend" dazu. */
   className: string
   /** Dreht sich — nur der Spinner der laufenden Reinigung. */
@@ -47,56 +42,43 @@ export type RoomSymbol = {
  */
 export const ROOM_SYMBOLS: Record<RoomSymbolId, RoomSymbol> = {
   deactivated: {
-    ...T.symbols.deactivated,
     className: 'text-ink-muted',
   },
   occupied: {
-    ...T.symbols.occupied,
     className: 'text-active-strong',
   },
   departure: {
-    ...T.symbols.departure,
     className: 'text-ink-soft',
   },
   dnd: {
-    ...T.symbols.dnd,
     className: 'text-blocked-strong',
   },
   clean: {
-    ...T.symbols.clean,
     className: 'text-attention-strong',
   },
   deferred: {
-    ...T.symbols.deferred,
     className: 'text-ink-soft',
   },
   declined: {
-    ...T.symbols.declined,
     className: 'text-ink-soft',
   },
   routine: {
-    ...T.symbols.routine,
     className: 'text-attention-strong',
   },
   checkout: {
-    ...T.symbols.checkout,
     className: 'text-caution-strong',
   },
   priority: {
-    ...T.symbols.priority,
     className: 'text-accent-strong',
   },
   cleaning: {
-    ...T.symbols.cleaning,
     className: 'text-positive-strong',
     spin: true,
   },
   orders: {
-    ...T.symbols.orders,
     className: 'text-action',
   },
   urgent: {
-    ...T.symbols.urgent,
     className: 'blink-icon text-critical-strong',
   },
 }
@@ -112,8 +94,6 @@ export type RoomBarId =
   | 'neutral' | 'deactivated'
 
 export type RoomBar = {
-  label: string
-  text: string
   /** Hintergrundklasse des Balkens. */
   className: string
 }
@@ -128,39 +108,30 @@ export type RoomBar = {
  */
 export const ROOM_BARS: Record<RoomBarId, RoomBar> = {
   priority: {
-    ...T.bars.priority,
     className: 'bg-accent',
   },
   working: {
-    ...T.bars.working,
     className: 'bg-positive-soft',
   },
   checkout: {
-    ...T.bars.checkout,
     className: 'bg-caution',
   },
   wanted: {
-    ...T.bars.wanted,
     className: 'bg-attention',
   },
   dnd: {
-    ...T.bars.dnd,
     className: 'bg-blocked',
   },
   occupied: {
-    ...T.bars.occupied,
     className: 'bg-fresh',
   },
   ready: {
-    ...T.bars.ready,
     className: 'bg-positive',
   },
   neutral: {
-    ...T.bars.neutral,
     className: 'bg-edge',
   },
   deactivated: {
-    ...T.bars.deactivated,
     className: 'bg-edge-strong',
   },
 }
@@ -172,8 +143,6 @@ export const ROOM_BARS: Record<RoomBarId, RoomBar> = {
 export type RoomRingId = 'urgent' | 'priority'
 
 export type RoomRing = {
-  label: string
-  text: string
   className: string
 }
 
@@ -183,11 +152,9 @@ export type RoomRing = {
  */
 export const ROOM_RINGS: Record<RoomRingId, RoomRing> = {
   urgent: {
-    ...T.rings.urgent,
     className: 'border-critical blink-ring-overdue',
   },
   priority: {
-    ...T.rings.priority,
     className: 'border-accent blink-ring-priority',
   },
 }

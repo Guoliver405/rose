@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { Check, CheckCircle2, Clock, KeyRound, Leaf, Moon, QrCode, Sparkles } from 'lucide-react'
 import { szeneFuerSchritt } from '@/lib/lotsen'
+import Rich from '@/components/i18n/Rich'
+import { format, plural } from '@/lib/i18n/format'
+import type { GuestMessages, HelpMessages } from '@/lib/i18n'
 import { useLotseSchritt } from './schritt'
 import SimFrame from './SimFrame'
 
@@ -19,17 +22,24 @@ import SimFrame from './SimFrame'
  * dann sieht man ihn sich nämlich an.
  *
  * Szenen und eigene Bedienung funktionieren wie in
- * [SimReinigung.tsx](./SimReinigung.tsx).
+ * [SimReinigung.tsx](./SimReinigung.tsx), die Texte ebenso: Was das echte
+ * Portal zeigt, kommt wortgleich aus dessen Sprachdatei (`guest`), Erklärzeilen
+ * und Beispielwerte aus `help.sim`.
  */
 
-const HAUS = 'Hotel Alpenblick'
+/** Texte des echten Gästeportals, die der Nachbau wortgleich zeigt. */
+export type SimGuestTexts = Pick<GuestMessages, 'brand' | 'login' | 'status' | 'signal' | 'services'>
+
 const ZIMMER = '202'
 const GRENZE = '11:00'
 
-const SERVICES: { name: string; meta: string; dringend: boolean }[] = [
-  { name: 'Extra Handtücher', meta: 'kostenfrei', dringend: false },
-  { name: 'Frühstück aufs Zimmer', meta: '14,50 €', dringend: false },
-  { name: 'Technischer Dienst', meta: 'dringend', dringend: true },
+type ServiceId = keyof HelpMessages['sim']['gast']['services']
+
+/** `meldung` = Meldung ans Haus: Knopf „Melden“ statt „Bestellen“, wie im echten Portal. */
+const SERVICES: { id: ServiceId; dringend: boolean; meldung: boolean }[] = [
+  { id: 'towels', dringend: false, meldung: false },
+  { id: 'breakfast', dringend: false, meldung: false },
+  { id: 'technician', dringend: true, meldung: true },
 ]
 
 const STUNDEN = ['09:00', '10:00', '11:00']
@@ -45,7 +55,7 @@ type Gast = {
   aktivAb: string | null
   /** „Heute keine Reinigung" (nur bei täglicher Routine des Hauses). */
   verzicht: boolean
-  bestellt: string[]
+  bestellt: ServiceId[]
 }
 
 const START: Gast = { angemeldet: false, signal: 'none', abUhr: null, aktivAb: null, verzicht: false, bestellt: [] }
@@ -64,7 +74,7 @@ function szeneState(szene: string): Gast {
     case 'dnd':
       return { ...START, angemeldet: true, signal: 'dnd' }
     case 'bestellt':
-      return { ...START, angemeldet: true, bestellt: ['Extra Handtücher'] }
+      return { ...START, angemeldet: true, bestellt: ['towels'] }
     default:
       return START
   }
@@ -74,7 +84,7 @@ type Aktion =
   | { t: 'anmelden' }
   | { t: 'signal'; signal: Signal }
   | { t: 'abUhr'; uhr: string | null }
-  | { t: 'bestellen'; name: string }
+  | { t: 'bestellen'; id: ServiceId }
   | { t: 'verzicht' }
 
 function reduce(s: Gast, a: Aktion): Gast {
@@ -92,11 +102,22 @@ function reduce(s: Gast, a: Aktion): Gast {
     case 'abUhr':
       return { ...s, abUhr: a.uhr }
     case 'bestellen':
-      return { ...s, bestellt: [...s.bestellt, a.name] }
+      return { ...s, bestellt: [...s.bestellt, a.id] }
   }
 }
 
-export default function SimGast() {
+export default function SimGast({
+  m,
+  guest,
+  intlLocale,
+}: {
+  /** `help.sim` – Rahmen, Erklärzeilen, Beispielwerte. */
+  m: HelpMessages['sim']
+  guest: SimGuestTexts
+  intlLocale: string
+}) {
+  const t = m.gast
+  const sig = guest.signal
   const { lotse, schritt, key } = useLotseSchritt()
   const szene = (lotse === 'gast' ? szeneFuerSchritt(lotse, schritt) : null) ?? 'zugang'
 
@@ -106,13 +127,11 @@ export default function SimGast() {
 
   if (!s.angemeldet) {
     return (
-      <SimFrame titel="Gäste-Portal — Anmeldung" geraet="handy">
+      <SimFrame titel={guest.brand.signIn} badge={m.frame.badge} geraet="handy">
         <div data-lotse="gast.zugang" className="flex flex-col gap-3 rounded-xl border border-edge bg-surface-elevated p-4 text-center">
           <QrCode className="mx-auto h-10 w-10 text-ink-muted" />
-          <p className="text-sm font-black text-ink">{HAUS}</p>
-          <p className="text-xs text-ink-muted">
-            QR-Aushang im Zimmer gescannt — jetzt nur noch die PIN vom Handout.
-          </p>
+          <p className="text-sm font-black text-ink">{m.house}</p>
+          <p className="text-xs text-ink-muted">{t.scanned}</p>
           <span className="mx-auto rounded-lg border border-edge bg-surface px-4 py-2 font-mono text-lg tracking-[0.4em] text-ink">
             ••••
           </span>
@@ -121,22 +140,19 @@ export default function SimGast() {
             onClick={() => tu({ t: 'anmelden' })}
             className="flex items-center justify-center gap-2 rounded-lg bg-action px-3 py-2.5 text-sm font-bold text-action-foreground hover:bg-action-strong"
           >
-            <KeyRound className="h-4 w-4" /> Öffnen
+            <KeyRound className="h-4 w-4" /> {guest.login.submit}
           </button>
-          <p className="text-[11px] text-ink-muted">
-            Im anderen Verfahren entfällt dieser Schritt: Der individuelle Link öffnet das
-            Portal direkt.
-          </p>
+          <p className="text-[11px] text-ink-muted">{t.otherMode}</p>
         </div>
       </SimFrame>
     )
   }
 
   return (
-    <SimFrame titel="Gäste-Portal — Handy" geraet="handy">
+    <SimFrame titel={t.frame.portal} badge={m.frame.badge} geraet="handy">
       <div data-lotse="gast.portal" className="mb-3 text-center">
-        <p className="text-[11px] text-ink-muted">{HAUS}</p>
-        <p className="text-lg font-black text-ink">Zimmer {ZIMMER}</p>
+        <p className="text-[11px] text-ink-muted">{m.house}</p>
+        <p className="text-lg font-black text-ink">{format(guest.status.room, { number: ZIMMER })}</p>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -152,15 +168,15 @@ export default function SimGast() {
         >
           <Sparkles className="h-5 w-5 shrink-0" />
           <span data-lotse="gast.aktiv">
-            <span className="block text-base font-bold">Zimmer reinigen</span>
+            <span className="block text-base font-bold">{sig.clean.label}</span>
             <span className={`block text-xs ${s.signal === 'clean' ? '' : 'text-ink-muted'}`}>
               {s.signal === 'clean'
                 ? s.aktivAb
-                  ? `Wunsch ist aktiv — frühestens ab ${s.aktivAb} Uhr. Erneut tippen zum Zurücknehmen`
-                  : 'Wunsch ist aktiv — erneut tippen zum Zurücknehmen'
+                  ? format(sig.clean.activeFrom, { time: s.aktivAb })
+                  : sig.clean.active
                 : s.abUhr
-                  ? `Der Reinigungsdienst kommt frühestens ab ${s.abUhr} Uhr`
-                  : 'Der Reinigungsdienst wird informiert'}
+                  ? format(sig.clean.idleFrom, { time: s.abUhr })
+                  : sig.clean.idle}
             </span>
           </span>
         </button>
@@ -169,7 +185,7 @@ export default function SimGast() {
         {s.signal !== 'clean' && (
           <div data-lotse="gast.aufschub" className="rounded-xl border border-edge bg-surface-sunken px-3 py-2.5">
             <p className="mb-2 flex items-center gap-2 text-xs font-semibold text-ink">
-              <Clock className="h-3.5 w-3.5 text-ink-muted" /> Frühestens ab
+              <Clock className="h-3.5 w-3.5 text-ink-muted" /> {sig.defer.title}
             </p>
             <div className="flex flex-wrap gap-1.5">
               <button
@@ -177,7 +193,7 @@ export default function SimGast() {
                 onClick={() => tu({ t: 'abUhr', uhr: null })}
                 className={chip(s.abUhr === null)}
               >
-                jetzt
+                {sig.defer.now}
               </button>
               {STUNDEN.map(u => (
                 <button key={u} type="button" onClick={() => tu({ t: 'abUhr', uhr: u })} className={chip(s.abUhr === u)}>
@@ -186,10 +202,7 @@ export default function SimGast() {
               ))}
             </div>
             <p className="mt-2 text-[11px] text-ink-muted">
-              Du kannst die Reinigung bis spätestens{' '}
-              <strong className="font-bold text-ink-soft">{GRENZE} Uhr</strong> aufschieben — vorher
-              kommt niemand. Diese Grenze legt das Haus fest, damit die Reinigung noch am selben
-              Tag stattfinden kann.
+              <Rich text={sig.defer.limit} vars={{ limit: GRENZE }} tags={{ b: c => <strong className="font-bold text-ink-soft">{c}</strong> }} />
             </p>
           </div>
         )}
@@ -206,17 +219,13 @@ export default function SimGast() {
         >
           <Leaf className="h-5 w-5 shrink-0" />
           <span>
-            <span className="block text-base font-bold">Heute keine Reinigung</span>
+            <span className="block text-base font-bold">{sig.skip.label}</span>
             <span className={`block text-xs ${s.verzicht ? '' : 'text-ink-muted'}`}>
-              {s.verzicht
-                ? 'Danke! Gilt nur für heute — erneut tippen zum Zurücknehmen'
-                : 'Spart Wasser und Waschmittel. Morgen wird wieder gereinigt'}
+              {s.verzicht ? sig.skip.active : sig.skip.idle}
             </span>
           </span>
         </button>
-        <p className="-mt-1 px-1 text-[10px] text-ink-muted">
-          Diesen Knopf gibt es nur in Häusern mit täglicher Routine-Reinigung.
-        </p>
+        <p className="-mt-1 px-1 text-[10px] text-ink-muted">{t.onlyDaily}</p>
 
         <button
           type="button"
@@ -230,42 +239,43 @@ export default function SimGast() {
         >
           <Moon className="h-5 w-5 shrink-0" />
           <span>
-            <span className="block text-base font-bold">Bitte nicht stören</span>
+            <span className="block text-base font-bold">{sig.dnd.label}</span>
             <span className={`block text-xs ${s.signal === 'dnd' ? '' : 'text-ink-muted'}`}>
-              {s.signal === 'dnd' ? 'Aktiv — erneut tippen zum Zurücknehmen' : 'Niemand klopft, keine Reinigung'}
+              {s.signal === 'dnd' ? sig.dnd.active : sig.dnd.idle}
             </span>
           </span>
         </button>
       </div>
 
-      <p className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Services</p>
+      <p className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">{guest.services.heading}</p>
       <div data-lotse="gast.services" className="mt-1 flex flex-col gap-1">
         {SERVICES.map(sv => {
-          const offen = s.bestellt.includes(sv.name)
+          const offen = s.bestellt.includes(sv.id)
+          const text = t.services[sv.id]
           return (
             <div
-              key={sv.name}
+              key={sv.id}
               className={`flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1.5 ${
                 sv.dringend ? 'border-critical-tint-edge bg-critical-tint' : 'border-edge bg-surface-elevated'
               }`}
             >
               <span className="min-w-0">
-                <span className="block truncate text-xs font-semibold text-ink">{sv.name}</span>
+                <span className="block truncate text-xs font-semibold text-ink">{text.name}</span>
                 <span className={`text-[11px] ${sv.dringend ? 'font-bold text-critical-strong' : 'text-ink-muted'}`}>
-                  {sv.meta}
+                  {text.meta}
                 </span>
               </span>
               {offen ? (
                 <span className="flex shrink-0 items-center gap-1 rounded bg-positive-pill px-2 py-1 text-[10px] font-bold text-positive-deepest">
-                  <Check className="h-3 w-3" /> angefragt
+                  <Check className="h-3 w-3" /> {t.requested}
                 </span>
               ) : (
                 <button
                   type="button"
-                  onClick={() => tu({ t: 'bestellen', name: sv.name })}
+                  onClick={() => tu({ t: 'bestellen', id: sv.id })}
                   className="shrink-0 rounded bg-action px-2 py-1 text-[10px] font-bold text-action-foreground hover:bg-action-strong"
                 >
-                  Bestellen
+                  {sv.meldung ? guest.services.report : guest.services.order}
                 </button>
               )}
             </div>
@@ -277,13 +287,10 @@ export default function SimGast() {
         {s.bestellt.length > 0 ? (
           <p className="flex items-center gap-2 rounded-xl border border-positive-pill-edge bg-positive-tint px-3 py-2 text-xs font-semibold text-positive-deep">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
-            {s.bestellt.length === 1 ? 'Eine Anfrage ist offen' : `${s.bestellt.length} Anfragen sind offen`} —
-            die Rezeption hat sie auf dem Schirm.
+            {plural(intlLocale, s.bestellt.length, t.openRequests)}
           </p>
         ) : (
-          <p className="text-center text-[11px] text-ink-muted">
-            Keine offenen Anfragen. Mit dem Check-out erlischt der Zugang von selbst.
-          </p>
+          <p className="text-center text-[11px] text-ink-muted">{t.noRequests}</p>
         )}
       </div>
     </SimFrame>

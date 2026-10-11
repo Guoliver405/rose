@@ -4,7 +4,9 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Compass, X } from 'lucide-react'
-import { clampStep, lotseById, type LotseBereich } from '@/lib/lotsen'
+import { clampStep, lotseById, type LotseBereich, type LotseStepText, type LotseText } from '@/lib/lotsen'
+import { format } from '@/lib/i18n/format'
+import { useHelpMessages } from '@/components/hilfe/HelpMessages'
 import { meldeSchritt } from './schritt'
 
 /**
@@ -69,6 +71,8 @@ export default function LotsePilot({
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
+  const { help } = useHelpMessages()
+  const t = help.ui.pilot
 
   // `createPortal` braucht ein DOM. Über den externen Store statt über einen
   // Effekt, damit kein setState im Effekt-Körper nötig ist.
@@ -97,6 +101,12 @@ export default function LotsePilot({
   const versteckt = verstecktKey === urlKey
 
   const step = lotse?.steps[index] ?? null
+  // Texte nur über Schlüssel nachschlagen, nicht über einen Aufruf mit `lotse`
+  // oder `step`: Der React Compiler hielte das für eine mögliche Änderung des
+  // Lotsen und verwürfe die Memoisierung von `gehe`.
+  const name = lotseId ? (help.lotsen.tours as Record<string, LotseText>)[lotseId]?.title ?? '' : ''
+  const textKey = step ? (step.key ?? step.anchor ?? '') : ''
+  const text: LotseStepText | undefined = (help.lotsen.steps as Record<string, LotseStepText>)[textKey]
   const anchor = step?.anchor
   const stepKey = `${urlKey}|${index}`
 
@@ -237,7 +247,7 @@ export default function LotsePilot({
   const karte = (
     <div
       role="region"
-      aria-label={`Lotse: ${lotse.title}`}
+      aria-label={format(t.region, { title: name })}
       style={karteStil}
       className={`pointer-events-auto flex max-h-[70vh] flex-col overflow-y-auto rounded-xl border border-edge-strong bg-surface-elevated shadow-lg ${
         rect ? 'fixed' : 'w-[min(28rem,92vw)]'
@@ -245,14 +255,14 @@ export default function LotsePilot({
     >
       <div className="flex items-center gap-2 border-b border-edge px-4 py-2">
         <Compass className="h-4 w-4 shrink-0 text-action" />
-        <span className="truncate text-xs font-bold text-ink-soft">{lotse.title}</span>
+        <span className="truncate text-xs font-bold text-ink-soft">{name}</span>
         <span className="ml-auto shrink-0 text-xs font-semibold text-ink-muted">
-          {index + 1} / {lotse.steps.length}
+          {format(t.progress, { step: index + 1, total: lotse.steps.length })}
         </span>
         <button
           type="button"
           onClick={beenden}
-          aria-label="Lotse beenden"
+          aria-label={t.close}
           className="-mr-1 shrink-0 rounded-md p-1 text-ink-muted hover:bg-surface-muted hover:text-ink"
         >
           <X className="h-4 w-4" />
@@ -260,20 +270,14 @@ export default function LotsePilot({
       </div>
 
       <div className="flex flex-col gap-2 px-4 py-3" aria-live="polite">
-        <h2 className="text-base font-black text-ink">{step.title}</h2>
-        <p className="text-sm leading-relaxed text-ink-soft">{step.body}</p>
-        {step.tun && (
+        <h2 className="text-base font-black text-ink">{text?.title}</h2>
+        <p className="text-sm leading-relaxed text-ink-soft">{text?.body}</p>
+        {text?.tun && (
           <p className="rounded-lg border border-action-tint-edge bg-action-tint px-3 py-2 text-xs font-semibold text-action-deep">
-            {step.tun}
+            {text.tun}
           </p>
         )}
-        {aktuell?.fehlt && (
-          <p className="text-xs text-ink-muted">
-            Der beschriebene Bereich ist gerade nicht auf der Seite — er hängt an einer
-            Einstellung, die in Ihrem Haus anders steht, oder an Daten, die es hier noch
-            nicht gibt.
-          </p>
-        )}
+        {aktuell?.fehlt && <p className="text-xs text-ink-muted">{t.missing}</p>}
       </div>
 
       <div className="flex items-center gap-2 border-t border-edge px-4 py-2.5">
@@ -283,17 +287,17 @@ export default function LotsePilot({
           disabled={index === 0}
           className="flex items-center gap-1 rounded-lg border border-edge px-2.5 py-1.5 text-xs font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-40"
         >
-          <ChevronLeft className="h-3.5 w-3.5" /> Zurück
+          <ChevronLeft className="h-3.5 w-3.5" /> {t.back}
         </button>
         <button type="button" onClick={beenden} className="text-xs font-semibold text-ink-muted hover:text-ink">
-          Beenden
+          {t.end}
         </button>
         <button
           type="button"
           onClick={() => (letzter ? beenden() : gehe(index + 1))}
           className="ml-auto flex items-center gap-1 rounded-lg bg-action px-3 py-1.5 text-sm font-bold text-action-foreground hover:bg-action-strong"
         >
-          {letzter ? 'Fertig' : 'Weiter'}
+          {letzter ? t.done : t.next}
           {!letzter && <ChevronRight className="h-4 w-4" />}
         </button>
       </div>

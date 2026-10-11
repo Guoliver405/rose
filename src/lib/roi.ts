@@ -125,46 +125,20 @@ export function computeRoi(raw: RoiInput): RoiResult {
   }
 }
 
-/** Quellen der Annahmen — auf der Seite als Fußnoten, hier als eine Liste. */
-export const ROI_SOURCES: { id: string; text: string; url: string }[] = [
-  {
-    id: 'Q1',
-    text: 'AHLA, „Hotel Room Cleaning Practices Reflect Guest Preferences", 2022 — 70 % der Gäste wünschen keine tägliche Reinigung; 38 % nur auf Wunsch, 19 % nur beim Check-out.',
-    url: 'https://www.ahla.com/resource/survey-hotel-room-cleaning-practices-reflect-guest-preferences',
-  },
-  {
-    id: 'Q2',
-    text: 'Lodging Magazine, „The Value of Opting Out", 2024 — 20 % Verzicht als Planungswert eines Hilton-Hauses.',
-    url: 'https://lodgingmagazine.com/the-value-of-opting-out/',
-  },
-  {
-    id: 'Q3',
-    text: 'CityShift Finance, Opt-out-Fallstudie — 34 % Verzicht nach 18 Monaten; 25 Minuten je Stayover; Ersparnis nur bei angepasster Einsatzplanung.',
-    url: 'https://cityshiftfinance.com/hotel-labor-management-hotel-housekeeping-stayover-opt-out-labor-cos/',
-  },
-  {
-    id: 'Q4',
-    text: 'Zeitstudie Heath & Company, berichtet in Hotel Business, 2018 — Abreisezimmer im Schnitt 43 Minuten, Bleibezimmer knapp 20 Minuten weniger (USA).',
-    url: 'https://hotelbusiness.com/are-you-delivering-the-cleanliness-guests-expect-2/',
-  },
-  {
-    id: 'Q5',
-    text: 'Gesetzlicher Mindestlohn 13,90 €/h ab 2026 (DGB); Destatis: rund 23 € Lohnnebenkosten je 100 € Bruttoverdienst.',
-    url: 'https://www.destatis.de/DE/Themen/Arbeit/Arbeitskosten-Lohnnebenkosten/_inhalt.html',
-  },
-  {
-    id: 'Q6',
-    text: 'Herstellerangaben zu Housekeeping-Software: 25–67 % Produktivitätsgewinn (Stayntouch, Flexkeeping via Lodging Magazine) — wir rechnen bewusst mit einem Bruchteil davon.',
-    url: 'https://www.stayntouch.com/articles/hotel-housekeeping-software-real-time',
-  },
-  {
-    id: 'Q7',
-    text: 'Reinigung Aktuell, 2015 — Abreisezimmer rund 35, Bleibezimmer rund 25 Minuten, etwa 14 Zimmer je Kraft (Vier-Sterne-Haus, Wien).',
-    url: 'https://www.reinigung-aktuell.at/thema/perfekte-hygiene-ein-absolutes-muss/',
-  },
-  {
-    id: 'Q8',
-    text: 'CCOHS (kanadische Arbeitsschutzbehörde), „Hotel Housekeeping" — 15 bis 30 Minuten je Zimmer, rund 16 Zimmer je Schicht.',
-    url: 'https://www.ccohs.ca/oshanswers/occup_workplace/hotel_housekeeping.html',
-  },
+/** Kennungen der Quellen — so stehen sie auf der Seite („[Q1]“). */
+export type RoiSourceId = 'Q1' | 'Q2' | 'Q3' | 'Q4' | 'Q5' | 'Q6' | 'Q7' | 'Q8'
+
+/**
+ * Quellen der Annahmen — auf der Seite als Fußnoten, hier als eine Liste.
+ * Die Texte je Kennung stehen in der Sprachdatei (`landing.roi.sources.items`).
+ */
+export const ROI_SOURCES: { id: RoiSourceId; url: string }[] = [
+  { id: 'Q1', url: 'https://www.ahla.com/resource/survey-hotel-room-cleaning-practices-reflect-guest-preferences' },
+  { id: 'Q2', url: 'https://lodgingmagazine.com/the-value-of-opting-out/' },
+  { id: 'Q3', url: 'https://cityshiftfinance.com/hotel-labor-management-hotel-housekeeping-stayover-opt-out-labor-cos/' },
+  { id: 'Q4', url: 'https://hotelbusiness.com/are-you-delivering-the-cleanliness-guests-expect-2/' },
+  { id: 'Q5', url: 'https://www.destatis.de/DE/Themen/Arbeit/Arbeitskosten-Lohnnebenkosten/_inhalt.html' },
+  { id: 'Q6', url: 'https://www.stayntouch.com/articles/hotel-housekeeping-software-real-time' },
+  { id: 'Q7', url: 'https://www.reinigung-aktuell.at/thema/perfekte-hygiene-ein-absolutes-muss/' },
+  { id: 'Q8', url: 'https://www.ccohs.ca/oshanswers/occup_workplace/hotel_housekeeping.html' },
 ]

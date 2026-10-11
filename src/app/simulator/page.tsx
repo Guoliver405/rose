@@ -30,6 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function SimulatorPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const [ctx, sp, locale] = await Promise.all([getSimContext(), searchParams, getLocale()])
   const messages = getMessages(locale).simulator
+  const day = getMessages(locale).landing.day
   const m = messages.app
   const scenarios = ctx ? await listScenarios(ctx.userId) : []
 
@@ -54,7 +55,7 @@ export default async function SimulatorPage({ searchParams }: { searchParams: Pr
           </p>
         </div>
         {ctx
-          ? <SimulatorApp initialScenarios={scenarios} m={m} intlLocale={intlLocale(locale)}
+          ? <SimulatorApp initialScenarios={scenarios} m={m} day={day} intlLocale={intlLocale(locale)}
               convert={ctx.kind === 'sim' ? { open: hotelSignupOpen(), m: messages.account.convert } : undefined} />
           : <Intro m={m.page.teaser} />}
       </main>

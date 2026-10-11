@@ -1,16 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import {
   HILFE_THEMEN, hilfeHub, hilfeUrl, hilfeZiel, istHilfeSeite, relativerPfad, themaBereich, themaById,
-  themaFuerPfad, themenFuer,
+  themaFuerPfad, themaText, themenFuer,
   type HilfeThema, type LegendeEintrag, type Verweis,
 } from './hilfe'
 import { LOTSEN, lotseById } from './lotsen'
-import { ROOM_BARS, ROOM_RINGS, ROOM_SYMBOLS } from './room-symbols'
+import { topics } from './i18n/de/help/topics'
+import { symbols } from './i18n/de/symbols'
 
 function alleEintraege<T>(art: 'legende' | 'verweise'): T[] {
   const out: T[] = []
   for (const t of HILFE_THEMEN) {
-    for (const b of t.bloecke) if (b.art === art) out.push(...(b.eintraege as T[]))
+    for (const b of themaText(topics, t).bloecke) if (b.art === art) out.push(...(b.eintraege as T[]))
   }
   return out
 }
@@ -21,10 +22,17 @@ describe('Katalog', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
+  it('hat keine Texte ohne Thema', () => {
+    expect(Object.keys(topics).sort()).toEqual(HILFE_THEMEN.map(t => t.id).sort())
+  })
+
   it('gibt jedem Thema Inhalt', () => {
     for (const t of HILFE_THEMEN) {
-      expect(t.bloecke.length).toBeGreaterThan(0)
-      for (const b of t.bloecke) {
+      const text = themaText(topics, t)
+      expect(text.title.length).toBeGreaterThan(0)
+      expect(text.subtitle.length).toBeGreaterThan(0)
+      expect(text.bloecke.length).toBeGreaterThan(0)
+      for (const b of text.bloecke) {
         if (b.art === 'text') expect(b.absaetze.length).toBeGreaterThan(0)
         else expect(b.eintraege.length).toBeGreaterThan(0)
       }
@@ -73,9 +81,9 @@ describe('Katalog', () => {
     // auch zur Laufzeit alles hergeben, was die Legende braucht (Text!).
     for (const e of alleEintraege<LegendeEintrag>('legende')) {
       const z = e.zeichen
-      if (z.art === 'symbol') expect(ROOM_SYMBOLS[z.id].text.length).toBeGreaterThan(0)
-      else if (z.art === 'balken') expect(ROOM_BARS[z.id].text.length).toBeGreaterThan(0)
-      else if (z.art === 'ring') expect(ROOM_RINGS[z.id].text.length).toBeGreaterThan(0)
+      if (z.art === 'symbol') expect(symbols.symbols[z.id].text.length).toBeGreaterThan(0)
+      else if (z.art === 'balken') expect(symbols.bars[z.id].text.length).toBeGreaterThan(0)
+      else if (z.art === 'ring') expect(symbols.rings[z.id].text.length).toBeGreaterThan(0)
       else {
         // Icon und Pille tragen ihre Beschriftung selbst.
         expect(e.label, JSON.stringify(z)).toBeTruthy()

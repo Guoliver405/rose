@@ -5,18 +5,21 @@ import {
 } from 'lucide-react'
 import RoomSymbol from '@/components/RoomSymbol'
 import {
-  bereichBasis, hilfeHub, hilfeUrl, themaBereich, themaById,
+  bereichBasis, hilfeHub, hilfeUrl, themaBereich, themaById, themaText,
   type HilfeBlock, type HilfeThema as Thema, type IconId, type LegendeEintrag, type PillenTon,
   type Verweis, type Zeichen,
 } from '@/lib/hilfe'
 import { lotseById, lotseStart } from '@/lib/lotsen'
-import { ROOM_BARS, ROOM_RINGS, ROOM_SYMBOLS } from '@/lib/room-symbols'
+import { ROOM_BARS, ROOM_RINGS } from '@/lib/room-symbols'
+import type { HelpMessages, SymbolsMessages } from '@/lib/i18n'
 
 /**
- * Zeichnet ein Hilfe-Thema aus dem Katalog (`lib/hilfe.ts`).
+ * Zeichnet ein Hilfe-Thema aus dem Katalog (`lib/hilfe.ts`) mit den Texten
+ * der Sprachdatei (`m`, `symbols` – auf der Seite vom Server, in der Leiste
+ * aus `HelpMessagesProvider`).
  *
- * Bewusst eine Server-Komponente ohne Zustand: Die Hilfe ist eine Seite zum
- * Lesen und Drucken. Alles Interaktive (Lotse starten) ist ein Link.
+ * Bewusst ohne Zustand: Die Hilfe ist eine Seite zum Lesen und Drucken.
+ * Alles Interaktive (Lotse starten) ist ein Link.
  *
  * Die Legende zeichnet Kachel-Symbole, Balken und Ringe **mit denselben
  * Klassen wie die Boards** — über `RoomSymbol` bzw. `room-symbols.ts`. Ein
@@ -63,13 +66,13 @@ const KASTEN: Record<PillenTon, string> = {
   outline: 'border border-edge-strong text-ink-muted',
 }
 
-/** Beschriftung und Text eines Eintrags — aus den Tabellen, sofern der Eintrag nichts Eigenes trägt. */
-function beschriftung(e: LegendeEintrag): { label: string; text: string } {
+/** Beschriftung und Text eines Eintrags — aus der Zeichensprache der Kacheln, sofern der Eintrag nichts Eigenes trägt. */
+function beschriftung(e: LegendeEintrag, symbols: SymbolsMessages): { label: string; text: string } {
   const z = e.zeichen
-  const quelle =
-    z.art === 'symbol' ? ROOM_SYMBOLS[z.id]
-    : z.art === 'balken' ? ROOM_BARS[z.id]
-    : z.art === 'ring' ? ROOM_RINGS[z.id]
+  const quelle: { label: string; text: string } | null =
+    z.art === 'symbol' ? symbols.symbols[z.id]
+    : z.art === 'balken' ? symbols.bars[z.id]
+    : z.art === 'ring' ? symbols.rings[z.id]
     : null
   return {
     label: e.label ?? quelle?.label ?? '',
@@ -169,6 +172,8 @@ function VerweisLink({
 
 type BlockProps = {
   b: HilfeBlock
+  ui: HelpMessages['ui']['topic']
+  symbols: SymbolsMessages
   slug: string
   bereich: 'haus' | 'konto'
   /** Leisten-Fassung: eine Spalte, keine Breitengrenzen. */
@@ -176,7 +181,7 @@ type BlockProps = {
   onThema?: (id: string) => void
 }
 
-function Block({ b, slug, bereich, kompakt, onThema }: BlockProps) {
+function Block({ b, ui, symbols, slug, bereich, kompakt, onThema }: BlockProps) {
   const breite = kompakt ? '' : 'max-w-2xl'
   switch (b.art) {
     case 'text':
@@ -197,7 +202,7 @@ function Block({ b, slug, bereich, kompakt, onThema }: BlockProps) {
           </div>
           <ul className="flex flex-col divide-y divide-edge rounded-xl border border-edge bg-surface">
             {b.eintraege.map((e, i) => {
-              const { label, text } = beschriftung(e)
+              const { label, text } = beschriftung(e, symbols)
               return (
                 <li key={i} className="flex items-start gap-3 px-3 py-2.5">
                   <ZeichenBild z={e.zeichen} />
@@ -214,7 +219,7 @@ function Block({ b, slug, bereich, kompakt, onThema }: BlockProps) {
     case 'fragen':
       return (
         <section className="flex flex-col gap-3">
-          <h2 className="text-base font-black text-ink">{b.titel ?? 'Fragen'}</h2>
+          <h2 className="text-base font-black text-ink">{b.titel ?? ui.questions}</h2>
           <dl className="flex flex-col divide-y divide-edge rounded-xl border border-edge bg-surface">
             {b.eintraege.map((e, i) => (
               <div key={i} className="px-3 py-2.5">
@@ -228,7 +233,7 @@ function Block({ b, slug, bereich, kompakt, onThema }: BlockProps) {
     case 'verweise':
       return (
         <section className="flex flex-col gap-2">
-          <h2 className="text-base font-black text-ink">{b.titel ?? 'Siehe auch'}</h2>
+          <h2 className="text-base font-black text-ink">{b.titel ?? ui.seeAlso}</h2>
           <div className={`grid grid-cols-1 gap-2 ${kompakt ? '' : 'sm:grid-cols-2'}`}>
             {b.eintraege.map((v, i) => (
               <VerweisLink key={i} v={v} slug={slug} bereich={bereich} onThema={onThema} />
@@ -244,15 +249,20 @@ function Block({ b, slug, bereich, kompakt, onThema }: BlockProps) {
  * und für Seiten mit eigenem Kopf.
  */
 export function HilfeBloecke({
-  thema, slug, kompakt, onThema,
+  thema, m, symbols, slug, kompakt, onThema,
 }: {
-  thema: Thema; slug: string; kompakt?: boolean; onThema?: (id: string) => void
+  thema: Thema
+  m: HelpMessages
+  symbols: SymbolsMessages
+  slug: string
+  kompakt?: boolean
+  onThema?: (id: string) => void
 }) {
   const bereich = themaBereich(thema)
   return (
     <div className={`flex flex-col ${kompakt ? 'gap-5' : 'gap-6'}`}>
-      {thema.bloecke.map((b, i) => (
-        <Block key={i} b={b} slug={slug} bereich={bereich} kompakt={kompakt} onThema={onThema} />
+      {themaText(m.topics, thema).bloecke.map((b, i) => (
+        <Block key={i} b={b} ui={m.ui.topic} symbols={symbols} slug={slug} bereich={bereich} kompakt={kompakt} onThema={onThema} />
       ))}
     </div>
   )
@@ -264,13 +274,16 @@ export function HilfeBloecke({
  * Konto-Bereich die Häuser-Seite (dort gibt es keinen Hub).
  */
 export default function HilfeThema({
-  thema, slug, zurueck,
+  thema, m, symbols, slug, zurueck,
 }: {
   thema: Thema
+  m: HelpMessages
+  symbols: SymbolsMessages
   slug: string
   zurueck: { href: string; label: string }
 }) {
   const lotse = thema.lotse ? lotseById(thema.lotse) : null
+  const text = themaText(m.topics, thema)
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <div className="flex flex-col gap-2">
@@ -283,14 +296,14 @@ export default function HilfeThema({
               href={lotseStart(lotse, slug)}
               className="ml-auto flex items-center gap-1.5 rounded-lg bg-action px-3 py-1.5 text-sm font-bold text-action-foreground hover:bg-action-strong print:hidden"
             >
-              <Compass className="h-4 w-4" /> Lotse starten
+              <Compass className="h-4 w-4" /> {m.ui.topic.startLotse}
             </Link>
           )}
         </div>
-        <h1 className="text-xl font-black text-ink">{thema.title}</h1>
-        <p className="max-w-2xl text-sm text-ink-soft">{thema.subtitle}</p>
+        <h1 className="text-xl font-black text-ink">{text.title}</h1>
+        <p className="max-w-2xl text-sm text-ink-soft">{text.subtitle}</p>
       </div>
-      <HilfeBloecke thema={thema} slug={slug} />
+      <HilfeBloecke thema={thema} m={m} symbols={symbols} slug={slug} />
     </div>
   )
 }

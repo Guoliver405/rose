@@ -296,16 +296,17 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       **10.10.: Reinigungsboard ausgelagert. 11.10.: Druckblätter und Mails** (Blatt-Sprachen
       in `i18n/<sprache>/sheet.ts`, Legende aus der Portal-Sprachdatei, Gast-Mail ganz in der
       Sprache des Hauses). **11.10.: Rezeption** (`i18n/de/admin/`, Zimmer-Symbole in
-      `de/symbols.ts`). Nachzuziehen: alte Seitennamen „Hotel & Regeln“/„Gäste-Zugang“ und
-      „Services-Board“ in `lotsen.ts`, `hilfe.ts`, Konto-Seiten und Simulator; Fehlermeldungen
+      `de/symbols.ts`). Nachzuziehen (erledigt bis auf die Rollennamen): alte Seitennamen in Hilfe und Lotsen; Fehlermeldungen
       des Logo-Uploads (`lib/logo.ts`, `utils/logo.ts`); Rollennamen in der Einladungs-Mail.
       **11.10.: Anmeldung, Registrierung, Passwort** (`de/auth.ts`; Navigation „Anfragen“). **11.10.: Konto** (`de/account/`). **11.10.: Simulator** (`de/simulator/`; Tagesbild-Komponente
       `landing/CleaningSimulation.tsx` trägt noch eigene Texte, u. a. „Kollegin“ in der Legende).
-      **Nächste Session:** Fließtexte — Hilfe + Lotsen, dann Landing Page, dann Rechtstexte
-      (offene Frage: nur Deutsch lassen, weil Übersetzung juristisch geprüft werden müsste?).
-      Protokoll: [2026-10-11_Mehrsprachigkeit-Auslagerung.md](Sessions/2026-10-11_Mehrsprachigkeit-Auslagerung.md). Danach:
-      Sprachwahl des Gastes in `getLocale()` und erste Übersetzung (Englisch) des
-      Gästeportals.
+      **11.10.: Fließtexte** — Hilfe und Lotsen (`de/help/`), Landing Page (`de/landing/`),
+      Rechtstexte (`de/legal/`, Entscheidung des Users: trotz ausstehender Prüfung auslagern,
+      nur Deutsch); Zimmer-Symbole lesen ihre Worte aus der Sprache der Anfrage.
+      Protokoll: [2026-10-11_Mehrsprachigkeit-Auslagerung.md](Sessions/2026-10-11_Mehrsprachigkeit-Auslagerung.md).
+      **Nächste Session:** Sprachwahl des Gastes in `getLocale()` und erste Übersetzung
+      (Englisch) des Gästeportals; Liste zum Gegenlesen aus den Sprachdateien (`flattenMessages`).
+      Rest: Rollennamen in der Einladungs-Mail, Stripe-`locale`, `service-templates.json`.
 - [ ] **Thailändisch als Belastungsprobe** — probehalber implementieren, um zu
       sehen, wie weit das Sprach-System trägt: nicht-lateinische Schrift,
       andere Zeilenumbruch-Regeln (keine Leerzeichen zwischen Wörtern),

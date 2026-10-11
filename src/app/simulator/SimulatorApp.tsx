@@ -14,7 +14,7 @@ import {
   DEFAULT_FORM, DETAIL_DURATIONS, ESSENTIAL_DURATIONS, RADIO_DURATIONS, ESSENTIAL_TIMES, changedDetails, configFromForm,
   dayRangeLabel, occupancyOf, randomFirstDay, sharesTotal, withOccupancy, type GuestKey, type SimForm,
 } from '@/lib/sim-form'
-import type { SimulatorMessages } from '@/lib/i18n'
+import type { LandingMessages, SimulatorMessages } from '@/lib/i18n'
 import { format, plural } from '@/lib/i18n/format'
 
 /**
@@ -63,11 +63,13 @@ function formatters(intlLocale: string, m: M) {
 }
 type Fmt = ReturnType<typeof formatters>
 
-export default function SimulatorApp({ initialScenarios = [], convert, m, intlLocale }: {
+export default function SimulatorApp({ initialScenarios = [], convert, m, day, intlLocale }: {
   initialScenarios?: ScenarioItem[]
   /** Nur eigene Simulator-Konten: „Als Hotel bei RoSe starten“ (Phase 4); `open` = Registrierung freigeschaltet. */
   convert?: { open: boolean; m: SimulatorMessages['account']['convert'] }
   m: M
+  /** Oberfläche des Tagesbilds (Legende, Spaltentitel) — `landing.day` der Sprachdatei. */
+  day: LandingMessages['day']
   intlLocale: string
 }) {
   const [form, setForm] = useState<SimForm>(DEFAULT_FORM)
@@ -374,7 +376,7 @@ export default function SimulatorApp({ initialScenarios = [], convert, m, intlLo
       </div>
 
       {compared && <Comparison items={compared} policy={policy} onPolicy={setPolicy} onClose={() => setCompared(null)} m={m} fmt={fmt} />}
-      {result && <Results result={result} policy={policy} onPolicy={setPolicy} m={m} fmt={fmt} intlLocale={intlLocale} />}
+      {result && <Results result={result} policy={policy} onPolicy={setPolicy} m={m} day={day} fmt={fmt} intlLocale={intlLocale} />}
       {convert && <ConvertCard form={form} policy={policy} signupOpen={convert.open} m={convert.m} intlLocale={intlLocale} />}
     </div>
   )
@@ -454,11 +456,12 @@ function PercentInput({ value, onChange, aria, unit }: { value: number; onChange
 
 // ── Ergebnis ──────────────────────────────────────────────────────────────
 
-function Results({ result, policy, onPolicy, m, fmt, intlLocale }: {
+function Results({ result, policy, onPolicy, m, day, fmt, intlLocale }: {
   result: Result
   policy: Policy
   onPolicy: (p: Policy) => void
   m: M
+  day: LandingMessages['day']
   fmt: Fmt
   intlLocale: string
 }) {
@@ -552,7 +555,7 @@ function Results({ result, policy, onPolicy, m, fmt, intlLocale }: {
           {plural(intlLocale, days, r.typicalIntro, { count: days })}
         </p>
         <div className="mt-3">
-          <CleaningSimulation scenario={typical} policy={policy} detailLog texts={m.day} intlLocale={intlLocale} caption={
+          <CleaningSimulation scenario={typical} policy={policy} detailLog texts={m.day} m={day} intlLocale={intlLocale} caption={
             <p>{format(result.firstDay === 1 ? r.captionFirst : r.captionOther, captionVars)}</p>
           } />
         </div>

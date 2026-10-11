@@ -37,7 +37,9 @@ Meldung ans Haus, Aufstellung, außer Betrieb, Zugang beenden.
 | Anmeldung, Registrierung, Passwort | **umgesetzt 11.10.2026** — `de/auth.ts`. „Neues Passwort“ siezt; veraltete Hinweise korrigiert (Zurücksetzen per E-Mail gibt es seit 12.09., Links gehen auf jedem Gerät) |
 | Konto | **umgesetzt 11.10.2026** — `de/account/` (Häuser, Plan & Abrechnung, Zahlungsweg, Rechnungstexte, Löschen, Logo-Meldungen). „Zahlungsweg“ durchgehend, „Karte bzw. Konto“ statt „Zahlungsmittel“; Ländernamen über `Intl.DisplayNames` |
 | Simulator | **umgesetzt 11.10.2026** — `de/simulator/` (Werkzeug, Rechenkern-Texte, Konto). Rechenergebnisse unverändert (Tests), Werbe-Einwilligung wortgleich. Legende und Spaltentitel des Tagesbilds kommen aus der Landing-Komponente und ziehen mit der Landing Page um |
-| Fließtexte (Hilfe, Lotsen, Landing, Rechtstexte) | offen |
+| Hilfe und Lotsen | **umgesetzt 11.10.2026** – `de/help/` (Themen, Lotsen, Bedienelemente, Nachbauten), Wächter in `admin.test.ts`. „Anfragen“ und „Service-Baukasten“ als Themennamen, „jemand aus dem Team“/„das ganze Team“, „Reinigungskraft“ im Fließtext („Je Kraft“ nur als Name der Tabelle), „Wechseltermin“ statt „Stichtag“ |
+| Landing Page | **umgesetzt 11.10.2026** – `de/landing/`, Wächter `landing.test.ts`; „Hotel“ (Branche) und „Housekeeping“ erlaubt, „Zettel“ für Papiernotizen ohne RoSe ebenfalls |
+| Rechtstexte | **ausgelagert 11.10.2026** (Entscheidung des Users, nur Deutsch) – `de/legal/`, Wächter `legal.test.ts`. Inhalt unverändert; geändert nur Typografie und Namen von Oberflächenelementen (Check-in-Blatt, Gästeportal, Tätigkeitseinträge). „Bestellung“ (Vorgang) und „Zahlungsmittel“ bleiben |
 
 ## Nächster Schritt
 

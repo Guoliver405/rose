@@ -3,8 +3,12 @@ import {
   ALLE_LOTSEN, EINRICHTUNG, EINRICHTUNG_ORDER, LOTSEN, SIM_SZENEN,
   clampStep, einrichtungStart, lotseById, lotseStart, lotsenFuer, offeneEinrichtung,
   setupProgress, szeneFuerSchritt,
-  type SetupFacts,
+  stepKey, stepText, lotseText,
+  type SetupFacts, type SetupTexts,
 } from './lotsen'
+import { lotsen } from './i18n/de/help/lotsen'
+
+const T: SetupTexts = { m: lotsen.setup, intl: 'de-DE' }
 
 const facts = (patch: Partial<SetupFacts> = {}): SetupFacts => ({
   rooms: 0, maids: 0, services: 0, stays: 0,
@@ -34,9 +38,39 @@ describe('Katalog', () => {
   })
 
   it('findet Lotsen über ihre Kennung und meldet Unbekanntes als null', () => {
-    expect(lotseById('zimmer')?.title).toBe('Zimmer & Etagen')
+    expect(lotseText(lotsen, lotseById('zimmer')!).title).toBe('Zimmer & Etagen')
     expect(lotseById('einrichtung')).not.toBeNull()
     expect(lotseById('gibt-es-nicht')).toBeNull()
+  })
+})
+
+describe('Texte', () => {
+  it('hat zu jedem Lotsen Name und Untertitel', () => {
+    for (const lotse of ALLE_LOTSEN) {
+      expect(lotseText(lotsen, lotse).title.length, lotse.id).toBeGreaterThan(0)
+      expect(lotseText(lotsen, lotse).subtitle.length, lotse.id).toBeGreaterThan(0)
+    }
+  })
+
+  it('hat zu jedem Schritt einen Text – und keinen Text ohne Schritt', () => {
+    // Die Schlüssel sind Zeichenketten (Anker oder eigener Schlüssel); erst
+    // hier fällt auf, wenn ein Schritt verschoben oder umbenannt wurde.
+    const benutzt = new Set<string>()
+    for (const lotse of ALLE_LOTSEN) {
+      for (const step of lotse.steps) {
+        const t = stepText(lotsen, step)
+        expect(t.title.length, stepKey(step)).toBeGreaterThan(0)
+        expect(t.body.length, stepKey(step)).toBeGreaterThan(0)
+        benutzt.add(stepKey(step))
+      }
+    }
+    expect(Object.keys(lotsen.steps).filter(k => !benutzt.has(k))).toEqual([])
+  })
+
+  it('vergibt eigene Schlüssel nur, wo der Anker nicht reicht', () => {
+    for (const lotse of ALLE_LOTSEN) {
+      for (const step of lotse.steps) if (step.key && step.anchor) expect(step.key).not.toBe(step.anchor)
+    }
   })
 })
 
@@ -76,7 +110,7 @@ describe('Simulationen', () => {
       const lotse = lotseById(id)!
       const erlaubt: readonly string[] = SIM_SZENEN[id]
       for (const step of lotse.steps) {
-        expect(step.sim, `${id}: „${step.title}" ohne Szene`).toBeTruthy()
+        expect(step.sim, `${id}: „${stepKey(step)}“ ohne Szene`).toBeTruthy()
         expect(erlaubt).toContain(step.sim!)
       }
     }
@@ -108,7 +142,7 @@ describe('offeneEinrichtung — das Band auf der Übersicht', () => {
   })
 
   it('nennt bei einem frischen Haus alle vier Punkte in Reihenfolge', () => {
-    expect(offeneEinrichtung(konfig()).map(i => i.id))
+    expect(offeneEinrichtung(konfig(), T).map(i => i.id))
       .toEqual(['zimmer', 'regeln', 'gastzugang', 'personal'])
   })
 
@@ -117,13 +151,13 @@ describe('offeneEinrichtung — das Band auf der Übersicht', () => {
     // ist. Deshalb darf hier nichts übrig bleiben.
     expect(offeneEinrichtung(konfig({
       rooms: 12, maids: 2, timeZoneChosen: true, guestAccessChosen: true,
-    }))).toEqual([])
+    }), T)).toEqual([])
   })
 
   it('zählt weder den ersten Check-in noch Freiwilliges mit', () => {
     // Sonst stünde das Band bei einem Haus ohne Zusatzleistungen für immer da,
     // und ein Meilenstein wäre als Einrichtungsschritt ausgewiesen.
-    const ids = offeneEinrichtung(konfig()).map(i => i.id)
+    const ids = offeneEinrichtung(konfig(), T).map(i => i.id)
     expect(ids).not.toContain('services')
     expect(ids).not.toContain('checkin')
     expect(ids).not.toContain('zahlungsweg')
@@ -131,9 +165,9 @@ describe('offeneEinrichtung — das Band auf der Übersicht', () => {
 
   it('bleibt mit dem Hub in einer Quelle', () => {
     const k = konfig({ rooms: 5, timeZoneChosen: true })
-    const ausHub = setupProgress({ ...k, services: 0, stays: 0, paymentMethod: null })
+    const ausHub = setupProgress({ ...k, services: 0, stays: 0, paymentMethod: null }, T)
       .items.filter(i => ['gastzugang', 'personal'].includes(i.id))
-    expect(offeneEinrichtung(k)).toEqual(ausHub)
+    expect(offeneEinrichtung(k, T)).toEqual(ausHub)
   })
 })
 
@@ -241,13 +275,13 @@ describe('clampStep', () => {
 
 describe('setupProgress', () => {
   it('meldet ein frisches Haus als unfertig', () => {
-    const p = setupProgress(facts())
+    const p = setupProgress(facts(), T)
     expect(p.done).toBe(0)
     expect(p.complete).toBe(false)
   })
 
   it('zählt jeden erledigten Punkt', () => {
-    const p = setupProgress(facts({ rooms: 12, timeZoneChosen: true }))
+    const p = setupProgress(facts({ rooms: 12, timeZoneChosen: true }), T)
     expect(p.done).toBe(2)
     expect(p.items.find(i => i.id === 'zimmer')?.done).toBe(true)
     expect(p.items.find(i => i.id === 'zimmer')?.hint).toContain('12')
@@ -258,7 +292,7 @@ describe('setupProgress', () => {
     // weil es keine Zusatzleistungen anbietet.
     const p = setupProgress(facts({
       rooms: 4, maids: 1, stays: 1, guestAccessChosen: true, timeZoneChosen: true,
-    }))
+    }), T)
     expect(p.complete).toBe(true)
     expect(p.items.find(i => i.id === 'services')?.done).toBe(false)
   })
@@ -267,34 +301,34 @@ describe('setupProgress', () => {
     // Der Kern der Ableitung: Häkchen blieben stehen, Zahlen nicht.
     const p = setupProgress(facts({
       rooms: 0, maids: 1, stays: 3, guestAccessChosen: true, timeZoneChosen: true,
-    }))
+    }), T)
     expect(p.complete).toBe(false)
   })
 
   it('blendet den Zahlungsweg aus, wenn die Rolle nichts damit zu tun hat', () => {
-    expect(setupProgress(facts()).items.some(i => i.id === 'zahlungsweg')).toBe(false)
-    expect(setupProgress(facts({ paymentMethod: false })).items.some(i => i.id === 'zahlungsweg')).toBe(true)
+    expect(setupProgress(facts(), T).items.some(i => i.id === 'zahlungsweg')).toBe(false)
+    expect(setupProgress(facts({ paymentMethod: false }), T).items.some(i => i.id === 'zahlungsweg')).toBe(true)
   })
 
   it('lässt einen fehlenden Zahlungsweg das Haus nicht blockieren', () => {
     const p = setupProgress(facts({
       rooms: 4, maids: 1, stays: 1, guestAccessChosen: true, timeZoneChosen: true,
       paymentMethod: false,
-    }))
+    }), T)
     expect(p.complete).toBe(true)
   })
 
   it('gibt jedem Punkt eine Handlungsform', () => {
     // Das Band nennt den nächsten Schritt als Aufforderung, der Hub als
     // Zustand — beides steht am selben Punkt, damit es nicht auseinanderläuft.
-    for (const item of setupProgress(facts({ paymentMethod: false })).items) {
+    for (const item of setupProgress(facts({ paymentMethod: false }), T).items) {
       expect(item.todo.length).toBeGreaterThan(3)
       expect(item.todo).not.toBe(item.label)
     }
   })
 
   it('verweist jeden Punkt auf ein Ziel', () => {
-    for (const item of setupProgress(facts({ paymentMethod: false })).items) {
+    for (const item of setupProgress(facts({ paymentMethod: false }), T).items) {
       expect(item.path !== null || Boolean(item.href)).toBe(true)
     }
   })

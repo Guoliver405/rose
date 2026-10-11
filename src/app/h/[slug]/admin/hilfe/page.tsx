@@ -8,8 +8,10 @@ import {
 import { getAccountContext, getManagementContext } from '@/utils/auth'
 import { createAdminClient } from '@/utils/supabase/service'
 import ErklaerungLink from '@/components/hilfe/ErklaerungLink'
-import { hilfeZiel, themenFuer } from '@/lib/hilfe'
+import { hilfeZiel, themaText, themenFuer } from '@/lib/hilfe'
 import { einrichtungStart, lotseById, lotseStart, setupProgress, type SetupFacts } from '@/lib/lotsen'
+import { format, getMessages, intlLocale, plural } from '@/lib/i18n'
+import { getLocale } from '@/utils/locale'
 
 /**
  * Hilfe & Lotsen — der Hilfe-Bereich des Hauses.
@@ -56,6 +58,9 @@ export default async function HilfePage({
   const ctx = await getManagementContext(slug)
   if (!ctx) redirect('/admin')
 
+  const locale = await getLocale()
+  const m = getMessages(locale).help
+  const t = m.ui.hub
   const base = `/h/${ctx.hotelSlug}/admin`
   const istVerwaltung = ctx.role !== 'reception'
   const admin = createAdminClient()
@@ -92,7 +97,7 @@ export default async function HilfePage({
       timeZoneChosen: ctx.policies.timeZone !== undefined,
       paymentMethod: zahlungsweg,
     }
-    fortschritt = setupProgress(facts)
+    fortschritt = setupProgress(facts, { m: m.lotsen.setup, intl: intlLocale(locale) })
   }
 
   const themen = themenFuer(istVerwaltung, ctx.isOwner)
@@ -101,20 +106,14 @@ export default async function HilfePage({
   return (
     <div className="flex max-w-4xl flex-col gap-6">
       <div>
-        <h1 className="text-xl font-black text-ink">Hilfe &amp; Lotsen</h1>
-        <p className="mt-1 text-sm text-ink-soft">
-          Zu jedem Bereich gibt es eine Erklärung zum Nachschlagen — Zeichen, Fragen, Antworten —
-          und einen Lotsen, der sich über die echte Seite legt und Schritt für Schritt zeigt, was
-          dort womit passiert. Bedienen können Sie die Seite dabei ganz normal weiter — nichts ist
-          gesperrt, und mit Esc sind Sie wieder heraus. Das &bdquo;?&ldquo; oben rechts klappt auf jeder
-          Seite die Erklärung daneben auf.
-        </p>
+        <h1 className="text-xl font-black text-ink">{t.title}</h1>
+        <p className="mt-1 text-sm text-ink-soft">{t.intro}</p>
       </div>
 
       {fortschritt && (
         <section className="flex flex-col gap-3 rounded-xl border border-edge bg-surface p-4">
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-base font-black text-ink">Einrichtung Ihres Hauses</h2>
+            <h2 className="text-base font-black text-ink">{t.setupTitle}</h2>
             <span
               className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
                 fortschritt.complete
@@ -122,14 +121,14 @@ export default async function HilfePage({
                   : 'bg-attention-pill text-attention-deepest'
               }`}
             >
-              {fortschritt.done} von {fortschritt.total}
+              {format(t.setupCount, { done: fortschritt.done, total: fortschritt.total })}
             </span>
             <Link
               href={start}
               className="ml-auto flex items-center gap-1.5 rounded-lg bg-action px-3 py-1.5 text-sm font-bold text-action-foreground hover:bg-action-strong"
             >
               <Compass className="h-4 w-4" />
-              {fortschritt.complete ? 'Einrichtung noch einmal ansehen' : 'Einrichtung fortsetzen'}
+              {fortschritt.complete ? t.setupAgain : t.setupContinue}
             </Link>
           </div>
 
@@ -153,7 +152,7 @@ export default async function HilfePage({
                       <span className={`block text-sm font-bold ${item.done ? 'text-ink-soft' : 'text-ink'}`}>
                         {item.label}
                         {item.optional && (
-                          <span className="ml-2 text-xs font-semibold text-ink-muted">freiwillig</span>
+                          <span className="ml-2 text-xs font-semibold text-ink-muted">{t.optional}</span>
                         )}
                       </span>
                       <span className="block text-xs text-ink-muted">{item.hint}</span>
@@ -169,11 +168,8 @@ export default async function HilfePage({
 
       <section data-lotse="hilfe.katalog" className="flex flex-col gap-3">
         <div>
-          <h2 className="text-base font-black text-ink">Hilfe nach Thema</h2>
-          <p className="text-sm text-ink-soft">
-            Beides führt auf die Seite, um die es geht: die Erklärung zum Nachschlagen in der Leiste
-            daneben, der Lotse Schritt für Schritt darüber — beliebig oft.
-          </p>
+          <h2 className="text-base font-black text-ink">{t.catalogTitle}</h2>
+          <p className="text-sm text-ink-soft">{t.catalogIntro}</p>
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -189,13 +185,13 @@ export default async function HilfePage({
                   <Icon className="h-5 w-5" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-bold text-ink">{thema.title}</span>
-                  <span className="mt-0.5 block text-xs text-ink-muted">{thema.subtitle}</span>
+                  <span className="block text-sm font-bold text-ink">{themaText(m.topics, thema).title}</span>
+                  <span className="mt-0.5 block text-xs text-ink-muted">{themaText(m.topics, thema).subtitle}</span>
                   <span className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold">
-                    <ErklaerungLink href={hilfeZiel(thema, ctx.hotelSlug)} />
+                    <ErklaerungLink href={hilfeZiel(thema, ctx.hotelSlug)} label={t.explanation} />
                     {lotse && (
                       <Link href={lotseStart(lotse, ctx.hotelSlug)} className="flex items-center gap-1 text-action hover:underline">
-                        <Compass className="h-3.5 w-3.5" /> Lotse ({lotse.steps.length} Schritte)
+                        <Compass className="h-3.5 w-3.5" /> {plural(intlLocale(locale), lotse.steps.length, t.lotse)}
                       </Link>
                     )}
                   </span>

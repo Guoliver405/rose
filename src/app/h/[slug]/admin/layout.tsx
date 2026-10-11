@@ -9,6 +9,7 @@ import RealtimeListener from '@/components/RealtimeListener'
 import HilfeKnopf from '@/components/hilfe/HilfeKnopf'
 import HilfeLeiste from '@/components/hilfe/HilfeLeiste'
 import LotsePilot from '@/components/lotse/LotsePilot'
+import HelpMessagesProvider from '@/components/hilfe/HelpMessages'
 import { getMessages } from '@/lib/i18n'
 import { getLocale } from '@/utils/locale'
 
@@ -23,7 +24,8 @@ export default async function AdminLayout({
   if (!ctx) redirect('/admin')
 
   const base = `/h/${ctx.hotelSlug}/admin`
-  const t = getMessages(await getLocale()).admin.overview.nav
+  const messages = getMessages(await getLocale())
+  const t = messages.admin.overview.nav
 
   // Offene Service-Anfragen als Nav-Badge — Realtime-Refresh + revalidatePath
   // halten den Zähler aktuell. urgent kommt aus der Service-Definition; bei
@@ -48,6 +50,7 @@ export default async function AdminLayout({
   })
 
   return (
+    <HelpMessagesProvider value={{ help: messages.help, symbols: messages.symbols }}>
     <div className="flex min-h-screen flex-1 flex-col bg-surface-sunken">
       <header className="sticky top-0 z-40 border-b border-edge bg-surface print:hidden">
         {/* Feste Höhe ab `lg`: Die Hilfe-Leiste dockt mit `top-[53px]` unter
@@ -148,5 +151,6 @@ export default async function AdminLayout({
         <HilfeLeiste slug={ctx.hotelSlug} istVerwaltung={ctx.role !== 'reception'} istInhaber={ctx.isOwner} nutzer={ctx.userId} />
       </div>
     </div>
+    </HelpMessagesProvider>
   )
 }

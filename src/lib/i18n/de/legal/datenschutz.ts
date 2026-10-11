@@ -1,0 +1,164 @@
+import type { LegalPage } from './blocks'
+
+/**
+ * Datenschutzerklärung (`/datenschutz`). Die tragende Unterscheidung (Anbieter
+ * verantwortlich für Website und Kunden, Hotel verantwortlich für die Daten in
+ * RoSe) ist im Kommentar von `src/app/(legal)/datenschutz/page.tsx` begründet.
+ * „Zahlungsmittel“ bleibt hier bewusst stehen (Begriffs-Entscheidung 10).
+ */
+export const datenschutz: LegalPage = {
+  meta: {
+    title: 'Datenschutzerklärung – RoSe',
+    description: 'Welche Daten RoSe verarbeitet, wofür, wie lange – und welche Rechte Sie haben.',
+  },
+  title: 'Datenschutzerklärung',
+  sub: 'Wir gehen sparsam mit Daten um – und sagen hier genau, was wir wofür verarbeiten.',
+  sections: [
+    {
+      title: '1. Verantwortlicher',
+      blocks: [
+        { address: 'provider' },
+        'Vertreten durch den Geschäftsführer {representative}.',
+        { text: 'Telefon: {phone} · E-Mail: {email}', when: 'phone' },
+        { text: 'E-Mail: {email}', when: 'noPhone' },
+        'Ein Datenschutzbeauftragter ist nicht benannt, da die gesetzlichen Voraussetzungen für eine Benennungspflicht nicht vorliegen.',
+      ],
+    },
+    {
+      title: '2. Zwei Rollen – wer wofür verantwortlich ist',
+      blocks: [
+        'RoSe ist ein Dienst für Beherbergungsbetriebe. Daraus ergeben sich zwei Verantwortlichkeiten:',
+        {
+          list: [
+            '<b>Für Besucher dieser Website und für unsere Kunden</b> (Kontoinhaber, Manager, Rezeptionszugänge) sind wir selbst Verantwortlicher im Sinne der DSGVO. Das betrifft die Abschnitte 3 bis 7.',
+            '<b>Für die Daten, die ein Hotel in RoSe verarbeitet</b> – Aufenthalte, Wünsche und Bestellungen der Gäste, Personal und Tätigkeitsnachweise – ist das jeweilige <b>Hotel</b> Verantwortlicher und wir sein Auftragsverarbeiter nach Art. 28 DSGVO. Gäste und Mitarbeitende wenden sich mit ihren Rechten deshalb an das Haus, bei dem sie wohnen bzw. arbeiten. Was RoSe dabei technisch verarbeitet, steht in Abschnitt 9.',
+          ],
+        },
+      ],
+    },
+    {
+      title: '3. Hosting und Server-Protokolle',
+      blocks: [
+        'Die Anwendung wird bei <b>Vercel Inc.</b>, 440 N Barranca Ave #4133, Covina, CA 91723, USA, betrieben; die Serverfunktionen laufen in der Region Dublin (Irland). Beim Aufruf einer Seite verarbeitet Vercel technisch notwendige Verbindungsdaten (IP-Adresse, Zeitpunkt, aufgerufene Adresse, Browser-Kennung, Statuscode) in Server-Protokollen. Wir nutzen diese Protokolle ausschließlich zur Fehlersuche und Sicherheit; sie werden nicht mit anderen Daten zusammengeführt.',
+        'Rechtsgrundlage ist unser berechtigtes Interesse an einem sicheren und stabilen Betrieb (Art. 6 Abs. 1 lit. f DSGVO). Die Protokolle werden nach kurzer Zeit automatisch gelöscht.',
+      ],
+    },
+    {
+      title: '4. Datenbank, Anmeldung und Konto',
+      blocks: [
+        'Konten, Häuser, Zimmer und alle Betriebsdaten liegen in einer Datenbank bei <b>Supabase, Inc.</b>, 970 Toa Payoh North #07-04, Singapore 318992, in einem Rechenzentrum in der EU (Irland). Supabase stellt auch die Anmeldung bereit.',
+        {
+          sub: 'Kundenkonto',
+          blocks: [
+            'Bei der Registrierung verarbeiten wir Name, E-Mail-Adresse, Passwort (nur als kryptografischer Hash) und den Namen des Hauses. Manager- und Rezeptionszugänge werden vom Kontoinhaber per Einladung an eine E-Mail-Adresse angelegt und verarbeiten dieselben Daten. Zweck ist die Bereitstellung des Dienstes und die Vertragsdurchführung (Art. 6 Abs. 1 lit. b DSGVO).',
+            'Die Daten bleiben gespeichert, solange das Konto besteht. Der Kontoinhaber kann Häuser und das gesamte Konto selbst löschen (Bereich „Daten löschen“); dabei werden auch die Anmeldekonten der zugehörigen Personen entfernt, soweit sie nicht in einem anderen Konto weiter benötigt werden. Gesetzliche Aufbewahrungspflichten für Rechnungsdaten bleiben unberührt.',
+          ],
+        },
+        {
+          sub: 'Sitzungs-Cookies',
+          blocks: [
+            'Nach der Anmeldung setzt RoSe ein Sitzungs-Cookie, damit Sie nicht auf jeder Seite neu anmelden müssen. Es handelt sich um technisch notwendige Cookies, für die keine Einwilligung erforderlich ist (§ 25 Abs. 2 Nr. 2 TDDDG): für das Verwaltungsportal (<code>sb-…-auth-token</code>), für das Reinigungsboard (<code>svc_sb-…</code>) und für das Gästeportal (<code>rose_guest</code>). Die Cookies enthalten keine Klardaten und verfallen mit dem Abmelden bzw. dem Check-out. Auf der Seite „Zahlungsweg & Rechnungsdaten“ des Kontos bindet RoSe die Zahlungsformulare unseres Zahlungsdienstleisters Stripe ein (Abschnitt 6); Stripe setzt dort eigene technisch notwendige Cookies zur Betrugsvorbeugung (<code>__stripe_mid</code>, <code>__stripe_sid</code>). Weitere Cookies setzt RoSe nicht; das helle oder dunkle Design folgt der Einstellung Ihres Geräts, ohne dass etwas gespeichert wird.',
+          ],
+        },
+        {
+          sub: 'Keine Analyse, kein Tracking',
+          blocks: [
+            'Wir setzen keine Analyse- oder Tracking-Werkzeuge ein, keine Werbe-Cookies und keine Inhalte von Drittanbietern, die Ihr Verhalten auswerten. Deshalb gibt es auch kein Cookie-Banner.',
+          ],
+        },
+      ],
+    },
+    {
+      title: '5. E-Mail-Versand',
+      blocks: [
+        'E-Mails (Einladungen, Passwort zurücksetzen, Gast-Zugang auf Wunsch der Rezeption, Bestätigung eines Simulator-Kontos) werden über <b>Resend Inc.</b>, 2261 Market Street #5039, San Francisco, CA 94114, USA, versendet. Resend verarbeitet dafür Empfängeradresse, Betreff und Inhalt der E-Mail und führt ein Zustellprotokoll (Adresse, Zeitpunkt, Zustellstatus), das nach Ablauf der bei Resend eingestellten Frist gelöscht wird.',
+        '<b>Gast-Zugang per E-Mail:</b> Gibt die Rezeption auf Wunsch eines Gastes dessen E-Mail-Adresse ein, verwendet RoSe sie ausschließlich für diesen einen Versand. Die Adresse wird <b>nicht in RoSe gespeichert</b>; der Aufenthalt bleibt anonym. Verantwortlich für diese Verarbeitung ist das Hotel (siehe Abschnitt 2); Rechtsgrundlage ist die Erfüllung des Beherbergungsvertrags gegenüber dem Gast (Art. 6 Abs. 1 lit. b DSGVO).',
+      ],
+    },
+    {
+      title: '6. Rechnungen und Zahlungsdaten',
+      blocks: [
+        'Die Abrechnung des Dienstes läuft über <b>Stripe Payments Europe, Ltd.</b>, 1 Grand Canal Street Lower, Grand Canal Dock, Dublin, D02 H210, Irland („Stripe“). Betroffen sind ausschließlich Kunden (Beherbergungsbetriebe) und die Personen, die für sie das Konto führen – nicht Gäste und nicht das Personal der Häuser.',
+        '<b>Was Stripe erhält:</b> die Rechnungsdaten des Kontos (Rechnungsempfänger, Anschrift, Land, gegebenenfalls USt-IdNr.), die E-Mail-Adresse des Kontoinhabers für Rechnungsversand und Belege, die Rechnungen selbst (Zeitraum, Zimmerzahl, Beträge) und ihren Zahlungsstatus. Hinterlegt der Kunde eine Karte oder ein SEPA-Lastschriftmandat, gibt er diese Daten in Formularen ein, die Stripe direkt bereitstellt; <b>RoSe erhält und speichert keine Kartennummern und keine IBAN</b>, sondern nur eine Kennung des Zahlungsmittels sowie Art und letzte Ziffern zur Anzeige. Bei Überweisung nennt die Rechnung eine Bankverbindung von Stripe; der Eingang wird dort zugeordnet.',
+        '<b>Was Stripe tut:</b> Rechnungen erstellen, nummerieren und per E-Mail zustellen, Zahlungen einziehen oder zuordnen, bei ausbleibender Zahlung erinnern, die Umsatzsteuer nach Land und USt-IdNr. bestimmen (die USt-IdNr. prüft Stripe gegen das EU-Register VIES) und die gesetzlichen Pflichten eines Zahlungsdienstleisters erfüllen (Betrugsvorbeugung, Geldwäscheprävention). Dafür ist Stripe eigener Verantwortlicher; Einzelheiten in der <stripePrivacy>Datenschutzerklärung von Stripe</stripePrivacy>.',
+        '<b>Rechtsgrundlage</b> ist die Erfüllung des Vertrags mit dem Kunden (Art. 6 Abs. 1 lit. b DSGVO) sowie für Rechnungen und Belege die steuer- und handelsrechtlichen Aufbewahrungspflichten (Art. 6 Abs. 1 lit. c DSGVO; zehn Jahre nach § 147 AO und § 14b UStG). Rechnungen bleiben deshalb auch nach dem Löschen eines Kontos bei Stripe und in einer Belegtabelle des Anbieters erhalten; das Kundenkonto bei Stripe wird mit dem Löschen des RoSe-Kontos gelöscht.',
+      ],
+    },
+    {
+      title: '7. Housekeeping-Simulator',
+      id: 'simulator',
+      blocks: [
+        'Für den Housekeeping-Simulator legen Sie ein eigenes, kostenloses Konto an. Verantwortlich sind wir als Anbieter (Abschnitt 1) – nicht ein Hotel. Wir verarbeiten:',
+        {
+          list: [
+            'Ihre <b>E-Mail-Adresse</b> und Ihr Passwort (nur als kryptografischer Hash), um das Konto bereitzustellen und die Adresse per Bestätigungslink zu prüfen (Art. 6 Abs. 1 lit. b DSGVO). Zahlungsdaten werden nicht erhoben.',
+            'Die <b>Einstellungen, die Sie rechnen oder speichern</b> (Hausgröße, Zeiten, Annahmen). Gerechnet wird in Ihrem Browser; gespeicherte Szenarien liegen in der Datenbank (Abschnitt 4).',
+            'Den <b>Hash Ihrer IP-Adresse</b> je Registrierungsversuch, eine Stunde lang, damit das offene Formular nicht massenhaft missbraucht wird (Art. 6 Abs. 1 lit. f DSGVO).',
+            'Nur wenn Sie das freiwillige Häkchen setzen: Ihre <b>Einwilligung in Informationen zu RoSe per E-Mail</b> – ausschließlich zu RoSe, ohne Weitergabe. Wirksam wird sie erst mit dem Klick auf den Bestätigungslink (Double-Opt-in); gespeichert werden Zeitpunkt und Wortlaut. Rechtsgrundlage ist Ihre Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), die Sie jederzeit im Konto oder über den Abmeldelink jeder E-Mail widerrufen können.',
+          ],
+        },
+        'Die Bestätigungs-E-Mail verschicken wir über Resend (Abschnitt 5). Wird ein Konto nicht innerhalb von sieben Tagen bestätigt, löschen wir es. Ein bestätigtes Konto bleibt bestehen, bis Sie es unter „Mein Konto“ selbst löschen – das wirkt sofort und nimmt gespeicherte Szenarien und die Einwilligung mit.',
+      ],
+    },
+    {
+      title: '8. Übermittlung in Drittländer',
+      blocks: [
+        'Die genannten Dienstleister haben ihren Sitz außerhalb der EU; die Daten von RoSe werden in der EU gespeichert (Datenbank und Serverfunktionen in Irland). Soweit dennoch ein Zugriff aus einem Drittland möglich ist (etwa Support oder das weltweite Auslieferungsnetz des Hosters), stützt sich die Übermittlung auf die EU-Standardvertragsklauseln (Art. 46 Abs. 2 lit. c DSGVO) und – soweit der Dienstleister zertifiziert ist – auf den Angemessenheitsbeschluss zum EU-US Data Privacy Framework (Art. 45 DSGVO). Stripe Payments Europe hat seinen Sitz in Irland und kann Daten innerhalb der Stripe-Gruppe an Stripe, Inc. (USA) übermitteln; auch dafür gelten Standardvertragsklauseln und das EU-US Data Privacy Framework. Mit Vercel, Supabase und Resend bestehen Auftragsverarbeitungsverträge; Stripe handelt für die in Abschnitt 6 genannten Zwecke als eigener Verantwortlicher.',
+      ],
+    },
+    {
+      title: '9. Was RoSe im Auftrag der Hotels verarbeitet',
+      blocks: [
+        'Für die folgenden Daten ist das jeweilige Hotel Verantwortlicher; wir verarbeiten sie ausschließlich nach dessen Weisung und auf Grundlage eines Auftragsverarbeitungsvertrags (Art. 28 DSGVO).',
+        {
+          sub: 'Gäste',
+          blocks: [
+            'Ein Aufenthalt ist in RoSe <b>anonym</b>: Zimmer, Zeitraum von Check-in bis Check-out, eine Zugangs-PIN oder ein Zugangs-Link, die vom Gast gesetzten Signale („Zimmer reinigen“, „Bitte nicht stören“) und seine Service-Bestellungen mit optionaler Notiz. Name, Kontaktdaten oder Ausweisdaten werden nicht erhoben. Mit dem Check-out erlöschen PIN und Link sofort. Freitext in der Bestellnotiz sollte keine personenbezogenen Daten enthalten – sie werden dem Hotel angezeigt und im Zimmer-Verlauf 30 Tage lang gezeigt.',
+            'Zum Schutz vor dem Durchprobieren von PINs speichert RoSe bei Fehlversuchen der Gast-Anmeldung einen <b>Hash der IP-Adresse</b> (SHA-256, nicht umkehrbar) zusammen mit dem Zeitpunkt für 15 Minuten; danach wird der Eintrag automatisch gelöscht. Erfolgreiche Anmeldungen hinterlassen keinen Eintrag.',
+          ],
+        },
+        {
+          sub: 'Mitarbeitende',
+          blocks: [
+            'Für Reinigungskräfte verarbeitet RoSe Anzeigename, Benutzername, PIN (gehasht) sowie Tätigkeitseinträge mit Zeitpunkt (Schichtbeginn und -ende, Pausen, Beginn und Abschluss einer Zimmerreinigung) und die aktuell gewählte Etage. Aus den Einträgen berechnet das Hotel Arbeits- und Reinigungszeiten (Auswertung). Für Rezeptions- und Managerzugänge werden Anzeigename und E-Mail-Adresse verarbeitet sowie, welche Person einen Check-in, Check-out oder eine erledigte Bestellung ausgelöst hat (Zimmer-Verlauf). Die Aufbewahrung richtet sich nach dem Hotel; beim Löschen eines Zugangs zeigt RoSe vorher an, welche Nachweise davon betroffen sind.',
+          ],
+        },
+        {
+          sub: 'Löschung',
+          blocks: [
+            'Das Hotel kann Zimmer, Personal, Häuser und das gesamte Konto selbst löschen. Beim Löschen eines Hauses oder Kontos werden auch die Einträge entfernt, die aus Nachweisgründen sonst erhalten bleiben (Zimmer-Verlauf, Abrechnungsbelege) sowie die zugehörigen Anmeldekonten.',
+          ],
+        },
+      ],
+    },
+    {
+      title: '10. Ihre Rechte',
+      blocks: [
+        'Sie haben gegenüber dem jeweils Verantwortlichen (siehe Abschnitt 2) das Recht auf',
+        {
+          list: [
+            'Auskunft über die zu Ihrer Person gespeicherten Daten (Art. 15 DSGVO),',
+            'Berichtigung unrichtiger Daten (Art. 16 DSGVO),',
+            'Löschung (Art. 17 DSGVO) und Einschränkung der Verarbeitung (Art. 18 DSGVO),',
+            'Datenübertragbarkeit (Art. 20 DSGVO),',
+            'Widerspruch gegen Verarbeitungen auf Grundlage eines berechtigten Interesses (Art. 21 DSGVO),',
+            'Beschwerde bei einer Datenschutz-Aufsichtsbehörde (Art. 77 DSGVO), etwa der für den Verantwortlichen zuständigen Landesbehörde.',
+          ],
+        },
+        'Für Anfragen an uns genügt eine E-Mail an {email}. Gäste und Mitarbeitende eines Hotels wenden sich bitte an das Haus; wir unterstützen es bei der Beantwortung.',
+      ],
+    },
+    {
+      title: '11. Datensicherheit',
+      blocks: [
+        'Alle Verbindungen sind TLS-verschlüsselt. Zugriffe auf die Datenbank sind je Haus getrennt (Row Level Security); Passwörter und PINs von Mitarbeitenden werden nur als Hash gespeichert; Anmeldungen sind gegen Durchprobieren gedrosselt. Der Zugriff auf Produktionsdaten ist auf den Anbieter beschränkt und wird nur zur Fehlersuche und auf Weisung des Kunden genutzt.',
+      ],
+    },
+    {
+      title: '12. Änderungen',
+      blocks: [
+        'Wir passen diese Erklärung an, wenn sich der Dienst oder die Rechtslage ändert. Es gilt die jeweils hier veröffentlichte Fassung; das Datum steht oben.',
+      ],
+    },
+  ],
+}

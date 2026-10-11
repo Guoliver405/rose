@@ -2,7 +2,9 @@
 
 import { usePathname } from 'next/navigation'
 import { CircleHelp } from 'lucide-react'
-import { istHilfeSeite, relativerPfad, themaFuerPfad } from '@/lib/hilfe'
+import { istHilfeSeite, relativerPfad, themaFuerPfad, themaText } from '@/lib/hilfe'
+import { format } from '@/lib/i18n/format'
+import { useHelpMessages } from './HelpMessages'
 import { schalteLeiste, useLeiste } from './leiste'
 
 /**
@@ -18,11 +20,14 @@ import { schalteLeiste, useLeiste } from './leiste'
 export default function HilfeKnopf() {
   const pathname = usePathname()
   const { offen } = useLeiste()
+  const { help } = useHelpMessages()
   const rel = relativerPfad(pathname)
   if (!rel || istHilfeSeite(rel.pfad, rel.bereich)) return null
 
   const thema = themaFuerPfad(rel.pfad, rel.bereich)
-  const titel = offen ? 'Hilfe schließen' : thema ? `Hilfe: ${thema.title}` : 'Hilfe'
+  const titel = offen
+    ? help.ui.button.close
+    : thema ? format(help.ui.button.openTopic, { title: themaText(help.topics, thema).title }) : help.ui.button.open
 
   return (
     <button

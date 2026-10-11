@@ -10,10 +10,10 @@ import { oeffneLeiste } from './leiste'
  * das „?" es auch täte. Der Store ist browserweit, deshalb funktioniert das
  * auch über die Grenze zum Konto-Rahmen (`/admin/abrechnung`).
  */
-export default function ErklaerungLink({ href }: { href: string }) {
+export default function ErklaerungLink({ href, label }: { href: string; label: string }) {
   return (
     <Link href={href} onClick={oeffneLeiste} className="flex items-center gap-1 text-action hover:underline">
-      <BookOpen className="h-3.5 w-3.5" /> Erklärung
+      <BookOpen className="h-3.5 w-3.5" /> {label}
     </Link>
   )
 }

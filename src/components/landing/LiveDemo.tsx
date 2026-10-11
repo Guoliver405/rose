@@ -1,10 +1,12 @@
 'use client'
 
-import { useEffect, useReducer, useRef, useState } from 'react'
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import {
   Ban, Bell, Check, Flag, Loader2, Moon, Play, RotateCcw, Sparkles, Target,
 } from 'lucide-react'
 import SlideAction from '@/components/SlideAction'
+import type { LandingMessages } from '@/lib/i18n'
+import { format, plural } from '@/lib/i18n/format'
 
 /**
  * Interaktive Produktvorschau — „Ein Tipp, alle sehen es".
@@ -26,6 +28,7 @@ import SlideAction from '@/components/SlideAction'
  * Konzept: Sessions/Landing-Konzept-2026-09-05.md, Abschnitt 2.
  */
 
+type M = LandingMessages['demo']
 type Signal = 'none' | 'clean' | 'dnd'
 type Order = { id: number; name: string; urgent: boolean }
 type Room = {
@@ -48,12 +51,12 @@ type State = {
 
 const GUEST_ROOM = '202'
 const PIN = '4827'
-const MAID = 'Maria'
 
-const SERVICES: { name: string; meta: string; urgent: boolean }[] = [
-  { name: 'Extra Handtücher', meta: 'kostenfrei', urgent: false },
-  { name: 'Frühstück aufs Zimmer', meta: '14,50 €', urgent: false },
-  { name: 'Technischer Dienst', meta: 'dringend', urgent: true },
+/** Services der Vorschau; `report` = Meldung ans Haus („Melden“ statt „Bestellen“). Texte aus `demo.services`. */
+const SERVICES: { key: keyof M['services']; urgent: boolean; report: boolean }[] = [
+  { key: 'towels', urgent: false, report: false },
+  { key: 'breakfast', urgent: false, report: false },
+  { key: 'repair', urgent: true, report: true },
 ]
 
 function room(nr: string, patch: Partial<Room> = {}): Room {
@@ -63,7 +66,7 @@ function room(nr: string, patch: Partial<Room> = {}): Room {
   }
 }
 
-function initialState(): State {
+function initialState(m: M): State {
   return {
     rooms: [
       room('201'),
@@ -75,7 +78,7 @@ function initialState(): State {
     ],
     flash: {},
     nextOrderId: 1,
-    lastEvent: 'Ausgangslage: Zimmer 202 ist frei und bereit.',
+    lastEvent: m.events.initial,
   }
 }
 
@@ -83,7 +86,7 @@ type Action =
   | { type: 'checkin'; nr: string }
   | { type: 'checkout'; nr: string }
   | { type: 'signal'; nr: string; signal: Signal }
-  | { type: 'order'; nr: string; name: string; urgent: boolean }
+  | { type: 'order'; nr: string; name: string; urgent: boolean; report?: boolean }
   | { type: 'orderDone'; nr: string; id: number }
   | { type: 'priority'; nr: string }
   | { type: 'startCleaning'; nr: string }
@@ -99,40 +102,41 @@ function update(state: State, nr: string, patch: (r: Room) => Partial<Room>, eve
   }
 }
 
-function reducer(state: State, a: Action): State {
+function reducer(state: State, a: Action, m: M): State {
+  const ev = m.events
   switch (a.type) {
     case 'reset':
-      return initialState()
+      return initialState(m)
     case 'checkin':
       return update(state, a.nr, () => ({ occupied: true, ready: false, checkoutPending: false }),
-        `Check-in Zimmer ${a.nr}: Aufenthalt angelegt, PIN ${PIN}.`)
+        format(ev.checkin, { nr: a.nr, pin: PIN }))
     case 'checkout':
       return update(state, a.nr, () => ({ occupied: false, checkoutPending: true, signal: 'none' }),
-        `Check-out Zimmer ${a.nr}: Zugang erloschen, Reinigung nach Check-out offen.`)
+        format(ev.checkout, { nr: a.nr }))
     case 'signal': {
-      const label = a.signal === 'clean' ? 'Reinigung gewünscht' : a.signal === 'dnd' ? 'Bitte nicht stören' : 'Wunsch zurückgenommen'
-      return update(state, a.nr, () => ({ signal: a.signal }), `Gast in ${a.nr}: ${label}.`)
+      const label = a.signal === 'clean' ? ev.signalClean : a.signal === 'dnd' ? ev.signalDnd : ev.signalNone
+      return update(state, a.nr, () => ({ signal: a.signal }), format(ev.signal, { nr: a.nr, label }))
     }
     case 'order': {
       const next = update(state, a.nr, r => ({
         orders: [...r.orders, { id: state.nextOrderId, name: a.name, urgent: a.urgent }],
-      }), `Gast in ${a.nr} bestellt „${a.name}"${a.urgent ? ' — dringend' : ''}.`)
+      }), format(a.report ? ev.report : ev.order, { nr: a.nr, name: a.name }))
       return { ...next, nextOrderId: state.nextOrderId + 1 }
     }
     case 'orderDone':
       return update(state, a.nr, r => ({ orders: r.orders.filter(o => o.id !== a.id) }),
-        `Rezeption: Anfrage aus ${a.nr} erledigt.`)
+        format(ev.orderDone, { nr: a.nr }))
     case 'priority':
       return update(state, a.nr, r => ({ priority: !r.priority }),
-        `Rezeption: Zimmer ${a.nr} ${state.rooms.find(r => r.nr === a.nr)?.priority ? 'nicht mehr' : ''} priorisiert.`)
+        format(state.rooms.find(r => r.nr === a.nr)?.priority ? ev.priorityOff : ev.priorityOn, { nr: a.nr }))
     case 'startCleaning':
       if (state.rooms.some(r => r.cleaning)) return state
-      return update(state, a.nr, () => ({ cleaning: true }), `${MAID} beginnt die Reinigung von ${a.nr}.`)
+      return update(state, a.nr, () => ({ cleaning: true }), format(ev.start, { maid: m.maid, nr: a.nr }))
     case 'finishCleaning':
       return update(state, a.nr, r => ({
         cleaning: false, ready: true, checkoutPending: false, priority: false,
         signal: r.signal === 'clean' ? 'none' : r.signal,
-      }), `${MAID} hat ${a.nr} abgeschlossen — Zimmer bereit.`)
+      }), format(ev.finish, { maid: m.maid, nr: a.nr }))
   }
 }
 
@@ -142,54 +146,40 @@ function isActive(r: Room): boolean {
   return r.checkoutPending || r.priority || r.signal === 'clean'
 }
 
-function tone(r: Room): { bar: string; label: string } {
-  if (r.priority) return { bar: 'bg-accent', label: 'priorisiert' }
-  if (r.checkoutPending) return { bar: 'bg-caution', label: 'ausgecheckt' }
-  if (r.signal === 'clean') return { bar: 'bg-attention', label: 'Reinigung gewünscht' }
-  if (r.signal === 'dnd') return { bar: 'bg-blocked', label: 'nicht stören' }
-  if (r.occupied) return { bar: 'bg-fresh', label: 'belegt' }
-  return { bar: 'bg-positive', label: 'bereit' }
+function tone(r: Room, m: M): { bar: string; label: string } {
+  if (r.priority) return { bar: 'bg-accent', label: m.tone.priority }
+  if (r.checkoutPending) return { bar: 'bg-caution', label: m.tone.checkedOut }
+  if (r.signal === 'clean') return { bar: 'bg-attention', label: m.tone.wants }
+  if (r.signal === 'dnd') return { bar: 'bg-blocked', label: m.tone.dnd }
+  if (r.occupied) return { bar: 'bg-fresh', label: m.tone.occupied }
+  return { bar: 'bg-positive', label: m.tone.ready }
 }
 
 /* ── Bildergeschichte ───────────────────────────────────────────── */
 
 type Step = {
-  who: string
-  title: string
-  text: string
+  /** Texte aus `demo.story`. */
+  key: keyof M['story']
   focus: 'reception' | 'guest' | 'board'
   action?: Action
   /** Zweite Aktion nach der halben Schrittdauer. */
   then?: Action
 }
 
-const STORY: Step[] = [
-  {
-    who: 'Rezeption', title: 'Check-in per Klick', focus: 'reception',
-    text: 'Ein Klick auf Zimmer 202 — RoSe legt den anonymen Aufenthalt an und zeigt die PIN.',
-    action: { type: 'checkin', nr: GUEST_ROOM },
-  },
-  {
-    who: 'Gast', title: 'Zugang in der Hand', focus: 'guest',
-    text: 'PIN auf dem Handout, QR-Aushang im Zimmer oder Link per Mail — kein Konto, keine App.',
-  },
-  {
-    who: 'Gast', title: 'Ein Tipp im Zimmer', focus: 'guest',
-    text: '„Zimmer reinigen" — mehr braucht es nicht.',
-    action: { type: 'signal', nr: GUEST_ROOM, signal: 'clean' },
-  },
-  {
-    who: 'Rezeption', title: 'Sofort sichtbar', focus: 'reception',
-    text: 'Die Kachel wechselt auf Amber; eine Bestellung bringt die Glocke und den Zähler.',
-    action: { type: 'order', nr: GUEST_ROOM, name: 'Extra Handtücher', urgent: false },
-  },
-  {
-    who: 'Housekeeping', title: 'Gezielt und gesteuert', focus: 'board',
-    text: 'Maria startet per Wisch und schließt ab — die Rezeption sieht Grün.',
-    action: { type: 'startCleaning', nr: GUEST_ROOM },
-    then: { type: 'finishCleaning', nr: GUEST_ROOM },
-  },
-]
+/** Die Bildergeschichte; die Anfrage im vierten Schritt trägt den Namen aus der Sprachdatei. */
+function story(m: M): Step[] {
+  return [
+    { key: 'checkin', focus: 'reception', action: { type: 'checkin', nr: GUEST_ROOM } },
+    { key: 'access', focus: 'guest' },
+    { key: 'tap', focus: 'guest', action: { type: 'signal', nr: GUEST_ROOM, signal: 'clean' } },
+    { key: 'visible', focus: 'reception', action: { type: 'order', nr: GUEST_ROOM, name: m.services.towels.name, urgent: false } },
+    {
+      key: 'board', focus: 'board',
+      action: { type: 'startCleaning', nr: GUEST_ROOM },
+      then: { type: 'finishCleaning', nr: GUEST_ROOM },
+    },
+  ]
+}
 
 const STEP_MS = 3200
 
@@ -201,8 +191,9 @@ function reducedMotion(): boolean {
     || document.documentElement.dataset.motion === 'reduced'
 }
 
-export default function LiveDemo() {
-  const [state, dispatch] = useReducer(reducer, undefined, initialState)
+export default function LiveDemo({ m, intlLocale }: { m: M; intlLocale: string }) {
+  const [state, dispatch] = useReducer((s: State, a: Action) => reducer(s, a, m), m, initialState)
+  const STORY = useMemo(() => story(m), [m])
   const [mode, setMode] = useState<Mode>('idle')
   const [step, setStep] = useState(0)
   const container = useRef<HTMLDivElement>(null)
@@ -248,7 +239,7 @@ export default function LiveDemo() {
       else setMode('ended')
     }, STEP_MS))
     return () => timers.forEach(t => window.clearTimeout(t))
-  }, [mode, step])
+  }, [mode, step, STORY])
 
   function play() {
     dispatch({ type: 'reset' })
@@ -281,33 +272,31 @@ export default function LiveDemo() {
           {current ? (
             <>
               <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
-                Schritt {step + 1} von {STORY.length} · {current.who}
+                {format(m.head.step, { step: step + 1, total: STORY.length, who: m.story[current.key].who })}
               </p>
-              <p className="font-bold text-ink">{current.title}</p>
-              <p className="text-sm text-ink-soft">{current.text}</p>
+              <p className="font-bold text-ink">{m.story[current.key].title}</p>
+              <p className="text-sm text-ink-soft">{format(m.story[current.key].text, { nr: GUEST_ROOM, maid: m.maid })}</p>
             </>
           ) : (
             <>
               <p className="font-bold text-ink">
-                {mode === 'ended' ? 'Fertig — jetzt selbst ausprobieren.' : 'Probier es aus.'}
+                {mode === 'ended' ? m.head.ended : m.head.tryIt}
               </p>
-              <p className="text-sm text-ink-soft">
-                Tipp im Gäste-Portal, Klick an der Rezeption, Wisch auf dem Board.
-              </p>
+              <p className="text-sm text-ink-soft">{m.head.hint}</p>
             </>
           )}
         </div>
         <div className="flex gap-2">
           {playing ? (
             <button type="button" onClick={free} className="rounded-lg border border-edge bg-surface px-3 py-1.5 text-sm font-semibold text-ink hover:border-edge-strong">
-              Selbst ausprobieren
+              {m.head.free}
             </button>
           ) : (
             <button type="button" onClick={play} className="flex items-center gap-1.5 rounded-lg border border-edge bg-surface px-3 py-1.5 text-sm font-semibold text-ink hover:border-edge-strong">
-              <Play className="h-4 w-4" aria-hidden /> Geschichte abspielen
+              <Play className="h-4 w-4" aria-hidden /> {m.head.play}
             </button>
           )}
-          <button type="button" onClick={reset} aria-label="Zurücksetzen" title="Zurücksetzen" className="rounded-lg border border-edge bg-surface px-2.5 py-1.5 text-ink-soft hover:border-edge-strong hover:text-ink">
+          <button type="button" onClick={reset} aria-label={m.head.reset} title={m.head.reset} className="rounded-lg border border-edge bg-surface px-2.5 py-1.5 text-ink-soft hover:border-edge-strong hover:text-ink">
             <RotateCcw className="h-4 w-4" aria-hidden />
           </button>
         </div>
@@ -316,7 +305,7 @@ export default function LiveDemo() {
       {/* Schritt-Punkte */}
       <div className="mt-3 flex gap-1.5" aria-hidden>
         {STORY.map((s, i) => (
-          <span key={s.title} className={`h-1.5 flex-1 rounded-full ${playing && i <= step ? 'bg-action' : 'bg-surface-muted'}`} />
+          <span key={s.key} className={`h-1.5 flex-1 rounded-full ${playing && i <= step ? 'bg-action' : 'bg-surface-muted'}`} />
         ))}
       </div>
 
@@ -324,34 +313,34 @@ export default function LiveDemo() {
       <div className="mt-5 grid gap-4 md:grid-cols-3">
         {/* Rezeption */}
         <div className={frame('reception')}>
-          <Frame title="Rezeption — Übersicht" badge={openOrders > 0 ? { text: `Services ${openOrders}`, urgent: anyUrgent } : null}>
+          <Frame title={m.reception.title} badge={openOrders > 0 ? { text: format(m.reception.badge, { count: openOrders }), urgent: anyUrgent } : null}>
             <div className="mb-2 flex items-center justify-between text-[11px] text-ink-muted">
-              <span className="font-semibold text-ink">Etage 2</span>
-              <span>{open} offen · {inWork} in Arbeit</span>
+              <span className="font-semibold text-ink">{m.reception.floor}</span>
+              <span>{format(m.reception.counts, { open, inWork })}</span>
             </div>
             <div className="grid grid-cols-3 gap-1.5">
-              {state.rooms.map(r => <Tile key={`${r.nr}:${state.flash[r.nr] ?? 0}`} room={r} flash={(state.flash[r.nr] ?? 0) > 0} />)}
+              {state.rooms.map(r => <Tile key={`${r.nr}:${state.flash[r.nr] ?? 0}`} room={r} flash={(state.flash[r.nr] ?? 0) > 0} m={m} />)}
             </div>
             <div className="mt-2 flex flex-wrap gap-1.5">
               <MiniButton onClick={() => dispatch(guest.occupied ? { type: 'checkout', nr: GUEST_ROOM } : { type: 'checkin', nr: GUEST_ROOM })} disabled={playing}>
-                {guest.occupied ? 'Check-out 202' : 'Check-in 202'}
+                {format(guest.occupied ? m.reception.checkout : m.reception.checkin, { nr: GUEST_ROOM })}
               </MiniButton>
               {(() => {
                 const r204 = state.rooms.find(r => r.nr === '204')!
                 return (
                   <MiniButton onClick={() => dispatch(r204.occupied ? { type: 'checkout', nr: '204' } : { type: 'checkin', nr: '204' })} disabled={playing}>
-                    {r204.occupied ? 'Check-out 204' : 'Check-in 204'}
+                    {format(r204.occupied ? m.reception.checkout : m.reception.checkin, { nr: '204' })}
                   </MiniButton>
                 )
               })()}
               <MiniButton onClick={() => dispatch({ type: 'priority', nr: '205' })} disabled={playing}>
-                <Flag className="h-3 w-3" aria-hidden /> Prio 205
+                <Flag className="h-3 w-3" aria-hidden /> {format(m.reception.priority, { nr: '205' })}
               </MiniButton>
             </div>
             {guest.occupied && (
               <div className="mt-2 flex items-center justify-between rounded-md border border-action-tint-edge bg-action-tint px-2 py-1.5 text-[11px]">
-                <span className="font-semibold text-action-deep">Aufenthalt 202</span>
-                <span className="rounded bg-surface-elevated px-1.5 font-mono font-bold tracking-widest text-ink">PIN {PIN}</span>
+                <span className="font-semibold text-action-deep">{format(m.reception.stay, { nr: GUEST_ROOM })}</span>
+                <span className="rounded bg-surface-elevated px-1.5 font-mono font-bold tracking-widest text-ink">{format(m.reception.pin, { pin: PIN })}</span>
               </div>
             )}
             {openOrders > 0 && (
@@ -364,7 +353,7 @@ export default function LiveDemo() {
                     </span>
                     <button type="button" onClick={() => dispatch({ type: 'orderDone', nr: r.nr, id: o.id })} disabled={playing}
                       className="ml-2 flex items-center gap-1 rounded bg-positive px-1.5 py-0.5 text-[10px] font-bold text-positive-foreground disabled:opacity-50">
-                      <Check className="h-3 w-3" aria-hidden /> Erledigt
+                      <Check className="h-3 w-3" aria-hidden /> {m.reception.done}
                     </button>
                   </li>
                 )))}
@@ -380,19 +369,19 @@ export default function LiveDemo() {
               <span className="h-2 w-2 rounded-full bg-edge-strong" />
               <span className="h-2 w-2 rounded-full bg-edge-strong" />
               <span className="h-2 w-2 rounded-full bg-edge-strong" />
-              <span className="ml-2 text-[11px] font-semibold text-ink-muted">Gäste-Portal — Handy</span>
+              <span className="ml-2 text-[11px] font-semibold text-ink-muted">{m.guest.frame}</span>
             </div>
             <div className="mx-auto max-w-[240px] px-3 py-4">
-              <p className="text-center text-[11px] text-ink-muted">Hotel Alpenblick</p>
-              <p className="text-center text-sm font-black">Zimmer {GUEST_ROOM}</p>
+              <p className="text-center text-[11px] text-ink-muted">{m.hotel}</p>
+              <p className="text-center text-sm font-black">{format(m.guest.room, { nr: GUEST_ROOM })}</p>
               {!guest.occupied ? (
                 <div className="mt-3 space-y-2 rounded-lg border border-edge bg-surface-elevated p-3 text-center text-[11px] text-ink-soft">
-                  <p>Noch kein Aufenthalt — der Zugang entsteht beim Check-in an der Rezeption.</p>
-                  <MiniButton onClick={() => dispatch({ type: 'checkin', nr: GUEST_ROOM })} disabled={playing}>An der Rezeption einchecken</MiniButton>
+                  <p>{m.guest.noStay}</p>
+                  <MiniButton onClick={() => dispatch({ type: 'checkin', nr: GUEST_ROOM })} disabled={playing}>{m.guest.checkin}</MiniButton>
                 </div>
               ) : (
                 <>
-                  <p className="mt-1 text-center text-[10px] text-ink-muted">Handout: QR + PIN {PIN}</p>
+                  <p className="mt-1 text-center text-[10px] text-ink-muted">{format(m.guest.sheet, { pin: PIN })}</p>
                   <div className="mt-3 grid grid-cols-2 gap-1.5">
                     <button type="button" disabled={playing}
                       onClick={() => dispatch({ type: 'signal', nr: GUEST_ROOM, signal: guest.signal === 'clean' ? 'none' : 'clean' })}
@@ -402,7 +391,7 @@ export default function LiveDemo() {
                           : 'border border-edge bg-surface-elevated hover:border-edge-strong'
                       }`}>
                       <Sparkles className="mx-auto mb-1 h-4 w-4" aria-hidden />
-                      Zimmer reinigen
+                      {m.guest.clean}
                     </button>
                     <button type="button" disabled={playing}
                       onClick={() => dispatch({ type: 'signal', nr: GUEST_ROOM, signal: guest.signal === 'dnd' ? 'none' : 'dnd' })}
@@ -412,28 +401,28 @@ export default function LiveDemo() {
                           : 'border border-edge bg-surface-elevated hover:border-edge-strong'
                       }`}>
                       <Moon className="mx-auto mb-1 h-4 w-4" aria-hidden />
-                      Nicht stören
+                      {m.guest.dnd}
                     </button>
                   </div>
-                  <p className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Services</p>
+                  <p className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-ink-muted">{m.guest.services}</p>
                   <div className="mt-1 space-y-1">
-                    {SERVICES.map(s => (
-                      <div key={s.name} className="flex items-center justify-between gap-2 rounded-md border border-edge bg-surface-elevated px-2 py-1.5 text-[11px]">
+                    {SERVICES.map(({ key, urgent, report }) => ({ ...m.services[key], key, urgent, report })).map(s => (
+                      <div key={s.key} className="flex items-center justify-between gap-2 rounded-md border border-edge bg-surface-elevated px-2 py-1.5 text-[11px]">
                         <span className="min-w-0">
                           <span className="block truncate font-semibold">{s.name}</span>
                           <span className={s.urgent ? 'font-bold text-critical-strong' : 'text-ink-muted'}>{s.meta}</span>
                         </span>
                         <button type="button" disabled={playing}
-                          onClick={() => dispatch({ type: 'order', nr: GUEST_ROOM, name: s.name, urgent: s.urgent })}
+                          onClick={() => dispatch({ type: 'order', nr: GUEST_ROOM, name: s.name, urgent: s.urgent, report: s.report })}
                           className="shrink-0 rounded bg-action px-2 py-1 text-[10px] font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50">
-                          Bestellen
+                          {s.report ? m.guest.report : m.guest.order}
                         </button>
                       </div>
                     ))}
                   </div>
                   {guest.orders.length > 0 && (
                     <p className="mt-2 text-center text-[10px] text-ink-muted">
-                      {guest.orders.length} {guest.orders.length === 1 ? 'Anfrage' : 'Anfragen'} offen
+                      {plural(intlLocale, guest.orders.length, m.guest.openRequests)}
                     </p>
                   )}
                 </>
@@ -444,41 +433,41 @@ export default function LiveDemo() {
 
         {/* Reinigungsboard */}
         <div className={frame('board')}>
-          <Frame title="Reinigungsboard">
+          <Frame title={m.board.title}>
             <div className="flex items-center justify-between rounded-md border border-edge bg-surface-elevated px-2 py-1.5 text-[11px]">
-              <span className="font-bold text-ink">Etage 2</span>
+              <span className="font-bold text-ink">{m.board.floor}</span>
               {open > 0 ? (
                 <span className="flex items-center gap-1 font-semibold text-action">
-                  <Target className="h-3 w-3" aria-hidden /> Als Nächstes · {open} offen
+                  <Target className="h-3 w-3" aria-hidden /> {format(m.board.next, { count: open })}
                 </span>
               ) : (
-                <span className="text-ink-muted">{inWork > 0 ? `${inWork} in Arbeit` : 'alles erledigt'}</span>
+                <span className="text-ink-muted">{inWork > 0 ? format(m.board.inWork, { count: inWork }) : m.board.allDone}</span>
               )}
             </div>
             <div className="mt-2 space-y-1.5">
               {active.length === 0 && (
                 <p className="rounded-md border border-dashed border-edge px-2 py-3 text-center text-[11px] text-ink-muted">
-                  Keine offene Reinigung auf dieser Etage.
+                  {m.board.empty}
                 </p>
               )}
               {active
                 .slice()
                 .sort((a, b) => Number(b.cleaning) - Number(a.cleaning) || Number(b.priority) - Number(a.priority) || Number(b.checkoutPending) - Number(a.checkoutPending))
                 .map(r => {
-                  const t = tone(r)
+                  const t = tone(r, m)
                   return (
                     <div key={r.nr} className={`rounded-md border p-1.5 ${r.priority && !r.cleaning ? 'border-accent blink-ring-priority' : 'border-edge'} bg-surface-elevated`}>
                       <div className="mb-1 flex items-center justify-between text-[11px]">
-                        <span className="font-bold text-ink">Zimmer {r.nr}</span>
+                        <span className="font-bold text-ink">{format(m.board.room, { nr: r.nr })}</span>
                         <span className="text-ink-muted">
-                          {r.cleaning ? `${MAID} in ${r.nr}` : t.label}
+                          {r.cleaning ? format(m.board.maidIn, { maid: m.maid, nr: r.nr }) : t.label}
                         </span>
                       </div>
                       {r.cleaning ? (
-                        <SlideAction size="compact" variant="success" label="Reinigung abschließen"
+                        <SlideAction size="compact" variant="success" label={m.board.finish}
                           disabled={playing} onConfirm={() => dispatch({ type: 'finishCleaning', nr: r.nr })} />
                       ) : (
-                        <SlideAction size="compact" variant={r.priority ? 'priority' : 'warning'} label="Reinigung starten"
+                        <SlideAction size="compact" variant={r.priority ? 'priority' : 'warning'} label={m.board.start}
                           disabled={playing || inWork > 0} onConfirm={() => dispatch({ type: 'startCleaning', nr: r.nr })} />
                       )}
                     </div>
@@ -518,8 +507,8 @@ function Frame({ title, badge, children }: { title: string; badge?: { text: stri
   )
 }
 
-function Tile({ room: r, flash }: { room: Room; flash: boolean }) {
-  const t = tone(r)
+function Tile({ room: r, flash, m }: { room: Room; flash: boolean; m: M }) {
+  const t = tone(r, m)
   const urgent = r.orders.some(o => o.urgent)
   return (
     <div
@@ -531,12 +520,12 @@ function Tile({ room: r, flash }: { room: Room; flash: boolean }) {
       <div className="px-1.5 py-1">
         <div className="flex items-center gap-1 text-xs font-bold text-ink">
           {r.nr}
-          {r.cleaning && <Loader2 className="h-3 w-3 animate-spin text-ink-muted" aria-label="in Reinigung" />}
-          {r.orders.length > 0 && <Bell className={`h-3 w-3 ${urgent ? 'text-critical-strong blink-icon' : 'text-ink-soft'}`} aria-label="Service-Anfrage" />}
-          {r.priority && <Flag className="h-3 w-3 text-accent" aria-label="priorisiert" />}
-          {r.signal === 'dnd' && <Ban className="h-3 w-3 text-blocked-strong" aria-label="nicht stören" />}
+          {r.cleaning && <Loader2 className="h-3 w-3 animate-spin text-ink-muted" aria-label={m.tile.cleaning} />}
+          {r.orders.length > 0 && <Bell className={`h-3 w-3 ${urgent ? 'text-critical-strong blink-icon' : 'text-ink-soft'}`} aria-label={m.tile.request} />}
+          {r.priority && <Flag className="h-3 w-3 text-accent" aria-label={m.tone.priority} />}
+          {r.signal === 'dnd' && <Ban className="h-3 w-3 text-blocked-strong" aria-label={m.tone.dnd} />}
         </div>
-        <div className="truncate text-[10px] text-ink-muted">{r.cleaning ? 'in Reinigung' : t.label}</div>
+        <div className="truncate text-[10px] text-ink-muted">{r.cleaning ? m.tile.cleaning : t.label}</div>
       </div>
     </div>
   )

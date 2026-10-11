@@ -4,6 +4,7 @@ import { logoutAction } from '@/app/login/actions'
 import HilfeKnopf from '@/components/hilfe/HilfeKnopf'
 import HilfeLeiste from '@/components/hilfe/HilfeLeiste'
 import LotsePilot from '@/components/lotse/LotsePilot'
+import HelpMessagesProvider from '@/components/hilfe/HelpMessages'
 import { getAuthUserId } from '@/utils/auth'
 import { getMessages } from '@/lib/i18n'
 import { getLocale } from '@/utils/locale'
@@ -22,8 +23,10 @@ export default async function KontoShell({
   istInhaber: boolean
   children: React.ReactNode
 }) {
-  const m = getMessages(await getLocale()).account.houses.shell
+  const messages = getMessages(await getLocale())
+  const m = messages.account.houses.shell
   return (
+    <HelpMessagesProvider value={{ help: messages.help, symbols: messages.symbols }}>
     <div className="flex min-h-screen flex-1 flex-col bg-surface-sunken">
       {/* Sticky wie im Haus-Layout, damit die Hilfe-Leiste darunter
           andocken kann (sie hängt an derselben Kopfzeilen-Höhe). */}
@@ -65,5 +68,6 @@ export default async function KontoShell({
         <HilfeLeiste slug={null} istVerwaltung istInhaber={istInhaber} nutzer={await getAuthUserId()} />
       </div>
     </div>
+    </HelpMessagesProvider>
   )
 }

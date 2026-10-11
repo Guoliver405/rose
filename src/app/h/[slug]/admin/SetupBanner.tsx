@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ArrowRight, ListChecks } from 'lucide-react'
-import { offeneEinrichtung, type SetupKonfig } from '@/lib/lotsen'
+import { offeneEinrichtung, type SetupKonfig, type SetupTexts } from '@/lib/lotsen'
 import { format, type AdminMessages } from '@/lib/i18n'
 import Rich from '@/components/i18n/Rich'
 
@@ -29,13 +29,16 @@ export default function SetupBanner({
   base,
   konfig,
   m,
+  texte,
 }: {
   /** `/h/<slug>/admin` */
   base: string
   konfig: SetupKonfig
   m: AdminMessages['overview']['setup']
+  /** Beschriftungen der Einrichtungs-Punkte (Sprachdatei der Hilfe). */
+  texte: SetupTexts
 }) {
-  const offen = offeneEinrichtung(konfig)
+  const offen = offeneEinrichtung(konfig, texte)
   if (offen.length === 0) return null
 
   const naechster = offen[0]
