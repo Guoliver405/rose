@@ -151,6 +151,25 @@ export async function peekEmailChange(token: string | null | undefined): Promise
   return row ? { email: row.new_email } : null
 }
 
+function isEmailExists(error: { code?: string; message: string }): boolean {
+  return error.code === 'email_exists' || /already/i.test(error.message)
+}
+
+/**
+ * Gehört die Adresse schon einem anderen Zugang? `updateUserById` meldet das
+ * nicht sauber, sondern mit einem leeren 500er (11.10.2026 nachgemessen: die
+ * Datenbank weist die doppelte Adresse ab, GoTrue reicht nur „{}“ durch).
+ * `generateLink({ type: 'email_change_new' })` prüft dagegen ausdrücklich und
+ * antwortet `email_exists` — ohne Versand. Nur im Fehlerfall gefragt.
+ */
+async function addressTaken(currentEmail: string | null, newEmail: string): Promise<boolean> {
+  if (!currentEmail) return false
+  const { error } = await createAdminClient().auth.admin.generateLink({
+    type: 'email_change_new', email: currentEmail, newEmail,
+  })
+  return Boolean(error && isEmailExists(error))
+}
+
 export type ConfirmResult =
   | { kind: 'ok'; email: string }
   | { kind: 'invalid' }
@@ -184,7 +203,7 @@ export async function confirmEmailChange(
 
   const { error } = await admin.auth.admin.updateUserById(row.user_id, { email: row.new_email, email_confirm: true })
   if (error) {
-    if (error.code === 'email_exists' || /already/i.test(error.message)) return { kind: 'taken' }
+    if (isEmailExists(error) || await addressTaken(alteAdresse, row.new_email)) return { kind: 'taken' }
     console.error('[email-change] updateUserById:', error.status, error.code, error.message)
     return { kind: 'failed' }
   }

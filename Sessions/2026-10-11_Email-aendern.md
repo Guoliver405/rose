@@ -24,6 +24,7 @@ Stattdessen eigener Schlüssel (Tabelle `email_change_requests`, nur SHA-256 ges
 ## 3. Prüfpunkte aus dem Auftrag
 
 - **Vergebene Adresse, ohne zu verraten, ob es ein Konto gibt:** Die Anfrage prüft das nicht; der Link geht in jedem Fall raus. Erst die Umstellung scheitert (`email_exists` der Admin-API) mit „Zu dieser Adresse gibt es bereits einen Zugang“ – das sieht nur, wer das Postfach der Adresse hat. Die eigene Adresse wird sofort abgewiesen (das verrät nichts).
+- **Fallstrick Kollision:** `updateUserById` meldet eine schon vergebene Adresse nicht als `email_exists`, sondern als leeren 500er (`{}`) – im Integrationstest gefunden. Im Fehlerfall fragt `addressTaken` deshalb über `generateLink({ type: 'email_change_new' })` nach, das ausdrücklich `email_exists` liefert (ohne Versand).
 - **Drossel:** `MAIL_COOLDOWN_SECONDS` je Person und Zweck, wie bei allen Mails. Gedrosselt oder gesperrt → es wird nichts abgelegt, eine vorher offene Änderung bleibt gültig.
 - **`mail_log`:** zwei neue Zwecke, Migration `Supabase_sql/2026-10-11_email_aendern.sql` (additiv: Tabelle + CHECK). **Erst einspielen, dann pushen.**
 - **Simulator-Konten** (`sim_accounts`) hängen an der Nutzer-ID und bleiben gültig. (Reine Simulator-Konten haben „Mein Zugang“ nicht; dort gibt es noch keinen Weg – siehe offene Punkte.)
@@ -41,8 +42,14 @@ Stattdessen eigener Schlüssel (Tabelle `email_change_requests`, nur SHA-256 ges
 - Texte nur in `admin.settings.myAccess` (`email`, `confirm`, `mails`) und im Hilfe-Thema `zugang` – die übrigen Sprachdateien lagen parallel in der Lese-Runde. Die Mail- und Bestätigungstexte gehören fachlich nach `mail.ts`/`auth.ts`; nach der Lese-Runde umziehen, wenn gewünscht.
 - `tests/integration/email-change.test.ts`.
 
-## 5. Offene Punkte
+## 5. Nachweis
 
-- Migration einspielen (User), danach `npm run test:integration` und den Versand an eine echte Adresse einmal von Hand (Mail an die neue Adresse, Klick, Hinweis an die alte; beim Inhaber in Stripe die Kunden-E-Mail prüfen).
+- Migration am 11.10. vom User eingespielt.
+- `npm run verify` grün, `tests/integration/email-change.test.ts` grün (7 Fälle: falsches Passwort, eigene Adresse, Reinigungskraft, Drossel legt nichts ab, Umstellung mit ersetztem Link und Hinweis, vergebene Adresse, Ablauf und Abbruch).
+- Browser lokal (Dev-Server, eigenes Testhaus, danach gelöscht): falsches Passwort → Meldung am Abschnitt; richtiges Passwort an eine nicht zustellbare Testadresse → offene Änderung mit Ablaufzeit, Hinweis „verschickt“, Statuszeile mit dem Bounce des Empfänger-Servers; Bestätigungsseite mit maskierter Adresse → Knopf → „Erledigt“, „Mein Zugang“ zeigt die neue Adresse, derselbe Link danach „ungültig“; `mail_log` zeigt `email_change` und `email_changed`.
+
+## 6. Offene Punkte
+
+- Versand an eine echte Adresse einmal von Hand (Mail an die neue Adresse, Klick, Hinweis an die alte; beim Inhaber in Stripe die Kunden-E-Mail prüfen).
 - Simulator-Konten ohne Hotelzugang können ihre Adresse noch nicht ändern (`/simulator/konto`) – derselbe Ablauf ließe sich dort einhängen.
 - Inhaber, die ihr Passwort UND die alte Adresse verloren haben, bleiben ein Support-Fall.
