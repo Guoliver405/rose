@@ -561,7 +561,8 @@ function TranslationEditor({ service, locale, m, pending, onSave, onClose }: {
 
       <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
         {m.name}
-        <input name="name" defaultValue={t?.name ?? ''} placeholder={service.name} maxLength={120} className={input} />
+        {/* Kein Platzhalter mit dem Grundtext: grau auf dunkel sähe er aus wie eine fertige Übersetzung. */}
+        <input name="name" defaultValue={t?.name ?? ''} maxLength={120} className={input} />
         {original(service.name)}
       </label>
 
@@ -569,7 +570,7 @@ function TranslationEditor({ service, locale, m, pending, onSave, onClose }: {
         <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
           {m.description}
           <textarea
-            name="description" defaultValue={t?.description ?? ''} placeholder={service.description}
+            name="description" defaultValue={t?.description ?? ''}
             maxLength={500} rows={2} className={input}
           />
           {original(service.description)}
@@ -582,8 +583,7 @@ function TranslationEditor({ service, locale, m, pending, onSave, onClose }: {
           {service.items.map(item => (
             <label key={item.id} className="flex flex-col gap-1">
               <input
-                name={`item:${item.id}`} defaultValue={item.translations[locale]?.label ?? ''}
-                placeholder={item.label} maxLength={120} aria-label={item.label} className={input}
+                name={`item:${item.id}`} defaultValue={item.translations[locale]?.label ?? ''} maxLength={120} aria-label={item.label} className={input}
               />
               {original(item.label)}
             </label>
