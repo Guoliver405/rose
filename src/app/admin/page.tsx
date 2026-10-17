@@ -148,7 +148,7 @@ export default async function HotelPickerPage() {
               {format(m.account.roomsBillable, { count: laufend.rooms })}
             </span>
             <span className="rounded-full bg-surface-muted px-3 py-1 font-semibold text-ink-soft">
-              {format(laufend.free ? m.account.expectedFree : m.account.expected, { amount: formatCents(laufend.cents) })}
+              {format(laufend.free ? m.account.expectedFree : m.account.expected, { amount: formatCents(laufend.cents, il) })}
             </span>
           </div>
           {problemRechnung && (

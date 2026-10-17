@@ -160,13 +160,13 @@ export default async function AbrechnungPage() {
       <Card title={m.plan.title} icon={Check} anchor="konto.plan">
         <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
           <p>
-            <span className="text-3xl font-black text-ink">{formatCents(PRICE_PER_ROOM_CENTS)}</span>
+            <span className="text-3xl font-black text-ink">{formatCents(PRICE_PER_ROOM_CENTS, intl)}</span>
             <span className="ml-1.5 text-sm text-ink-soft">{m.plan.perRoom}</span>
           </p>
           <p className="text-sm text-ink-soft">
             <Rich
               text={m.plan.minimum}
-              vars={{ amount: formatCents(MIN_MONTHLY_CENTS), rooms: MIN_COVERS_ROOMS }}
+              vars={{ amount: formatCents(MIN_MONTHLY_CENTS, intl), rooms: MIN_COVERS_ROOMS }}
               tags={hervorhebung}
             />
           </p>
@@ -211,13 +211,13 @@ export default async function AbrechnungPage() {
 
         <div className="mt-3 flex flex-wrap items-center gap-3 rounded-lg bg-surface-muted px-3 py-2 text-sm">
           <span className="text-ink-soft">{m.current.expected}</span>
-          <span className="text-lg font-black text-ink">{formatCents(laufend.cents)}</span>
+          <span className="text-lg font-black text-ink">{formatCents(laufend.cents, intl)}</span>
           {laufend.free && (
             <>
               <FreiBadge m={m.free} />
               {laufend.regularCents > 0 && (
                 <span className="text-xs text-ink-muted">
-                  {format(m.insteadOf, { amount: formatCents(laufend.regularCents) })}
+                  {format(m.insteadOf, { amount: formatCents(laufend.regularCents, intl) })}
                 </span>
               )}
             </>
@@ -248,10 +248,10 @@ export default async function AbrechnungPage() {
                     <td className="py-2 font-semibold text-ink">{monatsName(row.periodStart, intl)}</td>
                     <td className="py-2 text-right tabular-nums text-ink">{row.rooms}</td>
                     <td className="py-2 text-right tabular-nums text-ink">
-                      {formatCents(row.line.cents)}
+                      {formatCents(row.line.cents, intl)}
                       {row.line.free && row.line.regularCents > 0 && (
                         <span className="ml-1 text-xs text-ink-muted">
-                          {format(m.insteadOf, { amount: formatCents(row.line.regularCents) })}
+                          {format(m.insteadOf, { amount: formatCents(row.line.regularCents, intl) })}
                         </span>
                       )}
                     </td>
@@ -344,8 +344,8 @@ export default async function AbrechnungPage() {
                   {inv.number && <span className="font-mono text-xs text-ink-muted">{inv.number}</span>}
                   <span className="tabular-nums text-ink">
                     {inv.totalCents != null
-                      ? formatCents(inv.totalCents)
-                      : format(m.invoices.net, { amount: formatCents(inv.netCents) })}
+                      ? formatCents(inv.totalCents, intl)
+                      : format(m.invoices.net, { amount: formatCents(inv.netCents, intl) })}
                   </span>
                   <InvoicePill inv={inv} heute={heute} m={m.status} />
                   {inv.dueAt && inv.status === 'open' && (
