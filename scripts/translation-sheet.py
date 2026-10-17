@@ -18,7 +18,11 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
 LANG_NAMES = {"en": "Englisch, US", "es": "Spanisch", "fr": "Französisch"}
-AREA_NAMES = {"guest": "Gästeportal"}
+AREA_NAMES = {"guest": "Gästeportal", "service": "Reinigungsboard"}
+READERS = {
+    "guest": "• Leser ist der Gast, am Handy. Höflich und schlicht; das Haus spricht als „we“ (nie „hotel“ – auch Pensionen nutzen RoSe).",
+    "service": "• Leserin ist eine Reinigungskraft, am Handy zwischen zwei Zimmern. Kurz und freundlich; Begriffe wie im Gästeportal („Do not disturb“, „No cleaning today“, „front desk“). Zustände auf den Zimmer-Kacheln höchstens zwei bis drei Wörter.",
+}
 
 
 def main() -> None:
@@ -48,7 +52,7 @@ def main() -> None:
         ("3. Fragen oder Zweifel gehören in „Anmerkung“.", False),
         ("", False),
         ("Für alle Texte", True),
-        ("• Leser ist der Gast, am Handy. Höflich und schlicht; das Haus spricht als „we“ (nie „hotel“ – auch Pensionen nutzen RoSe).", False),
+        (READERS.get(area, ""), False),
         ("• Amerikanisches Englisch (Entscheidung vom 17.10.2026).", False),
         ("• Platzhalter wie {time} oder {number} und Auszeichnungen wie <b>…</b> müssen stehen bleiben; ihre Stellung im Satz darf sich ändern.", False),
         ("• Uhrzeiten erscheinen im 24-Stunden-Format (10:00), unabhängig von der Sprache.", False),

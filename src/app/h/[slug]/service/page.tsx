@@ -15,7 +15,7 @@ import { formatHHMM, parseTimeZone } from '@/lib/tz'
 import { maidLogoutAction } from './login/actions'
 import ServiceBoard, { type BoardFloor, type BoardRoom } from './ServiceBoard'
 import { format, getMessages, intlLocale } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getServiceLocale } from '@/utils/locale'
 
 export default async function ServiceBoardPage({
   params,
@@ -28,8 +28,9 @@ export default async function ServiceBoardPage({
   // Abgleich mit dem Hotel aus der URL verhindert, dass eine Kraft unter der
   // Adresse eines anderen Hauses ihr eigenes Board unter falschem Namen sieht.
   // Haus und Sitzung sind voneinander unabhängig → parallel.
-  const [hotel, ctx, locale] = await Promise.all([requireHotelBySlug(slug), getMaidContext(), getLocale()])
+  const [hotel, ctx] = await Promise.all([requireHotelBySlug(slug), getMaidContext()])
   if (!ctx || ctx.hotelId !== hotel.id) redirect(`/h/${hotel.slug}/service/login`)
+  const locale = await getServiceLocale(ctx.policies)
   const m = getMessages(locale).service
 
   // Board-Daten über den Admin-Client: die Maid-RLS sieht fremde profiles

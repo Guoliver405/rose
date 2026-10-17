@@ -15,13 +15,13 @@ import {
   isCleaningFresh, isRoomActive, isStayoverDue, parseStayoverPolicy, todayStartIso, type DoorChoice,
 } from '@/lib/board'
 import { format, getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getServiceLocale } from '@/utils/locale'
 
 type ActionResult = { error?: string }
 
 /** Meldungen des Reinigungsboards in der Sprache der Anfrage. */
 async function messages() {
-  return getMessages(await getLocale()).service.errors
+  return getMessages(await getServiceLocale((await getMaidContext())?.policies)).service.errors
 }
 
 /**

@@ -12,7 +12,7 @@ import {
   cleanDeferLimit, isWithinCleaningWindow, parseCleanDefer, parseCleaningWindow, parseStayoverPolicy,
 } from '@/lib/board'
 import { formatHHMM, parseTimeZone, zonedDateKey } from '@/lib/tz'
-import { format, getMessages, GUEST_LOCALES, isLocale, LOCALE_COOKIE } from '@/lib/i18n'
+import { format, getMessages } from '@/lib/i18n'
 import { getGuestLocale } from '@/utils/locale'
 import { isValidSlug } from '@/lib/slug'
 
@@ -286,16 +286,6 @@ export async function guestLogoutAction(): Promise<void> {
   const cookieStore = await cookies()
   cookieStore.set(GUEST_COOKIE, '', { maxAge: 0, path: '/' })
   redirect(ctx ? `/h/${ctx.hotelSlug}/guest` : '/guest')
-}
-
-/**
- * Sprachwahl des Gastes (17.10.2026): Cookie für ein Jahr, unabhängig vom
- * Aufenthalt — übersteht Check-out und Danke-Seite. Nur angebotene Sprachen.
- */
-export async function setGuestLocaleAction(locale: string): Promise<void> {
-  if (!isLocale(locale) || !GUEST_LOCALES.includes(locale)) return
-  const cookieStore = await cookies()
-  cookieStore.set(LOCALE_COOKIE, locale, { sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * 365 })
 }
 
 /**

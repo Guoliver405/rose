@@ -1,7 +1,8 @@
 import { KeyRound, QrCode } from 'lucide-react'
 import LegalFooter from '@/components/LegalFooter'
-import { getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getMessages, SERVICE_LOCALES } from '@/lib/i18n'
+import { getServiceLocale } from '@/utils/locale'
+import LanguageSwitch from '@/components/LanguageSwitch'
 
 /**
  * Mandantenfreie Reinigungs-Anmeldung — bewusst nur ein Hinweis.
@@ -20,10 +21,12 @@ export default async function ServiceGenericLoginPage({
 }) {
   const { error } = await searchParams
   const cardFailed = error === 'auto_login_failed'
-  const m = getMessages(await getLocale()).service
+  const locale = await getServiceLocale()
+  const m = getMessages(locale).service
 
   return (
-    <div className="flex min-h-screen flex-1 items-center justify-center bg-surface-sunken p-6">
+    <div lang={locale} className="relative flex min-h-screen flex-1 items-center justify-center bg-surface-sunken p-6">
+      <LanguageSwitch current={locale} offered={SERVICE_LOCALES} />
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-edge bg-surface-elevated">

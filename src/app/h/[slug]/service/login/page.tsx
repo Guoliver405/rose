@@ -8,8 +8,9 @@ import { requireHotelBySlug } from '@/utils/hotel'
 import { getMaidContext } from '@/utils/maid-auth'
 import { maidLoginAction } from './actions'
 import LegalFooter from '@/components/LegalFooter'
-import { getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getMessages, SERVICE_LOCALES } from '@/lib/i18n'
+import { getServiceLocale } from '@/utils/locale'
+import LanguageSwitch from '@/components/LanguageSwitch'
 
 export default async function ServiceLoginPage({
   params,
@@ -36,7 +37,8 @@ export default async function ServiceLoginPage({
   const maid = session ? await getMaidContext() : null
   if (maid?.hotelId === hotel.id && !error) redirect(`/h/${hotel.slug}/service`)
   const deactivated = Boolean(session) && !maid
-  const m = getMessages(await getLocale()).service
+  const locale = await getServiceLocale(hotel.policies)
+  const m = getMessages(locale).service
 
   const errorMessage =
     error === 'invalid' ? m.login.invalid :
@@ -47,7 +49,8 @@ export default async function ServiceLoginPage({
     error === 'deactivated' ? m.login.deactivated : null
 
   return (
-    <div className="flex min-h-screen flex-1 items-center justify-center bg-surface-sunken p-6">
+    <div lang={locale} className="relative flex min-h-screen flex-1 items-center justify-center bg-surface-sunken p-6">
+      <LanguageSwitch current={locale} offered={SERVICE_LOCALES} />
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-edge bg-surface-elevated">

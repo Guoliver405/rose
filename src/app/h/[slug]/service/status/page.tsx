@@ -8,8 +8,9 @@ import { clampStaleMinutes, isCleaningFresh } from '@/lib/board'
 import { computeWorkStats, type StaffLogRow } from '@/lib/worklog'
 import { parseTimeZone, zonedDateKey, zonedDayRange } from '@/lib/tz'
 import StatusPanel from './StatusPanel'
-import { getMessages, intlLocale } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getMessages, intlLocale, SERVICE_LOCALES } from '@/lib/i18n'
+import { getServiceLocale } from '@/utils/locale'
+import LanguageSwitch from '@/components/LanguageSwitch'
 
 /**
  * „Mein Status" — alle Zustandswechsel der Reinigungskraft auf einer eigenen
@@ -68,7 +69,7 @@ export default async function ServiceStatusPage({
     : null
 
   const team = parseStaffTracking(ctx.policies) === 'team'
-  const locale = await getLocale()
+  const locale = await getServiceLocale(ctx.policies)
   const m = getMessages(locale).service.status
 
   return (
@@ -103,6 +104,10 @@ export default async function ServiceStatusPage({
         {m.teamMode}
       </p>
     )}
+    {/* Sprache wechseln: hier statt auf dem Board, wo jede Ecke belegt ist. */}
+    <div className="mt-4 flex justify-end">
+      <LanguageSwitch current={locale} offered={SERVICE_LOCALES} inline />
+    </div>
     </>
   )
 }
