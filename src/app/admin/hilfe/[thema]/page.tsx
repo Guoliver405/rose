@@ -3,7 +3,7 @@ import { getAccountContext, listAccessibleHotels } from '@/utils/auth'
 import HilfeThema from '@/components/hilfe/HilfeThema'
 import { themaBereich, themaById } from '@/lib/hilfe'
 import { getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 import KontoShell from '../../KontoShell'
 
 /**
@@ -24,7 +24,7 @@ export default async function KontoHilfePage({
   const hotels = await listAccessibleHotels()
   if (hotels.length === 0) redirect('/login')
 
-  const m = getMessages(await getLocale())
+  const m = getMessages(await getAdminLocale())
   const thema = themaById(themaId)
   if (!thema || themaBereich(thema) !== 'konto') notFound()
 

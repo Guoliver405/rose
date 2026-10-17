@@ -11,7 +11,7 @@ import {
   MIN_COVERS_ROOMS, MIN_MONTHLY_CENTS, PRICE_PER_ROOM_CENTS, billingLine, lastFreePeriodStart,
 } from '@/lib/pricing'
 import { format, getMessages, intlLocale, type AccountMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 import Rich from '@/components/i18n/Rich'
 import KontoShell from '../KontoShell'
 
@@ -103,7 +103,7 @@ function Regel({ children }: { children: React.ReactNode }) {
 export default async function AbrechnungPage() {
   const account = await getAccountContext()
   if (!account) redirect('/admin')
-  const locale = await getLocale()
+  const locale = await getAdminLocale()
   const b = getMessages(locale).account.billing
   const m = b.page
   const intl = intlLocale(locale)

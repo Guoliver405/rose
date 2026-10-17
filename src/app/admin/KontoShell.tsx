@@ -7,7 +7,7 @@ import LotsePilot from '@/components/lotse/LotsePilot'
 import HelpMessagesProvider from '@/components/hilfe/HelpMessages'
 import { getAuthUserId } from '@/utils/auth'
 import { getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 /**
  * Rahmen der Konto-Seiten außerhalb von `/h/<slug>/`: Logo, Name der
@@ -23,7 +23,7 @@ export default async function KontoShell({
   istInhaber: boolean
   children: React.ReactNode
 }) {
-  const messages = getMessages(await getLocale())
+  const messages = getMessages(await getAdminLocale())
   const m = messages.account.houses.shell
   return (
     <HelpMessagesProvider value={{ help: messages.help, symbols: messages.symbols }}>

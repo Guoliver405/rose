@@ -111,9 +111,11 @@ function ElementsForm({ m, onDone, onCancel, onBankTransfer }: { m: PanelMessage
 }
 
 export default function PaymentMethodPanel({
-  m, kinds, publishableKey, aktiv, datenVollstaendig, weiterZu,
+  m, kinds, publishableKey, aktiv, datenVollstaendig, weiterZu, locale,
 }: {
   m: PanelMessages
+  /** Sprache der Seite — Stripes Eingabefelder sprechen dieselbe. */
+  locale: 'de' | 'en'
   kinds: AccountMessages['billing']['kinds']
   publishableKey: string
   aktiv: { kind: PaymentMethodKind; label: string } | null
@@ -128,8 +130,8 @@ export default function PaymentMethodPanel({
   const [clientSecret, setClientSecret] = useState<string | null>(null)
 
   const stripePromise = useMemo<Promise<Stripe | null> | null>(
-    () => (publishableKey ? loadStripe(publishableKey, { locale: 'de' }) : null),
-    [publishableKey],
+    () => (publishableKey ? loadStripe(publishableKey, { locale }) : null),
+    [publishableKey, locale],
   )
   const appearance = useMemo<Appearance>(
     () => ({ theme: darkMode() ? 'night' : 'stripe', variables: { borderRadius: '8px' } }),
@@ -201,7 +203,7 @@ export default function PaymentMethodPanel({
       )}
 
       {clientSecret && stripePromise ? (
-        <Elements stripe={stripePromise} options={{ clientSecret, locale: 'de', appearance }}>
+        <Elements stripe={stripePromise} options={{ clientSecret, locale, appearance }}>
           <ElementsForm
             m={m.form}
             onDone={label => { setClientSecret(null); setErfolg(format(m.saved, { label })) }}

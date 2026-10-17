@@ -9,7 +9,7 @@ import {
 import { COUNTRY_CODES } from '@/lib/vat'
 import { einrichtungStart } from '@/lib/lotsen'
 import { format, getMessages, intlLocale } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 import KontoShell from '../../KontoShell'
 import BillingDetailsForm from './BillingDetailsForm'
 import PaymentMethodPanel from './PaymentMethodPanel'
@@ -40,7 +40,7 @@ export default async function ZahlungswegPage({
   const account = await getAccountContext()
   if (!account) redirect('/admin')
   if (!stripeReady()) redirect('/admin/abrechnung')
-  const locale = await getLocale()
+  const locale = await getAdminLocale()
   const intl = intlLocale(locale)
   const b = getMessages(locale).account.billing
   const m = b.paymentPage
@@ -113,6 +113,7 @@ export default async function ZahlungswegPage({
       <PaymentMethodPanel
         m={b.panel}
         kinds={b.kinds}
+        locale={locale}
         publishableKey={stripePublishableKey()}
         aktiv={billing?.paymentMethodKind ? { kind: billing.paymentMethodKind, label: billing.paymentMethodLabel ?? '' } : null}
         datenVollstaendig={datenVollstaendig}

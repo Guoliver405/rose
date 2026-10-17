@@ -2,11 +2,11 @@ import Stripe from 'stripe'
 import { createAdminClient } from '@/utils/supabase/service'
 import type { BillingDetails } from '@/lib/vat'
 import { format, getMessages, type AccountMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 /** Texte der Stripe-Anbindung: Meldungen und die gespeicherte Kurzbezeichnung des Zahlungswegs. */
 async function texts() {
-  const b = getMessages(await getLocale()).account.billing
+  const b = getMessages(await getAdminLocale()).account.billing
   return { e: b.errors.stripe, labels: b.labels }
 }
 

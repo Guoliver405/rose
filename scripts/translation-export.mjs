@@ -18,6 +18,7 @@ const AREAS = {
   admin: { file: 'admin/index.ts', ctx: 'de/admin/context.ts', ctxName: 'adminContext' },
   mail: { file: 'mail.ts', ctx: 'de/mail.context.ts', ctxName: 'mailContext' },
   print: { file: 'print.ts', ctx: 'de/print.context.ts', ctxName: 'printContext' },
+  account: { file: 'account/index.ts', ctx: 'de/account/context.ts', ctxName: 'accountContext' },
   help: { file: 'help/index.ts', ctx: 'de/help/context.ts', ctxName: 'helpContext' },
   symbols: { file: 'symbols.ts', ctx: 'de/help/context.ts', ctxName: 'symbolsContext' },
   sheet: { file: 'sheet.ts', ctx: null, ctxName: null, where: 'Gedrucktes Check-in-Blatt und Zimmer-Aushang, Zugangs-E-Mail an den Gast', note: 'Gedruckt bzw. per E-Mail an den Gast; Platzhalter {…} bleiben stehen. Seit 09.09.2026 schon viersprachig (de/en/es/fr).' },

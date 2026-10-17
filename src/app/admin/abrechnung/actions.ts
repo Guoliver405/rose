@@ -8,7 +8,7 @@ import {
 } from '@/utils/stripe'
 import { validateBillingDetails } from '@/lib/vat'
 import { getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 /*
  * Konto-Seite: Rechnungsdaten und Zahlungsweg.
@@ -22,7 +22,7 @@ type Result = { error?: string }
 const PFAD = '/admin/abrechnung'
 
 async function messages() {
-  return getMessages(await getLocale()).account.billing.errors
+  return getMessages(await getAdminLocale()).account.billing.errors
 }
 
 export async function saveBillingDetailsAction(formData: FormData): Promise<Result> {

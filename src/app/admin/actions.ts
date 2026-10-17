@@ -12,7 +12,7 @@ import {
   type DeletionPreview,
 } from '@/utils/deletion'
 import { format, getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 /*
  * Konto-Ebene: Häuser anlegen.
@@ -29,7 +29,7 @@ import { getLocale } from '@/utils/locale'
 type Result = { error?: string }
 
 async function messages() {
-  return getMessages(await getLocale()).account.houses.errors
+  return getMessages(await getAdminLocale()).account.houses.errors
 }
 
 /**

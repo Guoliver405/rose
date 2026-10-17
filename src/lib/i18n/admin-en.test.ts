@@ -9,6 +9,9 @@ import { guest as enGuest } from './en/guest'
 import { adminContext } from './de/admin/context'
 import { mailContext } from './de/mail.context'
 import { printContext } from './de/print.context'
+import { account as deAccount } from './de/account'
+import { account as enAccount } from './en/account'
+import { accountContext } from './de/account/context'
 import { contextFor, flattenMessages } from './format'
 
 /*
@@ -20,6 +23,7 @@ const pairs = [
   { name: 'admin', de: deAdmin, en: enAdmin, ctx: adminContext },
   { name: 'mail', de: deMail, en: enMail, ctx: mailContext },
   { name: 'print', de: dePrint, en: enPrint, ctx: printContext },
+  { name: 'account', de: deAccount, en: enAccount, ctx: accountContext },
 ] as const
 
 function tokens(text: string): string[] {
@@ -53,8 +57,8 @@ describe('Verwaltung und Portale sprechen dieselben Begriffe', () => {
     expect(enAdmin.overview.status.dnd).toBe(enGuest.signal.dnd.label)
     expect(enAdmin.overview.status.declined).toBe(enGuest.signal.skip.label)
   })
-  it('sagt „property“, nicht „hotel“ — außer im Platzhalter und in Beispieladressen', () => {
-    const hits = flattenMessages(enAdmin).filter(([, t]) => /\bhotels?\b/i.test(t.replace(/\{hotel\}|myhotel/g, '')))
+  it('sagt „property“, nicht „hotel“ — außer im Platzhalter und in Beispielen (Adressen, Hausnamen)', () => {
+    const hits = [...flattenMessages(enAdmin), ...flattenMessages(enAccount)].filter(([k, t]) => !k.endsWith('Placeholder') &&/\bhotels?\b/i.test(t.replace(/\{hotel\}|myhotel/g, '')))
     expect(hits).toEqual([])
   })
 })

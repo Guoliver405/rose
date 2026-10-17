@@ -16,7 +16,7 @@ import KontoShell from './KontoShell'
 import KontoName from './KontoName'
 import Rich from '@/components/i18n/Rich'
 import { format, getMessages, intlLocale, plural } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 import { SIMULATOR_NAME } from '@/lib/sim-account'
 
 /**
@@ -42,7 +42,7 @@ export default async function HotelPickerPage() {
   const hotels = await listAccessibleHotels()
   if (hotels.length === 0) redirect('/login')
 
-  const locale = await getLocale()
+  const locale = await getAdminLocale()
   const il = intlLocale(locale)
   const m = getMessages(locale).account.houses
 
