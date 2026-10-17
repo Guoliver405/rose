@@ -34,11 +34,12 @@
  *   Haus die Routine umstellt. Dafür ist `sustainabilityNeutral` da: in beiden
  *   Welten wahr. Der verzweigte `cleaningRule` gehört nur aufs Handout, das je
  *   Aufenthalt frisch entsteht.
- * - **Die Knopf-Beschriftung folgt der Sprache des PORTALS, nicht der des
- *   Blattes** (`portalLocale`). Eine Legende, die „Clean my room" nennt, während
- *   auf dem Bildschirm „Zimmer reinigen" steht, ist keine Legende. Der Hinweis
- *   daneben steht dagegen in der Blatt-Sprache. Seit 10.10.2026 kommen die
- *   Beschriftungen direkt aus der Sprachdatei des Gästeportals.
+ * - **Die Knopf-Beschriftung folgt der Sprache des PORTALS** (`portalLocaleFor`):
+ *   Eine Legende, die „Clean my room" nennt, während auf dem Bildschirm
+ *   „Zimmer reinigen" steht, ist keine Legende. Seit 17.10.2026 zeigt jeder
+ *   Sprachblock die Knöpfe so, wie ein Handy in dieser Sprache sie sähe — in
+ *   der Blatt-Sprache, wenn das Portal sie kann, sonst in der Rückfallsprache
+ *   des Hauses. Der Hinweis daneben steht immer in der Blatt-Sprache.
  *
  * Die vier Sprachen bleiben trotzdem vollständig: sie tragen die Mail und sind
  * die Saat für die Portal-Übersetzung.
@@ -54,7 +55,7 @@
  */
 import { parseCleanDefer, parseCleaningWindow, parseStayoverPolicy, stayoverDueTime } from './board'
 import type { GuestAccessMode } from './guest-access'
-import { DEFAULT_LOCALE, format, getMessages, type Locale } from './i18n'
+import { format, getMessages, GUEST_LOCALES, isLocale, parseFallbackLanguage, type Locale } from './i18n'
 import { GUIDE_LANGS, SHEETS, type GuideLang } from './i18n/sheets'
 
 // Die Sätze selbst stehen seit 10.10.2026 in den Sprachdateien
@@ -153,6 +154,17 @@ export type GuestSheetText = {
   footer: string
 }
 
+/**
+ * In welcher Sprache zeigt ein Sprachblock die Knöpfe des Portals? So, wie
+ * ein Handy in dieser Sprache sie sähe (Entscheidung 17.10.2026): in der
+ * Blatt-Sprache, wenn das Gästeportal sie anbietet, sonst in der
+ * Rückfallsprache des Hauses — die zeigt das Portal einem Gast, dessen
+ * Sprache es nicht kennt. Eine Legende muss das Wort vom Bildschirm tragen.
+ */
+export function portalLocaleFor(lang: GuideLang, policies: Record<string, unknown>): Locale {
+  return isLocale(lang) && GUEST_LOCALES.includes(lang) ? lang : parseFallbackLanguage(policies)
+}
+
 function hhmm(hour: number, minute: number): string {
   return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
 }
@@ -191,7 +203,9 @@ export function buildGuestGuide(
     heading: v.heading,
     purpose: v.purpose,
     cleaning,
-    sustainability: stayover.enabled ? v.sustainabilityRoutine : v.sustainabilityOnRequest,
+    sustainability: stayover.enabled
+      ? format(v.sustainabilityRoutine, { skip: getMessages(portalLocaleFor(lang, policies)).guest.signal.skip.label })
+      : v.sustainabilityOnRequest,
     dnd: v.dnd,
     services: v.services,
     access,
@@ -259,14 +273,7 @@ export function parseSheetLanguages(policies: Record<string, unknown>): GuideLan
   return zweite && zweite !== erste ? [erste, zweite] : [erste]
 }
 
-export type GuestSheetOptions = GuestGuideOptions & {
-  /**
-   * Sprache, in der das PORTAL seine Knöpfe zeigt (heute Deutsch). Die
-   * Beschriftungen der Legende kommen aus der Sprachdatei des Gästeportals in
-   * dieser Sprache — auf Papier steht dasselbe Wort wie auf dem Bildschirm.
-   */
-  portalLocale?: Locale
-}
+export type GuestSheetOptions = GuestGuideOptions
 
 /** Ein Sprachblock des gedruckten Blattes. */
 export function buildGuestSheet(
@@ -275,7 +282,8 @@ export function buildGuestSheet(
   lang: GuideLang = DEFAULT_GUIDE_LANG,
 ): GuestSheetText {
   const v = SHEETS[lang]
-  const portal = getMessages(opts.portalLocale ?? DEFAULT_LOCALE).guest
+  // Knopf-Beschriftungen so, wie ein Handy in dieser Sprache sie sieht.
+  const portal = getMessages(portalLocaleFor(lang, policies)).guest
   // Reinigung, Nachhaltigkeit und Zugang verzweigen an den Policies — die
   // Verzweigung steht genau einmal, in `buildGuestGuide`.
   const g = buildGuestGuide(policies, opts, lang)

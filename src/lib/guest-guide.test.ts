@@ -181,14 +181,31 @@ describe('parseSheetLanguages', () => {
 })
 
 describe('buildGuestSheet — Legende', () => {
-  it('beschriftet die Knöpfe in der Sprache des PORTALS, den Hinweis in der des Blattes', () => {
-    // Eine Legende, die „Clean my room" nennt, während auf dem Bildschirm
-    // „Zimmer reinigen" steht, ist keine Legende.
+  it('zeigt die Knöpfe so, wie ein Handy in der Blatt-Sprache sie sieht (17.10.2026)', () => {
+    // Das Portal kann Englisch — der englische Block trägt die englischen Knöpfe.
     const en = buildGuestSheet({}, pinDeep, 'en')
-    expect(en.buttons.clean.label).toBe('Zimmer reinigen')
-    expect(en.buttons.dnd.label).toBe('Bitte nicht stören')
-    expect(en.buttons.services.label).toBe('Service bestellen')
+    expect(en.buttons.clean.label).toBe('Clean my room')
+    expect(en.buttons.dnd.label).toBe('Do not disturb')
+    expect(en.buttons.services.label).toBe('Request a service')
     expect(en.buttons.clean.hint).toMatch(/cleaned/)
+  })
+
+  it('kann das Portal die Blatt-Sprache nicht, kommen die Knöpfe in der Rückfallsprache', () => {
+    // Ein Gast mit spanischem Handy sieht das Portal in der Rückfallsprache —
+    // die Legende muss dasselbe Wort tragen, der Hinweis bleibt spanisch.
+    const es = buildGuestSheet({}, pinDeep, 'es')
+    expect(es.buttons.clean.label).toBe('Zimmer reinigen')
+    const esEn = buildGuestSheet({ fallbackLanguage: 'en' }, pinDeep, 'es')
+    expect(esEn.buttons.clean.label).toBe('Clean my room')
+    expect(esEn.buttons.clean.hint).not.toMatch(/clean/i)
+  })
+
+  it('der Satz zu „Heute keine Reinigung“ nennt den Knopf in derselben Sprache wie die Legende', () => {
+    const routine = { stayoverAutoClean: true }
+    expect(buildGuestSheet(routine, pinDeep, 'en').sustainability).toMatch(/“No cleaning today”/)
+    expect(buildGuestSheet(routine, pinDeep, 'fr').sustainability).toMatch(/« Heute keine Reinigung »/)
+    expect(buildGuestSheet({ ...routine, fallbackLanguage: 'en' }, pinDeep, 'fr').sustainability)
+      .toMatch(/« No cleaning today »/)
   })
 
   it('deutsche Beschriftungen sind wortgleich mit dem Gästeportal', () => {

@@ -77,3 +77,22 @@ export function flattenMessages(obj: object, prefix = ''): [string, string][] {
  * dort ein Schlüssel, scheitert der Type-Check.
  */
 export type Shape<T> = { [K in keyof T]: T[K] extends string ? string : Shape<T[K]> }
+
+/**
+ * Erläuterung eines Textes für Übersetzer (seit 17.10.2026): `where` = Ort
+ * auf dem Bildschirm, `note` = was man zum Übersetzen wissen muss (wann der
+ * Text erscheint, wer ihn liest, Längengrenze, Platzhalter und Tags).
+ */
+export type TextContext = { where: string; note: string }
+
+/** Erläuterungen zu einer Sprachdatei — dieselben Schlüssel, je Text ein `TextContext`. */
+export type ContextShape<T> = { [K in keyof T]: T[K] extends string ? TextContext : ContextShape<T[K]> }
+
+/** Alle Erläuterungen mit ihrem Schlüsselpfad — passend zu `flattenMessages`. */
+export function flattenContext(obj: object, prefix = ''): [string, TextContext][] {
+  return Object.entries(obj).flatMap(([k, v]) =>
+    typeof (v as TextContext).where === 'string'
+      ? [[`${prefix}${k}`, v as TextContext] as [string, TextContext]]
+      : flattenContext(v as object, `${prefix}${k}.`),
+  )
+}

@@ -2,8 +2,9 @@ import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/utils/supabase/service'
 import { getGuestContext } from '@/utils/guest'
 import GuestLoginForm from '@/components/GuestLoginForm'
-import { getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getMessages, GUEST_LOCALES } from '@/lib/i18n'
+import LanguageSwitch from '@/components/LanguageSwitch'
+import { getGuestLocale } from '@/utils/locale'
 
 /**
  * QR-Deep-Link: der statische Zimmer-Token (klebt im Zimmer) bestimmt das
@@ -31,7 +32,7 @@ export default async function GuestRoomEntryPage({
   const { data: room } = tokenRow
     ? await admin
         .from('rooms')
-        .select('number, hotels(slug)')
+        .select('number, hotels(slug, policies)')
         .eq('id', tokenRow.room_id)
         .single()
     : { data: null }
@@ -42,11 +43,14 @@ export default async function GuestRoomEntryPage({
   const ctx = await getGuestContext()
   if (ctx && tokenRow?.room_id === ctx.roomId) redirect(`/h/${ctx.hotelSlug}/guest/status`)
 
-  const m = getMessages(await getLocale()).guest
-  const hotelSlug = (room?.hotels as unknown as { slug: string } | null)?.slug ?? null
+  const roomHotel = room?.hotels as unknown as { slug: string; policies: Record<string, unknown> | null } | null
+  const locale = await getGuestLocale(roomHotel?.policies ?? null)
+  const m = getMessages(locale).guest
+  const hotelSlug = roomHotel?.slug ?? null
 
   return (
-    <main className="flex flex-1 flex-col justify-center gap-8">
+    <main lang={locale} className="flex flex-1 flex-col justify-center gap-8">
+      <LanguageSwitch current={locale} offered={GUEST_LOCALES} />
       <div className="text-center">
         <h1 className="text-3xl font-black text-ink">
           Ro<span className="text-blocked">Se</span>

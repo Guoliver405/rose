@@ -8,8 +8,9 @@ import {
 } from '@/lib/board'
 import { formatHHMM, parseTimeZone } from '@/lib/tz'
 import { guestLogoutAction } from '@/app/guest/actions'
-import { format, getMessages, intlLocale } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { format, getMessages, GUEST_LOCALES, intlLocale } from '@/lib/i18n'
+import LanguageSwitch from '@/components/LanguageSwitch'
+import { getGuestLocale } from '@/utils/locale'
 import GuestSignalPanel from './GuestSignalPanel'
 import GuestCleaningStatusCard from './GuestCleaningStatusCard'
 import ReviewLink from '@/components/ReviewLink'
@@ -27,13 +28,14 @@ export default async function GuestStatusPage({
   // Origin, das Gast-Cookie gilt also auch unter fremden Slugs. Ohne diesen
   // Abgleich sähe ein Gast unter /h/fremdes-hotel/guest/status sein eigenes
   // Zimmer unter falschem Hotelnamen. Haus und Sitzung sind unabhängig → parallel.
-  const [hotel, ctx, locale] = await Promise.all([requireHotelBySlug(slug), getGuestContext(), getLocale()])
+  const [hotel, ctx] = await Promise.all([requireHotelBySlug(slug), getGuestContext()])
   if (!ctx || ctx.hotelId !== hotel.id) {
     // Nach dem Check-out zeigt das Cookie auf den beendeten Aufenthalt —
     // dann Danke-Seite statt einer Anmeldung, die nicht mehr greift.
     const ended = ctx ? null : await getEndedStay()
     redirect(ended?.hotelId === hotel.id ? `/h/${hotel.slug}/guest/danke` : `/h/${hotel.slug}/guest`)
   }
+  const locale = await getGuestLocale(hotel.policies)
   const m = getMessages(locale).guest
 
   const cleaningWindow = parseCleaningWindow(ctx.policies)
@@ -139,7 +141,8 @@ export default async function GuestStatusPage({
   const showReview = reviewUrl !== null && showReviewHint(ctx.checkedInAt, now, tz)
 
   return (
-    <main className="flex flex-1 flex-col gap-6 py-4">
+    <main lang={locale} className="flex flex-1 flex-col gap-6 py-4">
+      <LanguageSwitch current={locale} offered={GUEST_LOCALES} />
       <header className="text-center">
         <p className="text-sm text-ink-muted">{ctx.hotelName ?? m.brand.portal}</p>
         <h1 className="text-2xl font-black text-ink">{format(m.status.room, { number: ctx.roomNumber })}</h1>

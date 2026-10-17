@@ -3,8 +3,9 @@ import { requireHotelBySlug } from '@/utils/hotel'
 import { getGuestContext } from '@/utils/guest'
 import GuestLoginForm from '@/components/GuestLoginForm'
 import { parseGuestAccessMode } from '@/lib/guest-access'
-import { getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getMessages, GUEST_LOCALES } from '@/lib/i18n'
+import LanguageSwitch from '@/components/LanguageSwitch'
+import { getGuestLocale } from '@/utils/locale'
 
 /**
  * Baseline-Einstieg des Gastes: Hotel-URL + Zimmernummer + PIN.
@@ -25,10 +26,12 @@ export default async function GuestEntryPage({
   // sich dort anmelden können (der Login ersetzt dann das Cookie).
   const ctx = await getGuestContext()
   if (ctx?.hotelId === hotel.id) redirect(`/h/${hotel.slug}/guest/status`)
-  const m = getMessages(await getLocale()).guest
+  const locale = await getGuestLocale(hotel.policies)
+  const m = getMessages(locale).guest
 
   return (
-    <main className="flex flex-1 flex-col justify-center gap-8">
+    <main lang={locale} className="flex flex-1 flex-col justify-center gap-8">
+      <LanguageSwitch current={locale} offered={GUEST_LOCALES} />
       <div className="text-center">
         <h1 className="text-3xl font-black text-ink">
           Ro<span className="text-blocked">Se</span>

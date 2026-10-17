@@ -1,6 +1,7 @@
 import { KeyRound, QrCode } from 'lucide-react'
-import { getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getMessages, GUEST_LOCALES } from '@/lib/i18n'
+import LanguageSwitch from '@/components/LanguageSwitch'
+import { getGuestLocale } from '@/utils/locale'
 
 /**
  * Mandantenfreier Einstieg — bewusst nur ein Hinweis.
@@ -23,10 +24,12 @@ export default async function GuestGenericEntryPage({
   // in die Irre. Die Route kennt den Mandanten nicht mehr, also bleibt die
   // Seite mandantenfrei; sie nennt aber den Grund.
   const linkErloschen = error === 'link'
-  const m = getMessages(await getLocale()).guest
+  const locale = await getGuestLocale()
+  const m = getMessages(locale).guest
 
   return (
-    <main className="flex flex-1 flex-col justify-center gap-8">
+    <main lang={locale} className="flex flex-1 flex-col justify-center gap-8">
+      <LanguageSwitch current={locale} offered={GUEST_LOCALES} />
       <div className="text-center">
         <h1 className="text-3xl font-black text-ink">
           Ro<span className="text-blocked">Se</span>

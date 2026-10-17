@@ -42,7 +42,7 @@ export const sheet = {
   window: ' Le portail accepte les demandes de ménage tous les jours de {start} à {end}.',
   defer: ' Vous pouvez aussi reporter le ménage jusqu’à {limit} au plus tard : personne ne viendra avant.',
   sustainabilityRoutine:
-    'Pas besoin de ménage aujourd’hui ? Un appui sur « Heute keine Reinigung » (pas de ménage aujourd’hui) dans le portail économise eau, lessive et énergie — le ménage reprend demain.',
+    'Pas besoin de ménage aujourd’hui ? Un appui sur « {skip} » (pas de ménage aujourd’hui) dans le portail économise eau, lessive et énergie — le ménage reprend demain.',
   sustainabilityOnRequest:
     'Moins de ménage, moins de consommation : chaque ménage inutile économise de l’eau, de la lessive et de l’énergie. C’est pourquoi nous ne venons que si vous le souhaitez.',
   access: {

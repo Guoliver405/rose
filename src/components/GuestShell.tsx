@@ -15,7 +15,7 @@ export default function GuestShell({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <div data-theme="dark" className="flex min-h-screen flex-1 flex-col bg-surface text-ink">
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col p-5">{children}</div>
+      <div className="relative mx-auto flex w-full max-w-md flex-1 flex-col p-5">{children}</div>
       <LegalFooter />
     </div>
   )

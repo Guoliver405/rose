@@ -42,7 +42,7 @@ export const sheet = {
   window: ' The portal accepts cleaning requests daily from {start} to {end}.',
   defer: ' You can also postpone cleaning until {limit} at the latest — nobody will come before then.',
   sustainabilityRoutine:
-    'No cleaning needed today? One tap on “Heute keine Reinigung” (no cleaning today) in the portal saves water, detergent and energy — cleaning resumes tomorrow.',
+    'No cleaning needed today? One tap on “{skip}” in the portal saves water, detergent and energy — cleaning resumes tomorrow.',
   sustainabilityOnRequest:
     'Less cleaning, less consumption: every cleaning that isn’t needed saves water, detergent and energy. That is why we only come when you want us to.',
   access: {

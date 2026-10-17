@@ -10,6 +10,8 @@ import { help } from './de/help'
 import { symbols } from './de/symbols'
 import { landing } from './de/landing'
 import { legal } from './de/legal'
+import { guest as enGuest } from './en/guest'
+import { DEFAULT_LOCALE, INTL_LOCALES, type Locale } from './locales'
 
 /**
  * Sprachen und Texte der Oberfläche. Ausgelagert sind Gästeportal, Reinigungsboard, Mails, Druckseiten,
@@ -18,7 +20,8 @@ import { legal } from './de/legal'
  * `Sessions/Begriffe-Entscheidungen.md`).
  *
  * Eine weitere Sprache kommt als eigener Ordner dazu (`en/guest.ts` mit
- * `satisfies Shape<GuestMessages>`) und wird hier in `MESSAGES` eingetragen.
+ * `satisfies Shape<GuestMessages>`), wird hier in `MESSAGES` eingetragen und
+ * in `locales.ts` freigeschaltet. Seit 17.10.2026: Englisch fürs Gästeportal.
  */
 export { flattenMessages, format, parseRich, plural, type PluralForms, type Shape, type Vars } from './format'
 export type { GuestMessages } from './de/guest'
@@ -34,15 +37,23 @@ export type { SymbolsMessages } from './de/symbols'
 export type { LandingMessages } from './de/landing'
 export type { LegalMessages } from './de/legal'
 
-export const LOCALES = ['de'] as const
-export type Locale = (typeof LOCALES)[number]
-export const DEFAULT_LOCALE: Locale = 'de'
+export {
+  DEFAULT_LOCALE, GUEST_LOCALES, INTL_LOCALES, LOCALE_COOKIE, LOCALE_NAMES, LOCALES,
+  isLocale, matchAcceptLanguage, parseFallbackLanguage, resolveLocale, type Locale,
+} from './locales'
 
-const MESSAGES = {
-  de: { guest, service, mail, print, admin, auth, account, simulator, help, symbols, landing, legal },
-} satisfies Record<Locale, unknown>
+const de = { guest, service, mail, print, admin, auth, account, simulator, help, symbols, landing, legal }
+export type Messages = typeof de
 
-export type Messages = (typeof MESSAGES)['de']
+/**
+ * Je Sprache der ganze Satz Texte. Was noch nicht übersetzt ist, kommt aus
+ * dem Deutschen — erreichbar ist es in der Sprache ohnehin nicht, weil nur
+ * das Gästeportal sie anbietet (`GUEST_LOCALES`).
+ */
+const MESSAGES: Record<Locale, Messages> = {
+  de,
+  en: { ...de, guest: enGuest },
+}
 
 export function getMessages(locale: Locale = DEFAULT_LOCALE): Messages {
   return MESSAGES[locale] ?? MESSAGES[DEFAULT_LOCALE]
@@ -50,5 +61,5 @@ export function getMessages(locale: Locale = DEFAULT_LOCALE): Messages {
 
 /** Sprach-Tag für `Intl`/`toLocale…String` — Uhrzeiten und Beträge im Format der Sprache. */
 export function intlLocale(locale: Locale): string {
-  return { de: 'de-DE' }[locale]
+  return INTL_LOCALES[locale]
 }

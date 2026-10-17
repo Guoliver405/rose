@@ -54,7 +54,7 @@ export const sheet = {
   window: ' Reinigungswünsche nimmt das Portal täglich von {start} bis {end} Uhr entgegen.',
   defer: ' Im Portal können Sie die Reinigung auch bis spätestens {limit} Uhr aufschieben – vorher kommt dann niemand.',
   sustainabilityRoutine:
-    'Sie brauchen heute keine Reinigung? Ein Tipp auf „Heute keine Reinigung“ im Portal spart Wasser, Waschmittel und Energie – morgen wird wieder gereinigt.',
+    'Sie brauchen heute keine Reinigung? Ein Tipp auf „{skip}“ im Portal spart Wasser, Waschmittel und Energie – morgen wird wieder gereinigt.',
   sustainabilityOnRequest:
     'Weniger Reinigung, weniger Verbrauch: Jede Reinigung, die nicht nötig ist, spart Wasser, Waschmittel und Energie. Deshalb kommen wir nur, wenn Sie es möchten.',
   access: {

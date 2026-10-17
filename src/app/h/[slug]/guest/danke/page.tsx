@@ -4,8 +4,9 @@ import { requireHotelBySlug } from '@/utils/hotel'
 import { getEndedStay, getGuestContext } from '@/utils/guest'
 import { guestSignInAgainAction } from '@/app/guest/actions'
 import ReviewLink from '@/components/ReviewLink'
-import { getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getMessages, GUEST_LOCALES } from '@/lib/i18n'
+import LanguageSwitch from '@/components/LanguageSwitch'
+import { getGuestLocale } from '@/utils/locale'
 
 /**
  * Danke-Seite nach dem Check-out (17.10.2026). Wer nach der Abreise ins
@@ -21,15 +22,15 @@ export default async function GuestThanksPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const [hotel, ctx, ended, locale] = await Promise.all([
-    requireHotelBySlug(slug), getGuestContext(), getEndedStay(), getLocale(),
-  ])
+  const [hotel, ctx, ended] = await Promise.all([requireHotelBySlug(slug), getGuestContext(), getEndedStay()])
   if (ctx?.hotelId === hotel.id) redirect(`/h/${hotel.slug}/guest/status`)
   if (!ended || ended.hotelId !== hotel.id) redirect(`/h/${hotel.slug}/guest`)
+  const locale = await getGuestLocale(hotel.policies)
   const m = getMessages(locale).guest
 
   return (
-    <main className="flex flex-1 flex-col justify-center gap-8">
+    <main lang={locale} className="flex flex-1 flex-col justify-center gap-8">
+      <LanguageSwitch current={locale} offered={GUEST_LOCALES} />
       <div className="text-center">
         <p className="text-sm text-ink-muted">{hotel.name}</p>
         <Heart className="mx-auto mt-4 h-10 w-10 text-blocked" />
