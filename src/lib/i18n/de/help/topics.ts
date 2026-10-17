@@ -280,7 +280,7 @@ export const topics = {
   },
   regeln: {
     title: 'Haus & Regeln',
-    subtitle: 'Zeitzone, tägliche Reinigung, Check-out-Frist, Aufschub, Zeitfenster, PIN, Zeitlimit, Adresse, Logo, Bewertung',
+    subtitle: 'Zeitzone, tägliche Reinigung, Check-out-Frist, Aufschub, Zeitfenster, PIN, Zeitlimit, Adresse, Logo, Bewertung, Währung',
     bloecke: [
       {
         art: 'text',
@@ -323,6 +323,10 @@ export const topics = {
           {
             frage: 'Die PIN-Länge ändern – was passiert mit laufenden Aufenthalten?',
             antwort: 'Nichts. Die Länge gilt nur für neu erzeugte PINs; jeder laufende Aufenthalt behält seine. Vorgabe sind sechs Ziffern; kürzer ist bequemer, länger sicherer – dazu kommt die Sperre nach fünf Fehlversuchen.',
+          },
+          {
+            frage: 'Unser Haus rechnet nicht in Euro – geht das?',
+            antwort: 'Ja. Unter „Währung der Service-Preise“ wählen Sie die Währung, in der Sie Preise im Service-Baukasten eintragen; Gäste, Rezeption und Check-out-Aufstellung zeigen sie dann so an. Jede Anfrage merkt sich ihre Währung, alte Anfragen bleiben also, wie sie waren. Beim Wechsel werden bestehende Preise nicht umgerechnet. Gewechselt werden kann nur, solange kein Gast eingecheckt ist.',
           },
           {
             frage: 'Wo sehen Gäste den Link zur Bewertung?',

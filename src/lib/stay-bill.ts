@@ -41,6 +41,8 @@ export type BillOrderInput = {
   closedAt?: string | null
   /** `service_definitions.maintenance` — Meldung ans Haus statt Gast-Leistung. */
   maintenance?: boolean
+  /** `service_orders.currency` — Währung der Preise, eingefroren bei der Anfrage. */
+  currency?: string
 }
 
 export type BillPosition = {
@@ -57,6 +59,11 @@ export type BillPosition = {
 }
 
 export type StayBill = {
+  /**
+   * Währung der Beträge (ISO 4217). Ein Aufenthalt hat genau eine: Die Währung
+   * des Hauses lässt sich nur ändern, solange niemand eingecheckt ist.
+   */
+  currency: string
   /** Nur kostenpflichtige Anfragen, aufsteigend nach Bestellzeitpunkt. */
   positions: BillPosition[]
   /** Summe der erbrachten Leistungen — der Betrag, um den es am Tresen geht. */
@@ -81,7 +88,7 @@ export type StayBill = {
   hasPositions: boolean
 }
 
-export function buildStayBill(orders: BillOrderInput[]): StayBill {
+export function buildStayBill(orders: BillOrderInput[], fallbackCurrency = 'EUR'): StayBill {
   const positions: BillPosition[] = []
   let openFreeCount = 0
 
@@ -123,6 +130,7 @@ export function buildStayBill(orders: BillOrderInput[]): StayBill {
   const offen = positions.filter(p => p.status === 'open')
 
   return {
+    currency: orders?.find(o => o.currency)?.currency ?? fallbackCurrency,
     positions,
     totalCents: positions.filter(p => p.counted).reduce((sum, p) => sum + p.totalCents, 0),
     openCount: offen.length,
@@ -136,6 +144,7 @@ export function buildStayBill(orders: BillOrderInput[]): StayBill {
 
 /** Leere Aufstellung — für Zimmer ohne Aufenthalt, spart eine Fallunterscheidung. */
 export const EMPTY_BILL: StayBill = {
+  currency: 'EUR',
   positions: [],
   totalCents: 0,
   openCount: 0,

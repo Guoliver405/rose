@@ -60,8 +60,8 @@ export const services = {
     noOptions: 'Keine Optionen – der Gast wählt den Service als Ganzes.',
     option: 'Option',
     optionPlaceholder: 'z. B. Handtuch groß',
-    price: 'Preis € (optional)',
-    pricePlaceholder: '4,50',
+    /** `{currency}` = ISO-Code der Währung des Hauses, z. B. EUR. */
+    price: 'Preis in {currency} (optional)',
     addOption: 'Hinzufügen',
   },
 
@@ -133,7 +133,7 @@ export const services = {
     examplesExist: 'Die Beispiel-Services existieren bereits (ggf. archiviert).',
     nameTooShort: 'Name muss mindestens {min} Zeichen haben.',
     labelMissing: 'Bezeichnung fehlt.',
-    priceInvalid: 'Preis nicht lesbar – z. B. „4,50“ oder leer lassen.',
+    priceInvalid: 'Preis nicht lesbar – z. B. „{example}“ oder leer lassen.',
     unknownLanguage: 'Unbekannte Sprache.',
   },
 }

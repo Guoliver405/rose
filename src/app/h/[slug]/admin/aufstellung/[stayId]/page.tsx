@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import { getManagementContext } from '@/utils/auth'
 import { createAdminClient } from '@/utils/supabase/service'
 import { loadStayBill } from '@/utils/stay-bill'
+import { parseCurrency } from '@/lib/money'
 import { parseTimeZone } from '@/lib/tz'
 import BillSheet from './BillSheet'
 import { getMessages, intlLocale } from '@/lib/i18n'
@@ -41,7 +42,7 @@ export default async function AufstellungPage({
   if (!stay || stay.hotel_id !== ctx.hotelId) notFound()
 
   const room = Array.isArray(stay.rooms) ? stay.rooms[0] : stay.rooms
-  const bill = await loadStayBill(admin, ctx.hotelId, stay.id)
+  const bill = await loadStayBill(admin, ctx.hotelId, stay.id, parseCurrency(ctx.policies))
   const locale = await getLocale()
   const m = getMessages(locale).print
 

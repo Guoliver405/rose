@@ -16,6 +16,7 @@ import { LOGO_HEAD_BYTES, validateLogoUpload } from '@/lib/logo'
 import { removeHotelLogo, uploadHotelLogo } from '@/utils/logo'
 import { isValidSlug, SLUG_MAX_LENGTH } from '@/lib/slug'
 import { normalizeLinkUrl } from '@/lib/service-link-templates'
+import { isCurrency, parseCurrency } from '@/lib/money'
 import { format, getMessages, isLocale } from '@/lib/i18n'
 import { getLocale } from '@/utils/locale'
 import { cancelEmailChange, requestEmailChange } from '@/utils/email-change'
@@ -73,6 +74,8 @@ export async function updateSettingsAction(slug: string, formData: FormData): Pr
   const reviewRaw = ((formData.get('reviewUrl') as string) ?? '').trim()
   const reviewUrl = reviewRaw ? normalizeLinkUrl(reviewRaw) : ''
   if (reviewUrl === null) return { error: e.reviewUrlInvalid }
+  const currency = ((formData.get('currency') as string) ?? '').trim()
+  if (!isCurrency(currency)) return { error: e.currencyInvalid }
 
   const cleaningWindowEnabled = formData.get('cleaningWindowEnabled') === 'on'
   const windowStartRaw = ((formData.get('cleaningWindowStart') as string) ?? '').trim()
@@ -97,6 +100,16 @@ export async function updateSettingsAction(slug: string, formData: FormData): Pr
   const { data: hotel } = await admin
     .from('hotels').select('policies').eq('id', ctx.hotelId).single()
 
+  // Währung nur ohne eingecheckte Gäste wechseln: Jede Anfrage friert ihre
+  // Währung ein, und ein Aufenthalt mit Preisen in zwei Währungen ergäbe beim
+  // Check-out keine Summe.
+  if (currency !== parseCurrency((hotel?.policies ?? {}) as Record<string, unknown>)) {
+    const { count } = await admin
+      .from('stays').select('id', { count: 'exact', head: true })
+      .eq('hotel_id', ctx.hotelId).is('checked_out_at', null)
+    if ((count ?? 0) > 0) return { error: format(e.currencyWhileOccupied, { count: count ?? 0 }) }
+  }
+
   const merged = {
     ...((hotel?.policies ?? {}) as Record<string, unknown>),
     pinLength,
@@ -113,6 +126,7 @@ export async function updateSettingsAction(slug: string, formData: FormData): Pr
     ...(windowEndRaw ? { cleaningWindowEnd: windowEndRaw } : {}),
     staffTracking,
     reviewUrl,
+    currency,
   }
 
   const { error } = await admin

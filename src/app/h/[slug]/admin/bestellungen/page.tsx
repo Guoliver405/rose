@@ -22,7 +22,7 @@ export default async function BestellungenPage({
       // Offene zuerst (älteste oben — FIFO), dazu die letzten Erledigten
       supabase
         .from('service_orders')
-        .select('id, room_id, service_id, service_name, items_snapshot, note, status, created_at, done_at, done_by')
+        .select('id, room_id, service_id, service_name, items_snapshot, note, status, created_at, done_at, done_by, currency')
         .eq('hotel_id', ctx.hotelId)
         .order('created_at', { ascending: true }),
       supabase.from('service_definitions').select('id, name, urgent').eq('hotel_id', ctx.hotelId),
@@ -44,6 +44,7 @@ export default async function BestellungenPage({
       serviceName: o.service_name ?? service?.name ?? m.fallbackService,
       urgent: service?.urgent ?? false,
       items: ((o.items_snapshot ?? []) as { label: string; price_cents: number | null }[]),
+      currency: (o.currency as string | null) ?? 'EUR',
       note: o.note,
       createdAt: o.created_at,
       doneAt: o.done_at,

@@ -15,6 +15,7 @@ import GuestSignalPanel from './GuestSignalPanel'
 import GuestCleaningStatusCard from './GuestCleaningStatusCard'
 import ReviewLink from '@/components/ReviewLink'
 import { parseReviewUrl, showReviewHint } from '@/lib/review'
+import { parseCurrency } from '@/lib/money'
 import { localizeItem, localizeService, parseItemTranslations, parseServiceTranslations, serviceLang } from '@/lib/service-i18n'
 import GuestServicesPanel, { type GuestLink, type GuestOrder, type GuestService } from './GuestServicesPanel'
 
@@ -199,6 +200,7 @@ export default async function GuestStatusPage({
         orders={guestOrders}
         m={m.services}
         intlLocale={intlLocale(locale)}
+        currency={parseCurrency(ctx.policies)}
       />
 
       <div className="mt-auto flex flex-col gap-4 pt-6 text-center">

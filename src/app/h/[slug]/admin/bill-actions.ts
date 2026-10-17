@@ -10,6 +10,7 @@
 import { createAdminClient } from '@/utils/supabase/service'
 import { getManagementContext } from '@/utils/auth'
 import { loadStayBill } from '@/utils/stay-bill'
+import { parseCurrency } from '@/lib/money'
 import type { StayBill } from '@/lib/stay-bill'
 import { getMessages } from '@/lib/i18n'
 import { getLocale } from '@/utils/locale'
@@ -31,5 +32,5 @@ export async function getRoomBillAction(slug: string, roomId: string): Promise<R
     .maybeSingle()
   if (!stay || stay.hotel_id !== ctx.hotelId) return {}
 
-  return { stayId: stay.id, bill: await loadStayBill(admin, ctx.hotelId, stay.id) }
+  return { stayId: stay.id, bill: await loadStayBill(admin, ctx.hotelId, stay.id, parseCurrency(ctx.policies)) }
 }

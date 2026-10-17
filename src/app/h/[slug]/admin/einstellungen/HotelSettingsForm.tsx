@@ -33,6 +33,9 @@ export type HotelSettingsInitial = {
   cleaningWindowEnd: string
   /** Link zur Bewertungsseite des Hauses, leer = aus (siehe lib/review.ts). */
   reviewUrl: string
+  /** Währung der Service-Preise (ISO 4217) und die Auswahl mit Namen in der Sprache der Oberfläche. */
+  currency: string
+  currencies: { code: string; name: string }[]
   /** Personenbezug der Tätigkeiten: je Kraft oder nur als Team (siehe lib/staff-tracking.ts). */
   staffTracking: 'person' | 'team'
 }
@@ -144,6 +147,14 @@ function SettingsForm({ hotelSlug, initial, m, onDiscard }: {
           defaultValue={initial.reviewUrl} className={`${inputClass} w-full max-w-xl font-mono`}
         />
         <span className="font-normal">{m.review.hint}</span>
+      </label>
+
+      <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+        {m.currency.label}
+        <select name="currency" defaultValue={initial.currency} className={`${inputClass} w-72`}>
+          {initial.currencies.map(c => <option key={c.code} value={c.code}>{c.name} ({c.code})</option>)}
+        </select>
+        <span className="font-normal">{m.currency.hint}</span>
       </label>
 
       <div data-lotse="regeln.pin" className="flex flex-wrap gap-4">

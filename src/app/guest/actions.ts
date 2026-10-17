@@ -7,6 +7,7 @@ import { createAdminClient } from '@/utils/supabase/service'
 import { findHotelBySlug } from '@/utils/hotel'
 import { getGuestContext, GUEST_COOKIE } from '@/utils/guest'
 import { checkIpThrottle, currentIpHash, recordLoginFailure } from '@/utils/login-throttle'
+import { parseCurrency } from '@/lib/money'
 import {
   cleanDeferLimit, isWithinCleaningWindow, parseCleanDefer, parseCleaningWindow, parseStayoverPolicy,
 } from '@/lib/board'
@@ -268,6 +269,8 @@ export async function placeOrderAction(
     // `item_id` lässt das Gästeportal die Option in der Sprache des Gastes
     // zeigen; Rezeption und Aufstellung lesen nur `label` (Grundtext).
     items_snapshot: chosen.map(i => ({ label: i.label, price_cents: i.price_cents, item_id: i.id })),
+    // Währung einfrieren wie Name und Preis — sonst zeigte ein Wechsel alte Anfragen in der neuen Währung.
+    currency: parseCurrency(ctx.policies),
     note: trimmedNote || null,
   })
   if (error) return { error: e.sendFailed }

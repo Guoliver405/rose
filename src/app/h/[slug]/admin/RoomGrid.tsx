@@ -8,7 +8,7 @@ import {
 import RoomSymbol from '@/components/RoomSymbol'
 import { dateKeyAfterNights } from '@/lib/board'
 import { ROOM_BARS, ROOM_RINGS } from '@/lib/room-symbols'
-import { formatCents } from '@/lib/money'
+import { formatMinor } from '@/lib/money'
 import type { StayBill } from '@/lib/stay-bill'
 import {
   checkInAction, checkOutAction, markCleanedAction, setExpectedCheckoutAction, setPriorityAction,
@@ -485,7 +485,7 @@ function RoomDialog({
                 {c.toCollect}
               </p>
               <p className="mt-1 text-4xl font-black text-attention-deepest">
-                {formatCents(done.totalCents)}
+                {formatMinor(done.totalCents, done.currency)}
               </p>
             </div>
           ) : (
@@ -708,7 +708,7 @@ function RoomDialog({
                   <ReceiptText className="h-3.5 w-3.5" /> {d.bill.toCollect}
                 </p>
                 <p className="text-2xl font-black tabular-nums text-attention-deepest">
-                  {formatCents(bill.totalCents)}
+                  {formatMinor(bill.totalCents, bill.currency)}
                 </p>
               </div>
 
@@ -724,7 +724,7 @@ function RoomDialog({
                           {p.serviceName}
                         </span>
                         <span className="text-sm font-bold tabular-nums text-attention-deepest">
-                          {formatCents(p.totalCents)}
+                          {formatMinor(p.totalCents, bill.currency)}
                         </span>
                         <button
                           type="button"
@@ -783,12 +783,12 @@ function RoomDialog({
               </p>
               {bill?.hasPositions && bill.totalCents > 0 && (
                 <p className="mt-2 text-sm font-bold text-attention-strong">
-                  {format(d.toCollectAmount, { amount: formatCents(bill.totalCents) })}
+                  {format(d.toCollectAmount, { amount: formatMinor(bill.totalCents, bill.currency) })}
                 </p>
               )}
               {bill && bill.openCount > 0 && (
                 <p className="mt-1 text-xs font-semibold text-ink-soft">
-                  {plural(intlLocale, bill.openCount, d.openWillClose, { amount: formatCents(bill.openCents) })}
+                  {plural(intlLocale, bill.openCount, d.openWillClose, { amount: formatMinor(bill.openCents, bill.currency) })}
                 </p>
               )}
               {bill && bill.openFreeCount > 0 && (

@@ -408,7 +408,8 @@ export type DeletionImpact = {
   stays: number
   ordersOpen: number
   ordersDone: number
-  ordersDoneCents: number
+  /** Summe erledigter Bestellungen je Währung. */
+  ordersDoneAmounts: { currency: string; amount: number }[]
   /** Reinigungs-Stiche: bleiben erhalten, verlieren nur den Zimmerbezug. */
   cleaningLogs: number
   transitions: number
@@ -443,23 +444,28 @@ async function countOrders(
   return count ?? 0
 }
 
-/** Summe der Preisangaben erledigter Bestellungen (reine Anzeige-Info). */
-async function doneOrderCents(admin: SupabaseClient, roomIds: string[]): Promise<number> {
-  if (roomIds.length === 0) return 0
+/**
+ * Summe der Preisangaben erledigter Bestellungen (reine Anzeige-Info), je
+ * Währung — die Geschichte eines Zimmers kann einen Währungswechsel des
+ * Hauses enthalten, und Euro plus Baht ergibt keine Zahl.
+ */
+async function doneOrderAmounts(admin: SupabaseClient, roomIds: string[]): Promise<{ currency: string; amount: number }[]> {
+  if (roomIds.length === 0) return []
   const { data } = await admin
     .from('service_orders')
-    .select('items_snapshot')
+    .select('items_snapshot, currency')
     .in('room_id', roomIds)
     .eq('status', 'done')
     .limit(2000)
-  let cents = 0
+  const sums = new Map<string, number>()
   for (const row of data ?? []) {
     const items = Array.isArray(row.items_snapshot) ? row.items_snapshot : []
+    const currency = (row.currency as string | null) ?? 'EUR'
     for (const item of items as { price_cents?: number | null }[]) {
-      if (typeof item?.price_cents === 'number') cents += item.price_cents
+      if (typeof item?.price_cents === 'number') sums.set(currency, (sums.get(currency) ?? 0) + item.price_cents)
     }
   }
-  return cents
+  return [...sums].filter(([, amount]) => amount > 0).map(([currency, amount]) => ({ currency, amount }))
 }
 
 async function buildImpact(
@@ -468,13 +474,13 @@ async function buildImpact(
 ): Promise<DeletionImpact> {
   const { ids, label, confirmPhrase } = resolved
 
-  const [occupied, stays, ordersOpen, ordersDone, ordersDoneCents, cleaningLogs, transitions, qrPosters] =
+  const [occupied, stays, ordersOpen, ordersDone, ordersDoneAmounts, cleaningLogs, transitions, qrPosters] =
     await Promise.all([
       occupiedIds(admin, ids),
       countByRoom(admin, 'stays', ids),
       countOrders(admin, ids, ['open']),
       countOrders(admin, ids, ['done', 'cancelled']),
-      doneOrderCents(admin, ids),
+      doneOrderAmounts(admin, ids),
       countByRoom(admin, 'staff_log', ids),
       countByRoom(admin, 'room_state_transitions', ids),
       countByRoom(admin, 'room_guest_tokens', ids),
@@ -492,7 +498,7 @@ async function buildImpact(
     stays,
     ordersOpen,
     ordersDone,
-    ordersDoneCents,
+    ordersDoneAmounts,
     cleaningLogs,
     transitions,
     qrPosters,

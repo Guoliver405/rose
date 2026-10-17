@@ -3,6 +3,7 @@ import { getAdminContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import { getMessages, GUEST_LOCALES, intlLocale } from '@/lib/i18n'
 import { parseItemTranslations, parseServiceTranslations, serviceLang } from '@/lib/service-i18n'
+import { parseCurrency } from '@/lib/money'
 import { getLocale } from '@/utils/locale'
 import ServicesManager, { type ServiceRow } from './ServicesManager'
 
@@ -65,6 +66,7 @@ export default async function ServicesPage({
       common={admin.common}
       intlLocale={intlLocale(locale)}
       offered={GUEST_LOCALES}
+      currency={parseCurrency(ctx.policies)}
     />
   )
 }

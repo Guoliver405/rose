@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from 'react'
 import {
   BedDouble, Building2, Layers, Pencil, PowerOff, RotateCcw, SlidersHorizontal, Trash2, X,
 } from 'lucide-react'
-import { formatCents } from '@/lib/money'
+import { formatMinor } from '@/lib/money'
 import { format, plural } from '@/lib/i18n/format'
 import type { AdminMessages } from '@/lib/i18n'
 import Rich from '@/components/i18n/Rich'
@@ -801,8 +801,10 @@ function ImpactList({ impact, m, intlLocale }: { impact: DeletionImpact; m: M['i
   if (impact.ordersOpen > 0) lost.push(plural(intlLocale, impact.ordersOpen, m.ordersOpen))
   if (impact.ordersDone > 0) {
     lost.push(
-      impact.ordersDoneCents > 0
-        ? plural(intlLocale, impact.ordersDone, m.ordersDoneAmount, { amount: formatCents(impact.ordersDoneCents) })
+      impact.ordersDoneAmounts.length > 0
+        ? plural(intlLocale, impact.ordersDone, m.ordersDoneAmount, {
+            amount: impact.ordersDoneAmounts.map(a => formatMinor(a.amount, a.currency, intlLocale)).join(' + '),
+          })
         : plural(intlLocale, impact.ordersDone, m.ordersDone),
     )
   }

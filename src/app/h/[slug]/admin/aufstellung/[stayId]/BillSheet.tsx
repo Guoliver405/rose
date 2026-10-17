@@ -1,7 +1,7 @@
 'use client'
 
 import { Printer } from 'lucide-react'
-import { formatCents } from '@/lib/money'
+import { formatMinor } from '@/lib/money'
 import type { StayBill } from '@/lib/stay-bill'
 import type { PrintMessages } from '@/lib/i18n'
 import Rich from '@/components/i18n/Rich'
@@ -102,7 +102,7 @@ export default function BillSheet({
                       <span className="font-bold text-ink">{p.serviceName}</span>
                       {p.items.length > 0 && (
                         <span className="block text-xs text-ink-muted">
-                          {p.items.map(i => `${i.label} (${formatCents(i.priceCents)})`).join(' · ')}
+                          {p.items.map(i => `${i.label} (${formatMinor(i.priceCents, bill.currency)})`).join(' · ')}
                         </span>
                       )}
                       {!p.counted && (
@@ -116,7 +116,7 @@ export default function BillSheet({
                       {p.counted ? stamp(p.closedAt) : '—'}
                     </td>
                     <td className={`py-2 text-right font-bold tabular-nums ${p.counted ? 'text-ink' : 'text-ink-muted line-through'}`}>
-                      {formatCents(p.totalCents)}
+                      {formatMinor(p.totalCents, bill.currency)}
                     </td>
                   </tr>
                 ))}
@@ -127,7 +127,7 @@ export default function BillSheet({
                     {m.total}
                   </td>
                   <td className="pt-3 text-right text-2xl font-black tabular-nums text-ink">
-                    {formatCents(bill.totalCents)}
+                    {formatMinor(bill.totalCents, bill.currency)}
                   </td>
                 </tr>
               </tfoot>

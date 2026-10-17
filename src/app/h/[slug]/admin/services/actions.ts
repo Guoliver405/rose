@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/utils/supabase/service'
 import { getAdminContext } from '@/utils/auth'
-import { parseEuroToCents } from '@/lib/money'
+import { parseCurrency, parsePriceToMinor, pricePlaceholder } from '@/lib/money'
 import { seedExampleServices } from '@/utils/example-services'
 import { normalizeLinkUrl } from '@/lib/service-link-templates'
 import { parseItemTranslations, parseServiceTranslations, serviceLang } from '@/lib/service-i18n'
@@ -202,8 +202,10 @@ export async function createServiceItemAction(
   const priceRaw = ((formData.get('price') as string) ?? '').trim()
 
   if (label.length < 1) return { error: e.labelMissing }
-  const priceCents = parseEuroToCents(priceRaw)
-  if (priceRaw && priceCents === null) return { error: e.priceInvalid }
+  // Preis in der kleinsten Einheit der Währung des Hauses (Yen ohne Nachkommastellen).
+  const currency = parseCurrency(ctx.policies)
+  const priceCents = parsePriceToMinor(priceRaw, currency)
+  if (priceRaw && priceCents === null) return { error: format(e.priceInvalid, { example: pricePlaceholder(currency) }) }
 
   const admin = createAdminClient()
   const { data: service } = await admin

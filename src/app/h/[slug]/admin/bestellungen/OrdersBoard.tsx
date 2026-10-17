@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { Check, ChevronDown, ClipboardList, Siren } from 'lucide-react'
-import { formatCents } from '@/lib/money'
+import { formatMinor } from '@/lib/money'
 import { markOrderDoneAction } from './actions'
 import { format } from '@/lib/i18n/format'
 import type { AdminMessages } from '@/lib/i18n'
@@ -15,6 +15,8 @@ export type OrderRow = {
   serviceName: string
   urgent: boolean
   items: { label: string; price_cents: number | null }[]
+  /** Währung der Preise, eingefroren bei der Anfrage. */
+  currency: string
   note: string | null
   createdAt: string
   doneAt: string | null
@@ -99,7 +101,7 @@ export default function OrdersBoard({
                   {o.items.length > 0 && (
                     <p className="text-sm text-ink-soft">
                       {o.items.map(i =>
-                        i.price_cents !== null ? `${i.label} (${formatCents(i.price_cents)})` : i.label,
+                        i.price_cents !== null ? `${i.label} (${formatMinor(i.price_cents, o.currency)})` : i.label,
                       ).join(' · ')}
                     </p>
                   )}

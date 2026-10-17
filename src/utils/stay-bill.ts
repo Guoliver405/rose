@@ -18,16 +18,18 @@ export async function loadStayBill(
   admin: SupabaseClient,
   hotelId: string,
   stayId: string,
+  /** Währung des Hauses — für einen Aufenthalt ohne Anfragen. */
+  currency = 'EUR',
 ): Promise<StayBill> {
   const { data } = await admin
     .from('service_orders')
-    .select('id, service_name, items_snapshot, note, status, created_at, done_at, service_definitions(name, maintenance)')
+    .select('id, service_name, items_snapshot, note, status, created_at, done_at, currency, service_definitions(name, maintenance)')
     .eq('hotel_id', hotelId)
     .eq('stay_id', stayId)
     .order('created_at', { ascending: true })
     .limit(200)
 
-  if (!data || data.length === 0) return EMPTY_BILL
+  if (!data || data.length === 0) return { ...EMPTY_BILL, currency }
 
   const orders: BillOrderInput[] = data.map(o => {
     // FK-Join kommt je nach Supabase-Version als Objekt oder Array zurück.
@@ -44,8 +46,9 @@ export async function loadStayBill(
       // entscheidet über das Verhalten beim Check-out, nicht über den Inhalt
       // eines alten Belegs.
       maintenance: Boolean(def?.maintenance),
+      currency: (o.currency as string | null) ?? undefined,
     }
   })
 
-  return buildStayBill(orders)
+  return buildStayBill(orders, currency)
 }

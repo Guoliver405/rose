@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { Check, CheckCircle2, ChevronDown, Clock, ExternalLink, XCircle } from 'lucide-react'
-import { formatCents } from '@/lib/money'
+import { formatMinor } from '@/lib/money'
 import { placeOrderAction } from '@/app/guest/actions'
 import { format } from '@/lib/i18n/format'
 import type { GuestMessages } from '@/lib/i18n'
@@ -38,6 +38,7 @@ export default function GuestServicesPanel({
   orders,
   m,
   intlLocale,
+  currency,
 }: {
   services: GuestService[]
   links: GuestLink[]
@@ -45,6 +46,8 @@ export default function GuestServicesPanel({
   m: GuestMessages['services']
   /** Sprach-Tag für Uhrzeiten und Preise („de-DE“). */
   intlLocale: string
+  /** Währung der Service-Preise des Hauses (ISO 4217). */
+  currency: string
 }) {
   const [openId, setOpenId] = useState<string | null>(null)
 
@@ -64,6 +67,7 @@ export default function GuestServicesPanel({
           open={openId === s.id}
           m={m}
           intlLocale={intlLocale}
+          currency={currency}
           onToggle={() => setOpenId(openId === s.id ? null : s.id)}
         />
       ))}
@@ -148,6 +152,7 @@ function ServiceCard({
   onToggle,
   m,
   intlLocale,
+  currency,
 }: {
   service: GuestService
   open: boolean
@@ -155,6 +160,7 @@ function ServiceCard({
   m: GuestMessages['services']
   /** Preise im Format der Sprache des Gastes („$“-Stellung, Dezimalzeichen). */
   intlLocale: string
+  currency: string
 }) {
   const [pending, startTransition] = useTransition()
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -221,7 +227,7 @@ function ServiceCard({
                 <span className="flex-1 text-sm font-bold">{item.label}</span>
                 {item.priceCents !== null && (
                   <span className={`text-sm font-semibold ${active ? '' : 'text-ink-muted'}`}>
-                    {formatCents(item.priceCents, intlLocale)}
+                    {formatMinor(item.priceCents, currency, intlLocale)}
                   </span>
                 )}
               </button>

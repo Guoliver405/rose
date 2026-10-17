@@ -10,9 +10,18 @@ import { parseStaffTracking } from '@/lib/staff-tracking'
 import { logoUrlFor } from '@/utils/logo'
 import HotelSettingsForm from '../HotelSettingsForm'
 import { parseReviewUrl } from '@/lib/review'
+import { listCurrencies, parseCurrency } from '@/lib/money'
+
+/** Währungen mit Namen in der Sprache der Oberfläche, nach Namen sortiert. */
+function currencyOptions(intl: string): { code: string; name: string }[] {
+  const names = new Intl.DisplayNames(intl, { type: 'currency' })
+  return listCurrencies()
+    .map(code => ({ code, name: names.of(code) ?? code }))
+    .sort((a, b) => a.name.localeCompare(b.name, intl))
+}
 import LogoForm from '../LogoForm'
 import { UnsavedChanges } from '@/components/unsaved/UnsavedChanges'
-import { getMessages } from '@/lib/i18n'
+import { getMessages, intlLocale } from '@/lib/i18n'
 import { getLocale } from '@/utils/locale'
 
 export default async function HotelSettingsPage({
@@ -23,7 +32,8 @@ export default async function HotelSettingsPage({
   const { slug } = await params
   const ctx = await getAdminContext(slug)
   if (!ctx) redirect(`/h/${slug}/admin/einstellungen`)
-  const m = getMessages(await getLocale()).admin.settings
+  const locale = await getLocale()
+  const m = getMessages(locale).admin.settings
 
   const supabase = await createClient()
   const { data: hotel } = await supabase
@@ -81,6 +91,8 @@ export default async function HotelSettingsPage({
           timeZones: listTimeZones(),
           staffTracking: parseStaffTracking(policies),
           reviewUrl: parseReviewUrl(policies) ?? '',
+          currency: parseCurrency(policies),
+          currencies: currencyOptions(intlLocale(locale)),
           cleaningWindowEnabled: cleaningWindow.enabled,
           cleaningWindowStart: cleaningWindow.start,
           cleaningWindowEnd: cleaningWindow.end,

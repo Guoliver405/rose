@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useTransition } from 'react'
 import { Archive, Check, ExternalLink, Hammer, Languages, Link2, Loader2, Plus, Siren, Sparkles, Wrench, X } from 'lucide-react'
-import { formatCents } from '@/lib/money'
+import { formatMinor, pricePlaceholder } from '@/lib/money'
 import { serviceLinkTemplates, type ServiceLinkTemplate } from '@/lib/service-link-templates'
 import { format, plural } from '@/lib/i18n/format'
 import type { AdminMessages } from '@/lib/i18n'
@@ -36,7 +36,7 @@ type Kind = 'order' | 'link'
 const em = (t: string) => <span className="font-semibold text-ink-soft">{t}</span>
 
 export default function ServicesManager({
-  hotelSlug, services, m, common, intlLocale, offered,
+  hotelSlug, services, m, common, intlLocale, offered, currency,
 }: {
   hotelSlug: string
   services: ServiceRow[]
@@ -45,6 +45,8 @@ export default function ServicesManager({
   intlLocale: string
   /** Sprachen des Gästeportals — in diese soll jeder Service übersetzt sein. */
   offered: readonly Locale[]
+  /** Währung der Service-Preise dieses Hauses (ISO 4217). */
+  currency: string
 }) {
   const c = m.create
   const sv = m.service
@@ -454,7 +456,7 @@ export default function ServicesManager({
                 >
                   {item.label}
                   {item.priceCents !== null && (
-                    <span className="text-ink-muted">{formatCents(item.priceCents)}</span>
+                    <span className="text-ink-muted">{formatMinor(item.priceCents, currency, intlLocale)}</span>
                   )}
                   <button
                     type="button"
@@ -495,11 +497,11 @@ export default function ServicesManager({
                 />
               </label>
               <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
-                {sv.price}
+                {format(sv.price, { currency })}
                 <input
                   name="price"
                   inputMode="decimal"
-                  placeholder={sv.pricePlaceholder}
+                  placeholder={pricePlaceholder(currency, intlLocale)}
                   className="w-24 rounded-lg border border-edge bg-surface-elevated px-3 py-1.5 text-sm font-semibold text-ink placeholder:text-ink-muted focus:border-action focus:outline-none"
                 />
               </label>
