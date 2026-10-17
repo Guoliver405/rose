@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react'
 import { getManagementContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import ZugangForm from '../ZugangForm'
-import { getMessages } from '@/lib/i18n'
+import { getMessages, intlLocale } from '@/lib/i18n'
 import { getLocale } from '@/utils/locale'
 import { pendingEmailChange } from '@/utils/email-change'
 import { mailReady } from '@/utils/mail'
@@ -32,7 +32,8 @@ export default async function ZugangPage({
   const { slug } = await params
   const ctx = await getManagementContext(slug)
   if (!ctx) redirect('/login')
-  const m = getMessages(await getLocale()).admin.settings
+  const locale = await getLocale()
+  const m = getMessages(locale).admin.settings
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -41,7 +42,7 @@ export default async function ZugangPage({
   // gerechnet, wiche sie zwischen Server- und Client-Render ab.
   const pending = offen && {
     email: offen.email,
-    until: new Intl.DateTimeFormat('de-DE', {
+    until: new Intl.DateTimeFormat(intlLocale(locale), {
       dateStyle: 'short', timeStyle: 'short', timeZone: parseTimeZone(ctx.policies),
     }).format(new Date(offen.expiresAt)),
   }
