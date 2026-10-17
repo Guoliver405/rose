@@ -44,7 +44,14 @@ export default function SprachenForm({
   const [notice, setNotice] = useState<string | null>(null)
 
   // Erste Sprache der Ausdrucke = Rückfallsprache; kennen die Blätter sie nicht, englisch.
-  const firstSheet: GuideLang = (GUIDE_LANGS as readonly string[]).includes(fallback) ? (fallback as GuideLang) : 'en'
+  const sheetLangOf = (l: Locale): GuideLang => (GUIDE_LANGS as readonly string[]).includes(l) ? (l as GuideLang) : 'en'
+  const firstSheet = sheetLangOf(fallback)
+
+  /** Rückfallsprache setzen. Wird die bisherige zweite Sprache zur ersten, tauschen beide die Plätze. */
+  function changeFallback(next: Locale) {
+    if (sheetLangOf(next) === second) setSecond(firstSheet)
+    setFallback(next)
+  }
   const secondValue = second === firstSheet ? '' : second
 
   const geaendert = home !== initial.home || fallback !== initial.fallback || secondValue !== (initial.second ?? '')
@@ -85,7 +92,7 @@ export default function SprachenForm({
               onChange={e => {
                 const next = e.target.value as Locale
                 // Folgte die Rückfallsprache bisher der Heimatsprache, zieht sie mit.
-                if (fallback === home) setFallback(next)
+                if (fallback === home) changeFallback(next)
                 setHome(next)
               }}
               className={select}
@@ -97,7 +104,7 @@ export default function SprachenForm({
 
           <label className="flex max-w-xs flex-col gap-1">
             <span className="text-xs font-bold text-ink-soft">{m.fallback}</span>
-            <select value={fallback} onChange={e => setFallback(e.target.value as Locale)} className={select}>
+            <select value={fallback} onChange={e => changeFallback(e.target.value as Locale)} className={select}>
               {LOCALES.map(l => <option key={l} value={l}>{LOCALE_NAMES[l]}</option>)}
             </select>
             <span className="text-[11px] text-ink-muted">{m.fallbackHint}</span>
