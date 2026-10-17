@@ -3,7 +3,7 @@
 import { createAdminClient } from '@/utils/supabase/service'
 import { confirmUrl, mailReady, recoveryFlooded, sendRecoveryMail } from '@/utils/mail'
 import { getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 /*
  * Passwort vergessen — Schritt 1 von 2.
@@ -31,7 +31,7 @@ import { getLocale } from '@/utils/locale'
 export async function requestPasswordResetAction(
   formData: FormData,
 ): Promise<{ error?: string; sent?: boolean }> {
-  const e = getMessages(await getLocale()).auth.errors
+  const e = getMessages(await getAdminLocale()).auth.errors
   const email = ((formData.get('email') as string) ?? '').trim().toLowerCase()
   if (!/^\S+@\S+\.\S+$/.test(email)) {
     return { error: e.invalidEmail }
@@ -65,6 +65,8 @@ export async function requestPasswordResetAction(
     to: email,
     userId,
     url: confirmUrl(tokenHash, 'recovery', '/passwort-neu'),
+    // Sprache der Person, die das Formular abschickt — das ist die, die das Passwort braucht.
+    locale: await getAdminLocale(),
   })
   // Drossel (`wait`) wird still geschluckt — siehe Kopfkommentar. Ein echter
   // Versandfehler dagegen ist keine Kontoauskunft und darf gesagt werden.

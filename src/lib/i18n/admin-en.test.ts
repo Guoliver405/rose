@@ -12,6 +12,9 @@ import { printContext } from './de/print.context'
 import { account as deAccount } from './de/account'
 import { account as enAccount } from './en/account'
 import { accountContext } from './de/account/context'
+import { auth as deAuth } from './de/auth'
+import { auth as enAuth } from './en/auth'
+import { authContext } from './de/auth.context'
 import { contextFor, flattenMessages } from './format'
 
 /*
@@ -24,6 +27,7 @@ const pairs = [
   { name: 'mail', de: deMail, en: enMail, ctx: mailContext },
   { name: 'print', de: dePrint, en: enPrint, ctx: printContext },
   { name: 'account', de: deAccount, en: enAccount, ctx: accountContext },
+  { name: 'auth', de: deAuth, en: enAuth, ctx: authContext },
 ] as const
 
 function tokens(text: string): string[] {

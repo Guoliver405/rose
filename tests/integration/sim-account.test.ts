@@ -22,6 +22,7 @@ vi.mock('next/headers', () => ({
     if (!cookieState.store) throw new Error('Kein Cookie-Speicher gesetzt')
     return cookieState.store
   },
+  headers: async () => new Headers(),
 }))
 
 import {

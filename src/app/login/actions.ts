@@ -4,13 +4,13 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/service'
 import { getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 export async function loginAction(
   email: string,
   password: string,
 ): Promise<{ error?: string }> {
-  const e = getMessages(await getLocale()).auth.errors
+  const e = getMessages(await getAdminLocale()).auth.errors
   const supabase = await createClient()
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })

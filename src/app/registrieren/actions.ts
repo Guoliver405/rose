@@ -6,7 +6,7 @@ import { createAdminClient } from '@/utils/supabase/service'
 import { einrichtungStart } from '@/lib/lotsen'
 import { checkInviteCode, createHotelAccount } from '@/utils/hotel-account'
 import { format, getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 /*
  * Phase 6b — Self-Service-Registrierung.
@@ -47,7 +47,7 @@ export async function signupAction(formData: FormData): Promise<Result> {
   const hotelName = ((formData.get('hotelName') as string) ?? '').trim()
   const displayName = ((formData.get('displayName') as string) ?? '').trim()
 
-  const e = getMessages(await getLocale()).auth.errors
+  const e = getMessages(await getAdminLocale()).auth.errors
 
   // ── Riegel ───────────────────────────────────────────────────────────────
   const codeError = await checkInviteCode(code)

@@ -327,7 +327,10 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       **17.10. abends: zweite Gegenlese-Runde (alle Bereiche)** — 53 von 99 Vorschlägen übernommen (12 angepasst); verworfen: Rezeption
       (Zeilen verrutscht), Gästeportal (bereits abgelehnte „schedule“-Vorschläge), Kürzungen mit Inhaltsverlust.
       **17.10.: Konto und Abrechnung auf Englisch** (Rechnungen bleiben bewusst deutsch – Entscheidung offen, ob englische Rechnungen gewünscht sind).
-      Offen: Anmeldung/Registrierung, Passwort-vergessen-Mail; Rechtstexte erst nach der anwaltlichen Prüfung.
+      **17.10.: Anmeldung, Registrierung, Passwort auf Englisch** (Umschalter auf allen vier Seiten, Passwort-Mail in der Sprache der Seite).
+      **Schlussrunde Gegenlesen:** `Sessions/Uebersetzung-en-neu-seit-Gegenlesen.xlsx` (nur Neues und seit der Runde Geändertes,
+      erzeugt mit `--since Sessions/Uebersetzung-en-gegengelesen-2026-10-17.xlsx`) – erst ganz zum Schluss an den Gegenleser.
+      Offen: Rechtstexte erst nach der anwaltlichen Prüfung.
 - [ ] **Thailändisch als Belastungsprobe** — probehalber implementieren, um zu
       sehen, wie weit das Sprach-System trägt: nicht-lateinische Schrift,
       andere Zeilenumbruch-Regeln (keine Leerzeichen zwischen Wörtern),

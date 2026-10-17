@@ -3,8 +3,9 @@ import { createClient } from '@/utils/supabase/server'
 import NewPasswordForm from './NewPasswordForm'
 import LegalFooter from '@/components/LegalFooter'
 import Rich from '@/components/i18n/Rich'
-import { getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { ADMIN_LOCALES, getMessages } from '@/lib/i18n'
+import LanguageSwitch from '@/components/LanguageSwitch'
+import { getAdminLocale } from '@/utils/locale'
 
 /**
  * Neues Passwort setzen — Ziel des Links aus der Mail.
@@ -26,11 +27,13 @@ export default async function PasswortNeuPage({
   // Dieselbe Seite, andere Ansprache: hier vergibt jemand sein ERSTES Passwort.
   const { einladung } = await searchParams
   const istEinladung = einladung === '1'
-  const m = getMessages(await getLocale()).auth.newPassword
+  const locale = await getAdminLocale()
+  const m = getMessages(locale).auth.newPassword
 
   return (
     <>
-    <main className="flex flex-1 flex-col items-center justify-center gap-8 p-8">
+    <main lang={locale} className="relative flex flex-1 flex-col items-center justify-center gap-8 p-8">
+      <LanguageSwitch current={locale} offered={ADMIN_LOCALES} />
       <div className="text-center">
         <h1 className="text-3xl font-black text-ink">
           Ro<span className="text-blocked">Se</span>

@@ -3,13 +3,21 @@ Tabelle zum Gegenlesen einer Übersetzung (17.10.2026).
 
     python scripts/translation-sheet.py guest en Sessions/Uebersetzung-guest-en.xlsx
     python scripts/translation-sheet.py all en Sessions/Uebersetzung-alle-en.xlsx
+    python scripts/translation-sheet.py all en Sessions/Neu.xlsx --since Sessions/Uebersetzung-en-gegengelesen-2026-10-17.xlsx
 
 Holt die Texte über `translation-export.mjs` (Sprachdateien und Erläuterungen
 in `src/lib/i18n/`) und schreibt eine Excel-Datei: Schlüssel, Ort,
 Erläuterung, Deutsch, Übersetzung, Korrektur, Anmerkung. Mit `all` stehen
 alle Bereiche in einer Datei, je Bereich ein Reiter. Korrekturen werden von
 Hand zurück in `src/lib/i18n/<sprache>/…` übertragen.
+
+Mit `--since <gegengelesene Datei>` stehen nur Texte darin, die der Gegenleser
+noch nicht gesehen hat: neue Schlüssel, geänderte deutsche Texte und
+Übersetzungen, die weder seiner Vorlage noch seiner Korrektur entsprechen.
+Reine Zeichensetzung (Komma vor dem letzten Glied, Punkt im Anführungszeichen)
+zählt nicht als Änderung.
 """
+import re
 import json
 import subprocess
 import sys
@@ -29,6 +37,7 @@ AREAS = {
     "mail": ("E-Mails", "E-Mails"),
     "print": ("Druckseiten", "Druckseiten"),
     "account": ("Konto und Abrechnung", "Konto und Abrechnung"),
+    "auth": ("Anmeldung und Registrierung", "Anmeldung"),
     "help": ("Hilfe und Lotsen", "Hilfe und Lotsen"),
     "symbols": ("Zimmer-Symbole (Hilfe)", "Zimmer-Symbole"),
     "sheet": ("Check-in-Blatt und Aushang", "Check-in-Blatt"),
@@ -41,6 +50,7 @@ READERS = {
     "mail": "Leser der E-Mails sind Personal und Kontoinhaber; die Statuszeile liest die Verwaltung unter einem Sende-Knopf.",
     "print": "Bedienung der Druckseiten für die Rezeption; Aufstellung und Zugangskarte werden gedruckt und ausgehändigt.",
     "account": "Leser sind Kontoinhaber (Abrechnung) bzw. Inhaber und Manager (Häuser-Seite). Steuer- und Vertragsbegriffe genau (VAT ID, reverse charge, terms and conditions). Die Rechnungstexte gehen derzeit auf Deutsch heraus.",
+    "auth": "Anmeldung, Registrierung und Passwort der Verwaltung. Knapp; die Seite „Passwort zurücksetzen“ verrät bewusst nicht, ob es zu einer Adresse ein Konto gibt.",
     "help": "Leser sind Rezeption, Inhaber und Manager. Erklärend; Namen von Knöpfen und Seiten in Anführungszeichen wortgleich mit der Oberfläche. „Lotse“ heißt „guide“.",
     "symbols": "Legende der Zimmer-Kacheln in der Hilfe: kurze Namen der Zeichen und eine Erklärung je Zeichen.",
     "sheet": "Gedrucktes Blatt für den Gast und die Zugangs-E-Mail. Gibt es schon seit September viersprachig; hier zur Vollständigkeit.",
@@ -62,6 +72,31 @@ def export(root: Path, area: str, lang: str) -> dict:
         check=True, capture_output=True,
     ).stdout.decode("utf-8")
     return json.loads(raw)
+
+
+def norm(text) -> str:
+    t = str(text or "").replace(",", "").replace(".”", "”").replace("”.", "”")
+    return re.sub(r"\s+", " ", t).strip()
+
+
+def reviewed(path: Path) -> dict:
+    """(Reiter, Schlüssel) → (Deutsch, Vorlage, Korrektur) aus der gegengelesenen Datei."""
+    from openpyxl import load_workbook
+    out = {}
+    for ws in load_workbook(path, read_only=True).worksheets[1:]:
+        for row in list(ws.iter_rows(values_only=True))[1:]:
+            if row and row[0]:
+                out[(ws.title, row[0])] = (row[3], row[4], row[5])
+    return out
+
+
+def unseen(rows: list, sheet: str, base: dict) -> list:
+    keep = []
+    for r in rows:
+        old = base.get((sheet, r["key"]))
+        if old is None or norm(old[0]) != norm(r["de"]) or norm(r["target"]) not in {norm(old[1]), norm(old[2])}:
+            keep.append(r)
+    return keep
 
 
 def write_texts(ws, rows: list, sprache: str, table_name: str) -> None:
@@ -92,7 +127,13 @@ def write_intro(ws, title: str, lines: list) -> None:
 
 
 def main() -> None:
-    area, lang, out = (sys.argv[1:4] + [None, None, None])[:3]
+    args = sys.argv[1:]
+    since = None
+    if "--since" in args:
+        i = args.index("--since")
+        since = Path(args[i + 1])
+        del args[i:i + 2]
+    area, lang, out = (args[:3] + [None, None, None])[:3]
     area = area or "guest"
     lang = lang or "en"
     root = Path(__file__).resolve().parent.parent
@@ -104,6 +145,11 @@ def main() -> None:
     intro = wb.active
     intro.title = "Anleitung"
     data = {a: export(root, a, lang) for a in areas}
+    if since:
+        base = reviewed(since)
+        for a in areas:
+            data[a]["rows"] = unseen(data[a]["rows"], AREAS[a][1], base)
+        areas = [a for a in areas if data[a]["rows"]]
 
     how = [
         ("So geht’s", True),
@@ -119,6 +165,9 @@ def main() -> None:
         total = sum(len(d["rows"]) for d in data.values())
         how += [("", False), (f"Zusammen {total} Texte · erzeugt aus src/lib/i18n/", False)]
         title = f"RoSe – alle Texte, Übersetzung {sprache} zum Gegenlesen"
+        if since:
+            title = f"RoSe – neue und geänderte Texte, Übersetzung {sprache} zum Gegenlesen"
+            how += [("", False), ("Nur Texte, die seit der letzten Runde neu sind oder sich geändert haben; alles andere ist bereits gegengelesen.", False)]
     else:
         how += [(f"• {READERS.get(area, '')}", False), ("", False),
                 (f"{len(data[area]['rows'])} Texte · erzeugt aus src/lib/i18n/", False)]

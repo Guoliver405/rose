@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { landingRoute } from '@/utils/auth'
 import { format, getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 /*
  * Passwort vergessen — Schritt 2 von 2.
@@ -16,7 +16,7 @@ import { getLocale } from '@/utils/locale'
 export async function setNewPasswordAction(
   formData: FormData,
 ): Promise<{ error?: string }> {
-  const e = getMessages(await getLocale()).auth.errors
+  const e = getMessages(await getAdminLocale()).auth.errors
   const password = ((formData.get('password') as string) ?? '').trim()
   const confirm = ((formData.get('passwordConfirm') as string) ?? '').trim()
 

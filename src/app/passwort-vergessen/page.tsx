@@ -3,8 +3,9 @@ import { redirect } from 'next/navigation'
 import { landingRoute } from '@/utils/auth'
 import ForgotForm from './ForgotForm'
 import LegalFooter from '@/components/LegalFooter'
-import { getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { ADMIN_LOCALES, getMessages } from '@/lib/i18n'
+import LanguageSwitch from '@/components/LanguageSwitch'
+import { getAdminLocale } from '@/utils/locale'
 
 export default async function PasswortVergessenPage({
   searchParams,
@@ -15,11 +16,13 @@ export default async function PasswortVergessenPage({
   if (ziel) redirect(ziel)
 
   const { fehler } = await searchParams
-  const m = getMessages(await getLocale()).auth.forgot
+  const locale = await getAdminLocale()
+  const m = getMessages(locale).auth.forgot
 
   return (
     <>
-    <main className="flex flex-1 flex-col items-center justify-center gap-8 p-8">
+    <main lang={locale} className="relative flex flex-1 flex-col items-center justify-center gap-8 p-8">
+      <LanguageSwitch current={locale} offered={ADMIN_LOCALES} />
       <div className="text-center">
         <h1 className="text-3xl font-black text-ink">
           Ro<span className="text-blocked">Se</span>

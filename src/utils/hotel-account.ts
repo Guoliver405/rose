@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/utils/supabase/service'
 import { format, getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 import { slugify, uniqueSlug } from '@/lib/slug'
 import { DEFAULT_PIN_LENGTH } from '@/lib/ids'
 import { seedExampleServices } from '@/utils/example-services'
@@ -40,7 +40,7 @@ export type HotelAccountResult = { accountId?: string; hotelId?: string; slug?: 
  * Umwandlung in Produktion abgewiesen).
  */
 export async function checkInviteCode(code: string): Promise<string | null> {
-  const e = getMessages(await getLocale()).auth.errors
+  const e = getMessages(await getAdminLocale()).auth.errors
   const erwartet = normalizeCode(process.env.SIGNUP_INVITE_CODE ?? '')
   if (!erwartet) return e.signupClosed
   const got = normalizeCode(code)
@@ -62,7 +62,7 @@ export const hotelSignupOpen = () => Boolean(normalizeCode(process.env.SIGNUP_IN
 export const MAX_ROOMS_AT_SIGNUP = 1000
 
 export async function createHotelAccount(input: HotelAccountInput): Promise<HotelAccountResult> {
-  const e = getMessages(await getLocale()).auth.errors
+  const e = getMessages(await getAdminLocale()).auth.errors
   const admin = createAdminClient()
   const { userId, hotelName, displayName } = input
   const rollback = async (accountId: string) => { await admin.from('accounts').delete().eq('id', accountId) }

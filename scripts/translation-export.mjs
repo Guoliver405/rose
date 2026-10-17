@@ -18,6 +18,7 @@ const AREAS = {
   admin: { file: 'admin/index.ts', ctx: 'de/admin/context.ts', ctxName: 'adminContext' },
   mail: { file: 'mail.ts', ctx: 'de/mail.context.ts', ctxName: 'mailContext' },
   print: { file: 'print.ts', ctx: 'de/print.context.ts', ctxName: 'printContext' },
+  auth: { file: 'auth.ts', ctx: 'de/auth.context.ts', ctxName: 'authContext' },
   account: { file: 'account/index.ts', ctx: 'de/account/context.ts', ctxName: 'accountContext' },
   help: { file: 'help/index.ts', ctx: 'de/help/context.ts', ctxName: 'helpContext' },
   symbols: { file: 'symbols.ts', ctx: 'de/help/context.ts', ctxName: 'symbolsContext' },
