@@ -13,6 +13,6 @@ export function parseEuroToCents(raw: string): number | null {
   return Math.round(value * 100)
 }
 
-export function formatCents(cents: number): string {
-  return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(cents / 100)
+export function formatCents(cents: number, intlLocale = 'de-DE'): string {
+  return new Intl.NumberFormat(intlLocale, { style: 'currency', currency: 'EUR' }).format(cents / 100)
 }

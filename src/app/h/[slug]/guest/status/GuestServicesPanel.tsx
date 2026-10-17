@@ -43,7 +43,7 @@ export default function GuestServicesPanel({
   links: GuestLink[]
   orders: GuestOrder[]
   m: GuestMessages['services']
-  /** Sprach-Tag für die Uhrzeit der Anfragen („de-DE“). */
+  /** Sprach-Tag für Uhrzeiten und Preise („de-DE“). */
   intlLocale: string
 }) {
   const [openId, setOpenId] = useState<string | null>(null)
@@ -63,6 +63,7 @@ export default function GuestServicesPanel({
           service={s}
           open={openId === s.id}
           m={m}
+          intlLocale={intlLocale}
           onToggle={() => setOpenId(openId === s.id ? null : s.id)}
         />
       ))}
@@ -146,11 +147,14 @@ function ServiceCard({
   open,
   onToggle,
   m,
+  intlLocale,
 }: {
   service: GuestService
   open: boolean
   onToggle: () => void
   m: GuestMessages['services']
+  /** Preise im Format der Sprache des Gastes („$“-Stellung, Dezimalzeichen). */
+  intlLocale: string
 }) {
   const [pending, startTransition] = useTransition()
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -217,7 +221,7 @@ function ServiceCard({
                 <span className="flex-1 text-sm font-bold">{item.label}</span>
                 {item.priceCents !== null && (
                   <span className={`text-sm font-semibold ${active ? '' : 'text-ink-muted'}`}>
-                    {formatCents(item.priceCents)}
+                    {formatCents(item.priceCents, intlLocale)}
                   </span>
                 )}
               </button>
