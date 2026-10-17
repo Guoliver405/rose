@@ -24,8 +24,8 @@ export const GUEST_LOCALES: readonly Locale[] = ['de', 'en']
 export const SERVICE_LOCALES: readonly Locale[] = ['de', 'en']
 
 /**
- * Sprachen der Verwaltung (Rezeptions-Portal, Mails, Druckseiten; seit
- * 17.10.2026). Hilfe, Lotsen und Konto folgen in einer zweiten Etappe und
+ * Sprachen der Verwaltung (Rezeptions-Portal, Mails, Druckseiten, Hilfe und
+ * Lotsen; seit 17.10.2026). Konto, Abrechnung und Anmeldung folgen und
  * bleiben bis dahin deutsch.
  */
 export const ADMIN_LOCALES: readonly Locale[] = ['de', 'en']

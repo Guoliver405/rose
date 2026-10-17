@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ArrowLeft, Compass } from 'lucide-react'
 import { getManagementContext } from '@/utils/auth'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 import { getMessages } from '@/lib/i18n'
 import Rich from '@/components/i18n/Rich'
 import SimReinigung from '@/components/lotse/SimReinigung'
@@ -28,7 +28,7 @@ export default async function SimReinigungPage({
   if (!ctx) redirect('/admin')
 
   const base = `/h/${ctx.hotelSlug}/admin`
-  const msg = getMessages(await getLocale())
+  const msg = getMessages(await getAdminLocale())
   const m = msg.help.sim
   const { brand, common, board, status, login } = msg.service
 

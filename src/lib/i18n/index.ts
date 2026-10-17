@@ -15,6 +15,8 @@ import { service as enService } from './en/service'
 import { admin as enAdmin } from './en/admin'
 import { mail as enMail } from './en/mail'
 import { print as enPrint } from './en/print'
+import { help as enHelp } from './en/help'
+import { symbols as enSymbols } from './en/symbols'
 import { DEFAULT_LOCALE, INTL_LOCALES, type Locale } from './locales'
 
 /**
@@ -56,7 +58,7 @@ export type Messages = typeof de
  */
 const MESSAGES: Record<Locale, Messages> = {
   de,
-  en: { ...de, guest: enGuest, service: enService, admin: enAdmin, mail: enMail, print: enPrint },
+  en: { ...de, guest: enGuest, service: enService, admin: enAdmin, mail: enMail, print: enPrint, help: enHelp, symbols: enSymbols },
 }
 
 export function getMessages(locale: Locale = DEFAULT_LOCALE): Messages {

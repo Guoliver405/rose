@@ -18,7 +18,12 @@ const AREAS = {
   admin: { file: 'admin/index.ts', ctx: 'de/admin/context.ts', ctxName: 'adminContext' },
   mail: { file: 'mail.ts', ctx: 'de/mail.context.ts', ctxName: 'mailContext' },
   print: { file: 'print.ts', ctx: 'de/print.context.ts', ctxName: 'printContext' },
+  help: { file: 'help/index.ts', ctx: 'de/help/context.ts', ctxName: 'helpContext' },
+  symbols: { file: 'symbols.ts', ctx: 'de/help/context.ts', ctxName: 'symbolsContext' },
 }
+
+/** Datenfelder der Hilfe-Themen (Zeichen, Farbtöne, Link-Ziele) — keine Texte. */
+const DATA_KEY = /\.(art|id|ton|icon|href)$/
 const a = AREAS[area]
 if (!a) throw new Error(`Unbekannter Bereich: ${area}`)
 
@@ -47,7 +52,7 @@ function contextFor(key) {
   return found
 }
 
-const rows = flatten(de).map(([key, text]) => ({
+const rows = flatten(de).filter(([key]) => !DATA_KEY.test(key)).map(([key, text]) => ({
   key,
   where: contextFor(key)?.where ?? '',
   note: contextFor(key)?.note ?? '',

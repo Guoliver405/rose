@@ -11,7 +11,7 @@ import ErklaerungLink from '@/components/hilfe/ErklaerungLink'
 import { hilfeZiel, themaText, themenFuer } from '@/lib/hilfe'
 import { einrichtungStart, lotseById, lotseStart, setupProgress, type SetupFacts } from '@/lib/lotsen'
 import { format, getMessages, intlLocale, plural } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 /**
  * Hilfe & Lotsen — der Hilfe-Bereich des Hauses.
@@ -58,7 +58,7 @@ export default async function HilfePage({
   const ctx = await getManagementContext(slug)
   if (!ctx) redirect('/admin')
 
-  const locale = await getLocale()
+  const locale = await getAdminLocale()
   const m = getMessages(locale).help
   const t = m.ui.hub
   const base = `/h/${ctx.hotelSlug}/admin`

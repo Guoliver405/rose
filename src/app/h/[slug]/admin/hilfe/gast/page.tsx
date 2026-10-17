@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ArrowLeft, Compass } from 'lucide-react'
 import { getManagementContext } from '@/utils/auth'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 import { getMessages, intlLocale } from '@/lib/i18n'
 import SimGast from '@/components/lotse/SimGast'
 
@@ -23,7 +23,7 @@ export default async function SimGastPage({
   if (!ctx) redirect('/admin')
 
   const base = `/h/${ctx.hotelSlug}/admin`
-  const locale = await getLocale()
+  const locale = await getAdminLocale()
   const msg = getMessages(locale)
   const m = msg.help.sim
   const { brand, login, status, signal, services } = msg.guest

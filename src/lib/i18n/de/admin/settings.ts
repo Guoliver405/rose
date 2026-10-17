@@ -249,7 +249,7 @@ export const settings = {
     /** Sprache der Oberfläche — eigene Wahl, gilt für dieses Gerät. */
     language: {
       heading: 'Sprache der Oberfläche',
-      hint: 'Gilt für dieses Gerät. Ohne eigene Wahl folgt RoSe der Sprache des Geräts. Hilfe und Konto sind vorerst nur auf Deutsch.',
+      hint: 'Gilt für dieses Gerät. Ohne eigene Wahl folgt RoSe der Sprache des Geräts. Konto und Abrechnung sind vorerst nur auf Deutsch.',
     },
     roles: {
       admin: 'Inhaber',

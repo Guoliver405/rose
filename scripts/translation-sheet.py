@@ -18,12 +18,14 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
 LANG_NAMES = {"en": "Englisch, US", "es": "Spanisch", "fr": "Französisch"}
-AREA_NAMES = {"guest": "Gästeportal", "service": "Reinigungsboard", "admin": "Rezeption", "mail": "E-Mails", "print": "Druckseiten"}
+AREA_NAMES = {"guest": "Gästeportal", "service": "Reinigungsboard", "admin": "Rezeption", "mail": "E-Mails", "print": "Druckseiten", "help": "Hilfe und Lotsen", "symbols": "Zimmer-Symbole (Hilfe)"}
 READERS = {
     "guest": "• Leser ist der Gast, am Handy. Höflich und schlicht; das Haus spricht als „we“ (nie „hotel“ – auch Pensionen nutzen RoSe).",
     "admin": "• Leser sind Rezeption, Inhaber und Manager, am Rechner oder Tablet. Sachlich und freundlich; „property“ statt „hotel“; Begriffe wie in den Portalen („front desk“, „access card“, „check-in sheet“, „room sign“, „Do not disturb“, „No cleaning today“).",
     "mail": "• Leser der E-Mails sind Personal und Kontoinhaber; die Statuszeile liest die Verwaltung unter einem Sende-Knopf.",
     "print": "• Bedienung der Druckseiten für die Rezeption; Aufstellung und Zugangskarte werden gedruckt und ausgehändigt.",
+    "help": "• Leser sind Rezeption, Inhaber und Manager. Erklärend und gesiezt (Englisch: höflich, sachlich); Namen von Knöpfen und Seiten in Anführungszeichen wortgleich mit der Oberfläche. „Lotse“ heißt „guide“.",
+    "symbols": "• Legende der Zimmer-Kacheln in der Hilfe: kurze Namen der Zeichen und eine Erklärung je Zeichen.",
     "service": "• Leserin ist eine Reinigungskraft, am Handy zwischen zwei Zimmern. Kurz und freundlich; Begriffe wie im Gästeportal („Do not disturb“, „No cleaning today“, „front desk“). Zustände auf den Zimmer-Kacheln höchstens zwei bis drei Wörter.",
 }
 

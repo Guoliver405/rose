@@ -244,7 +244,7 @@ export const settings = {
     title: 'My account',
     language: {
       heading: 'Interface language',
-      hint: 'Applies to this device. Without your own choice, RoSe follows the device language. Help and account pages are only available in German for now.',
+      hint: 'Applies to this device. Without your own choice, RoSe follows the device language. Account and billing pages are only available in German for now.',
     },
     roles: {
       admin: 'Owner',

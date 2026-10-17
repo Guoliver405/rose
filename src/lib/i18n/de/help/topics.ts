@@ -395,7 +395,7 @@ export const topics = {
           },
           {
             frage: 'Warum nur ein bis zwei Sprachen auf dem Papier?',
-            antwort: 'Die Blätter erklären das Portal mit Bildern seiner Knöpfe; Text steht in einer Hauptsprache und wahlweise einer zweiten. Mehr Sprachen helfen wenig: Für jede, die auf dem Blatt steht, fehlen viele andere – und das Blatt wird zum Formular. Wer keine der beiden liest, kommt über Bilder und QR ins Portal und übersetzt dort mit dem Handy. Die erste Sprache ist die Rückfallsprache des Hauses – die sieht im Gästeportal auch jeder Gast, dessen Handysprache das Portal nicht anbietet – und zugleich die Sprache der Zugangs-E-Mail.',
+            antwort: 'Die Blätter erklären das Portal mit Bildern seiner Knöpfe; Text steht in einer Hauptsprache und wahlweise einer zweiten. Mehr Sprachen helfen wenig: Für jede, die auf dem Blatt steht, fehlen viele andere – und das Blatt wird zum Formular. Wer keine der beiden liest, kommt über Bilder und QR ins Portal – dort sieht er seine Sprache, soweit das Portal sie anbietet, sonst übersetzt er mit dem Handy. Die erste Sprache ist die Rückfallsprache des Hauses – die sieht im Gästeportal auch jeder Gast, dessen Handysprache das Portal nicht anbietet – und zugleich die Sprache der Zugangs-E-Mail.',
           },
           {
             frage: 'Wo sind die Aushänge hin?',
@@ -834,7 +834,7 @@ export const topics = {
           },
           {
             frage: 'In welcher Sprache ist das Portal?',
-            antwort: 'Heute Deutsch. Die gedruckten Blätter erklären die Knöpfe mit Bildern, und der Gast übersetzt den Bildschirm mit dem Handy, das er zum Scannen ohnehin in der Hand hat. Mehrsprachigkeit des Portals ist geplant.',
+            antwort: 'In der Sprache seines Handys, soweit das Portal sie anbietet – heute Deutsch und Englisch; oben rechts kann der Gast wechseln. Fehlt seine Sprache, gilt die Rückfallsprache des Hauses (Gästezugang → Sprachen). Die Services zeigt das Portal in der Übersetzung, die Sie im Service-Baukasten gepflegt haben, sonst im Grundtext. Für alle anderen Sprachen erklären die gedruckten Blätter die Knöpfe mit Bildern, und der Gast kann den Bildschirm mit dem Handy übersetzen.',
           },
           {
             frage: 'Was weiß RoSe über den Gast?',

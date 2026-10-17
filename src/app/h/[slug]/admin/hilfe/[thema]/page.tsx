@@ -3,7 +3,7 @@ import { getManagementContext } from '@/utils/auth'
 import HilfeThema from '@/components/hilfe/HilfeThema'
 import { themaBereich, themaById } from '@/lib/hilfe'
 import { getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 /**
  * Ein Hilfe-Thema des Hauses — die Seite hinter dem „?" in der Kopfzeile.
@@ -26,7 +26,7 @@ export default async function HilfeThemaPage({
   const ctx = await getManagementContext(slug)
   if (!ctx) redirect('/admin')
 
-  const m = getMessages(await getLocale())
+  const m = getMessages(await getAdminLocale())
   const thema = themaById(themaId)
   if (!thema || themaBereich(thema) !== 'haus') notFound()
 
