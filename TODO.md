@@ -311,6 +311,9 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       **Nächste Session (frisch):** Sprachwahl des Gastes in `getLocale()` und erste Übersetzung
       (Englisch) des Gästeportals – Einstieg und offene Fragen im Protokoll, Abschnitt 7.
       Rest: Rollennamen in der Einladungs-Mail, Stripe-`locale`, `service-templates.json`.
+      **17.10.: Sprachen des Hauses und Service-Baukasten entschieden** (Heimat- und Rückfallsprache,
+      Blatt-Sprache gekoppelt, Baukasten mehrsprachig im Self-Service ohne automatische Übersetzung):
+      [Sprachen-des-Hauses-Plan-2026-10-17.md](Sessions/Sprachen-des-Hauses-Plan-2026-10-17.md).
 - [ ] **Thailändisch als Belastungsprobe** — probehalber implementieren, um zu
       sehen, wie weit das Sprach-System trägt: nicht-lateinische Schrift,
       andere Zeilenumbruch-Regeln (keine Leerzeichen zwischen Wörtern),

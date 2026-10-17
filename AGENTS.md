@@ -378,6 +378,7 @@ wird dort durchgestrichen statt gelöscht.
 
 Wie in HotCord: Protokolle unter `Sessions/` ablegen, aktuellsten Stand hier verlinken.
 
+- [Sessions/Sprachen-des-Hauses-Plan-2026-10-17.md](Sessions/Sprachen-des-Hauses-Plan-2026-10-17.md) — Bauplan (noch nicht gebaut): Heimatsprache und Rückfallsprache je Haus, erste Blatt-Sprache = Rückfallsprache, Service-Baukasten mehrsprachig im Self-Service (Entscheidung des Users gegen automatische Übersetzung), Rückfall je Feld.
 - [Sessions/2026-10-11_Lizenzvertrag-Gegenentwurf.md](Sessions/2026-10-11_Lizenzvertrag-Gegenentwurf.md) — Lizenzvertrag: Bernds Gegenentwurf (unentgeltliche Lizenz, befristet bis 30.09.2027) angereichert mit Änderungsverfolgung, Antwort-Mail; Unterlagen in `Verträge/`, nicht im Repo.
 - [Sessions/2026-10-11_Schlussrechnung-Kontoloeschung.md](Sessions/2026-10-11_Schlussrechnung-Kontoloeschung.md) — Schlussrechnung beim Löschen des Kontos (§ 7 AGB): Variante „Schlussrechnung“ statt „Löschen zum Monatsende“ oder Textänderung, mit dem User entschieden; Stripe-Kunde bleibt bei offener Rechnung.
 - [Sessions/2026-10-11_Email-aendern.md](Sessions/2026-10-11_Email-aendern.md) — Anmelde-Adresse selbst ändern (Passwort + Link an die neue Adresse + Hinweis an die alte, Stripe-Kunde zieht mit); Entscheidung gegen Supabases „Secure email change“.
