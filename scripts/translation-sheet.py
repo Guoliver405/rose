@@ -15,7 +15,9 @@ Mit `--since <gegengelesene Datei>` stehen nur Texte darin, die der Gegenleser
 noch nicht gesehen hat: neue Schlüssel, geänderte deutsche Texte und
 Übersetzungen, die weder seiner Vorlage noch seiner Korrektur entsprechen.
 Reine Zeichensetzung (Komma vor dem letzten Glied, Punkt im Anführungszeichen)
-zählt nicht als Änderung.
+zählt nicht als Änderung. `--full admin,…` nimmt einzelne Bereiche trotzdem
+vollständig auf (die Rezeption war in der Runde vom 17.10. nicht wirklich
+gelesen, die Vorschläge waren alle um Zeilen verrutscht).
 """
 import re
 import json
@@ -133,6 +135,11 @@ def main() -> None:
         i = args.index("--since")
         since = Path(args[i + 1])
         del args[i:i + 2]
+    full = set()
+    if "--full" in args:
+        i = args.index("--full")
+        full = set(args[i + 1].split(","))
+        del args[i:i + 2]
     area, lang, out = (args[:3] + [None, None, None])[:3]
     area = area or "guest"
     lang = lang or "en"
@@ -147,7 +154,7 @@ def main() -> None:
     data = {a: export(root, a, lang) for a in areas}
     if since:
         base = reviewed(since)
-        for a in areas:
+        for a in [a for a in areas if a not in full]:
             data[a]["rows"] = unseen(data[a]["rows"], AREAS[a][1], base)
         areas = [a for a in areas if data[a]["rows"]]
 
@@ -167,7 +174,8 @@ def main() -> None:
         title = f"RoSe – alle Texte, Übersetzung {sprache} zum Gegenlesen"
         if since:
             title = f"RoSe – neue und geänderte Texte, Übersetzung {sprache} zum Gegenlesen"
-            how += [("", False), ("Nur Texte, die seit der letzten Runde neu sind oder sich geändert haben; alles andere ist bereits gegengelesen.", False)]
+            how += [("", False), ("Nur Texte, die seit der letzten Runde neu sind oder sich geändert haben; alles andere ist bereits gegengelesen."
+                     + (f" Vollständig enthalten: {', '.join(AREAS[a][0] for a in areas if a in full)}." if full else ""), False)]
     else:
         how += [(f"• {READERS.get(area, '')}", False), ("", False),
                 (f"{len(data[area]['rows'])} Texte · erzeugt aus src/lib/i18n/", False)]
