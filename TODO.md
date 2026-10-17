@@ -318,7 +318,8 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       **17.10.: gegengelesen** (31 Vorschläge, übernommen bis auf „schedule“ für den Aufschub — „frühestens ab“ ist kein Termin;
       „front desk“ statt „reception“ auch auf dem englischen Blatt).
       **17.10.: Heimat- und Rückfallsprache gebaut**, erste Blatt-Sprache folgt der Rückfallsprache.
-      Offen: Service-Baukasten mehrsprachig.
+      **17.10.: Service-Baukasten mehrsprachig gebaut** (Self-Service, Rückfall je Feld, Beispiel-Services zweisprachig).
+      Nächste Bereiche: Reinigungsboard, dann Verwaltung; Rechtstexte erst nach der anwaltlichen Prüfung.
 - [ ] **Thailändisch als Belastungsprobe** — probehalber implementieren, um zu
       sehen, wie weit das Sprach-System trägt: nicht-lateinische Schrift,
       andere Zeilenumbruch-Regeln (keine Leerzeichen zwischen Wörtern),
