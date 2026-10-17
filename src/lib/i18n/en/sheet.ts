@@ -10,7 +10,7 @@ export const sheet = {
     room: 'Room',
     scan: 'Scan the QR code',
     pin: 'Your PIN',
-    pinFromReception: 'You receive your PIN at check-in.',
+    pinFromReception: 'You’ll receive your PIN at check-in.',
     qrAlt: 'QR code to the guest portal',
     withoutQr: 'Without a QR code',
     keep: 'Please keep this sheet — it is your access.',
@@ -18,7 +18,7 @@ export const sheet = {
   buttonHints: {
     clean: 'Tap whenever you would like your room cleaned.',
     dnd: 'Nobody knocks — not even for services.',
-    services: 'Towels, repairs and more — reception sees it right away.',
+    services: 'Towels, repairs and more — the front desk sees it right away.',
   },
   sustainabilityNeutral:
     'Every cleaning that isn’t needed saves water, detergent and energy — it is your choice in the portal.',
@@ -31,16 +31,16 @@ export const sheet = {
     access: 'Access',
   },
   purpose:
-    'The guest portal connects you to reception straight from your room — around the clock, without a phone call.',
+    'The guest portal connects you to the front desk straight from your room — around the clock, without a phone call.',
   dnd: '“Do not disturb” in the portal keeps staff away from your room until you switch it off.',
   services:
-    'Ask for fresh towels, report a repair or request other services directly in the portal — reception sees your request immediately.',
+    'Ask for fresh towels, report a repair or request other services directly in the portal — the front desk sees your request immediately.',
   cleaningRoutine:
     'Your room is cleaned daily from {due}, on your day of departure after check-out — you don’t have to request anything. Would you like an extra cleaning in between? Simply request it in the portal.',
   cleaningOnRequest:
     'Your room is cleaned on request: please ask for cleaning in the portal whenever it suits you — without your request, nobody enters your room.',
   window: ' The portal accepts cleaning requests daily from {start} to {end}.',
-  defer: ' You can also postpone cleaning until {limit} at the latest — nobody will come before then.',
+  defer: ' You can also postpone cleaning until {limit} at the latest — no one will come before then.',
   sustainabilityRoutine:
     'No cleaning needed today? One tap on “{skip}” in the portal saves water, detergent and energy — cleaning resumes tomorrow.',
   sustainabilityOnRequest:
