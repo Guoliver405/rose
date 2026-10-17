@@ -11,7 +11,7 @@ export const billing = {
   kinds: {
     card: 'Card',
     sepa_debit: 'SEPA direct debit',
-    bank_transfer: 'Bank transfer by invoice',
+    bank_transfer: 'Invoice (bank transfer)',
   },
 
   page: {
@@ -151,13 +151,13 @@ export const billing = {
     title: 'Payment method',
     remove: 'Remove',
     none:
-      'No payment method yet. Three options, all through our payment provider Stripe: card or SEPA direct debit are stored here and collected monthly; with bank transfer by invoice, nothing is stored, and every invoice states bank details with a payment reference.',
+      'No payment method yet. Three options, all through our payment provider Stripe: card or SEPA direct debit are stored here and collected monthly; with invoice and bank transfer, nothing is stored, and every invoice states bank details with a payment reference.',
     detailsFirst:
       'Please save the billing details above first — they appear on the invoice and determine the VAT.',
     change: 'Change card or direct debit',
     add: 'Add card or SEPA direct debit',
-    bankTransfer: 'Bank transfer by invoice',
-    bankTransferChosen: 'Bank transfer by invoice selected.',
+    bankTransfer: 'Invoice (bank transfer)',
+    bankTransferChosen: 'Invoice (bank transfer) selected.',
     saved: '{label} saved.',
     stripeUnreachable: 'Stripe unreachable.',
     notes:
@@ -171,7 +171,7 @@ export const billing = {
       submitting: 'Saving …',
       cancel: 'Cancel',
       preferTransfer:
-        'Rather not store a card or account? <link>Choose bank transfer by invoice</link> — every invoice then states bank details and a payment reference, payment term 14 days.',
+        'Rather not store a card or account? <link>Choose invoice (bank transfer)</link> — every invoice then states bank details and a payment reference, payment term 14 days.',
       noCharge:
         'Nothing is charged. The card or account is stored with Stripe and used for the monthly invoices; RoSe itself never sees card or account details.',
     },
@@ -180,7 +180,7 @@ export const billing = {
   labels: {
     card: '{brand} •••• {last4}',
     sepaDebit: 'SEPA direct debit •••• {last4}',
-    bankTransfer: 'Bank transfer by invoice',
+    bankTransfer: 'Invoice (bank transfer)',
   },
 
   invoice: {

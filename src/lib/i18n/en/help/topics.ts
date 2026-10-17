@@ -98,7 +98,7 @@ export const topics = {
           },
           {
             frage: 'Where can I find the statement later?',
-            antwort: 'In the room’s history, the “Check-out” entry links to the statement. This is not an invoice: it contains no guest name, invoice number, or tax breakdown. It shows the amount to be collected.',
+            antwort: 'In the room history, the “Check-out” entry links to the statement. This is not an invoice: it contains no guest name, invoice number, or tax breakdown. It shows the amount to be collected.',
           },
           {
             frage: 'What’s in the history?',
@@ -106,7 +106,7 @@ export const topics = {
           },
           {
             frage: 'Why does the tile show “Cleaning from 11:00” and not appear on the board?',
-            antwort: 'Cleaning becomes available at that time. Either the guest selected “not before” in the portal or asked the housekeeper at the door to come back later. The room’s history shows which. Until then, the room isn’t available for cleaning on either board; it opens automatically at the specified time. How long guests may postpone in the portal is set under Property & rules.',
+            antwort: 'Cleaning becomes available at that time. Either the guest selected “not before” in the portal or asked the housekeeper at the door to come back later. The room history shows which. Until then, the room isn’t available for cleaning on either board; it opens automatically at the specified time. How long guests may postpone in the portal is set under Property & rules.',
           },
         ],
       },
@@ -190,11 +190,11 @@ export const topics = {
           },
           {
             frage: 'How long do closed requests stay visible?',
-            antwort: 'The 20 most recent requests appear collapsed below the open requests. Beyond that, every request remains available in the room’s history for 30 days and, if it carried a price, on the stay statement.',
+            antwort: 'The 20 most recent requests appear collapsed below the open requests. Beyond that, every request remains available in the room history for 30 days and, if it carried a price, on the stay statement.',
           },
           {
             frage: 'The guest says they ordered, but nothing is here.',
-            antwort: 'Check the room’s history to see whether a request arrived. The most common causes: the guest canceled before sending, or used a tile under “Useful links,” such as a food delivery service — that leads to an outside site and doesn’t create a request.',
+            antwort: 'Check the room history to see whether a request arrived. The most common causes: the guest canceled before sending, or used a tile under “Useful links,” such as a food delivery service — that leads to an outside site and doesn’t create a request.',
           },
         ],
       },
