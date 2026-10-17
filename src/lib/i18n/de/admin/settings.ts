@@ -390,7 +390,7 @@ export const settings = {
     timeZoneInvalid: 'Die Zeitzone ist ungültig.',
     reviewUrlInvalid: 'Der Link zur Bewertungsseite ist ungültig – bitte die vollständige Adresse mit https:// eintragen.',
     currencyInvalid: 'Unbekannte Währung.',
-    currencyWhileOccupied: 'Die Währung lässt sich nur ändern, solange kein Gast eingecheckt ist – sonst hätte ein Aufenthalt Preise in zwei Währungen. Gerade sind {count} Zimmer belegt.',
+    currencyWhileOccupied: 'Die Währung lässt sich nur ändern, solange kein Gast eingecheckt ist – sonst hätte ein Aufenthalt Preise in zwei Währungen. Belegte Zimmer gerade: {count}.',
     windowMissing: 'Für das Zeitfenster der Reinigung fehlen Start- und Endzeit.',
     windowSame: 'Start- und Endzeit des Zeitfensters dürfen nicht gleich sein.',
     slugTaken: 'Diese Adresse ist bereits vergeben.',
