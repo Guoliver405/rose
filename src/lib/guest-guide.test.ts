@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { parseFallbackLanguage } from './i18n/locales'
 import {
   GUIDE_LANGS, buildGuestGuide, buildGuestGuides, buildGuestSheet, buildGuestSheets,
   guideLines, parseSheetLanguages, sheetLabels,
@@ -150,6 +151,27 @@ describe('guideLines', () => {
     expect(guideLines(g)).toEqual([
       g.purpose, g.cleaning, g.sustainability, g.dnd, g.services, g.access,
     ])
+  })
+})
+
+describe('parseSheetLanguages — Kopplung an die Rückfallsprache (17.10.2026)', () => {
+  it('die Rückfallsprache ist die erste Blatt-Sprache', () => {
+    expect(parseSheetLanguages({ fallbackLanguage: 'en', sheetLanguage2: 'de' })).toEqual(['en', 'de'])
+  })
+
+  it('sie geht einer alten ersten Blatt-Sprache vor', () => {
+    expect(parseSheetLanguages({ fallbackLanguage: 'en', sheetLanguage: 'fr', sheetLanguage2: '' })).toEqual(['en'])
+  })
+
+  it('ohne Rückfallsprache und alte Wahl: die Heimatsprache', () => {
+    expect(parseSheetLanguages({ homeLanguage: 'en' })).toEqual(['en'])
+  })
+
+  it('Rückfall- und erste Blatt-Sprache passen auch vor dem ersten Speichern zusammen', () => {
+    // Altbestand mit englischer erster Blatt-Sprache: das Portal fällt auf Englisch zurück.
+    const alt = { sheetLanguage: 'en', sheetLanguage2: 'de' }
+    expect(parseFallbackLanguage(alt)).toBe('en')
+    expect(parseSheetLanguages(alt)[0]).toBe('en')
   })
 })
 

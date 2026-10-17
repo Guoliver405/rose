@@ -11,12 +11,12 @@ import { createClient } from '@/utils/supabase/server'
 import { getAdminContext, getManagementContext } from '@/utils/auth'
 import { clampPinLength } from '@/lib/ids'
 import { clampStaleMinutes } from '@/lib/board'
-import { GUIDE_LANGS } from '@/lib/guest-guide'
+import { GUIDE_LANGS, sheetLanguageFor } from '@/lib/guest-guide'
 import { LOGO_HEAD_BYTES, validateLogoUpload } from '@/lib/logo'
 import { removeHotelLogo, uploadHotelLogo } from '@/utils/logo'
 import { isValidSlug, SLUG_MAX_LENGTH } from '@/lib/slug'
 import { normalizeLinkUrl } from '@/lib/service-link-templates'
-import { format, getMessages } from '@/lib/i18n'
+import { format, getMessages, isLocale } from '@/lib/i18n'
 import { getLocale } from '@/utils/locale'
 import { cancelEmailChange, requestEmailChange } from '@/utils/email-change'
 import type { MailResult } from '@/utils/mail'
@@ -326,30 +326,35 @@ export async function removeHotelLogoAction(slug: string): Promise<ActionResult>
   return {}
 }
 
-export async function updateSheetLanguagesAction(
+/**
+ * Sprachen des Hauses (17.10.2026): Heimatsprache, Rückfallsprache — zugleich
+ * erste Sprache der Ausdrucke und der Zugangs-E-Mail — und die wahlweise
+ * zweite Sprache der Ausdrucke. Die frühere eigene erste Blatt-Sprache
+ * (`sheetLanguage`) wird dabei entfernt; sie ergibt sich jetzt aus der
+ * Rückfallsprache (`parseSheetLanguages`).
+ */
+export async function updateLanguagesAction(
   slug: string,
-  erste: string,
-  zweite: string,
+  home: string,
+  fallback: string,
+  second: string,
 ): Promise<ActionResult> {
   const e = await messages()
   const ctx = await getAdminContext(slug)
   if (!ctx) return { error: e.noPermission }
 
-  const erlaubt = GUIDE_LANGS as readonly string[]
-  if (!erlaubt.includes(erste)) return { error: e.unknownLanguage }
+  if (!isLocale(home) || !isLocale(fallback)) return { error: e.unknownLanguage }
   // Leer ist gültig und heißt „nur eine Sprache" — siehe `parseSheetLanguages`.
-  if (zweite !== '' && !erlaubt.includes(zweite)) return { error: e.unknownLanguage }
-  if (zweite === erste) return { error: e.secondLanguageSame }
+  if (second !== '' && !(GUIDE_LANGS as readonly string[]).includes(second)) return { error: e.unknownLanguage }
+  if (second === sheetLanguageFor(fallback)) return { error: e.secondLanguageSame }
 
   const admin = createAdminClient()
   const { data: hotel } = await admin
     .from('hotels').select('policies').eq('id', ctx.hotelId).single()
 
-  const merged = {
-    ...((hotel?.policies ?? {}) as Record<string, unknown>),
-    sheetLanguage: erste,
-    sheetLanguage2: zweite,
-  }
+  const { sheetLanguage: _alt, ...rest } = (hotel?.policies ?? {}) as Record<string, unknown>
+  void _alt
+  const merged = { ...rest, homeLanguage: home, fallbackLanguage: fallback, sheetLanguage2: second }
 
   const { error } = await admin
     .from('hotels').update({ policies: merged }).eq('id', ctx.hotelId)

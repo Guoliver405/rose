@@ -55,7 +55,7 @@
  */
 import { parseCleanDefer, parseCleaningWindow, parseStayoverPolicy, stayoverDueTime } from './board'
 import type { GuestAccessMode } from './guest-access'
-import { format, getMessages, GUEST_LOCALES, isLocale, parseFallbackLanguage, type Locale } from './i18n'
+import { format, getMessages, GUEST_LOCALES, isLocale, parseFallbackLanguage, parseHomeLanguage, type Locale } from './i18n'
 import { GUIDE_LANGS, SHEETS, type GuideLang } from './i18n/sheets'
 
 // Die Sätze selbst stehen seit 10.10.2026 in den Sprachdateien
@@ -263,9 +263,21 @@ function alsSprache(wert: unknown): GuideLang | null {
  * Unterscheidung könnte ein Haus die zweite nie abwählen. Ein **unbekannter**
  * Wert in der zweiten Position ist kein Auftrag, Englisch zu drucken: er fällt
  * ersatzlos weg. Die erste Sprache muss es dagegen immer geben.
+ *
+ * **Seit 17.10.2026 ist die erste Sprache die Rückfallsprache des Hauses**
+ * (`policies.fallbackLanguage`) — keine eigene Einstellung mehr, sonst liefen
+ * drei Spracheinstellungen leise auseinander. Kennen die Blätter sie nicht,
+ * wird englisch gedruckt. Häuser ohne Rückfallsprache behalten ihre frühere
+ * erste Blatt-Sprache (`sheetLanguage`), bis sie die Sprachen speichern.
  */
+export function sheetLanguageFor(locale: Locale): GuideLang {
+  return alsSprache(locale) ?? 'en'
+}
+
 export function parseSheetLanguages(policies: Record<string, unknown>): GuideLang[] {
-  const erste = alsSprache(policies.sheetLanguage) ?? SHEET_LANG_DEFAULT
+  const erste = isLocale(policies.fallbackLanguage)
+    ? sheetLanguageFor(policies.fallbackLanguage)
+    : alsSprache(policies.sheetLanguage) ?? sheetLanguageFor(parseHomeLanguage(policies))
   const roh = policies.sheetLanguage2
   const zweite =
     roh === undefined || roh === null ? SHEET_LANG2_DEFAULT : alsSprache(roh)

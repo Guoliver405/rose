@@ -14,7 +14,7 @@ export const settings = {
       },
       guestAccess: {
         title: 'Gästezugang',
-        description: 'Fester QR-Code je Zimmer mit PIN (samt Aushängen) oder individueller Zugang je Aufenthalt',
+        description: 'Fester QR-Code je Zimmer mit PIN (samt Aushängen) oder individueller Zugang je Aufenthalt; Sprachen des Hauses',
       },
       rooms: {
         title: 'Zimmer',
@@ -201,8 +201,8 @@ export const settings = {
       confirm: 'Verfahren bestätigen',
     },
     languagesSection: {
-      heading: 'Sprachen der Ausdrucke',
-      intro: 'Die gedruckten Blätter erklären das Gästeportal mit Piktogrammen seiner Knöpfe – dazu Text in einer Hauptsprache und wahlweise einer zweiten. Die <b>erste</b> Sprache ist zugleich die der Zugangs-E-Mail.',
+      heading: 'Sprachen',
+      intro: 'Das Gästeportal zeigt jedem Gast die Sprache seines Handys, soweit es sie anbietet, und der Gast kann sie oben rechts wechseln. Hier legen Sie fest, was gilt, wenn seine Sprache fehlt, und in welchen Sprachen die gedruckten Blätter erklären. Die Blätter zeigen die Knöpfe des Portals als Piktogramme – dazu Text in der <b>Rückfallsprache</b> und wahlweise einer zweiten.',
     },
     noticesSection: {
       heading: 'Aushänge für die Zimmer',
@@ -215,15 +215,19 @@ export const settings = {
 
   languages: {
     unsavedLabel: 'Sprachen',
-    first: 'Erste Sprache',
-    firstHint: 'Größer gesetzt · Sprache der E-Mail',
-    second: 'Zweite Sprache',
+    home: 'Heimatsprache',
+    homeHint: 'Darin legen Sie Ihre Inhalte an, etwa die Services im Baukasten.',
+    fallback: 'Rückfallsprache',
+    fallbackHint: 'Die sehen Gäste, deren Handy eine Sprache hat, die das Gästeportal nicht anbietet. Zugleich die erste Sprache der Ausdrucke und der Zugangs-E-Mail.',
+    first: 'Erste Sprache der Ausdrucke',
+    firstHint: 'Folgt der Rückfallsprache · größer gesetzt · Sprache der E-Mail',
+    second: 'Zweite Sprache der Ausdrucke',
     secondHint: 'Kleiner darunter · nur auf dem Ausdruck',
     none: '– keine –',
     save: 'Sprachen speichern',
     alreadySet: 'Bereits eingestellt',
-    saved: 'Gespeichert. Die nächsten Ausdrucke und E-Mails folgen der neuen Wahl.',
-    recommendation: 'Englisch als zweite Sprache ist die Empfehlung: Wer weder Ihre Landessprache noch Englisch liest, kommt über die Piktogramme und den QR-Code weiter – im Gästeportal kann er den Text mit dem Handy übersetzen. Eine dritte und vierte Sprache auf Papier hilft weniger, als sie an Platz kostet.',
+    saved: 'Gespeichert. Die Portale, die nächsten Ausdrucke und E-Mails folgen der neuen Wahl.',
+    recommendation: 'Meist sind Heimat- und Rückfallsprache dieselbe. Eine andere Rückfallsprache lohnt sich, wenn viele Gäste Ihre Landessprache nicht lesen – dann ist Englisch die bessere Wahl. Englisch als zweite Sprache der Ausdrucke ist die Empfehlung: Wer keine der beiden Sprachen liest, kommt über die Piktogramme und den QR-Code weiter. Nach einer neuen Sprache im Gästeportal lohnt es sich, die Aushänge neu zu drucken – die Knöpfe auf Papier zeigen dann dasselbe Wort wie der Bildschirm.',
   },
 
   logo: {

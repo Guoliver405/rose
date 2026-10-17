@@ -391,7 +391,7 @@ export const topics = {
           },
           {
             frage: 'Warum nur ein bis zwei Sprachen auf dem Papier?',
-            antwort: 'Die Blätter erklären das Portal mit Bildern seiner Knöpfe; Text steht in einer Hauptsprache und wahlweise einer zweiten. Mehr Sprachen helfen wenig: Für jede, die auf dem Blatt steht, fehlen viele andere – und das Blatt wird zum Formular. Wer keine der beiden liest, kommt über Bilder und QR ins Portal und übersetzt dort mit dem Handy. Die erste Sprache ist zugleich die der Zugangs-E-Mail.',
+            antwort: 'Die Blätter erklären das Portal mit Bildern seiner Knöpfe; Text steht in einer Hauptsprache und wahlweise einer zweiten. Mehr Sprachen helfen wenig: Für jede, die auf dem Blatt steht, fehlen viele andere – und das Blatt wird zum Formular. Wer keine der beiden liest, kommt über Bilder und QR ins Portal und übersetzt dort mit dem Handy. Die erste Sprache ist die Rückfallsprache des Hauses – die sieht im Gästeportal auch jeder Gast, dessen Handysprache das Portal nicht anbietet – und zugleich die Sprache der Zugangs-E-Mail.',
           },
           {
             frage: 'Wo sind die Aushänge hin?',

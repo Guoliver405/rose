@@ -33,9 +33,27 @@ export function isLocale(value: unknown): value is Locale {
   return typeof value === 'string' && (LOCALES as readonly string[]).includes(value)
 }
 
-/** Rückfallsprache des Hauses (`policies.fallbackLanguage`), sonst die Vorgabe. */
+/**
+ * Heimatsprache des Hauses (`policies.homeLanguage`, seit 17.10.2026): die
+ * Sprache, in der es seine Inhalte anlegt (Service-Baukasten). Vorgabe Deutsch.
+ */
+export function parseHomeLanguage(policies: Record<string, unknown>): Locale {
+  return isLocale(policies.homeLanguage) ? policies.homeLanguage : DEFAULT_LOCALE
+}
+
+/**
+ * Rückfallsprache des Hauses (`policies.fallbackLanguage`): die sehen alle
+ * Portale, wenn das Gerät eine Sprache hat, die nicht angeboten wird. Sie ist
+ * zugleich die erste Sprache der gedruckten Blätter (`parseSheetLanguages`).
+ *
+ * Nicht gesetzt: zuerst die erste Blatt-Sprache aus der Zeit vor der Kopplung
+ * (`sheetLanguage`), soweit das Portal sie kennt — damit Blatt und Rückfall
+ * schon vor dem ersten Speichern zusammenpassen —, dann die Heimatsprache.
+ */
 export function parseFallbackLanguage(policies: Record<string, unknown>): Locale {
-  return isLocale(policies.fallbackLanguage) ? policies.fallbackLanguage : DEFAULT_LOCALE
+  if (isLocale(policies.fallbackLanguage)) return policies.fallbackLanguage
+  if (isLocale(policies.sheetLanguage)) return policies.sheetLanguage
+  return parseHomeLanguage(policies)
 }
 
 /**

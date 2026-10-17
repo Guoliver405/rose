@@ -10,7 +10,7 @@ import { GUIDE_LANGS, sheetLanguageLabel, type GuideLang } from '@/lib/guest-gui
 import SprachenForm from '../SprachenForm'
 import { UnsavedChanges } from '@/components/unsaved/UnsavedChanges'
 import Rich from '@/components/i18n/Rich'
-import { getMessages } from '@/lib/i18n'
+import { getMessages, parseFallbackLanguage, parseHomeLanguage } from '@/lib/i18n'
 import { getLocale } from '@/utils/locale'
 
 /**
@@ -41,7 +41,7 @@ export default async function GastzugangPage({
 
   const policies = (hotel?.policies ?? {}) as Record<string, unknown>
   const mode = parseGuestAccessMode(policies)
-  const [erste, zweite] = parseSheetLanguages(policies)
+  const [, zweite] = parseSheetLanguages(policies)
 
   return (
     <div className="flex max-w-4xl flex-col gap-5">
@@ -72,8 +72,7 @@ export default async function GastzugangPage({
         </p>
         <SprachenForm
           hotelSlug={ctx.hotelSlug}
-          erste={erste}
-          zweite={zweite ?? null}
+          initial={{ home: parseHomeLanguage(policies), fallback: parseFallbackLanguage(policies), second: zweite ?? null }}
           m={m.languages}
           langLabels={Object.fromEntries(GUIDE_LANGS.map(l => [l, sheetLanguageLabel(l)])) as Record<GuideLang, string>}
         />

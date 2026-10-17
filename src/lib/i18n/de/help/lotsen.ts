@@ -215,9 +215,9 @@ export const lotsen = {
       body: 'Unter dieser Adresse melden sich Gäste und Reinigungskräfte an. Sie steht in beiden Anmeldungen, weil Zimmernummern und Benutzernamen nur innerhalb des Hauses eindeutig sind. Gedruckte QR-Codes bleiben bei einer Änderung gültig – nur abgetippte Adressen auf älteren Check-in-Blättern stimmen dann nicht mehr.',
     },
     'gastzugang.sprachen': {
-      title: 'Piktogramme statt Sprachliste',
-      body: 'Die gedruckten Blätter erklären das Portal mit Bildern seiner Knöpfe – daneben steht Text in einer Hauptsprache und wahlweise einer zweiten. Mehr Sprachen aufs Papier zu drucken hilft weniger, als es an Platz kostet: Wer weder Ihre Landessprache noch Englisch liest, kommt über die Bilder und den QR-Code weiter und übersetzt im Portal mit dem Handy.',
-      tun: 'Die erste Sprache ist zugleich die der Zugangs-E-Mail – die zweite steht nur auf dem Ausdruck.',
+      title: 'Sprachen des Hauses',
+      body: 'Das Gästeportal zeigt jedem Gast die Sprache seines Handys, soweit es sie anbietet. Fehlt sie, gilt Ihre Rückfallsprache. Die gedruckten Blätter erklären das Portal mit Bildern seiner Knöpfe – Text steht in der Rückfallsprache und wahlweise einer zweiten. Mehr Sprachen aufs Papier zu drucken hilft weniger, als es an Platz kostet.',
+      tun: 'Die Heimatsprache ist die, in der Sie Inhalte anlegen. Die Rückfallsprache ist zugleich die erste Sprache der Ausdrucke und der Zugangs-E-Mail – die zweite steht nur auf dem Ausdruck.',
     },
     'gastzugang.aushang': {
       title: 'Die Aushänge für die Zimmer',

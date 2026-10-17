@@ -39,7 +39,7 @@ export type { LegalMessages } from './de/legal'
 
 export {
   DEFAULT_LOCALE, GUEST_LOCALES, INTL_LOCALES, LOCALE_COOKIE, LOCALE_NAMES, LOCALES,
-  isLocale, matchAcceptLanguage, parseFallbackLanguage, resolveLocale, type Locale,
+  isLocale, matchAcceptLanguage, parseFallbackLanguage, parseHomeLanguage, resolveLocale, type Locale,
 } from './locales'
 
 const de = { guest, service, mail, print, admin, auth, account, simulator, help, symbols, landing, legal }
