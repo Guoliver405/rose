@@ -57,9 +57,24 @@ Vertrag, keine Kosten.
 - **Vorlagen** (`service-templates.json`, Verweis-Vorlagen) bringen alle Produktsprachen mit;
   beim Anlegen wird die Heimatsprache in die Spalten geschrieben, der Rest in `translations`.
 
-## 4. Noch offen (vor der ersten Übersetzung zu klären)
+## 4. Entschieden am 17.10. (vorher offen)
 
-1. Umschalter im Gästeportal: Ort (Kopf des Portals?), gilt er auch auf Anmeldung und Danke-Seite?
-2. Legende des Check-in-Blatts: Wortlaut der Knöpfe in welcher Portalsprache – naheliegend: in der
-   jeweiligen Blatt-Sprache, soweit das Portal sie kann.
-3. Wer liest die englische Fassung gegen?
+1. **Sprach-Umschalter im Gästeportal:** Kürzel-Taste oben rechts im Kopf („DE ▾“), aufgeklappt die
+   angebotenen Sprachen in eigener Schreibweise (Deutsch, English …), **keine Flaggen** (Sprache ≠
+   Land). Auf **allen Gastseiten**: Anmeldung, Zimmer-QR, Portal, Danke-Seite. Gespeichert als
+   Cookie, **unabhängig vom Aufenthalt** – übersteht den Check-out, ein Stammgast hat sie wieder.
+   Ohne eigene Wahl: Sprache des Handys, dann Rückfallsprache des Hauses.
+2. **Legende der gedruckten Blätter:** Jeder Sprachblock zeigt die Knöpfe so, wie ein Handy in dieser
+   Sprache sie sehen würde – in der Blatt-Sprache, wenn das Portal sie anbietet, sonst in der
+   Rückfallsprache. Weil die erste Blatt-Sprache die Rückfallsprache ist, findet ein Gast mit nicht
+   angebotener Sprache seine Knöpfe immer im ersten Block. Unschärfe: Ein schon gedruckter Aushang
+   zeigt nach einer neuen Portalsprache im betroffenen Block weiter die Knöpfe der Rückfallsprache –
+   die Einstellung erwähnt, dass man dann neu drucken kann.
+3. **Übersetzen und Gegenlesen:** **Amerikanisches Englisch** (User: verbreiteter; `en/sheet.ts`
+   daraufhin prüfen). Claude entwirft `en/guest.ts`, **der User liest gegen**. Tabelle zum
+   Gegenlesen als Excel, erzeugt aus den Sprachdateien: Schlüssel · Ort · **Erläuterung** · Deutsch ·
+   Englisch · Korrektur. Die Erläuterung (wann der Text erscheint, wer ihn liest, Ton, Längengrenzen,
+   Platzhalter wie `{time}` und Auszeichnungen wie `<b>`) liegt **im Code neben der Sprachdatei**
+   (`de/guest.context.ts`, dieselben Schlüssel), damit die Tabelle für jede weitere Sprache neu
+   entsteht; ein Test hält Sprachdatei und Erläuterungen zusammen. Dazu ein Wächter-Test für
+   Englisch (Ton, keine deutschen Reste, Typografie “…” und …).
