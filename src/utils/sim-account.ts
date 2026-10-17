@@ -4,10 +4,10 @@ import { createAdminClient } from '@/utils/supabase/service'
 import { createHotelAccount } from '@/utils/hotel-account'
 import { confirmUrl, mailReady, sendSimConfirmMail, sendSimExistsMail, type MailResult } from '@/utils/mail'
 import {
-  MARKETING_TEXT_VERSION, SIGNUP_WINDOW_MS, UNCONFIRMED_DAYS, isExpiredUnconfirmed, signupThrottled, type SimSignupInput,
+  marketingTextVersion, SIGNUP_WINDOW_MS, UNCONFIRMED_DAYS, isExpiredUnconfirmed, signupThrottled, type SimSignupInput,
 } from '@/lib/sim-account'
 import { getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 /*
  * Simulator-Konto — die Datenbankseite (Phase 2, 26.09.2026). Regeln in
@@ -25,7 +25,7 @@ import { getLocale } from '@/utils/locale'
 
 type Admin = SupabaseClient
 
-async function messages() { return getMessages(await getLocale()).simulator.account.errors }
+async function messages() { return getMessages(await getAdminLocale()).simulator.account.errors }
 
 export type SimSenders = {
   confirm: (m: { to: string; userId: string; url: string; marketing: boolean }) => Promise<MailResult>
@@ -187,7 +187,7 @@ export async function registerSimAccount(
   const { error: insErr } = await admin.from('sim_accounts').insert({
     user_id: p.userId,
     marketing_opt_in: input.marketing,
-    marketing_text_version: input.marketing ? MARKETING_TEXT_VERSION : null,
+    marketing_text_version: input.marketing ? marketingTextVersion(await getAdminLocale()) : null,
   })
   if (insErr) {
     // Nur ein in diesem Aufruf angelegter Nutzer wird zurückgerollt — und nie
@@ -265,7 +265,7 @@ export async function setSimMarketing(userId: string, on: boolean): Promise<{ er
     if (!on) return {}
     // Hotelzugang ohne Simulator-Zeile: Zeile anlegen (bestätigt, die Adresse ist es schon).
     const { error } = await admin.from('sim_accounts').insert({
-      user_id: userId, confirmed_at: now, marketing_opt_in: true, marketing_opt_in_at: now, marketing_text_version: MARKETING_TEXT_VERSION,
+      user_id: userId, confirmed_at: now, marketing_opt_in: true, marketing_opt_in_at: now, marketing_text_version: marketingTextVersion(await getAdminLocale()),
     })
     return error ? { error: e.notSaved } : {}
   }
@@ -273,7 +273,7 @@ export async function setSimMarketing(userId: string, on: boolean): Promise<{ er
   const { error } = await admin
     .from('sim_accounts')
     .update(on
-      ? { marketing_opt_in: true, marketing_opt_in_at: now, marketing_text_version: MARKETING_TEXT_VERSION }
+      ? { marketing_opt_in: true, marketing_opt_in_at: now, marketing_text_version: marketingTextVersion(await getAdminLocale()) }
       : { marketing_opt_in: false, marketing_opt_in_at: null, marketing_text_version: null })
     .eq('user_id', userId)
   return error ? { error: e.notSaved } : {}

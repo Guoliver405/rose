@@ -122,13 +122,13 @@ export function recoveryMail(m: { url: string; einladung?: boolean; locale?: Loc
  * nennt die Mail die Einwilligung ausdrücklich — der Klick bestätigt Adresse
  * und Einwilligung in einem Schritt (Double-Opt-in).
  */
-export function simConfirmMail(m: { url: string; marketing: boolean; toolName: string }): MailContent {
-  const v = t().simConfirm
+export function simConfirmMail(m: { url: string; marketing: boolean; toolName: string; locale?: Locale }): MailContent {
+  const v = t(m.locale).simConfirm
   const zweck = format(v.purpose, { tool: m.toolName })
 
   const html = `<!doctype html>
-<html lang="de"><body style="${STYLE_BODY}">
-  <p>${escapeHtml(t().greeting)}</p>
+<html lang="${m.locale ?? 'de'}"><body style="${STYLE_BODY}">
+  <p>${escapeHtml(t(m.locale).greeting)}</p>
   <p>${escapeHtml(zweck)}</p>
   ${m.marketing ? `<p>${escapeHtml(v.marketing)}</p>` : ''}
   ${knopf(m.url, v.button)}
@@ -136,7 +136,7 @@ export function simConfirmMail(m: { url: string; marketing: boolean; toolName: s
   <p style="${STYLE_SMALL}">${escapeHtml(v.note)}</p>
 </body></html>`
 
-  const text = [t().greeting, '', zweck, ...(m.marketing ? ['', v.marketing] : []), '', m.url, '', v.note].join('\n')
+  const text = [t(m.locale).greeting, '', zweck, ...(m.marketing ? ['', v.marketing] : []), '', m.url, '', v.note].join('\n')
   return { subject: format(v.subject, { tool: m.toolName }), html, text }
 }
 
@@ -146,21 +146,21 @@ export function simConfirmMail(m: { url: string; marketing: boolean; toolName: s
  * sonst verriete sie, ob es ein Konto gibt —, und die eigentliche Antwort
  * kommt per Mail an die Person, der die Adresse gehört.
  */
-export function simExistsMail(m: { loginUrl: string; resetUrl: string; toolName: string }): MailContent {
-  const v = t().simExists
+export function simExistsMail(m: { loginUrl: string; resetUrl: string; toolName: string; locale?: Locale }): MailContent {
+  const v = t(m.locale).simExists
   // Nicht „steht Ihnen zur Verfügung": Rezeptionszugänge bekommen den Simulator nicht (26.09.2026).
   const satz = format(v.text, { tool: m.toolName, url: m.loginUrl.replace(/\/login$/, '/simulator') })
 
   const html = `<!doctype html>
-<html lang="de"><body style="${STYLE_BODY}">
-  <p>${escapeHtml(t().greeting)}</p>
+<html lang="${m.locale ?? 'de'}"><body style="${STYLE_BODY}">
+  <p>${escapeHtml(t(m.locale).greeting)}</p>
   <p>${escapeHtml(satz)}</p>
   ${knopf(m.loginUrl, v.button)}
   <p>${escapeHtml(v.forgot)} <a href="${escapeHtml(m.resetUrl)}">${escapeHtml(m.resetUrl)}</a></p>
   <p style="${STYLE_SMALL}">${escapeHtml(v.note)}</p>
 </body></html>`
 
-  const text = [t().greeting, '', satz, '', format(v.buttonText, { url: m.loginUrl }), '', `${v.forgot} ${m.resetUrl}`, '', v.note].join('\n')
+  const text = [t(m.locale).greeting, '', satz, '', format(v.buttonText, { url: m.loginUrl }), '', `${v.forgot} ${m.resetUrl}`, '', v.note].join('\n')
   return { subject: v.subject, html, text }
 }
 

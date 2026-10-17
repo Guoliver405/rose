@@ -3,16 +3,16 @@ import { redirect } from 'next/navigation'
 import LegalFooter from '@/components/LegalFooter'
 import { createClient } from '@/utils/supabase/server'
 import { getSimContext } from '@/utils/auth'
-import { SIMULATOR_NAME } from '@/lib/sim-account'
+import { simulatorName } from '@/lib/sim-account'
 import { format, getMessages, intlLocale } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 import SimHeader from '../SimHeader'
 import KontoForms from './KontoForms'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const m = getMessages(await getLocale()).simulator.account.konto
+  const m = getMessages(await getAdminLocale()).simulator.account.konto
   return {
-    title: format(m.metaTitle, { tool: SIMULATOR_NAME }),
+    title: format(m.metaTitle, { tool: simulatorName(await getAdminLocale()) }),
     robots: { index: false, follow: false },
   }
 }
@@ -23,7 +23,7 @@ export default async function SimKontoPage() {
   if (!ctx) redirect('/login')
   // Die Adresse steht nicht im Token-Anspruch, den `getSimContext` liest — hier einmal beim Auth-Server fragen.
   const { data } = await (await createClient()).auth.getUser()
-  const locale = await getLocale()
+  const locale = await getAdminLocale()
   const m = getMessages(locale).simulator.account
 
   return (

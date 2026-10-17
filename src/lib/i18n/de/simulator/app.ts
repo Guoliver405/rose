@@ -16,7 +16,7 @@ export const app = {
     metaDescription: 'Rechnen Sie Ihr Haus durch: Housekeeping ohne Steuerung und mit RoSe, über viele Tage.',
     welcome: 'Adresse bestätigt – willkommen im {name}.',
     deleted: 'Ihre Simulator-Daten sind gelöscht. Ihr Zugang zu RoSe bleibt bestehen.',
-    intro: 'Rechnen Sie Ihr Haus durch: Größe, Personal, Zeiten und Gästeverhalten. Der Simulator spielt viele Tage mit jeweils anderen Gästen zweimal durch – ohne Steuerung und mit RoSe – und zeigt, was die Koordination bewirkt. Die Regeln für „mit RoSe“ sind die des echten Reinigungsboards. Derzeit nur auf Deutsch.',
+    intro: 'Rechnen Sie Ihr Haus durch: Größe, Personal, Zeiten und Gästeverhalten. Der Simulator spielt viele Tage mit jeweils anderen Gästen zweimal durch – ohne Steuerung und mit RoSe – und zeigt, was die Koordination bewirkt. Die Regeln für „mit RoSe“ sind die des echten Reinigungsboards.',
     teaser: {
       heading: 'Kostenlos, mit E-Mail-Adresse – ohne Zahlungsdaten',
       points: [

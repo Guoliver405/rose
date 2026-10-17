@@ -1,7 +1,7 @@
 import { createAdminClient } from '@/utils/supabase/service'
 import { MAX_SCENARIOS, formFromSaved, toSaved, type SimForm } from '@/lib/sim-form'
 import { format, getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 /*
  * Gespeicherte Szenarien des Housekeeping-Simulators (Phase 3, 26.09.2026).
@@ -10,7 +10,7 @@ import { getLocale } from '@/utils/locale'
  * bei einem von RLS verschluckten UPDATE/DELETE keinen Fehler (AGENTS.md).
  */
 
-async function messages() { return getMessages(await getLocale()).simulator.account.errors }
+async function messages() { return getMessages(await getAdminLocale()).simulator.account.errors }
 
 export type ScenarioItem = { id: string; name: string; updatedAt: string; form: SimForm }
 

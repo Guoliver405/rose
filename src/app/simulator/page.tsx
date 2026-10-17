@@ -3,20 +3,20 @@ import Link from 'next/link'
 import { CheckCircle2 } from 'lucide-react'
 import LegalFooter from '@/components/LegalFooter'
 import { getSimContext } from '@/utils/auth'
-import { SIMULATOR_NAME } from '@/lib/sim-account'
+import { simulatorName } from '@/lib/sim-account'
 import { listScenarios } from '@/utils/sim-scenarios'
 import { hotelSignupOpen } from '@/utils/hotel-account'
 import { getMessages, intlLocale, type SimulatorMessages } from '@/lib/i18n'
 import { format } from '@/lib/i18n/format'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 import Rich from '@/components/i18n/Rich'
 import SimHeader from './SimHeader'
 import SimulatorApp from './SimulatorApp'
 
 export async function generateMetadata(): Promise<Metadata> {
-  const m = getMessages(await getLocale()).simulator.app.page
+  const m = getMessages(await getAdminLocale()).simulator.app.page
   return {
-    title: format(m.metaTitle, { name: SIMULATOR_NAME }),
+    title: format(m.metaTitle, { name: simulatorName(await getAdminLocale()) }),
     description: m.metaDescription,
   }
 }
@@ -28,7 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * auf der Landing Page.
  */
 export default async function SimulatorPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
-  const [ctx, sp, locale] = await Promise.all([getSimContext(), searchParams, getLocale()])
+  const [ctx, sp, locale] = await Promise.all([getSimContext(), searchParams, getAdminLocale()])
   const messages = getMessages(locale).simulator
   const day = getMessages(locale).landing.day
   const m = messages.app
@@ -40,7 +40,7 @@ export default async function SimulatorPage({ searchParams }: { searchParams: Pr
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8">
         {sp.willkommen && ctx && (
           <p className="flex items-center gap-2 rounded-xl border border-positive-pill-edge bg-positive-tint px-4 py-3 text-sm font-semibold text-positive-deep">
-            <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden /> {format(m.page.welcome, { name: SIMULATOR_NAME })}
+            <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden /> {format(m.page.welcome, { name: simulatorName(locale) })}
           </p>
         )}
         {sp.geloescht && ctx && (
@@ -49,7 +49,7 @@ export default async function SimulatorPage({ searchParams }: { searchParams: Pr
           </p>
         )}
         <div>
-          <h1 className="text-3xl font-black text-ink">{SIMULATOR_NAME}</h1>
+          <h1 className="text-3xl font-black text-ink">{simulatorName(locale)}</h1>
           <p className="mt-2 max-w-3xl text-ink-soft">
             {m.page.intro}
           </p>

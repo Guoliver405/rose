@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
-  MARKETING_TEXT_VERSION, SIGNUP_MAX_PER_HOUR, SIGNUP_WINDOW_MS, isExpiredUnconfirmed, parseSignup, signupThrottled,
+  MARKETING_TEXT_VERSION, MARKETING_TEXT_VERSIONS, SIGNUP_MAX_PER_HOUR, SIGNUP_WINDOW_MS, isExpiredUnconfirmed, parseSignup, signupThrottled,
 } from './sim-account'
 import { simConfirmMail, simExistsMail } from './mail-templates'
 import { account } from './i18n/de/simulator/account'
+import { account as enAccount } from './i18n/en/simulator/account'
 import { flattenMessages } from './i18n/format'
 
 const MARKETING_TEXT = account.marketing.text
@@ -47,6 +48,13 @@ describe('Simulator-Konto', () => {
     expect(MARKETING_TEXT_VERSION).toBe('2026-09-26')
     expect(MARKETING_TEXT).toBe(
       'Ja, RoSe darf mich gelegentlich per E-Mail über neue Funktionen und besondere Angebote informieren – ausschließlich zu RoSe. Meine Adresse wird nicht weitergegeben. Abbestellen jederzeit mit einem Klick oder im Konto.',
+    )
+  })
+
+  it('Einwilligung auf Englisch: eigener Wortlaut, eigene Fassung — Text geändert ⇒ Version hochzählen', () => {
+    expect(MARKETING_TEXT_VERSIONS).toEqual({ de: '2026-09-26', en: '2026-10-18-en' })
+    expect(enAccount.marketing.text).toBe(
+      'Yes, RoSe may occasionally inform me by email about new features and special offers — about RoSe only. My address will not be passed on. I can unsubscribe at any time with one click or in my account.',
     )
   })
 

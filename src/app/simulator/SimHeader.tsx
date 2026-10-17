@@ -1,8 +1,10 @@
 import Link from 'next/link'
-import { SIMULATOR_NAME } from '@/lib/sim-account'
+import { simulatorName } from '@/lib/sim-account'
 import { getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 import { simLogoutAction } from './actions'
+import LanguageSwitch from '@/components/LanguageSwitch'
+import { ADMIN_LOCALES } from '@/lib/i18n/locales'
 
 /** Kopfzeile aller Seiten des Housekeeping-Simulators. */
 export default async function SimHeader({ signedIn, hotel = false }: {
@@ -10,15 +12,17 @@ export default async function SimHeader({ signedIn, hotel = false }: {
   /** Zugang mit Hotelkonto: Rückweg ins Portal. */
   hotel?: boolean
 }) {
-  const m = getMessages(await getLocale()).simulator.app.header
+  const locale = await getAdminLocale()
+  const m = getMessages(locale).simulator.app.header
   return (
     <header className="border-b border-edge bg-surface">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-3 px-4">
         <Link href="/simulator" className="flex min-w-0 items-baseline gap-2">
           <span className="text-xl font-black text-ink">Ro<span className="text-blocked">Se</span></span>
-          <span className="truncate text-sm font-semibold text-ink-soft">{SIMULATOR_NAME}</span>
+          <span className="truncate text-sm font-semibold text-ink-soft">{simulatorName(locale)}</span>
         </Link>
         <nav className="flex shrink-0 items-center gap-2 text-sm">
+          <LanguageSwitch current={locale} offered={ADMIN_LOCALES} inline />
           {signedIn ? (
             <>
               {hotel && (

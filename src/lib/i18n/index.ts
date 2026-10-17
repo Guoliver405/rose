@@ -19,6 +19,8 @@ import { help as enHelp } from './en/help'
 import { symbols as enSymbols } from './en/symbols'
 import { account as enAccount } from './en/account'
 import { auth as enAuth } from './en/auth'
+import { simulator as enSimulator } from './en/simulator'
+import { day as enDay } from './en/landing/day'
 import { DEFAULT_LOCALE, INTL_LOCALES, type Locale } from './locales'
 
 /**
@@ -60,7 +62,7 @@ export type Messages = typeof de
  */
 const MESSAGES: Record<Locale, Messages> = {
   de,
-  en: { ...de, guest: enGuest, service: enService, admin: enAdmin, mail: enMail, print: enPrint, help: enHelp, symbols: enSymbols, account: enAccount, auth: enAuth },
+  en: { ...de, guest: enGuest, service: enService, admin: enAdmin, mail: enMail, print: enPrint, help: enHelp, symbols: enSymbols, account: enAccount, auth: enAuth, simulator: enSimulator, landing: { ...de.landing, day: enDay } },
 }
 
 export function getMessages(locale: Locale = DEFAULT_LOCALE): Messages {

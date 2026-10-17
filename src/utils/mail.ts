@@ -35,7 +35,7 @@ import { SHEETS } from '@/lib/i18n/sheets'
 import {
   emailChangeConfirmMail, emailChangedNoticeMail, inviteMail, plainText, recoveryMail, richHtml, simConfirmMail, simExistsMail,
 } from '@/lib/mail-templates'
-import { SIMULATOR_NAME } from '@/lib/sim-account'
+import { simulatorName } from '@/lib/sim-account'
 import {
   advance, domainPattern, MAIL_COOLDOWN_SECONDS, MAIL_LOG_RETENTION_DAYS,
   recipientDomain, recipientHash, type DomainRow, type MailPurpose, type MailStatus,
@@ -614,23 +614,25 @@ export async function sendEmailChangedNoticeMail(m: { to: string; userId: string
 // ─── Simulator-Konto ─────────────────────────────────────────────────────────
 
 /** Bestätigung eines Simulator-Kontos — Adresse und (falls angekreuzt) Werbe-Einwilligung. */
-export function sendSimConfirmMail(m: { to: string; userId: string; url: string; marketing: boolean }): Promise<MailResult> {
+export async function sendSimConfirmMail(m: { to: string; userId: string; url: string; marketing: boolean }): Promise<MailResult> {
+  const locale = await getAdminLocale()
   return dispatch({
     purpose: 'sim_confirm',
     to: m.to,
     fromName: 'RoSe',
-    ...simConfirmMail({ url: m.url, marketing: m.marketing, toolName: SIMULATOR_NAME }),
+    ...simConfirmMail({ url: m.url, marketing: m.marketing, toolName: simulatorName(locale), locale }),
     userId: m.userId,
   })
 }
 
 /** Hinweis an eine schon bekannte Adresse — statt einer Fehlermeldung auf der öffentlichen Seite. */
-export function sendSimExistsMail(m: { to: string; userId: string | null }): Promise<MailResult> {
+export async function sendSimExistsMail(m: { to: string; userId: string | null }): Promise<MailResult> {
+  const locale = await getAdminLocale()
   return dispatch({
     purpose: 'sim_confirm',
     to: m.to,
     fromName: 'RoSe',
-    ...simExistsMail({ loginUrl: `${siteBase()}/login`, resetUrl: `${siteBase()}/passwort-vergessen`, toolName: SIMULATOR_NAME }),
+    ...simExistsMail({ loginUrl: `${siteBase()}/login`, resetUrl: `${siteBase()}/passwort-vergessen`, toolName: simulatorName(locale), locale }),
     userId: m.userId ?? undefined,
   })
 }

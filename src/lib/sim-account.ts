@@ -11,6 +11,13 @@ import { format } from '@/lib/i18n/format'
 /** Name des Werkzeugs auf allen Seiten (Entscheidung des Users, 26.09.2026). */
 export const SIMULATOR_NAME = 'Housekeeping-Simulator'
 
+/** Name je Sprache — im Englischen ohne Bindestrich (18.10.2026). Rechtstexte bleiben bei `SIMULATOR_NAME`. */
+export const SIMULATOR_NAMES = { de: SIMULATOR_NAME, en: 'Housekeeping Simulator' } as const
+
+export function simulatorName(locale: string): string {
+  return locale === 'en' ? SIMULATOR_NAMES.en : SIMULATOR_NAMES.de
+}
+
 /**
  * Fassung der Werbe-Einwilligung. Der Wortlaut steht seit 11.10.2026 in der
  * Sprachdatei (`i18n/de/simulator/account.ts`, `marketing.text`, wortgleich
@@ -20,6 +27,16 @@ export const SIMULATOR_NAME = 'Housekeeping-Simulator'
  * Weitergabe, nicht vorausgewählt.
  */
 export const MARKETING_TEXT_VERSION = '2026-09-26'
+
+/**
+ * Fassung je Sprache (18.10.2026): Eine Übersetzung ist ein eigener Wortlaut
+ * und bekommt ihre eigene Version — gespeichert wird, was die Person gelesen hat.
+ */
+export const MARKETING_TEXT_VERSIONS = { de: MARKETING_TEXT_VERSION, en: '2026-10-18-en' } as const
+
+export function marketingTextVersion(locale: string): string {
+  return locale === 'en' ? MARKETING_TEXT_VERSIONS.en : MARKETING_TEXT_VERSIONS.de
+}
 
 export const MIN_PASSWORD = 8
 

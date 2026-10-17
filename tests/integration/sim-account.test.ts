@@ -19,8 +19,8 @@ import { signedInStore, type FakeCookieStore } from './helpers/cookies'
 const cookieState = vi.hoisted(() => ({ store: null as FakeCookieStore | null }))
 vi.mock('next/headers', () => ({
   cookies: async () => {
-    if (!cookieState.store) throw new Error('Kein Cookie-Speicher gesetzt')
-    return cookieState.store
+    // Ohne Sitzung (Registrierung, Sprachwahl): leerer Speicher, Sprache fällt auf Deutsch.
+    return cookieState.store ?? { get: () => undefined, getAll: () => [], set: () => {}, delete: () => {} }
   },
   headers: async () => new Headers(),
 }))

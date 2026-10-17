@@ -20,6 +20,8 @@ const AREAS = {
   print: { file: 'print.ts', ctx: 'de/print.context.ts', ctxName: 'printContext' },
   auth: { file: 'auth.ts', ctx: 'de/auth.context.ts', ctxName: 'authContext' },
   account: { file: 'account/index.ts', ctx: 'de/account/context.ts', ctxName: 'accountContext' },
+  simulator: { file: 'simulator/index.ts', ctx: 'de/simulator/context.ts', ctxName: 'simulatorContext' },
+  day: { file: 'landing/day.ts', ctx: 'de/simulator/context.ts', ctxName: 'dayContext' },
   help: { file: 'help/index.ts', ctx: 'de/help/context.ts', ctxName: 'helpContext' },
   symbols: { file: 'symbols.ts', ctx: 'de/help/context.ts', ctxName: 'symbolsContext' },
   sheet: { file: 'sheet.ts', ctx: null, ctxName: null, where: 'Gedrucktes Check-in-Blatt und Zimmer-Aushang, Zugangs-E-Mail an den Gast', note: 'Gedruckt bzw. per E-Mail an den Gast; Platzhalter {…} bleiben stehen. Seit 09.09.2026 schon viersprachig (de/en/es/fr).' },

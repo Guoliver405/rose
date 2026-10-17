@@ -12,7 +12,7 @@ import type { Policy } from '@/lib/cleaning-sim'
 import { parseSignup } from '@/lib/sim-account'
 import { formFromSaved, toSaved, type SimForm } from '@/lib/sim-form'
 import { format, getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 import { deleteScenario, listScenarios, renameScenario, saveScenario, type ScenarioItem } from '@/utils/sim-scenarios'
 
 /*
@@ -20,7 +20,7 @@ import { deleteScenario, listScenarios, renameScenario, saveScenario, type Scena
  * in `@/utils/sim-account`; hier nur Eingaben, Sitzung und Weiterleitung.
  */
 
-async function texts() { return getMessages(await getLocale()).simulator.account }
+async function texts() { return getMessages(await getAdminLocale()).simulator.account }
 async function messages() { return (await texts()).errors }
 
 export async function simSignupAction(formData: FormData): Promise<{ sent?: true; error?: string }> {

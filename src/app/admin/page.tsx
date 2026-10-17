@@ -17,7 +17,7 @@ import KontoName from './KontoName'
 import Rich from '@/components/i18n/Rich'
 import { format, getMessages, intlLocale, plural } from '@/lib/i18n'
 import { getAdminLocale } from '@/utils/locale'
-import { SIMULATOR_NAME } from '@/lib/sim-account'
+import { simulatorName } from '@/lib/sim-account'
 
 /**
  * Häuser — der Einstieg ins Management-Portal und zugleich der Konto-Bereich.
@@ -274,7 +274,7 @@ export default async function HotelPickerPage() {
           className="flex items-center gap-3 rounded-xl border border-edge bg-surface p-4 hover:border-edge-strong">
           <BarChart3 className="h-5 w-5 shrink-0 text-action" aria-hidden />
           <div className="min-w-0 flex-1">
-            <div className="font-bold text-ink">{SIMULATOR_NAME}</div>
+            <div className="font-bold text-ink">{simulatorName(locale)}</div>
             <div className="text-sm text-ink-soft">
               {m.simulator.text}
             </div>
