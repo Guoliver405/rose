@@ -25,9 +25,9 @@ export const SERVICE_LOCALES: readonly Locale[] = ['de', 'en']
 
 /**
  * Sprachen der Verwaltung (Rezeptions-Portal, Mails, Druckseiten, Hilfe und
- * Lotsen, Konto und Abrechnung; seit 17.10.2026). Anmeldung und Registrierung
- * folgen und bleiben bis dahin deutsch. Rechnungen gehen weiter auf Deutsch
- * heraus (`INVOICE_LOCALE`).
+ * Lotsen, Konto und Abrechnung, Anmeldung, Simulator, Landing Page; seit
+ * 17.10.2026). Rechnungen folgen nicht der Oberfläche, sondern dem Land der
+ * Rechnungsanschrift (`invoiceLocale` in `lib/invoice.ts`).
  */
 export const ADMIN_LOCALES: readonly Locale[] = ['de', 'en']
 
