@@ -20,6 +20,7 @@ const AREAS = {
   print: { file: 'print.ts', ctx: 'de/print.context.ts', ctxName: 'printContext' },
   help: { file: 'help/index.ts', ctx: 'de/help/context.ts', ctxName: 'helpContext' },
   symbols: { file: 'symbols.ts', ctx: 'de/help/context.ts', ctxName: 'symbolsContext' },
+  sheet: { file: 'sheet.ts', ctx: null, ctxName: null, where: 'Gedrucktes Check-in-Blatt und Zimmer-Aushang, Zugangs-E-Mail an den Gast', note: 'Gedruckt bzw. per E-Mail an den Gast; Platzhalter {…} bleiben stehen. Seit 09.09.2026 schon viersprachig (de/en/es/fr).' },
 }
 
 /** Datenfelder der Hilfe-Themen (Zeichen, Farbtöne, Link-Ziele) — keine Texte. */
@@ -29,7 +30,7 @@ if (!a) throw new Error(`Unbekannter Bereich: ${area}`)
 
 const de = (await import(new URL(`de/${a.file}`, base)))[area]
 const target = (await import(new URL(`${lang}/${a.file}`, base)))[area]
-const context = (await import(new URL(a.ctx, base)))[a.ctxName]
+const context = a.ctx ? (await import(new URL(a.ctx, base)))[a.ctxName] : { _: { where: a.where, note: a.note } }
 
 function flatten(obj, prefix = '') {
   return Object.entries(obj).flatMap(([k, v]) =>
