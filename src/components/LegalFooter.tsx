@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { format, getMessages } from '@/lib/i18n'
 import { PROVIDER } from '@/lib/provider'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 /**
  * Fußzeile mit den Pflichtlinks — Impressum, Datenschutz, AGB — und der
@@ -23,7 +23,7 @@ import { getLocale } from '@/utils/locale'
  * Server-Komponenten gerendert werden.
  */
 export default async function LegalFooter({ className = '' }: { className?: string }) {
-  const m = getMessages(await getLocale()).legal.common
+  const m = getMessages(await getAdminLocale()).legal.common
   return (
     <footer className={`px-4 py-4 text-center text-xs text-ink-muted ${className}`}>
       <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">

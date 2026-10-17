@@ -50,7 +50,7 @@ export default function RoiCalculator({ m, intlLocale }: { m: LandingMessages['r
         <Slider label={m.inputs.nights} value={input.nights} min={1} max={10} step={0.5}
           display={plural(intlLocale, input.nights, m.inputs.nightsValue, { nights: num(input.nights) })} onChange={v => set('nights', v)} />
         <Slider label={m.inputs.hourly} value={input.hourlyCostCents / 100} min={12} max={30} step={0.5}
-          display={formatCents(input.hourlyCostCents)} onChange={v => set('hourlyCostCents', Math.round(v * 100))}
+          display={formatCents(input.hourlyCostCents, intlLocale)} onChange={v => set('hourlyCostCents', Math.round(v * 100))}
           hint={m.inputs.hourlyHint} />
       </div>
 
@@ -58,13 +58,13 @@ export default function RoiCalculator({ m, intlLocale }: { m: LandingMessages['r
       <div className="mt-6 grid gap-4 sm:grid-cols-2" aria-live="polite">
         <div className="rounded-xl border border-edge bg-surface p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-ink-muted">{m.cost.label}</p>
-          <p className="mt-1 text-3xl font-black text-ink">{formatCents(r.costCents)}</p>
+          <p className="mt-1 text-3xl font-black text-ink">{formatCents(r.costCents, intlLocale)}</p>
           <p className="text-sm text-ink-soft">{m.cost.sub}</p>
         </div>
         <div className="rounded-xl border border-positive-tint-edge bg-positive-tint p-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-positive-deepest">{m.savings.label}</p>
           <p className="mt-1 text-3xl font-black text-positive-deepest">
-            {hours(r.hoursTotal)} <span className="text-lg font-bold">≈ {formatCents(r.savingsCents)}</span>
+            {hours(r.hoursTotal)} <span className="text-lg font-bold">≈ {formatCents(r.savingsCents, intlLocale)}</span>
           </p>
           <p className="text-sm text-positive-deepest">{m.savings.sub}</p>
         </div>

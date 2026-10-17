@@ -14,15 +14,18 @@ import CleaningSimulation from '@/components/landing/CleaningSimulation'
 import Rich from '@/components/i18n/Rich'
 import { getMessages, intlLocale, type LandingMessages, type SimulatorMessages } from '@/lib/i18n'
 import { format } from '@/lib/i18n/format'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
+import LanguageSwitch from '@/components/LanguageSwitch'
+import { ADMIN_LOCALES, type Locale } from '@/lib/i18n/locales'
 
 type M = LandingMessages['page']
 
 export async function generateMetadata(): Promise<Metadata> {
-  const m = getMessages(await getLocale()).landing.page.meta
+  const locale = await getAdminLocale()
+  const m = getMessages(locale).landing.page.meta
   return {
     title: m.title,
-    description: format(m.description, { price: formatCents(PRICE_PER_ROOM_CENTS) }),
+    description: format(m.description, { price: formatCents(PRICE_PER_ROOM_CENTS, intlLocale(locale)) }),
     openGraph: {
       title: m.title,
       description: m.ogDescription,
@@ -48,26 +51,26 @@ export async function generateMetadata(): Promise<Metadata> {
  * damit Landing Page, AGB und Konto dieselben Zahlen zeigen.
  */
 export default async function LandingPage() {
-  const locale = await getLocale()
+  const locale = await getAdminLocale()
   const messages = getMessages(locale)
   const lm = messages.landing
   const m = lm.page
   const intl = intlLocale(locale)
   return (
     <div className="flex flex-1 flex-col bg-surface">
-      <Header m={m.header} />
+      <Header m={m.header} locale={locale} />
       <main className="flex-1">
         <Hero m={m.hero} />
         <PainPoints m={m.painPoints} />
-        <Formula m={m.formula} />
+        <Formula m={m.formula} intl={intl} />
         <Sustainability m={m.sustainability} />
         <ProductPreview m={m.product} demo={lm.demo} intlLocale={intl} />
         <Flow m={m.flow} />
         <DayComparison m={m.comparison} day={lm.day} texts={messages.simulator.app.day} intlLocale={intl} />
         <FeatureGrid m={m.features} />
-        <UseCases m={m.useCases} />
+        <UseCases m={m.useCases} intl={intl} />
         <Pricing m={m.pricing} roi={lm.roi} intlLocale={intl} />
-        <Faq m={m.faq} />
+        <Faq m={m.faq} intl={intl} />
         <SignupTeaser m={m.signup} />
       </main>
       <Footer m={m.footer} />
@@ -85,7 +88,7 @@ function Brand() {
   )
 }
 
-function Header({ m }: { m: M['header'] }) {
+function Header({ m, locale }: { m: M['header']; locale: Locale }) {
   return (
     <header className="sticky top-0 z-20 border-b border-edge bg-surface/85 backdrop-blur">
       <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-4 px-4">
@@ -99,6 +102,7 @@ function Header({ m }: { m: M['header'] }) {
           <a href="#faq" className="hover:text-ink">{m.nav.faq}</a>
         </nav>
         <div className="flex items-center gap-2">
+          <LanguageSwitch current={locale} offered={ADMIN_LOCALES} inline />
           <Link
             href="/login"
             className="rounded-lg border border-edge bg-surface-elevated px-3 py-1.5 text-sm font-semibold text-ink hover:border-edge-strong"
@@ -171,7 +175,7 @@ function PainPoints({ m }: { m: M['painPoints'] }) {
  * weiterer Nutzen, sondern der Grund, es auszuprobieren, und steht darunter.
  * Farbe nur als Linie und Tönung (Farbsprache der Boards).
  */
-function Formula({ m }: { m: M['formula'] }) {
+function Formula({ m, intl }: { m: M['formula']; intl: string }) {
   const terms = [
     {
       href: '#produkt',
@@ -224,7 +228,7 @@ function Formula({ m }: { m: M['formula'] }) {
         <Brand />
       </p>
       <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-ink-muted">
-        {format(m.footnote, { price: formatCents(PRICE_PER_ROOM_CENTS) })}
+        {format(m.footnote, { price: formatCents(PRICE_PER_ROOM_CENTS, intl) })}
       </p>
     </section>
   )
@@ -436,7 +440,7 @@ function FeatureGrid({ m }: { m: M['features'] }) {
   )
 }
 
-function UseCases({ m }: { m: M['useCases'] }) {
+function UseCases({ m, intl }: { m: M['useCases']; intl: string }) {
   const cases = [m.items.small, m.items.boutique, m.items.city, m.items.chain]
   return (
     <section className="border-y border-edge bg-surface-sunken">
@@ -451,7 +455,7 @@ function UseCases({ m }: { m: M['useCases'] }) {
           {cases.map((c) => (
             <div key={c.title} className="rounded-xl border border-edge bg-surface-elevated p-6">
               <h3 className="font-bold text-ink">{c.title}</h3>
-              <p className="mt-2 text-sm text-ink-soft">{format(c.text, { min: formatCents(MIN_MONTHLY_CENTS) })}</p>
+              <p className="mt-2 text-sm text-ink-soft">{format(c.text, { min: formatCents(MIN_MONTHLY_CENTS, intl) })}</p>
             </div>
           ))}
         </div>
@@ -476,11 +480,11 @@ function Pricing({ m, roi, intlLocale }: { m: M['pricing']; roi: LandingMessages
             {m.badge}
           </p>
           <p className="mt-4">
-            <span className="text-5xl font-black text-ink">{formatCents(PRICE_PER_ROOM_CENTS)}</span>
+            <span className="text-5xl font-black text-ink">{formatCents(PRICE_PER_ROOM_CENTS, intlLocale)}</span>
           </p>
           <p className="text-sm text-ink-soft">{m.perRoom}</p>
           <p className="mt-3 text-sm text-ink-soft">
-            <Rich text={m.minimum} vars={{ min: formatCents(MIN_MONTHLY_CENTS), rooms: MIN_COVERS_ROOMS }}
+            <Rich text={m.minimum} vars={{ min: formatCents(MIN_MONTHLY_CENTS, intlLocale), rooms: MIN_COVERS_ROOMS }}
               tags={{ b: c => <span className="font-semibold text-ink">{c}</span> }} />
           </p>
           <ul className="mt-5 flex-1 space-y-2 text-sm text-ink-soft">
@@ -518,8 +522,8 @@ function Pricing({ m, roi, intlLocale }: { m: M['pricing']; roi: LandingMessages
   )
 }
 
-function Faq({ m }: { m: M['faq'] }) {
-  const prices = { price: formatCents(PRICE_PER_ROOM_CENTS), min: formatCents(MIN_MONTHLY_CENTS) }
+function Faq({ m, intl }: { m: M['faq']; intl: string }) {
+  const prices = { price: formatCents(PRICE_PER_ROOM_CENTS, intl), min: formatCents(MIN_MONTHLY_CENTS, intl) }
   return (
     <section id="faq" className="scroll-mt-20 border-y border-edge bg-surface-sunken">
       <div className="mx-auto w-full max-w-3xl px-4 py-16">
