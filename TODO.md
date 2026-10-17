@@ -330,7 +330,7 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       **17.10.: Anmeldung, Registrierung, Passwort auf Englisch** (Umschalter auf allen vier Seiten, Passwort-Mail in der Sprache der Seite).
       **18.10.: Simulator auf Englisch** (Werkzeug, Tagesbild, Konto, Mails; Einwilligung mit eigener Fassung). **18.10.: Landing Page auf Englisch** (Fußzeile der Rechtstexte englisch mit „(German)“). Noch deutsch: Rechtstexte, Vorschaubild der Link-Vorschau, Rechnungen.
       **Schlussrunde Gegenlesen:** `Sessions/Uebersetzung-en-neu-seit-Gegenlesen.xlsx` (nur Neues und seit der Runde Geändertes,
-      erzeugt mit `--since Sessions/Uebersetzung-en-gegengelesen-2026-10-17.xlsx --full admin`; Rezeption vollständig, weil in der Runde nicht wirklich gelesen) – erst ganz zum Schluss an den Gegenleser.
+      erzeugt mit `--since Sessions/Uebersetzung-en-gegengelesen-2026-10-17.xlsx --full admin`; Rezeption vollständig, weil in der Runde nicht wirklich gelesen) – **18.10.: gegengelesen, nichts beanstandet.** Neuer Stand für künftige Differenzen: `Sessions/Uebersetzung-en-gegengelesen-2026-10-18.xlsx` (alle 3104 Texte).
       Offen: Rechtstexte erst nach der anwaltlichen Prüfung.
 - [ ] **Thailändisch als Belastungsprobe** — probehalber implementieren, um zu
       sehen, wie weit das Sprach-System trägt: nicht-lateinische Schrift,

@@ -285,9 +285,9 @@ export const page = {
     reception: 'Front desk',
     housekeeping: 'Housekeeping',
     guests: 'Guest portal',
-    imprint: 'Legal notice',
-    privacy: 'Privacy',
-    terms: 'Terms',
+    imprint: 'Legal notice (German)',
+    privacy: 'Privacy policy (German)',
+    terms: 'Terms (German)',
   },
 
   og: {
