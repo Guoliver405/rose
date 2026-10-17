@@ -19,8 +19,8 @@ export const rooms = {
     floorLabel: 'Floor',
     floorsLabel: 'Floors — comma list or range',
     floorsPlaceholder: 'e.g. 1-3',
-    numbersLabelIndividual: 'Room numbers — single, comma list or range',
-    numbersLabelIdentical: 'Room numbers per floor — single, comma list or range',
+    numbersLabelIndividual: 'Room numbers — single, comma list, or range',
+    numbersLabelIdentical: 'Room numbers per floor — single, comma list, or range',
     numbersPlaceholderIndividual: 'e.g. 101-110 or 201, 202, 205',
     numbersPlaceholderIdentical: 'e.g. 01-10',
     prefixFloor: 'Prefix the floor number (floor 2 + “05” → “205”)',
@@ -49,7 +49,7 @@ export const rooms = {
   list: {
     empty: 'No rooms yet.',
     intro:
-      'Click a room, floor or building to <b>edit</b> it, <b>take it out of service</b> or <b>delete</b> it. A typo? Editing changes number, floor and building without losing anything.',
+      'Click a room, floor, or building to <b>edit</b> it, <b>take it out of service</b>, or <b>delete</b> it. A typo? Editing changes number, floor, and building without losing anything.',
     noBuilding: 'No building',
     floor: 'Floor {floor}',
     room: 'Room {number}',
@@ -70,7 +70,7 @@ export const rooms = {
   },
 
   dialog: {
-    editHintRoom: 'Correct number, floor or building — nothing is lost',
+    editHintRoom: 'Correct number, floor, or building — nothing is lost',
     editHintFloor: 'Move the floor or change the building — nothing is lost',
     editHintBuilding: 'Rename the building — nothing is lost',
     deactivate: 'Take out of service',

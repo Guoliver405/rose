@@ -45,7 +45,7 @@ describe('Reinigungsboard — Englisch', () => {
 
   it('der Hinweis an der Tür nennt die drei Knöpfe wortgleich', () => {
     for (const label of [en.board.door.in30, en.board.door.in60, en.board.door.today]) {
-      expect(en.board.door.hint).toContain(`“${label}”`)
+      expect(en.board.door.hint).toContain(`“${label}`)
     }
   })
 })

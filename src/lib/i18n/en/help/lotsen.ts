@@ -34,7 +34,7 @@ export const lotsen = {
     },
     personal: {
       title: 'Staff',
-      subtitle: 'Housekeeping, front desk and managers — create, end access, print access cards',
+      subtitle: 'Housekeeping, front desk, and managers — create, end access, print access cards',
     },
     services: {
       title: 'Service builder',
@@ -46,27 +46,27 @@ export const lotsen = {
     },
     gast: {
       title: 'What the guest sees',
-      subtitle: 'Replica: the guest portal on a phone — cleaning, “not before”, skipping, Do not disturb, services',
+      subtitle: 'Replica: the guest portal on a phone — cleaning, “not before,” skipping, Do not disturb, services',
     },
     auswertung: {
       title: 'Reports',
-      subtitle: 'Work times from the entries, irregularities and when guests want cleaning',
+      subtitle: 'Work times from the entries, irregularities, and when guests want cleaning',
     },
     konto: {
       title: 'Plan & billing',
-      subtitle: 'What the account costs, how rooms are counted and where payment method and invoices are',
+      subtitle: 'What the account costs, how rooms are counted, and where payment method and invoices are',
     },
   },
 
   steps: {
     'einrichtung.start': {
       title: 'Welcome to RoSe',
-      body: 'Over the next few minutes, we’ll set up your property: rooms, the property’s rules, how your guests get into the portal, staff and services. You can stop at any time and continue later — progress comes from what has actually been set up, not from checkmarks.',
+      body: 'Over the next few minutes, we’ll set up your property: rooms, the property’s rules, how your guests get into the portal, staff, and services. You can stop at any time and continue later — progress comes from what has actually been set up, not from checkmarks.',
       tun: 'Continue with the “Next” button at the bottom right. You can pause at any time — a banner on the overview shows what’s missing and takes you back into setup.',
     },
     'zimmer.anlegen': {
       title: 'Everything starts with the rooms',
-      body: 'Without rooms there’s no check-in, no housekeeping board and no room signs. Here you create whole floors at once — no need to type anything one by one.',
+      body: 'Without rooms there’s no check-in, no housekeeping board, and no room signs. Here you create whole floors at once — no need to type anything one by one.',
     },
     'zimmer.modus': {
       title: 'Two ways to create many rooms',
@@ -79,7 +79,7 @@ export const lotsen = {
     },
     'zimmer.bestand': {
       title: 'A typo? No problem',
-      body: 'Rooms, floors and buildings can be clicked — the dialog offers the same everywhere: edit, take out of service, delete. Editing changes number, floor and building without losing history or work records; “out of service” is the gentle way for renovations. Deleting only happens after a warning with figures.',
+      body: 'Rooms, floors, and buildings can be clicked — the dialog offers the same everywhere: edit, take out of service, delete. Editing changes number, floor, and building without losing history or work records; “out of service” is the gentle way for renovations. Deleting only happens after a warning with figures.',
     },
     'regeln.zeitzone': {
       title: 'Time zone first',
@@ -87,7 +87,7 @@ export const lotsen = {
     },
     'regeln.routine': {
       title: 'Cleaning on request only — or daily',
-      body: 'By default, daily cleaning is off: rooms are cleaned when the guest asks or after check-out. That saves water, detergent and working time. If you turn it on, occupied rooms appear on the housekeeping board on their own from the day after arrival at the chosen time.',
+      body: 'By default, daily cleaning is off: rooms are cleaned when the guest asks or after check-out. That saves water, detergent, and working time. If you turn it on, occupied rooms appear on the housekeeping board on their own from the day after arrival at the chosen time.',
     },
     'regeln.checkout': {
       title: '“Check-out until” is the earliest time for daily cleaning',
@@ -117,7 +117,7 @@ export const lotsen = {
     },
     'services.anlegen': {
       title: 'A service is a building block',
-      body: 'The service is at the top — “Laundry service”, “Maintenance” — with the options the guest chooses below it. Two checkboxes decide the flow: “urgent” makes the bell on the room tile and the number in the navigation flash red. “Maintenance report” is for defects — such requests belong to the room, not the stay, and therefore stay open after check-out.',
+      body: 'The service is at the top — “Laundry service,” “Maintenance” — with the options the guest chooses below it. Two checkboxes decide the flow: “urgent” makes the bell on the room tile and the number in the navigation flash red. “Maintenance report” is for defects — such requests belong to the room, not the stay, and therefore stay open after check-out.',
       tun: 'Set “Maintenance report” for anything that can break — maintenance is the standard case.',
     },
     'services.liste': {
@@ -131,7 +131,7 @@ export const lotsen = {
     },
     'uebersicht.kpi': {
       title: 'The situation in one line',
-      body: 'The figures at the top show the state of the property at a glance — occupied, ready, to clean, “Do not disturb”, in progress. They update on their own as soon as a guest or a housekeeper changes something.',
+      body: 'The figures at the top show the state of the property at a glance — occupied, ready, to clean, “Do not disturb,” in progress. They update on their own as soon as a guest or a housekeeper changes something.',
     },
     'uebersicht.etage': {
       title: 'Sorted by floor',
@@ -139,12 +139,12 @@ export const lotsen = {
     },
     'uebersicht.kachel': {
       title: 'The color is the state',
-      body: 'The bar above the number says it all: green = ready, blue = occupied, amber = cleaning requested or daily cleaning due, orange = checked out, rose = “Do not disturb”. Purple and a flag mean prioritized, a red flashing ring an urgent service request. The small symbols below give the reason.',
+      body: 'The bar above the number says it all: green = ready, blue = occupied, amber = cleaning requested or daily cleaning due, orange = checked out, rose = “Do not disturb.” Purple and a flag mean prioritized, a red flashing ring an urgent service request. The small symbols below give the reason.',
       tun: 'Hover over a tile — the tooltip states the condition in plain words.',
     },
     'uebersicht.dialog': {
       title: 'One click opens the room',
-      body: 'The dialog holds check-in and check-out, the guest PIN to read out, the check-in sheet to print, the departure date, the priority and the history of the last 30 days. Check-in is one click; the departure date is optional and can be added at any time.',
+      body: 'The dialog holds check-in and check-out, the guest PIN to read out, the check-in sheet to print, the departure date, the priority, and the history of the last 30 days. Check-in is one click; the departure date is optional and can be added at any time.',
       tun: 'Go ahead and click a room — the guide stays open.',
     },
     'uebersicht.checkout': {
@@ -158,7 +158,7 @@ export const lotsen = {
     },
     'anfragen.liste': {
       title: 'What a request brings along',
-      body: 'Room number, service, the chosen options with price, a free note from the guest and the age of the request. New requests appear on their own — the page updates over the same live connection as the boards.',
+      body: 'Room number, service, the chosen options with price, a free note from the guest, and the age of the request. New requests appear on their own — the page updates over the same live connection as the boards.',
     },
     'anfragen.erledigt': {
       title: 'The checkmark decides the amount',
@@ -183,7 +183,7 @@ export const lotsen = {
     },
     'regeln.logo': {
       title: 'Your logo on the printouts',
-      body: 'Room sign and check-in sheet carry your logo at the top left; without one, the property name appears there. PNG, JPG or SVG, 1 MB max. Two pitfalls: an image that’s too small looks blurry at 55 mm, and a light logo meant for dark backgrounds is invisible on white paper — that’s why the preview shows it on white.',
+      body: 'Room sign and check-in sheet carry your logo at the top left; without one, the property name appears there. PNG, JPG, or SVG, 1 MB max. Two pitfalls: an image that’s too small looks blurry at 55 mm, and a light logo meant for dark backgrounds is invisible on white paper — that’s why the preview shows it on white.',
     },
     'regeln.checkin': {
       title: '“Check-in from” drives the departures',
@@ -195,7 +195,7 @@ export const lotsen = {
     },
     'regeln.personenbezug': {
       title: 'Per housekeeper or team only',
-      body: 'If the work of individual housekeepers may not or should not be measured in your property, choose “Team only”: reports then show only the property total, the room history shows “Housekeeping team”, and entries lose their person when the shift ends — when you switch, all existing ones too. You can switch back, but the names of anonymized entries don’t come back. With a single housekeeper on shift, the protection is only formal anyway.',
+      body: 'If the work of individual housekeepers may not or should not be measured in your property, choose “Team only”: reports then show only the property total, the room history shows “Housekeeping team,” and entries lose their person when the shift ends — when you switch, all existing ones too. You can switch back, but the names of anonymized entries don’t come back. With a single housekeeper on shift, the protection is only formal anyway.',
     },
     'regeln.fenster': {
       title: 'Cleaning requests only at set times',
@@ -216,11 +216,11 @@ export const lotsen = {
     },
     'gastzugang.aushang': {
       title: 'The room signs',
-      body: 'With the PIN method, every room needs its sign: A4 for frames, stands or folders, or four compact cards per page to cut apart. Printed once, valid permanently. With personal access, the room signs are hidden: they would lead to a PIN entry that nobody can use there.',
+      body: 'With the PIN method, every room needs its sign: A4 for frames, stands, or folders, or four compact cards per page to cut apart. Printed once, valid permanently. With personal access, the room signs are hidden: they would lead to a PIN entry that nobody can use there.',
     },
     'aushang.karte': {
       title: 'One sign per room',
-      body: 'The sign goes in the room — in a stand, a frame or the folder: QR code, room number, property name. The guest scans the QR code and just types their PIN. The code belongs to the room, not the stay — it stays valid for all guests and is printed exactly once.',
+      body: 'The sign goes in the room — in a stand, a frame, or the folder: QR code, room number, property name. The guest scans the QR code and just types their PIN. The code belongs to the room, not the stay — it stays valid for all guests and is printed exactly once.',
     },
     'aushang.knopf': {
       title: 'Create first, then print',
@@ -236,7 +236,7 @@ export const lotsen = {
     },
     'aushang.blatt': {
       title: 'The check-in sheet is created at check-in',
-      body: 'Unlike the room sign, it belongs to exactly one stay. You’ll find it in the room dialog once the guest is checked in: a sheet with PIN, QR code and a short guide that follows your property’s rules — if the property cleans occupied rooms daily, the text says so; otherwise it asks the guest to request cleaning in the portal. The same can be sent by email; the address isn’t stored.',
+      body: 'Unlike the room sign, it belongs to exactly one stay. You’ll find it in the room dialog once the guest is checked in: a sheet with PIN, QR code, and a short guide that follows your property’s rules — if the property cleans occupied rooms daily, the text says so; otherwise it asks the guest to request cleaning in the portal. The same can be sent by email; the address isn’t stored.',
       tun: 'Click an occupied room — the way to the check-in sheet is in the dialog.',
     },
     'aushang.login': {
@@ -249,7 +249,7 @@ export const lotsen = {
     },
     'personal.rezeption': {
       title: 'Front desk accounts',
-      body: 'The front desk handles day-to-day work: check-in and check-out, priorities, requests, printing check-in sheets and cards. Settings, room setup, services and staff management stay closed to them.',
+      body: 'The front desk handles day-to-day work: check-in and check-out, priorities, requests, printing check-in sheets and cards. Settings, room setup, services, and staff management stay closed to them.',
     },
     'personal.manager': {
       title: 'Managers — account owner only',
@@ -257,7 +257,7 @@ export const lotsen = {
     },
     'services.beispiele': {
       title: 'Start with examples',
-      body: 'As long as no service exists yet, you can take over two ready-made ones and adapt them. They’re perfectly normal services — rename, extend or archive them at any time.',
+      body: 'As long as no service exists yet, you can take over two ready-made ones and adapt them. They’re perfectly normal services — rename, extend, or archive them at any time.',
     },
     'reinigung.login': {
       title: 'Sign-in without email',
@@ -265,12 +265,12 @@ export const lotsen = {
     },
     'reinigung.schicht': {
       title: 'Start the shift first, then work',
-      body: 'No cleaning can be started without a started shift. The start of the shift is also the first entry in the work record — from these entries, the reports later calculate work, break and cleaning times.',
+      body: 'No cleaning can be started without a started shift. The start of the shift is also the first entry in the work record — from these entries, the reports later calculate work, break, and cleaning times.',
       tun: 'Pull the slider all the way — it only triggers at 97% of the track.',
     },
     'reinigung.etagen': {
       title: 'Floors instead of one long list',
-      body: 'After the shift starts, the floor level comes first, in the same fixed order as at the front desk. Each row shows how much is open there, whether a priority is waiting and who is already working there.',
+      body: 'After the shift starts, the floor level comes first, in the same fixed order as at the front desk. Each row shows how much is open there, whether a priority is waiting, and who is already working there.',
     },
     'reinigung.naechstes': {
       title: '“Up next” is a recommendation, not an assignment',
@@ -278,7 +278,7 @@ export const lotsen = {
     },
     'reinigung.kacheln': {
       title: 'Choosing a floor means checking in',
-      body: 'Whoever checks in now appears visibly on this floor — in the front desk overview and for the whole team. Grayed-out rooms aren’t blocked, they just have no task: vacant, “Do not disturb”, no cleaning wanted today, or a cleaning that applies only later.',
+      body: 'Whoever checks in now appears visibly on this floor — in the front desk overview and for the whole team. Grayed-out rooms aren’t blocked, they just have no task: vacant, “Do not disturb,” no cleaning wanted today, or a cleaning that applies only later.',
     },
     'reinigung.starten': {
       title: 'Start with a slider, not a button',
@@ -303,7 +303,7 @@ export const lotsen = {
     },
     'gast.zugang': {
       title: 'No account, no app',
-      body: 'The guest scans the sign in the room and enters the PIN from the check-in sheet — or opens the personal link received at check-in and is signed in without a PIN. Which of the two applies is decided by the property under “Guest access”.',
+      body: 'The guest scans the sign in the room and enters the PIN from the check-in sheet — or opens the personal link received at check-in and is signed in without a PIN. Which of the two applies is decided by the property under “Guest access.”',
     },
     'gast.portal': {
       title: 'One screen, nothing more',
@@ -332,15 +332,15 @@ export const lotsen = {
     },
     'gast.services': {
       title: 'Services from the builder',
-      body: 'The guest sees exactly the services the property has set up, with prices for information. Ordering takes one tap; the request lands at the front desk under “Requests”. Nothing is charged in RoSe.',
+      body: 'The guest sees exactly the services the property has set up, with prices for information. Ordering takes one tap; the request lands at the front desk under “Requests.” Nothing is charged in RoSe.',
     },
     'gast.bestellt': {
       title: 'And then it’s over',
-      body: 'Open requests stay visible to the guest until the front desk completes them. At check-out, PIN, link and sign-in expire immediately — the stay stays anonymous, no name was ever involved.',
+      body: 'Open requests stay visible to the guest until the front desk completes them. At check-out, PIN, link, and sign-in expire immediately — the stay stays anonymous, no name was ever involved.',
     },
     'auswertung.zeitraum': {
       title: 'The period is in the address',
-      body: 'From–to as a regular form that writes the period into the address. That way a state can be linked, sent on and printed — and when printing, the form itself disappears.',
+      body: 'From–to as a regular form that writes the period into the address. That way a state can be linked, sent on, and printed — and when printing, the form itself disappears.',
     },
     'auswertung.kennzahlen': {
       title: 'Everything calculated, nothing stored',
@@ -390,7 +390,7 @@ export const lotsen = {
     regeln: {
       label: 'Property rules checked',
       todo: 'Check the property rules',
-      done: 'Time zone set — daily cleaning, check-out time and reports calculate correctly',
+      done: 'Time zone set — daily cleaning, check-out time, and reports calculate correctly',
       open: 'Above all the time zone — check it once and save, even without changes',
     },
     gastzugang: {

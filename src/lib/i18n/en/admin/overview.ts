@@ -104,7 +104,7 @@ export const overview = {
     saveDeparture: 'Save departure',
     bill: {
       toCollect: 'To collect',
-      openHint: 'Still open and therefore not in the total. Already done? Then check it off now — check-out closes open requests as “not provided”.',
+      openHint: 'Still open and therefore not in the total. Already done? Then check it off now — check-out closes open requests as “not provided.”',
       markDone: 'done',
       details: 'Details',
       noPaidExtras: 'No paid extras — nothing to collect at check-out.',
@@ -121,8 +121,8 @@ export const overview = {
     confirmCheckOut: 'Confirm check-out? The guest’s access ends immediately.',
     toCollectAmount: 'To collect: {amount}',
     openWillClose: {
-      one: 'One open request ({amount}) will be closed as “not provided”.',
-      other: '{count} open requests ({amount}) will be closed as “not provided”.',
+      one: 'One open request ({amount}) will be closed as “not provided.”',
+      other: '{count} open requests ({amount}) will be closed as “not provided.”',
     },
     freeWillClose: {
       one: 'One free request will also be closed.',

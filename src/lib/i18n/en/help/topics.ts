@@ -34,7 +34,7 @@ export const topics = {
       {
         art: 'legende',
         titel: 'The symbols on the tile',
-        hinweis: 'Several symbols at once are normal — occupied, cleaning requested and an open request, for example. The tile’s tooltip states everything in plain words.',
+        hinweis: 'Several symbols at once are normal — occupied, cleaning requested, and an open request, for example. The tile’s tooltip states everything in plain words.',
         eintraege: [
           { zeichen: { art: 'symbol', id: 'occupied' } },
           { zeichen: { art: 'symbol', id: 'departure' } },
@@ -74,7 +74,7 @@ export const topics = {
         eintraege: [
           {
             frage: 'Why is a room orange after check-out instead of turning green right away?',
-            antwort: 'RoSe only shows what has actually been reported: check-out says “cleaning open”, and only a housekeeper finishing — or your “Mark cleaning as done” in the dialog — says “ready”. RoSe doesn’t guess whether someone has been there in the meantime.',
+            antwort: 'RoSe only shows what has actually been reported: check-out says “cleaning open,” and only a housekeeper finishing — or your “Mark cleaning as done” in the dialog — says “ready.” RoSe doesn’t guess whether someone has been there in the meantime.',
           },
           {
             frage: 'I need to check a guest in, but the room isn’t ready. Is that possible?',
@@ -86,7 +86,7 @@ export const topics = {
           },
           {
             frage: 'Do I have to enter a departure date at check-in?',
-            antwort: 'No — the default is “open”, so check-in stays one click. If you enter it, daily cleaning is skipped on the day of departure and the tile shows the suitcase. You can add or extend it at any time in the dialog. An outdated date (yesterday) counts as unknown, so a forgotten update doesn’t switch off daily cleaning permanently.',
+            antwort: 'No — the default is “open,” so check-in stays one click. If you enter it, daily cleaning is skipped on the day of departure and the tile shows the suitcase. You can add or extend it at any time in the dialog. An outdated date (yesterday) counts as unknown, so a forgotten update doesn’t switch off daily cleaning permanently.',
           },
           {
             frage: 'When do I set a priority?',
@@ -94,7 +94,7 @@ export const topics = {
           },
           {
             frage: 'What exactly happens at check-out?',
-            antwort: 'PIN, link and the guest’s session stop working immediately, and the room goes to “cleaning open”. Open service requests of this stay are closed as “not provided” — check off what was actually provided in the same box beforehand. Maintenance reports (defects) stay open. If the guest ordered something paid, the total appears in the dialog before you confirm.',
+            antwort: 'PIN, link, and the guest’s session stop working immediately, and the room goes to “cleaning open.” Open service requests of this stay are closed as “not provided” — check off what was actually provided in the same box beforehand. Maintenance reports (defects) stay open. If the guest ordered something paid, the total appears in the dialog before you confirm.',
           },
           {
             frage: 'Where can I find the statement later?',
@@ -102,7 +102,7 @@ export const topics = {
           },
           {
             frage: 'What’s in the history?',
-            antwort: 'The room’s last 30 days: guest taps (always just “Guest”, never an identity), cleanings with names, check-in and check-out with the person at the desk, service requests. “Cleaning not finished (time limit)” appears there too — the history is the work record and the tool for complaints.',
+            antwort: 'The room’s last 30 days: guest taps (always just “Guest,” never an identity), cleanings with names, check-in and check-out with the person at the desk, service requests. “Cleaning not finished (time limit)” appears there too — the history is the work record and the tool for complaints.',
           },
           {
             frage: 'Why does the tile show “Cleaning from 11:00” and not appear on the board?',
@@ -178,10 +178,10 @@ export const topics = {
           },
           {
             frage: 'Why is a request gone after check-out?',
-            antwort: 'It isn’t gone, but closed as “not provided” and listed under “Recently closed”. Requests belong to the stay, not the room — otherwise tomorrow the board would show a request for an empty room.',
+            antwort: 'It isn’t gone, but closed as “not provided” and listed under “Recently closed.” Requests belong to the stay, not the room — otherwise tomorrow the board would show a request for an empty room.',
           },
           {
-            frage: 'What’s a “maintenance report”, and why does it stay open?',
+            frage: 'What’s a “maintenance report,” and why does it stay open?',
             antwort: 'A flag on the service in the builder, meant for defects: such requests belong to the room, not the stay. They survive check-out, appear on no statement (not even with a price), and the next check-in warns about them — a broken faucet doesn’t stop existing because the guest leaves.',
           },
           {
@@ -194,7 +194,7 @@ export const topics = {
           },
           {
             frage: 'The guest says they ordered, but nothing is here.',
-            antwort: 'Check the room’s history to see whether a request arrived. The most common causes: the guest canceled before sending, or used a tile under “Useful links”, such as a food delivery service — that leads to an outside site and doesn’t create a request.',
+            antwort: 'Check the room’s history to see whether a request arrived. The most common causes: the guest canceled before sending, or used a tile under “Useful links,” such as a food delivery service — that leads to an outside site and doesn’t create a request.',
           },
         ],
       },
@@ -203,7 +203,7 @@ export const topics = {
         eintraege: [
           {
             label: 'Service builder',
-            hinweis: 'The builder: prices, “urgent”, “maintenance report”',
+            hinweis: 'The builder: prices, “urgent,” “maintenance report”',
             ziel: { art: 'thema', id: 'services' },
           },
           {
@@ -223,7 +223,7 @@ export const topics = {
         art: 'text',
         absaetze: [
           'Rooms are created floor by floor: numbers as a list (“201, 202, 205”) or as a range (“101-110”), optionally with the floor number as a prefix. Below the form you see beforehand what will be created — nothing is written until you click.',
-          'Rooms, floors and buildings open the same dialog with the same three options: edit, take out of service, delete.',
+          'Rooms, floors, and buildings open the same dialog with the same three options: edit, take out of service, delete.',
         ],
       },
       {
@@ -239,7 +239,7 @@ export const topics = {
           },
           {
             frage: 'A number is wrong. Delete and create again?',
-            antwort: 'No — edit it. Number, floor and building can be changed without losing history, stays or work records; everything belongs to the room, not its number. Deleting is for rooms created by mistake without history.',
+            antwort: 'No — edit it. Number, floor, and building can be changed without losing history, stays, or work records; everything belongs to the room, not its number. Deleting is for rooms created by mistake without history.',
           },
           {
             frage: 'Out of service or delete?',
@@ -283,7 +283,7 @@ export const topics = {
       {
         art: 'text',
         absaetze: [
-          'The rules apply to everything from the moment you save. Current stays, requests already set and PINs already issued continue unchanged — nothing is converted retroactively.',
+          'The rules apply to everything from the moment you save. Current stays, requests already set, and PINs already issued continue unchanged — nothing is converted retroactively.',
           'Nothing is saved automatically. As soon as something has changed, a bar “Unsaved changes” with Save and Discard appears at the bottom of the screen — if you leave the page before saving, you’ll be asked.',
         ],
       },
@@ -296,7 +296,7 @@ export const topics = {
           },
           {
             frage: 'Clean occupied rooms daily — yes or no?',
-            antwort: 'Off by default: rooms are cleaned at the guest’s request and after check-out. That saves water, detergent and working time and is part of the sustainability promise. When it’s on, occupied rooms appear on the board on their own from the day after arrival at the chosen time — except with “Do not disturb”, “No cleaning today”, on the day of departure and if the room has already been cleaned today. If the guest has set a request themselves, their request applies.',
+            antwort: 'Off by default: rooms are cleaned at the guest’s request and after check-out. That saves water, detergent, and working time and is part of the sustainability promise. When it’s on, occupied rooms appear on the board on their own from the day after arrival at the chosen time — except with “Do not disturb,” “No cleaning today,” on the day of departure, and if the room has already been cleaned today. If the guest has set a request themselves, their request applies.',
           },
           {
             frage: 'What does “Check-out until” do?',
@@ -316,7 +316,7 @@ export const topics = {
           },
           {
             frage: 'What happens with a forgotten cleaning?',
-            antwort: 'If a started cleaning isn’t finished, the room reopens on its own after the time limit, and the history shows “Cleaning not finished (time limit, name)”. The limit should be well above the longest real cleaning — default 90 minutes.',
+            antwort: 'If a started cleaning isn’t finished, the room reopens on its own after the time limit, and the history shows “Cleaning not finished (time limit, name).” The limit should be well above the longest real cleaning — default 90 minutes.',
           },
           {
             frage: 'Changing the PIN length — what happens to current stays?',
@@ -324,7 +324,7 @@ export const topics = {
           },
           {
             frage: 'Our property doesn’t charge in euros — is that possible?',
-            antwort: 'Yes. Under “Currency of service prices” you choose the currency in which you enter prices in the service builder; guests, the front desk and the check-out statement then show it that way. Every request remembers its currency, so old requests stay as they were. Existing prices aren’t converted when you switch. You can only switch while no guest is checked in.',
+            antwort: 'Yes. Under “Currency of service prices” you choose the currency in which you enter prices in the service builder; guests, the front desk, and the check-out statement then show it that way. Every request remembers its currency, so old requests stay as they were. Existing prices aren’t converted when you switch. You can only switch while no guest is checked in.',
           },
           {
             frage: 'Where do guests see the review link?',
@@ -340,7 +340,7 @@ export const topics = {
           },
           {
             frage: 'What are the requirements for the logo?',
-            antwort: 'PNG, JPG or SVG up to 1 MB. It appears on room sign and check-in sheet at 55 × 16 mm max.; below about 400 px width it looks blurry there. The preview is on a white background — otherwise a light logo meant for dark backgrounds would be invisible on paper. Without a logo, the sheets show the property name.',
+            antwort: 'PNG, JPG, or SVG up to 1 MB. It appears on room sign and check-in sheet at 55 × 16 mm max.; below about 400 px width it looks blurry there. The preview is on a white background — otherwise a light logo meant for dark backgrounds would be invisible on paper. Without a logo, the sheets show the property name.',
           },
         ],
       },
@@ -434,7 +434,7 @@ export const topics = {
         eintraege: [
           {
             frage: 'A4 or compact?',
-            antwort: 'A4 for frames, stands and folders; compact (92 × 130 mm, four per page to cut apart) for door signs and the desk. The choice depends on the occasion and isn’t saved. The QR code is sized for reading distance: 55 mm on A4, 42 mm compact.',
+            antwort: 'A4 for frames, stands, and folders; compact (92 × 130 mm, four per page to cut apart) for door signs and the desk. The choice depends on the occasion and isn’t saved. The QR code is sized for reading distance: 55 mm on A4, 42 mm compact.',
           },
           {
             frage: 'Why is there no cleaning time on the room sign?',
@@ -481,7 +481,7 @@ export const topics = {
   },
   personal: {
     title: 'Staff',
-    subtitle: 'Housekeeping, front desk, managers — accounts, invitations, access cards, ending and deleting',
+    subtitle: 'Housekeeping, front desk, managers — accounts, invitations, access cards, ending, and deleting',
     bloecke: [
       {
         art: 'text',
@@ -525,7 +525,7 @@ export const topics = {
         eintraege: [
           {
             frage: 'The housekeeper is turned away with the correct PIN.',
-            antwort: 'Almost always, the display name is in the “Username” field. Sign-in uses the short username shown on the access card under “Credentials”. Second cause: the access was ended — then the sign-in page says so.',
+            antwort: 'Almost always, the display name is in the “Username” field. Sign-in uses the short username shown on the access card under “Credentials.” Second cause: the access was ended — then the sign-in page says so.',
           },
           {
             frage: 'Forgot the PIN?',
@@ -533,7 +533,7 @@ export const topics = {
           },
           {
             frage: 'The invitation didn’t arrive.',
-            antwort: 'Below the send button you see the delivery status: handed over, delivered or rejected — with the receiving server’s reason. Usually it’s a typo in the address. After a rejection, the address can be unblocked and the email resent; and there’s “Show invitation link” to hand over the link via messenger or on paper. There’s a one-minute wait between two emails to the same person.',
+            antwort: 'Below the send button you see the delivery status: handed over, delivered, or rejected — with the receiving server’s reason. Usually it’s a typo in the address. After a rejection, the address can be unblocked and the email resent; and there’s “Show invitation link” to hand over the link via messenger or on paper. There’s a one-minute wait between two emails to the same person.',
           },
           {
             frage: 'End access or delete?',
@@ -541,7 +541,7 @@ export const topics = {
           },
           {
             frage: 'What can the front desk do, and what can a manager do?',
-            antwort: 'Front desk: check-in and check-out, priorities, requests, printing check-in sheets, cards and room signs, own password. Not: settings, rooms, services, staff, “Renew code”. Manager: the same rights as the owner within the property, but no access to the account and billing. Only the owner appoints managers.',
+            antwort: 'Front desk: check-in and check-out, priorities, requests, printing check-in sheets, cards, and room signs, own password. Not: settings, rooms, services, staff, “Renew code.” Manager: the same rights as the owner within the property, but no access to the account and billing. Only the owner appoints managers.',
           },
           {
             frage: 'One person should look after several properties.',
@@ -572,7 +572,7 @@ export const topics = {
   },
   services: {
     title: 'Service builder',
-    subtitle: 'The service builder: services, options, prices, “urgent”, “maintenance report”',
+    subtitle: 'The service builder: services, options, prices, “urgent,” “maintenance report”',
     bloecke: [
       {
         art: 'text',
@@ -605,11 +605,11 @@ export const topics = {
           },
           {
             frage: 'How do guests get the services in their language?',
-            antwort: 'You create each service in your home language. Below the service, language chips show which guest portal languages it’s already translated into — tapping a language opens the fields for name, description and options, with the source text below each. Feel free to translate with a tool of your choice. If a translation is missing, the guest sees the source text, never an empty field. The front desk always sees requests in the home language. The example services are already translated.',
+            antwort: 'You create each service in your home language. Below the service, language chips show which guest portal languages it’s already translated into — tapping a language opens the fields for name, description, and options, with the source text below each. Feel free to translate with a tool of your choice. If a translation is missing, the guest sees the source text, never an empty field. The front desk always sees requests in the home language. The example services are already translated.',
           },
           {
             frage: 'I rename a service. Does that change old requests?',
-            antwort: 'No. Name, options and prices are frozen at the time of the request; old requests and statements stay as they were. The “maintenance report” flag, on the other hand, also affects open requests immediately — it decides behavior, not the content of a record.',
+            antwort: 'No. Name, options, and prices are frozen at the time of the request; old requests and statements stay as they were. The “maintenance report” flag, on the other hand, also affects open requests immediately — it decides behavior, not the content of a record.',
           },
           {
             frage: 'Archive or delete?',
@@ -737,15 +737,15 @@ export const topics = {
           },
           {
             frage: 'Why is a room grayed out?',
-            antwort: 'It isn’t blocked, it just has no task: vacant, occupied without a request, “Do not disturb”, no cleaning wanted today (leaf), or a cleaning that applies only later (“from 11:00”). It stays visible so the floor is complete. At the set time, a postponed request switches to open on its own.',
+            antwort: 'It isn’t blocked, it just has no task: vacant, occupied without a request, “Do not disturb,” no cleaning wanted today (leaf), or a cleaning that applies only later (“from 11:00”). It stays visible so the floor is complete. At the set time, a postponed request switches to open on its own.',
           },
           {
             frage: 'The guest is in the room and doesn’t want cleaning right now — what does the housekeeper do?',
-            antwort: 'Tap the room without starting: “In 30 min”, “In 1 hr” or “Not today”. “In 30 min” and “In 1 hr” take the room off the board until that time — for the whole team, nobody knocks again in between —, afterwards it’s open again on its own. “Not today” settles the room for today without counting as a cleaning. If the guest still wants cleaning, they tap it in the portal; then it’s open again.',
+            antwort: 'Tap the room without starting: “In 30 min,” “In 1 hr” or “Not today.” “In 30 min” and “In 1 hr” take the room off the board until that time — for the whole team, nobody knocks again in between —, afterwards it’s open again on its own. “Not today” settles the room for today without counting as a cleaning. If the guest still wants cleaning, they tap it in the portal; then it’s open again.',
           },
           {
             frage: 'Finishing was forgotten.',
-            antwort: 'After the time limit set by the property (default 90 minutes), the room reopens on its own; the history shows “Cleaning not finished (time limit, name)”. The cleaning then doesn’t count as done in the reports — so the finish slider is always worth it.',
+            antwort: 'After the time limit set by the property (default 90 minutes), the room reopens on its own; the history shows “Cleaning not finished (time limit, name).” The cleaning then doesn’t count as done in the reports — so the finish slider is always worth it.',
           },
           {
             frage: 'What does “Do not disturb” lifted 9:40 mean?',
@@ -765,11 +765,11 @@ export const topics = {
           },
           {
             frage: 'Sign-in rejected although the PIN is correct.',
-            antwort: 'The field contains the display name instead of the short username — that’s on the access card under “Credentials”. Or the access was ended; then the page says so. Scanning the card is the way without typing.',
+            antwort: 'The field contains the display name instead of the short username — that’s on the access card under “Credentials.” Or the access was ended; then the page says so. Scanning the card is the way without typing.',
           },
           {
             frage: 'How does the front desk know what work was done?',
-            antwort: 'From the entries: shift start and end, breaks, other cleaning, start and finish per room. From these, the reports calculate work and cleaning times; the room history shows every cleaning with a name — in team mode as “Housekeeping team”.',
+            antwort: 'From the entries: shift start and end, breaks, other cleaning, start and finish per room. From these, the reports calculate work and cleaning times; the room history shows every cleaning with a name — in team mode as “Housekeeping team.”',
           },
         ],
       },
@@ -797,7 +797,7 @@ export const topics = {
   },
   gast: {
     title: 'What the guest sees',
-    subtitle: 'Access, PIN lock, cleaning and “not before”, Do not disturb, requests, check-out',
+    subtitle: 'Access, PIN lock, cleaning and “not before,” Do not disturb, requests, check-out',
     bloecke: [
       {
         art: 'fragen',
@@ -808,7 +808,7 @@ export const topics = {
           },
           {
             frage: 'The guest has locked themselves out.',
-            antwort: 'After five wrong PINs, the stay is locked for 15 minutes — even for the correct PIN. This applies only to this room, not to the property. After that it works again; the correct PIN is in the room dialog. Checking out and in again isn’t a good way out: check-out closes open requests and sets the room to “cleaning open”.',
+            antwort: 'After five wrong PINs, the stay is locked for 15 minutes — even for the correct PIN. This applies only to this room, not to the property. After that it works again; the correct PIN is in the room dialog. Checking out and in again isn’t a good way out: check-out closes open requests and sets the room to “cleaning open.”',
           },
           {
             frage: 'What does “Clean my room” do?',
@@ -816,7 +816,7 @@ export const topics = {
           },
           {
             frage: 'What does the status card above the buttons say?',
-            antwort: 'Where the guest stands with cleaning, from the same data as your boards: “planned” (request, priority or daily cleaning due), “from HH:MM” (guest postponed or daily cleaning not yet due), “being cleaned right now”, “cleaned today at HH:MM” or “nothing planned today” — with the reason (day of arrival, day of departure, property cleans on request only). “Cleaned” only counts from this guest’s check-in; a housekeeper’s name never appears. The card updates every 15 seconds.',
+            antwort: 'Where the guest stands with cleaning, from the same data as your boards: “planned” (request, priority, or daily cleaning due), “from HH:MM” (guest postponed or daily cleaning not yet due), “being cleaned right now,” “cleaned today at HH:MM” or “nothing planned today” — with the reason (day of arrival, day of departure, property cleans on request only). “Cleaned” only counts from this guest’s check-in; a housekeeper’s name never appears. The card updates every 15 seconds.',
           },
           {
             frage: 'Why can’t the guest request cleaning right now?',
@@ -828,7 +828,7 @@ export const topics = {
           },
           {
             frage: 'Does the guest pay in the portal?',
-            antwort: 'No. They see prices for information and order with one tap; the request lands with you under “Requests”. At check-out, RoSe shows the total of what was provided — payment is collected at the desk as before.',
+            antwort: 'No. They see prices for information and order with one tap; the request lands with you under “Requests.” At check-out, RoSe shows the total of what was provided — payment is collected at the desk as before.',
           },
           {
             frage: 'What language is the portal in?',
@@ -836,7 +836,7 @@ export const topics = {
           },
           {
             frage: 'What does RoSe know about the guest?',
-            antwort: 'Nothing. A stay is a room, a period, a PIN or a link — no name, no address. An address entered for the access email isn’t stored. At check-out, PIN, link and sign-in expire.',
+            antwort: 'Nothing. A stay is a room, a period, a PIN, or a link — no name, no address. An address entered for the access email isn’t stored. At check-out, PIN, link, and sign-in expire.',
           },
         ],
       },
@@ -859,7 +859,7 @@ export const topics = {
   },
   auswertung: {
     title: 'Reports',
-    subtitle: 'Work, break and cleaning times from the entries, irregularities, demand by hour',
+    subtitle: 'Work, break, and cleaning times from the entries, irregularities, demand by hour',
     bloecke: [
       {
         art: 'text',
@@ -919,7 +919,7 @@ export const topics = {
   },
   zugang: {
     title: 'My account',
-    subtitle: 'Sign-in address, display name and password of the signed-in person',
+    subtitle: 'Sign-in address, display name, and password of the signed-in person',
     bloecke: [
       {
         art: 'fragen',
@@ -938,7 +938,7 @@ export const topics = {
           },
           {
             frage: 'Can I change my email address?',
-            antwort: 'Yes, here under “Change sign-in address” — for owners, managers and front desk. You enter your current password and the new address; a confirmation link goes to the new address, and only clicking it makes the switch. Until then, you keep signing in with the old address. After the switch, the old address receives a notice.',
+            antwort: 'Yes, here under “Change sign-in address” — for owners, managers, and front desk. You enter your current password and the new address; a confirmation link goes to the new address, and only clicking it makes the switch. Until then, you keep signing in with the old address. After the switch, the old address receives a notice.',
           },
           {
             frage: 'What stays the same with a new sign-in address?',
@@ -973,7 +973,7 @@ export const topics = {
       {
         art: 'text',
         absaetze: [
-          'The properties page is the entry point for owners and managers: all accessible properties with their status (open cleanings, requests), and below, for the owner, the account box and “Add property”. The front desk never sees this page — it knows exactly one property.',
+          'The properties page is the entry point for owners and managers: all accessible properties with their status (open cleanings, requests), and below, for the owner, the account box and “Add property.” The front desk never sees this page — it knows exactly one property.',
         ],
       },
       {
@@ -989,11 +989,11 @@ export const topics = {
           },
           {
             frage: 'What does “Delete data” mean?',
-            antwort: 'Completely removing a property or the whole account — with a preview in figures and the name typed to confirm; it can’t be undone. Unlike day-to-day work, where records deliberately survive, it clears everything: history, sign-in accounts and logo too. Only the invoice records remain, because they have to be kept. Deleting the account is also the cancellation at the end of the month: for the current month, a final invoice is created on deletion, and the dialog shows the amount beforehand (nothing in the free month).',
+            antwort: 'Completely removing a property or the whole account — with a preview in figures and the name typed to confirm; it can’t be undone. Unlike day-to-day work, where records deliberately survive, it clears everything: history, sign-in accounts, and logo too. Only the invoice records remain, because they have to be kept. Deleting the account is also the cancellation at the end of the month: for the current month, a final invoice is created on deletion, and the dialog shows the amount beforehand (nothing in the free month).',
           },
           {
             frage: 'What happens when I add another property?',
-            antwort: 'It’s created with its own address, rooms, staff and rules. Billing is per room across all properties of the account; the minimum amount applies per account, not per property.',
+            antwort: 'It’s created with its own address, rooms, staff, and rules. Billing is per room across all properties of the account; the minimum amount applies per account, not per property.',
           },
         ],
       },

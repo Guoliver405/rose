@@ -6,7 +6,7 @@ import type { ServiceMessages } from '../de/service'
  * of every text: `de/service.ts` and `de/service.context.ts`.
  *
  * Tone: friendly and short — read on a phone between two rooms. Terms match
- * the guest portal (“Do not disturb”, “No cleaning today”, “front desk”).
+ * the guest portal (“Do not disturb,” “No cleaning today,” “front desk”).
  * Room tiles are narrow: state labels stay at two or three words.
  */
 export const service = {

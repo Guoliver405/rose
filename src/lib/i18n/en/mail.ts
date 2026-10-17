@@ -86,7 +86,7 @@ export const mail = {
     timedOutHelp: 'Some providers only confirm after a few minutes. Please check the inbox (including spam); resend if needed.',
     sentTitle: 'Handed over',
     inviteLink: {
-      title: 'Invitation link — hand it over via messenger, text message or note',
+      title: 'Invitation link — hand it over via messenger, text message, or note',
       copy: 'Copy link',
       copied: 'Copied',
       hide: 'Hide',

@@ -18,7 +18,7 @@ export const sheet = {
   buttonHints: {
     clean: 'Tap whenever you would like your room cleaned.',
     dnd: 'Nobody knocks — not even for services.',
-    services: 'Towels, repairs and more — the front desk sees it right away.',
+    services: 'Towels, repairs, and more — the front desk sees it right away.',
   },
   sustainabilityNeutral:
     'Every unnecessary cleaning saves water, detergent, and energy. You decide whether you need cleaning in the guest portal.',

@@ -52,9 +52,9 @@ describe('Gästeportal — Englisch', () => {
   })
 
   it('nennt Knöpfe im Fließtext wortgleich mit ihrer Beschriftung', () => {
-    expect(en.status.done.text).toContain(`“${en.signal.clean.label}”`)
-    expect(en.status.dnd.text).toContain(`“${en.signal.dnd.label}”`)
-    expect(en.status.scheduledFrom.daily).toContain(`“${en.signal.skip.label}”`)
+    expect(en.status.done.text).toContain(`“${en.signal.clean.label}`)
+    expect(en.status.dnd.text).toContain(`“${en.signal.dnd.label}`)
+    expect(en.status.scheduledFrom.daily).toContain(`“${en.signal.skip.label}`)
   })
 
   it('das englische Blatt trägt die englischen Knöpfe', () => {

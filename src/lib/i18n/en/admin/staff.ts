@@ -14,7 +14,7 @@ export const staff = {
 
     displayName: 'Display name',
     username: 'Username (sign-in)',
-    usernamePatternTitle: 'Letters, digits, period, underscore and hyphen only',
+    usernamePatternTitle: 'Letters, digits, period, underscore, and hyphen only',
     email: 'Email (sign-in)',
     create: 'Create',
 
@@ -22,7 +22,7 @@ export const staff = {
     maidNamePlaceholder: 'e.g. Maria K.',
     usernamePlaceholder: 'e.g. maria',
     maidHint:
-      'Housekeepers sign in with the <b>username</b> and PIN — not the display name, which only appears on the board and the access card. The PIN (6 digits) and access card are created automatically — hand them over via “Print card”.',
+      'Housekeepers sign in with the <b>username</b> and PIN — not the display name, which only appears on the board and the access card. The PIN (6 digits) and access card are created automatically — hand them over via “Print card.”',
     emptyMaids: 'No housekeepers yet.',
     emptyMaidsHint: 'Each housekeeper gets their own account with a PIN and an access card for the housekeeping board.',
 
@@ -30,7 +30,7 @@ export const staff = {
     receptionNamePlaceholder: 'e.g. Front desk morning',
     receptionEmailPlaceholder: 'e.g. frontdesk@myhotel.com',
     receptionHint:
-      'Front desk accounts handle day-to-day work (check-in/out, requests, printing) — settings, room setup and services remain with the owner and managers. The person receives an email invitation and sets their own password.',
+      'Front desk accounts handle day-to-day work (check-in/out, requests, printing) — settings, room setup, and services remain with the owner and managers. The person receives an email invitation and sets their own password.',
     receptionInviteHint:
       'Once the invitation is accepted, “Invitation pending” disappears from the list. If the email doesn’t arrive, use “Resend” on the row. If delivery failed, the row also offers “Show invitation link” — you can pass the link on yourself, e.g. via a messenger.',
     emptyReception: 'No front desk accounts yet.',
@@ -105,8 +105,8 @@ export const staff = {
       periodOne: ' ({date})',
       periodRange: ' ({from} to {to})',
       logEntriesLost: {
-        one: '{count} activity log entry{period} — shifts, breaks and cleanings disappear from the reports',
-        other: '{count} activity log entries{period} — shifts, breaks and cleanings disappear from the reports',
+        one: '{count} activity log entry{period} — shifts, breaks, and cleanings disappear from the reports',
+        other: '{count} activity log entries{period} — shifts, breaks, and cleanings disappear from the reports',
       },
       cleaningsLost: {
         one: '{count} finished room cleaning',
@@ -175,7 +175,7 @@ export const staff = {
     flaggedHint: '{shifts} shifts without end · {aborted} canceled · {open} open · {implausible} implausible',
 
     teamNote:
-      'This property evaluates cleaning <b>as a team only</b> (setting under Property & rules): the figures above are the total over {shifts} in this period; there’s no “per housekeeper” table and no daily log. When each room was cleaned is shown in the room history, where the person appears as “Housekeeping team”.',
+      'This property evaluates cleaning <b>as a team only</b> (setting under Property & rules): the figures above are the total over {shifts} in this period; there’s no “per housekeeper” table and no daily log. When each room was cleaned is shown in the room history, where the person appears as “Housekeeping team.”',
     teamUnpaired: {
       one: 'One entry from before the switch can no longer be assigned to a shift and isn’t included in the totals.',
       other: '{count} entries from before the switch can no longer be assigned to a shift and aren’t included in the totals.',
@@ -283,7 +283,7 @@ export const staff = {
     emailTakenReactivate:
       'An account already exists for this email address. If the person worked here before, they’re listed under “Ended accounts” and can be reactivated there.',
     emailTakenManager:
-      'An account already exists for this email address. If the person is already a manager in the account, choose them via “Add an existing manager”.',
+      'An account already exists for this email address. If the person is already a manager in the account, choose them via “Add an existing manager.”',
     accessCreateFailed: 'The account couldn’t be created.',
     inviteFailed: 'The invitation couldn’t be created. Please check the address.',
     invalidEmail: 'Please enter a valid email address.',

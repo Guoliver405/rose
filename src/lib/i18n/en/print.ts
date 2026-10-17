@@ -43,7 +43,7 @@ export const print = {
       other: 'Print all ({count} pages)',
     },
     hint:
-      'Print once, place in the room, hang it up or put it in the folder — the guest scans and only types the PIN they receive at check-in. The compact format can be cut apart. A new code makes the room’s old sign stop working.',
+      'Print once, place in the room, hang it up, or put it in the folder — the guest scans and only types the PIN they receive at check-in. The compact format can be cut apart. A new code makes the room’s old sign stop working.',
     noRooms: 'No rooms set up yet.',
     allHaveCodes: 'All rooms already have a QR code.',
     created: {
@@ -92,7 +92,7 @@ export const print = {
     total: 'Total',
     excludedNote: 'Services that weren’t provided or are still open are marked and not included in the total.',
     footer:
-      'This statement is <b>not an invoice</b> and not a tax document. It lists only the extra services for this room ordered via the guest portal; accommodation, other items and invoicing are handled in the property’s own system.',
+      'This statement is <b>not an invoice</b> and not a tax document. It lists only the extra services for this room ordered via the guest portal; accommodation, other items, and invoicing are handled in the property’s own system.',
     print: 'Print statement',
   },
 } satisfies Shape<PrintMessages>

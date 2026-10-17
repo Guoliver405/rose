@@ -25,7 +25,7 @@ export const guest = {
     submitting: 'Signing in …',
     pinHint: 'You’ll receive your PIN at check-in.',
     linkModeHint:
-      'We use individual access links. Please scan the QR code on the sheet you received at check-in, or open the link in your email. Use the form below only if you received a PIN at check-in.',
+      'We use personal access links. Please scan the QR code on the sheet you received at check-in, or open the link in your email. Use the form below only if you received a PIN at check-in.',
     invalidLink: 'This link is not valid.',
     invalidLinkHint: 'Please contact the front desk.',
   },
@@ -47,14 +47,14 @@ export const guest = {
       text: 'Housekeeping is in your room.',
     },
     scheduled: {
-      title: 'Cleaning is scheduled.',
-      text: 'Housekeeping is scheduled to visit today.',
+      title: 'Cleaning is planned for today.',
+      text: 'Housekeeping will stop by today — there’s no fixed time.',
     },
     scheduledFrom: {
       title: 'Cleaning today, not before {time}.',
       guest: 'Your request has been noted — no one will come before then.',
       door: 'As discussed at your door, no one will come before then.',
-      daily: 'We clean daily. If you don’t need your room cleaned today, tap “No cleaning today”.',
+      daily: 'We clean daily. If you don’t need your room cleaned today, tap “No cleaning today.”',
     },
     dnd: {
       title: 'No cleaning — you don’t want to be disturbed.',
@@ -62,19 +62,19 @@ export const guest = {
     },
     done: {
       title: 'Your room was cleaned today at {time}.',
-      text: 'Would you like it cleaned again? Then tap “Clean my room”.',
+      text: 'Would you like it cleaned again? Then tap “Clean my room.”',
     },
     declined: {
       title: 'No cleaning today.',
-      text: 'Thank you — that saves water and detergent. Changed your mind? Then tap “Clean my room”.',
+      text: 'Thank you — that saves water and detergent. Changed your mind? Then tap “Clean my room.”',
     },
     departure: {
       title: 'Today is your check-out day.',
-      text: 'Your room will be cleaned after check-out. Would you like it cleaned before then? Tap “Clean my room”.',
+      text: 'Your room will be cleaned after check-out. Would you like it cleaned before then? Tap “Clean my room.”',
     },
     none: {
       title: 'No cleaning is planned for today.',
-      firstDay: 'Starting tomorrow, we clean daily from {time}. Would you like your room cleaned today? Tap “Clean my room”.',
+      firstDay: 'Starting tomorrow, we clean daily from {time}. Would you like your room cleaned today? Tap “Clean my room.”',
       onRequest: 'We clean on request — tap “Clean my room” whenever you like.',
     },
   },

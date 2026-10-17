@@ -28,7 +28,7 @@ export const services = {
     urgentExplanation:
       'Urgent requests flash red at the front desk — on the room tile and in the navigation. You set options and prices on the service after creating it.',
     maintenanceExplanation:
-      'A <b>maintenance report</b> is meant for defects and repairs — something about the room, not the stay. Such requests stay open at check-out (a defect doesn’t disappear with the guest), appear on no check-out statement and show a warning at the next check-in.',
+      'A <b>maintenance report</b> is meant for defects and repairs — something about the room, not the stay. Such requests stay open at check-out (a defect doesn’t disappear with the guest), appear on no check-out statement, and show a warning at the next check-in.',
   },
 
   empty: {

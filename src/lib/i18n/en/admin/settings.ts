@@ -29,7 +29,7 @@ export const settings = {
       },
       myAccess: {
         title: 'My account',
-        description: 'Change your sign-in address, display name and password',
+        description: 'Change your sign-in address, display name, and password',
       },
       testScenario: {
         title: 'Test scenario',
@@ -55,7 +55,7 @@ export const settings = {
     },
     name: 'Property name',
     slug: {
-      label: 'Property address (lowercase letters, digits and hyphens only)',
+      label: 'Property address (lowercase letters, digits, and hyphens only)',
       guestPortal: 'Guest portal:',
       cleaning: 'Housekeeping:',
       hint: 'Room numbers and usernames are only unique within the property — that’s why the address is part of both sign-ins. Printed QR codes (room sign, access card) stay valid after a change; only the typed address on older check-in sheets will no longer match.',
@@ -63,7 +63,7 @@ export const settings = {
     review: {
       label: 'Link to your review page (optional)',
       placeholder: 'https://g.page/r/…/review',
-      hint: 'From the second day, guests see a request for a review at the bottom of the guest portal, and after check-out a thank-you page with this link. You can find your Google link in your Google Business Profile under “Get more reviews”. Tripadvisor, Booking.com, HolidayCheck or your own page work too. Leave empty if you don’t want to ask for reviews.',
+      hint: 'From the second day, guests see a request for a review at the bottom of the guest portal, and after check-out a thank-you page with this link. You can find your Google link in your Google Business Profile under “Get more reviews.” Tripadvisor, Booking.com, HolidayCheck, or your own page work too. Leave empty if you don’t want to ask for reviews.',
     },
     currency: {
       label: 'Currency of service prices',
@@ -71,10 +71,10 @@ export const settings = {
     },
     pinLength: 'Guest PIN length (4–8)',
     staleMinutes: 'Forgotten finish: reopen the room after … minutes',
-    staleHint: 'If a cleaning was started but not finished, the room is open on the board again after this time. The history then shows “Cleaning not finished (time limit)”.',
+    staleHint: 'If a cleaning was started but not finished, the room is open on the board again after this time. The history then shows “Cleaning not finished (time limit).”',
     daily: {
       label: 'Clean occupied rooms daily',
-      hint: 'From the day after arrival, occupied rooms appear on the housekeeping board on their own at the chosen time, until they’ve been cleaned that day. Exceptions are “Do not disturb”, “No cleaning today” and the day of departure.',
+      hint: 'From the day after arrival, occupied rooms appear on the housekeeping board on their own at the chosen time, until they’ve been cleaned that day. Exceptions are “Do not disturb,” “No cleaning today” and the day of departure.',
       from: 'daily from <time></time>',
     },
     checkoutUntil: {
@@ -103,7 +103,7 @@ export const settings = {
       },
       team: {
         label: 'Team only',
-        hint: 'For countries and businesses where the work of individual housekeepers may not or should not be measured. The property still sees when each room was cleaned and how much the team does — but not who: no table per housekeeper, no daily log, and the room history shows “Housekeeping team”.',
+        hint: 'For countries and businesses where the work of individual housekeepers may not or should not be measured. The property still sees when each room was cleaned and how much the team does — but not who: no table per housekeeper, no daily log, and the room history shows “Housekeeping team.”',
         warning: '<b>Note:</b> When you switch, all existing entries lose their person too, new ones after 24 hours at the latest. You can switch back to “Per housekeeper” later; new shifts are then recorded with names again. The names of entries that were already anonymized can’t be restored, though.',
       },
       note: 'Live displays for coordination stay unchanged (who is on which floor right now, who is cleaning which room) — they disappear when the shift ends. If only one housekeeper is on shift, a cleaned room can still be attributed to them, just like with a paper roster. That could only be prevented by dropping the times as well.',
@@ -170,7 +170,7 @@ export const settings = {
           'Without the guest’s email address, only the printout remains.',
         ],
         fits: [
-          'You don’t want QR codes in the rooms — for looks, heritage protection or frequent renovation.',
+          'You don’t want QR codes in the rooms — for looks, heritage protection, or frequent renovation.',
           'Your guests receive documents at check-in anyway.',
           'The most convenient way for the guest matters more to you than the second factor.',
         ],
@@ -226,7 +226,7 @@ export const settings = {
     none: '— none —',
     save: 'Save languages',
     alreadySet: 'Already set',
-    saved: 'Saved. The portals, the next printouts and emails follow the new choice.',
+    saved: 'Saved. The portals, the next printouts, and emails follow the new choice.',
     recommendation: 'Home and fallback language are usually the same. A different fallback language makes sense if many guests can’t read your local language — then English is the better choice. English as the second language of the printouts is recommended: guests who read neither language still get along via the pictograms and the QR code. After a new language is added to the guest portal, it’s worth reprinting the room signs — the buttons on paper then show the same word as the screen.',
   },
 
@@ -235,7 +235,7 @@ export const settings = {
     upload: 'Upload logo',
     replace: 'Replace logo',
     remove: 'Remove',
-    hint: 'PNG, JPG or SVG, 1 MB max. On the sheet, it appears at the top left, at most 55 × 16 mm. A light logo meant for dark backgrounds is invisible on white paper — the preview on the left shows it as it will be printed.',
+    hint: 'PNG, JPG, or SVG, 1 MB max. On the sheet, it appears at the top left, at most 55 × 16 mm. A light logo meant for dark backgrounds is invisible on white paper — the preview on the left shows it as it will be printed.',
     tooLarge: 'The file is too large ({kb} KB). 1 MB max.',
     lowResolution: 'The image is only {width} px wide. On the sheet it’s printed about 55 mm wide and will look blurry — from {min} px it looks crisp.',
   },
@@ -261,8 +261,8 @@ export const settings = {
       heading: 'Change sign-in address',
       current: 'Current password',
       next: 'New email address',
-      hint: 'A confirmation link is sent to the new address; only clicking it makes the switch. Until then, you keep signing in with your current address. Afterwards, the previous address receives a notice. Password, roles and history stay as they are.',
-      ownerHint: 'As the owner, you’ll receive invoices at the new address from then on. Billing details, payment method and plan stay unchanged.',
+      hint: 'A confirmation link is sent to the new address; only clicking it makes the switch. Until then, you keep signing in with your current address. Afterwards, the previous address receives a notice. Password, roles, and history stay as they are.',
+      ownerHint: 'As the owner, you’ll receive invoices at the new address from then on. Billing details, payment method, and plan stay unchanged.',
       send: 'Send confirmation link',
       releaseAndResend: 'Unblock address and resend',
       sentTo: 'Confirmation link sent to {email}. Please click the link in that inbox — it’s valid for {hours} hours.',
@@ -285,9 +285,9 @@ export const settings = {
       button: 'Confirm address',
       done: 'Done — your sign-in address is now <b>{email}</b>. Use it to sign in from now on.',
       toLogin: 'Go to sign-in',
-      invalid: 'This link is invalid, expired or has already been used. Request a new one under “My account”.',
+      invalid: 'This link is invalid, expired, or has already been used. Request a new one under “My account.”',
       taken: 'An account for RoSe already exists for this address. An address can belong to only one account — the sign-in address wasn’t changed.',
-      failed: 'The switch failed. Please try again later or request a new link under “My account”.',
+      failed: 'The switch failed. Please try again later or request a new link under “My account.”',
     },
     mails: {
       confirm: {
@@ -330,8 +330,8 @@ export const settings = {
       dnd: 'Do not disturb',
     },
     confirmSeed: 'Note: all current stays will be checked out and all room states reset before the scenario is built. Continue?',
-    confirmReset: 'Check out all active stays, neutralize room states and delete open requests?',
-    confirmPurge: 'Remove test data completely?\n\nThis deletes ALL stays, requests, room histories and housekeeping entries of this property — including those not from a scenario. Rooms and staff remain.\n\nAfterwards, all rooms are without history again and can be deleted without data loss.',
+    confirmReset: 'Check out all active stays, neutralize room states, and delete open requests?',
+    confirmPurge: 'Remove test data completely?\n\nThis deletes ALL stays, requests, room histories, and housekeeping entries of this property — including those not from a scenario. Rooms and staff remain.\n\nAfterwards, all rooms are without history again and can be deleted without data loss.',
     sliders: {
       occupied: 'Occupied rooms',
       pleaseClean: 'of which cleaning requested',
@@ -365,7 +365,7 @@ export const settings = {
     create: 'Create scenario',
     reset: 'Reset everything',
     purge: 'Remove test data completely',
-    purgeTitle: 'Delete the property’s stays, requests, history and housekeeping entries',
+    purgeTitle: 'Delete the property’s stays, requests, history, and housekeeping entries',
     footnote: '“Reset everything” only checks out — the records remain, so every room keeps a history. “Remove test data completely” clears them, so rooms can be deleted without a trace afterwards.',
     notes: {
       ordersCapped: {
@@ -379,7 +379,7 @@ export const settings = {
 
   errors: {
     houseNameTooShort: 'The property name must have at least 2 characters.',
-    slugInvalid: 'The address may only contain lowercase letters, digits and hyphens ({max} characters max., not starting or ending with a hyphen).',
+    slugInvalid: 'The address may only contain lowercase letters, digits, and hyphens ({max} characters max., not starting or ending with a hyphen).',
     dailyTimeMissing: 'Time for daily cleaning is missing (e.g. 10:00).',
     checkoutMissing: 'Time for “Check-out until” is missing (e.g. 11:00).',
     checkinMissing: 'Time for “Check-in from” is missing (e.g. 15:00).',
