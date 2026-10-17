@@ -15,6 +15,7 @@ import { GUIDE_LANGS } from '@/lib/guest-guide'
 import { LOGO_HEAD_BYTES, validateLogoUpload } from '@/lib/logo'
 import { removeHotelLogo, uploadHotelLogo } from '@/utils/logo'
 import { isValidSlug, SLUG_MAX_LENGTH } from '@/lib/slug'
+import { normalizeLinkUrl } from '@/lib/service-link-templates'
 import { format, getMessages } from '@/lib/i18n'
 import { getLocale } from '@/utils/locale'
 import { cancelEmailChange, requestEmailChange } from '@/utils/email-change'
@@ -68,6 +69,10 @@ export async function updateSettingsAction(slug: string, formData: FormData): Pr
   if (!isValidTimeZone(timeZone)) return { error: e.timeZoneInvalid }
   // Team-Modus: nur die beiden Werte, alles andere fällt auf die Vorgabe zurück.
   const staffTracking = formData.get('staffTracking') === 'team' ? 'team' : 'person'
+  // Bewertungslink: leer = aus, sonst nur http(s) (wie die Verweise).
+  const reviewRaw = ((formData.get('reviewUrl') as string) ?? '').trim()
+  const reviewUrl = reviewRaw ? normalizeLinkUrl(reviewRaw) : ''
+  if (reviewUrl === null) return { error: e.reviewUrlInvalid }
 
   const cleaningWindowEnabled = formData.get('cleaningWindowEnabled') === 'on'
   const windowStartRaw = ((formData.get('cleaningWindowStart') as string) ?? '').trim()
@@ -107,6 +112,7 @@ export async function updateSettingsAction(slug: string, formData: FormData): Pr
     ...(windowStartRaw ? { cleaningWindowStart: windowStartRaw } : {}),
     ...(windowEndRaw ? { cleaningWindowEnd: windowEndRaw } : {}),
     staffTracking,
+    reviewUrl,
   }
 
   const { error } = await admin

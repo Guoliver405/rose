@@ -2,6 +2,7 @@ import { cookies } from 'next/headers'
 import { NextResponse, type NextRequest } from 'next/server'
 import { createAdminClient } from '@/utils/supabase/service'
 import { GUEST_COOKIE } from '@/utils/guest'
+import { isWithinThankYouWindow, THANK_YOU_DAYS } from '@/lib/review'
 
 /**
  * Individueller Gast-Zugang (`link`-Verfahren): Der Token steht auf dem
@@ -41,8 +42,28 @@ export async function GET(
     .is('checked_out_at', null)
     .maybeSingle()
 
+  // Ausgecheckt vor höchstens sieben Tagen: Wer den Link aus der Mail noch
+  // einmal öffnet, bekommt die Danke-Seite (samt Bitte um eine Bewertung).
+  // Das verrät nichts Neues — der Link-Inhaber ist der Gast selbst.
+  if (!stay) {
+    const { data: ended } = await admin
+      .from('stays')
+      .select('session_token, checked_out_at, access_mode, hotels(slug)')
+      .eq('guest_token', token)
+      .not('checked_out_at', 'is', null)
+      .maybeSingle()
+    const slug = (ended?.hotels as unknown as { slug: string } | null)?.slug
+    if (ended?.access_mode === 'link' && slug && isWithinThankYouWindow(ended.checked_out_at, new Date())) {
+      const cookieStore = await cookies()
+      cookieStore.set(GUEST_COOKIE, ended.session_token, {
+        httpOnly: true, sameSite: 'lax', path: '/', maxAge: 60 * 60 * 24 * THANK_YOU_DAYS,
+      })
+      return NextResponse.redirect(`${origin}/h/${slug}/guest/danke`)
+    }
+  }
+
   if (!stay || stay.access_mode !== 'link') {
-    // Ausgecheckt, unbekannt oder ein Aufenthalt des PIN-Verfahrens: In allen
+    // Ausgecheckt (länger her), unbekannt oder ein Aufenthalt des PIN-Verfahrens: In allen
     // Fällen dieselbe Antwort — der Zettel verrät sonst, ob das Zimmer belegt
     // ist.
     const { data: hotel } = stay

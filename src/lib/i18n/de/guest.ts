@@ -129,6 +129,26 @@ export const guest = {
     },
   },
 
+  /** Bitte um eine Bewertung (17.10.2026) – Zeile im Portal und Danke-Seite. Die Plattform folgt aus dem Link des Hauses. */
+  review: {
+    hint: 'Hat Ihnen Ihr Aufenthalt gefallen?',
+    button: {
+      google: 'Bei Google bewerten',
+      tripadvisor: 'Bei Tripadvisor bewerten',
+      booking: 'Bei Booking.com bewerten',
+      holidaycheck: 'Bei HolidayCheck bewerten',
+      other: 'Bewertung abgeben',
+    },
+  },
+
+  /** Danke-Seite nach dem Check-out – ersetzt die Anmeldung, solange das Cookie auf den beendeten Aufenthalt zeigt. */
+  thanks: {
+    title: 'Danke für Ihren Aufenthalt!',
+    text: 'Ihr Aufenthalt ist beendet, der Zugang zum Gästeportal damit erloschen.',
+    review: 'Über eine Bewertung freuen wir uns sehr – sie hilft anderen Gästen bei der Wahl.',
+    signInAgain: 'Neuer Aufenthalt? Neu anmelden',
+  },
+
   errors: {
     loginFailed: 'Anmeldung fehlgeschlagen – Zimmernummer oder PIN falsch.',
     pinFormat: 'Bitte die PIN eingeben (nur Ziffern).',

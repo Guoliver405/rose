@@ -9,6 +9,7 @@ import { listTimeZones, parseTimeZone } from '@/lib/tz'
 import { parseStaffTracking } from '@/lib/staff-tracking'
 import { logoUrlFor } from '@/utils/logo'
 import HotelSettingsForm from '../HotelSettingsForm'
+import { parseReviewUrl } from '@/lib/review'
 import LogoForm from '../LogoForm'
 import { UnsavedChanges } from '@/components/unsaved/UnsavedChanges'
 import { getMessages } from '@/lib/i18n'
@@ -79,6 +80,7 @@ export default async function HotelSettingsPage({
           timeZone: parseTimeZone(policies),
           timeZones: listTimeZones(),
           staffTracking: parseStaffTracking(policies),
+          reviewUrl: parseReviewUrl(policies) ?? '',
           cleaningWindowEnabled: cleaningWindow.enabled,
           cleaningWindowStart: cleaningWindow.start,
           cleaningWindowEnd: cleaningWindow.end,

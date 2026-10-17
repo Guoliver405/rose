@@ -10,7 +10,7 @@ export const settings = {
     tiles: {
       house: {
         title: 'Haus & Regeln',
-        description: 'Name des Hauses, Länge der Gast-PIN, Zeitlimit der Reinigung, tägliche Reinigung',
+        description: 'Name des Hauses, Länge der Gast-PIN, Zeitlimit der Reinigung, tägliche Reinigung, Link zur Bewertung',
       },
       guestAccess: {
         title: 'Gästezugang',
@@ -60,6 +60,11 @@ export const settings = {
       guestPortal: 'Gästeportal:',
       cleaning: 'Reinigung:',
       hint: 'Zimmernummern und Benutzernamen sind nur innerhalb des Hauses eindeutig – deshalb steht die Adresse in beiden Anmeldungen. Gedruckte QR-Codes (Aushang, Zugangskarte) bleiben bei einer Änderung gültig; nur die abgetippte Adresse auf älteren Check-in-Blättern stimmt dann nicht mehr.',
+    },
+    review: {
+      label: 'Link zu Ihrer Bewertungsseite (optional)',
+      placeholder: 'https://g.page/r/…/review',
+      hint: 'Gäste sehen ab dem zweiten Tag unten im Gästeportal die Bitte um eine Bewertung und nach dem Check-out eine Danke-Seite mit diesem Link. Ihren Google-Link finden Sie im Google-Unternehmensprofil unter „Mehr Rezensionen erhalten“. Auch Tripadvisor, Booking.com, HolidayCheck oder eine eigene Seite gehen. Leer lassen, wenn Sie nicht um Bewertungen bitten möchten.',
     },
     pinLength: 'Länge der Gast-PIN (4–8)',
     staleMinutes: 'Vergessener Abschluss: Zimmer wieder freigeben nach … Minuten',
@@ -375,6 +380,7 @@ export const settings = {
     checkinMissing: 'Uhrzeit für „Check-in ab“ fehlt (z. B. 15:00).',
     deferMissing: 'Uhrzeit, bis zu der Gäste aufschieben dürfen, fehlt (z. B. 11:00).',
     timeZoneInvalid: 'Die Zeitzone ist ungültig.',
+    reviewUrlInvalid: 'Der Link zur Bewertungsseite ist ungültig – bitte die vollständige Adresse mit https:// eintragen.',
     windowMissing: 'Für das Zeitfenster der Reinigung fehlen Start- und Endzeit.',
     windowSame: 'Start- und Endzeit des Zeitfensters dürfen nicht gleich sein.',
     slugTaken: 'Diese Adresse ist bereits vergeben.',

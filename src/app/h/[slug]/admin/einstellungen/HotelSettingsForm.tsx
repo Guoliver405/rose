@@ -31,6 +31,8 @@ export type HotelSettingsInitial = {
   cleaningWindowEnabled: boolean
   cleaningWindowStart: string
   cleaningWindowEnd: string
+  /** Link zur Bewertungsseite des Hauses, leer = aus (siehe lib/review.ts). */
+  reviewUrl: string
   /** Personenbezug der Tätigkeiten: je Kraft oder nur als Team (siehe lib/staff-tracking.ts). */
   staffTracking: 'person' | 'team'
 }
@@ -134,6 +136,15 @@ function SettingsForm({ hotelSlug, initial, m, onDiscard }: {
         </p>
         <p className="mt-2 text-xs text-ink-muted">{m.slug.hint}</p>
       </div>
+
+      <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+        {m.review.label}
+        <input
+          name="reviewUrl" type="url" inputMode="url" placeholder={m.review.placeholder}
+          defaultValue={initial.reviewUrl} className={`${inputClass} w-full max-w-xl font-mono`}
+        />
+        <span className="font-normal">{m.review.hint}</span>
+      </label>
 
       <div data-lotse="regeln.pin" className="flex flex-wrap gap-4">
         <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">

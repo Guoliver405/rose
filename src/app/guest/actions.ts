@@ -13,6 +13,7 @@ import {
 import { formatHHMM, parseTimeZone, zonedDateKey } from '@/lib/tz'
 import { format, getMessages } from '@/lib/i18n'
 import { getLocale } from '@/utils/locale'
+import { isValidSlug } from '@/lib/slug'
 
 /*
  * Server-Actions des Gast-Portals. Liegen bewusst hier und nicht unter
@@ -275,6 +276,18 @@ export async function guestLogoutAction(): Promise<void> {
   const cookieStore = await cookies()
   cookieStore.set(GUEST_COOKIE, '', { maxAge: 0, path: '/' })
   redirect(ctx ? `/h/${ctx.hotelSlug}/guest` : '/guest')
+}
+
+/**
+ * „Neu anmelden" auf der Danke-Seite: Cookie des beendeten Aufenthalts
+ * verwerfen und zur Anmeldung des Hauses. Der Slug kommt gebunden von der
+ * Seite; geprüft wird nur das Format — ein fremder Slug führt schlicht auf
+ * dessen Anmeldung (bzw. 404).
+ */
+export async function guestSignInAgainAction(slug: string): Promise<void> {
+  const cookieStore = await cookies()
+  cookieStore.set(GUEST_COOKIE, '', { maxAge: 0, path: '/' })
+  redirect(isValidSlug(slug) ? `/h/${slug}/guest` : '/guest')
 }
 
 /**

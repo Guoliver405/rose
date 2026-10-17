@@ -280,7 +280,7 @@ export const topics = {
   },
   regeln: {
     title: 'Haus & Regeln',
-    subtitle: 'Zeitzone, tägliche Reinigung, Check-out-Frist, Aufschub, Zeitfenster, PIN, Zeitlimit, Adresse, Logo',
+    subtitle: 'Zeitzone, tägliche Reinigung, Check-out-Frist, Aufschub, Zeitfenster, PIN, Zeitlimit, Adresse, Logo, Bewertung',
     bloecke: [
       {
         art: 'text',
@@ -323,6 +323,10 @@ export const topics = {
           {
             frage: 'Die PIN-Länge ändern – was passiert mit laufenden Aufenthalten?',
             antwort: 'Nichts. Die Länge gilt nur für neu erzeugte PINs; jeder laufende Aufenthalt behält seine. Vorgabe sind sechs Ziffern; kürzer ist bequemer, länger sicherer – dazu kommt die Sperre nach fünf Fehlversuchen.',
+          },
+          {
+            frage: 'Wo sehen Gäste den Link zur Bewertung?',
+            antwort: 'An zwei Stellen: ab dem zweiten Tag des Aufenthalts als ruhige Zeile ganz unten im Gästeportal und nach dem Check-out auf einer Danke-Seite, die eine Woche lang erscheint, wenn der Gast das Portal noch einmal öffnet. Der Knopf nennt die Plattform, wenn sie sich aus dem Link ergibt (Google, Tripadvisor, Booking.com, HolidayCheck). RoSe fragt bewusst nicht vorher nach der Zufriedenheit: Nur zufriedene Gäste zur Bewertung zu schicken, verbietet Google.',
           },
           {
             frage: 'Kann ich die Adresse des Hauses ändern?',

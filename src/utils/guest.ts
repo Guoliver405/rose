@@ -1,6 +1,7 @@
 import { cache } from 'react'
 import { cookies } from 'next/headers'
 import { createAdminClient } from '@/utils/supabase/service'
+import { isWithinThankYouWindow, parseReviewUrl } from '@/lib/review'
 
 /**
  * Gast-Session: Cookie trägt den `stays.session_token` des Aufenthalts.
@@ -92,5 +93,45 @@ export const getGuestContext = cache(async (): Promise<GuestContext | null> => {
     checkedInAt: stay.checked_in_at,
     expectedCheckout: stay.expected_checkout ?? null,
     policies: (hotel.policies ?? {}) as Record<string, unknown>,
+  }
+})
+
+export type EndedStay = {
+  hotelId: string
+  hotelName: string
+  hotelSlug: string
+  /** Geprüfter Bewertungslink des Hauses oder null. */
+  reviewUrl: string | null
+}
+
+/**
+ * Beendeter Aufenthalt hinter dem Cookie — für die Danke-Seite nach dem
+ * Check-out (17.10.2026). Der Check-out löscht `session_token` nicht, und
+ * das Cookie lebt 30 Tage; gezeigt wird die Seite `THANK_YOU_DAYS` lang.
+ * Liefert bewusst nur das Haus: kein Zimmer, keine Anfragen, nichts vom
+ * Aufenthalt selbst.
+ */
+export const getEndedStay = cache(async (): Promise<EndedStay | null> => {
+  const cookieStore = await cookies()
+  const token = cookieStore.get(GUEST_COOKIE)?.value
+  if (!token) return null
+
+  const admin = createAdminClient()
+  const { data: stay } = await admin
+    .from('stays')
+    .select('hotel_id, checked_out_at, hotels(name, slug, policies)')
+    .eq('session_token', token)
+    .not('checked_out_at', 'is', null)
+    .maybeSingle()
+  if (!stay?.checked_out_at || !isWithinThankYouWindow(stay.checked_out_at, new Date())) return null
+
+  type HotelEmbed = { name: string | null; slug: string; policies: unknown }
+  const hotel = one(stay.hotels as unknown as HotelEmbed | HotelEmbed[] | null)
+  if (!hotel) return null
+  return {
+    hotelId: stay.hotel_id,
+    hotelName: hotel.name ?? 'Hotel',
+    hotelSlug: hotel.slug,
+    reviewUrl: parseReviewUrl((hotel.policies ?? {}) as Record<string, unknown>),
   }
 })

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { getGuestContext } from '@/utils/guest'
+import { getEndedStay, getGuestContext } from '@/utils/guest'
 import { requireHotelBySlug } from '@/utils/hotel'
 import { createAdminClient } from '@/utils/supabase/service'
 import {
@@ -12,6 +12,8 @@ import { format, getMessages, intlLocale } from '@/lib/i18n'
 import { getLocale } from '@/utils/locale'
 import GuestSignalPanel from './GuestSignalPanel'
 import GuestCleaningStatusCard from './GuestCleaningStatusCard'
+import ReviewLink from '@/components/ReviewLink'
+import { parseReviewUrl, showReviewHint } from '@/lib/review'
 import GuestServicesPanel, { type GuestLink, type GuestOrder, type GuestService } from './GuestServicesPanel'
 
 export default async function GuestStatusPage({
@@ -26,7 +28,12 @@ export default async function GuestStatusPage({
   // Abgleich sähe ein Gast unter /h/fremdes-hotel/guest/status sein eigenes
   // Zimmer unter falschem Hotelnamen. Haus und Sitzung sind unabhängig → parallel.
   const [hotel, ctx, locale] = await Promise.all([requireHotelBySlug(slug), getGuestContext(), getLocale()])
-  if (!ctx || ctx.hotelId !== hotel.id) redirect(`/h/${hotel.slug}/guest`)
+  if (!ctx || ctx.hotelId !== hotel.id) {
+    // Nach dem Check-out zeigt das Cookie auf den beendeten Aufenthalt —
+    // dann Danke-Seite statt einer Anmeldung, die nicht mehr greift.
+    const ended = ctx ? null : await getEndedStay()
+    redirect(ended?.hotelId === hotel.id ? `/h/${hotel.slug}/guest/danke` : `/h/${hotel.slug}/guest`)
+  }
   const m = getMessages(locale).guest
 
   const cleaningWindow = parseCleaningWindow(ctx.policies)
@@ -127,6 +134,10 @@ export default async function GuestStatusPage({
     createdAt: o.created_at,
   }))
 
+  // Bitte um eine Bewertung ab dem zweiten Tag, ruhig ganz unten.
+  const reviewUrl = parseReviewUrl(ctx.policies)
+  const showReview = reviewUrl !== null && showReviewHint(ctx.checkedInAt, now, tz)
+
   return (
     <main className="flex flex-1 flex-col gap-6 py-4">
       <header className="text-center">
@@ -168,7 +179,8 @@ export default async function GuestStatusPage({
         intlLocale={intlLocale(locale)}
       />
 
-      <div className="mt-auto pt-6 text-center">
+      <div className="mt-auto flex flex-col gap-4 pt-6 text-center">
+        {showReview && <ReviewLink url={reviewUrl} m={m.review} variant="line" />}
         <form action={guestLogoutAction}>
           <button
             type="submit"
