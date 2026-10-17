@@ -41,14 +41,14 @@ export const ui = {
 
   hub: {
     title: 'Help & guides',
-    intro: 'For every area there’s an explanation to look things up — symbols, questions, answers — and a guide: a guided tour over the real page that shows step by step what happens where. You can keep using the page as usual, nothing is locked; you can end the guide at any time with “End”. The “?” at the top right opens the explanation next to any page.',
+    intro: 'Each area has an explanation to look things up — symbols, questions, and answers — plus a guide: a guided tour of the actual page that shows you step by step how it works. You can continue using the page normally; nothing is locked. End the guide at any time with “End.” The “?” in the top-right corner opens the explanation beside any page.',
     setupTitle: 'Setting up your property',
     setupCount: '{done} of {total}',
     setupContinue: 'Continue setup',
     setupAgain: 'Review setup again',
     optional: 'optional',
     catalogTitle: 'Help by topic',
-    catalogIntro: 'Both take you to the page in question: the explanation in the sidebar next to it, the guide step by step on top of it — as often as you like.',
+    catalogIntro: 'Both take you to the relevant page: the explanation opens in the sidebar, while the guide walks you through the page step by step. You can use either as often as you like.',
     explanation: 'Explanation',
     lotse: { one: 'Guide ({count} step)', other: 'Guide ({count} steps)' },
   },

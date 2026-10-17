@@ -6,11 +6,11 @@ export const symbols = {
   symbols: {
     deactivated: {
       label: 'Out of service',
-      text: 'The room accepts no check-in and appears on no housekeeping board. It keeps its history and can be put back into service under Rooms & floors.',
+      text: 'The room can’t be checked into and doesn’t appear on any housekeeping board. Its history is retained, and you can return it to service under Rooms & floors.',
     },
     occupied: {
       label: 'Occupied',
-      text: 'A stay is running. The guest has a PIN or a link and can request cleaning, set “Do not disturb” and request services in the portal.',
+      text: 'A stay is in progress. The guest has a PIN or a link and can request cleaning, turn on “Do not disturb,” and request services in the portal.',
     },
     departure: {
       label: 'Departure today',
@@ -18,23 +18,23 @@ export const symbols = {
     },
     dnd: {
       label: 'Do not disturb',
-      text: 'The guest set it in the portal. Nobody knocks, daily cleaning is skipped, and the room is grayed out on the housekeeping board. Only the guest can switch it off.',
+      text: 'The guest enabled this in the portal. No one will knock, daily cleaning is skipped, and the room is grayed out on the housekeeping board. Only the guest can turn this setting off.',
     },
     clean: {
       label: 'Guest requests cleaning',
-      text: 'One tap in the portal. The room immediately appears as open on the housekeeping board — no appointment; the housekeeping team comes when it fits into the round.',
+      text: 'One tap in the portal makes the room appear as open on the housekeeping board, with no appointment. The housekeeping team will clean it when it fits into their rounds.',
     },
     deferred: {
       label: 'Cleaning from HH:MM',
-      text: 'Not before a certain time: the guest chose this with the cleaning request, or told the housekeeper at the door “later, please”. Until then, the room counts as not open for all housekeepers; at that time it opens up again on its own.',
+      text: 'The guest either selected a time in the cleaning request or asked the housekeeper at the door to come back later. Until then, the room isn’t available for cleaning to any housekeeper. It becomes available automatically at the specified time.',
     },
     declined: {
       label: 'No cleaning today',
-      text: 'The guest skips cleaning today — via the button in the portal or by telling the housekeeper at the door. Daily cleaning is skipped today and it doesn’t count as a cleaning; tomorrow it applies again. If the guest taps “Clean my room” after all, the room is open again immediately.',
+      text: 'The guest skips cleaning for today, either by tapping the button in the portal or by telling the housekeeper at the door. Today’s daily cleaning is skipped and doesn’t count as a completed cleaning; daily cleaning resumes tomorrow. If the guest later taps “Clean my room,” the room becomes available immediately.',
     },
     routine: {
       label: 'Daily cleaning due',
-      text: 'Only if the property cleans occupied rooms daily (Property & rules): from the second night and from the set time — without a departure date no earlier than the check-out time —, as long as the room hasn’t been cleaned today and there’s no “Do not disturb”.',
+      text: 'Only if the property cleans occupied rooms daily (under Property & rules): cleaning becomes available from the second night, starting at the configured time. If no departure date is set, it won’t become available before the check-out time. This applies only if the room hasn’t been cleaned today and “Do not disturb” isn’t on.',
     },
     checkout: {
       label: 'Checked out — cleaning open',
@@ -42,29 +42,29 @@ export const symbols = {
     },
     priority: {
       label: 'Prioritized',
-      text: 'Set manually by the front desk — for complaints and special cases. The room moves up on the housekeeping board and the floor shows a purple warning light. Never automatic.',
+      text: 'Set manually by the front desk for complaints or special cases. The room moves up the housekeeping board, and the floor displays a purple warning light. This is never automatic.',
     },
     cleaning: {
       label: 'Cleaning in progress',
-      text: 'A housekeeper has pulled the start slider; their name appears in the room. If finishing is forgotten, the room reopens on its own after the time limit.',
+      text: 'A housekeeper has moved the start slider, and their name appears in the room. If they forget to mark the cleaning complete, the room automatically reopens after the time limit.',
     },
     orders: {
       label: 'Open service request',
-      text: 'The guest requested something nobody has checked off yet. Requests are under “Requests” in the navigation; check them off there or in the room dialog.',
+      text: 'The guest has made a request that hasn’t been marked complete. Requests appear under “Requests” in the navigation; mark them complete there or in the room dialog.',
     },
     urgent: {
       label: 'Urgent service request',
-      text: 'At least one open request concerns a service marked “urgent” in the builder. Bell, ring and the number in the navigation flash red until it’s checked off.',
+      text: 'At least one open request is for a service marked “urgent” in the service builder. The bell, ring, and navigation count flash red until the request is marked complete.',
     },
   },
   bars: {
     priority: {
       label: 'Prioritized',
-      text: 'Beats everything else. As long as the priority stands, the bar is purple — even for a checked-out room.',
+      text: 'Overrides all other states. As long as the priority is active, the bar stays purple — even after check-out.',
     },
     working: {
       label: 'In progress',
-      text: 'Only on the housekeeping board: someone from the team is in the room right now. At the front desk, only the spinner shows this; the bar keeps its color.',
+      text: 'Only on the housekeeping board: a team member is currently in the room. On the front desk screen, this is shown only by the spinner; the bar keeps its color.',
     },
     checkout: {
       label: 'Checked out',
@@ -72,7 +72,7 @@ export const symbols = {
     },
     wanted: {
       label: 'Cleaning requested or daily cleaning due',
-      text: 'The guest tapped, or the property’s daily cleaning is due. A postponed request (“from HH:MM”) only colors the bar at that time.',
+      text: 'The guest has requested cleaning, or the property’s daily cleaning is due. A postponed request (“from HH:MM”) changes the bar’s color only at the specified time.',
     },
     dnd: {
       label: '“Do not disturb”',
@@ -88,7 +88,7 @@ export const symbols = {
     },
     neutral: {
       label: 'No task',
-      text: 'Only on the housekeeping board: vacant, occupied without a request, “Do not disturb”, or a request that applies only later. Visible but grayed out — not blocked.',
+      text: 'Only on the housekeeping board: vacant, occupied with no request, “Do not disturb,” or a request scheduled for later. The room remains visible but grayed out — it isn’t blocked.',
     },
     deactivated: {
       label: 'Out of service',

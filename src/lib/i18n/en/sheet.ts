@@ -21,7 +21,7 @@ export const sheet = {
     services: 'Towels, repairs and more — the front desk sees it right away.',
   },
   sustainabilityNeutral:
-    'Every cleaning that isn’t needed saves water, detergent and energy — it is your choice in the portal.',
+    'Every unnecessary cleaning saves water, detergent, and energy. You decide whether you need cleaning in the guest portal.',
   footer: 'All details and current times are in the portal.',
   labels: {
     cleaning: 'Cleaning',
@@ -31,24 +31,24 @@ export const sheet = {
     access: 'Access',
   },
   purpose:
-    'The guest portal connects you to the front desk straight from your room — around the clock, without a phone call.',
+    'The guest portal lets you contact the front desk directly from your room, 24/7, without calling.',
   dnd: '“Do not disturb” in the portal keeps staff away from your room until you switch it off.',
   services:
-    'Ask for fresh towels, report a repair or request other services directly in the portal — the front desk sees your request immediately.',
+    'Request fresh towels, report a problem, or ask for other services directly in the portal. The front desk receives your request immediately.',
   cleaningRoutine:
-    'Your room is cleaned daily from {due}, on your day of departure after check-out — you don’t have to request anything. Would you like an extra cleaning in between? Simply request it in the portal.',
+    'Your room is cleaned daily starting at {due}, and after check-out on your departure day — no request is needed. For an extra cleaning in between, tap “Clean my room” in the portal.',
   cleaningOnRequest:
-    'Your room is cleaned on request: please ask for cleaning in the portal whenever it suits you — without your request, nobody enters your room.',
+    'Your room is cleaned on request. Please request cleaning in the portal whenever it suits you. Without a request, no one will enter your room.',
   window: ' The portal accepts cleaning requests daily from {start} to {end}.',
-  defer: ' You can also postpone cleaning until {limit} at the latest — no one will come before then.',
+  defer: ' You can also postpone cleaning in the portal until {limit} at the latest. No one will come before then.',
   sustainabilityRoutine:
-    'No cleaning needed today? One tap on “{skip}” in the portal saves water, detergent and energy — cleaning resumes tomorrow.',
+    'Don’t need cleaning today? Tap “{skip}” in the portal to save water, detergent, and energy. Daily cleaning resumes tomorrow.',
   sustainabilityOnRequest:
-    'Less cleaning, less consumption: every cleaning that isn’t needed saves water, detergent and energy. That is why we only come when you want us to.',
+    'Less cleaning means lower resource use. Every unnecessary cleaning saves water, detergent, and energy, so we come only when you want us to.',
   access: {
-    link: 'This access is personal and needs no PIN — please do not share it. It is valid for this stay only and expires at check-out.',
+    link: 'This access is personal and doesn’t require a PIN. Please don’t share it. It’s valid only for this stay and expires at check-out.',
     pinDeep: 'Scan the QR code and enter the PIN — you stay signed in afterwards. The PIN is valid until check-out.',
-    pinManual: 'Open the address, enter your room number and PIN — you stay signed in afterwards. The PIN is valid until check-out.',
+    pinManual: 'Open the web address, enter your room number and PIN, and you’ll stay signed in. The PIN is valid until check-out.',
   },
   mail: {
     subject: 'Your access to the guest portal — {hotel}, room {room}',

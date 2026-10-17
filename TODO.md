@@ -324,6 +324,8 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       **17.10.: Verwaltung Etappe 1 auf Englisch** (Rezeption, Mails, Druckseiten; Sprache unter „Mein Zugang“); Gegenlesen offen:
       `Sessions/Uebersetzung-Verwaltung-{admin,mail,print}-en-2026-10-17.xlsx`.
       **17.10.: Etappe 2 Hilfe und Lotsen auf Englisch**; Gegenlesen offen: `Sessions/Uebersetzung-Hilfe-{help,symbols}-en-2026-10-17.xlsx`.
+      **17.10. abends: zweite Gegenlese-Runde (alle Bereiche)** — 53 von 99 Vorschlägen übernommen (12 angepasst); verworfen: Rezeption
+      (Zeilen verrutscht), Gästeportal (bereits abgelehnte „schedule“-Vorschläge), Kürzungen mit Inhaltsverlust.
       Offen: Konto/Abrechnung, Anmeldung/Registrierung; Rechtstexte erst nach der anwaltlichen Prüfung.
 - [ ] **Thailändisch als Belastungsprobe** — probehalber implementieren, um zu
       sehen, wie weit das Sprach-System trägt: nicht-lateinische Schrift,

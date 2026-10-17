@@ -17,9 +17,9 @@ export const sim = {
     page: {
       title: 'The housekeeping board',
       intro:
-        'This is the board your housekeepers use on their phones. It’s a replica with example rooms — nothing is saved here and nobody is notified. Feel free to try everything; the guide restores the matching view for each step.',
+        'This is the board your housekeepers use on their phones. It’s a replica with sample rooms; nothing is saved and no one is notified. Feel free to try everything. The guide restores the appropriate view at each step.',
       why:
-        'Why a replica and not a tour of the real board? The housekeeping board has its own sign-in and its own session — it can’t be reached from the front desk. If you want to see the real thing, sign in at <code>{path}</code> with a housekeeper’s account.',
+        'Why a replica instead of a tour of the live board? The housekeeping board has its own sign-in and session, so it can’t be accessed from the front desk. To see the live board, sign in at <code>{path}</code> using a housekeeper’s account.',
     },
     frame: {
       login: 'Housekeeping — sign in',
@@ -36,9 +36,9 @@ export const sim = {
     page: {
       title: 'What the guest sees',
       intro:
-        'The guest portal as it looks on your guest’s phone. A replica with example values — property, room and services don’t come from your data, so the view shows something even before anything is set up. None of it is saved.',
+        'This is what the guest portal looks like on a guest’s phone. It’s a replica with sample data; the property, room, and services don’t come from your data, so the screen shows something even before setup is complete. Nothing is saved.',
       differs:
-        'Your own texts differ in two places: which services appear is set in the service builder, and whether “not before” is offered at all — including the limit — is set under Property & rules.',
+        'Your own text differs in two places: you configure which services appear in the service builder, and you set whether “Not before” is offered — including its cutoff time — under Property & rules.',
     },
     frame: {
       portal: 'Guest portal — phone',

@@ -13,7 +13,7 @@ export const topics = {
       {
         art: 'text',
         absaetze: [
-          'The overview is the front desk screen: all rooms by floor, the state of each room at a glance, and one click opens the dialog with check-in, check-out, PIN, check-in sheet, departure date, priority and history.',
+          'The overview is the front desk screen. It shows all rooms grouped by floor, with each room’s status at a glance. Clicking a room opens a dialog with check-in, check-out, PIN, check-in sheet, departure date, priority, and history.',
           'It updates on its own as soon as a guest taps, a housekeeper starts, or someone changes something on a second screen. You never need to reload.',
         ],
       },
@@ -90,7 +90,7 @@ export const topics = {
           },
           {
             frage: 'When do I set a priority?',
-            antwort: 'For complaints and special cases — manually; there’s nothing automatic. The room moves up on the housekeeping board, and the floor shows a purple warning light there. The priority ends on its own when the cleaning is finished.',
+            antwort: 'For complaints and special cases, set a priority manually; it is never set automatically. The room moves up on the housekeeping board, and the floor is marked with a purple warning light. The priority clears automatically when cleaning is completed.',
           },
           {
             frage: 'What exactly happens at check-out?',
@@ -98,7 +98,7 @@ export const topics = {
           },
           {
             frage: 'Where can I find the statement later?',
-            antwort: 'In the room’s history: the “Check-out” entry carries the link. The statement is explicitly not an invoice — no guest name, no invoice number, no tax breakdown. It shows what’s to be collected.',
+            antwort: 'In the room’s history, the “Check-out” entry links to the statement. This is not an invoice: it contains no guest name, invoice number, or tax breakdown. It shows the amount to be collected.',
           },
           {
             frage: 'What’s in the history?',
@@ -106,7 +106,7 @@ export const topics = {
           },
           {
             frage: 'Why does the tile show “Cleaning from 11:00” and not appear on the board?',
-            antwort: 'Cleaning only applies from that time — either the guest chose “not before” in the portal, or told the housekeeper at the door “later, please”. Which it was is shown in the room history. Until that time, the room isn’t open on either board; afterwards it is again on its own. How long guests may postpone in the portal is set under Property & rules.',
+            antwort: 'Cleaning becomes available at that time. Either the guest selected “not before” in the portal or asked the housekeeper at the door to come back later. The room’s history shows which. Until then, the room isn’t available for cleaning on either board; it opens automatically at the specified time. How long guests may postpone in the portal is set under Property & rules.',
           },
         ],
       },
@@ -190,7 +190,7 @@ export const topics = {
           },
           {
             frage: 'How long do closed requests stay visible?',
-            antwort: 'The last 20 are listed, collapsed, below the open ones. Beyond that, you’ll find every request in the room’s history (30 days) and, if paid, on the statement of the stay.',
+            antwort: 'The 20 most recent requests appear collapsed below the open requests. Beyond that, every request remains available in the room’s history for 30 days and, if it carried a price, on the stay statement.',
           },
           {
             frage: 'The guest says they ordered, but nothing is here.',
@@ -243,7 +243,7 @@ export const topics = {
           },
           {
             frage: 'Out of service or delete?',
-            antwort: 'Out of service is the recommended way for renovation and closure: no check-in, not on the housekeeping board, not on the room signs — but everything is kept, and one click brings the room back. The number stays taken. Deleting is permanent and frees the number.',
+            antwort: 'For renovations or temporary closures, we recommend marking the room “Out of service”: it can’t be checked into, doesn’t appear on the housekeeping board or room signs, and all its history is retained. One click restores it to service, and the room number remains reserved. Deleting a room is permanent and frees the room number.',
           },
           {
             frage: 'What goes with it when deleting?',
@@ -368,7 +368,7 @@ export const topics = {
       {
         art: 'text',
         absaetze: [
-          'Two ways into the guest portal, chosen per property. With the fixed room QR, a code printed once is in the room, and every stay gets its PIN. With personal access, every stay gets its own code or link without a PIN, which expires at check-out.',
+          'There are two ways to access the guest portal, chosen for each property. With a fixed room QR code, a code is printed once and placed in the room, and each stay gets its own PIN. With personal access, each stay gets its own code or link, with no PIN; it expires at check-out.',
           'Method and languages only take effect when saved. If something has changed, a bar “Unsaved changes” at the bottom of the screen saves or discards both sections together. Only confirming the default is done with the button below the two cards.',
         ],
       },
@@ -377,7 +377,7 @@ export const topics = {
         eintraege: [
           {
             frage: 'Which method suits us?',
-            antwort: 'Fixed QR + PIN if you can place or mount a sign in the rooms and want two factors (code in the room, PIN from the desk). Personal access if signs aren’t possible or wanted — more convenient for the guest, but anyone who sees the sheet has access. The page compares both in detail.',
+            antwort: 'Choose fixed QR code + PIN if you can display a sign in each room and want two-factor access (the code in the room and the PIN from the front desk). Choose personal access if signs aren’t practical or desired. It’s more convenient for guests, but anyone who sees the sheet can access the portal for that stay. The page compares both in detail.',
           },
           {
             frage: 'What happens to current stays if I switch?',
@@ -425,7 +425,7 @@ export const topics = {
       {
         art: 'text',
         absaetze: [
-          'Three printouts are created in three places: the room sign per room (under Guest access or “Room signs”), the check-in sheet per stay (in the room dialog after check-in) and the access card per housekeeper (under Staff).',
+          'Three types of printouts are created in different places: a room sign for each room (under Guest access or “Room signs”), a check-in sheet for each stay (in the room dialog after check-in), and an access card for each housekeeper (under Staff).',
           'Room sign and check-in sheet are the same sheet in two formats — A4 or four compact cards per page — and differ only in the access block: fixed code with “You receive your PIN at check-in” versus the access for this stay.',
         ],
       },
@@ -442,11 +442,11 @@ export const topics = {
           },
           {
             frage: 'The printout comes out without colors.',
-            antwort: 'Browsers don’t print background areas by default. The sheets are therefore built so that color only sits on lines and light tints with dark text — they work in grayscale too. If you want color, enable “Background graphics” in the print dialog.',
+            antwort: 'Browsers don’t print background colors by default. The sheets are designed so that color appears only in lines and light shading with dark text, so they remain legible in grayscale. To print in color, enable “Background graphics” in the print dialog.',
           },
           {
             frage: 'A room sign has gone missing.',
-            antwort: '“Renew code” creates a new code for exactly this room; the old sign stops working from then on. Only the owner and managers can do this, and it always affects just one room. Print it again afterwards.',
+            antwort: '“Renew code” creates a new code for that room, invalidating the old room sign. Only the owner and managers can do this, and it affects just one room. Print the new sign afterward.',
           },
           {
             frage: 'The access email ends up in the guest’s spam folder.',
@@ -625,7 +625,7 @@ export const topics = {
           },
           {
             frage: 'What’s a “link”?',
-            antwort: 'A tile in the guest portal that opens an outside website — such as the tipping app for the housekeeping team, a food delivery service or a taxi. A link doesn’t create a request: nothing on the board, nothing on the statement. Templates prefill the form; you adapt the address to your account or your city. The portal embeds nothing, it only links — the provider is responsible for the destination.',
+            antwort: 'A tile in the guest portal that links to an external website, such as a tipping app for the housekeeping team, a food delivery service, or a taxi service. A link doesn’t create a request, so nothing appears on the Requests page or the stay statement. Templates prefill the form; adjust the address to your account or city. The portal only links to the external service; the provider is responsible for its content.',
           },
           {
             frage: 'Can the guest tip the housekeeper personally?',
@@ -709,7 +709,7 @@ export const topics = {
           {
             zeichen: { art: 'pille', text: 'Up next', ton: 'action', icon: 'target', blink: true },
             label: 'Up next',
-            text: 'A recommendation, not an assignment: first a floor with an open priority, otherwise the one with the highest open urgency divided by the housekeepers there plus one. Departures weigh more the closer check-in gets. In a tie, the lower floor, so it doesn’t jump.',
+            text: 'A recommendation, not an assignment: first choose a floor with an open priority; otherwise, choose the floor with the highest open urgency divided by the number of housekeepers there plus one. Departures carry more weight as check-in approaches. If there’s a tie, the lower floor is suggested to avoid the recommendation jumping back and forth.',
           },
           {
             zeichen: { art: 'pille', text: 'Prio', ton: 'accent', icon: 'flag' },
@@ -753,7 +753,7 @@ export const topics = {
           },
           {
             frage: 'The board suggests switching floors — why?',
-            antwort: 'After every room, the board recalculates. It suggests a switch if a prioritized room is open elsewhere, or if another floor weighs clearly more than the rest of the current one — usually because departures are waiting there and check-in is getting closer. On quiet days this rarely happens. The housekeeper decides: the switch is a slider; whoever stays simply carries on.',
+            antwort: 'After each room, the board recalculates. It suggests switching floors if a room with an open priority is elsewhere, or if another floor’s workload is clearly higher than the current floor’s — usually because departures are waiting there and check-in is approaching. This is rare on quiet days. The housekeeper decides whether to switch; the switch control is a slider, and anyone who stays on the current floor can simply continue working.',
           },
           {
             frage: 'Why choose a floor first?',
@@ -812,7 +812,7 @@ export const topics = {
           },
           {
             frage: 'What does “Clean my room” do?',
-            antwort: 'The room immediately appears as open on the housekeeping board and in your overview. No appointment — housekeeping comes when it fits into the round. Tapping again withdraws the request. With “not before”, the guest chooses a full hour; until then the room isn’t open.',
+            antwort: 'The room immediately appears as open on the housekeeping board and in your overview. There’s no appointment; housekeeping will get to it as part of their rounds. Tapping again withdraws the request. With “not before,” the guest selects a full hour, and the room won’t be available for cleaning until then.',
           },
           {
             frage: 'What does the status card above the buttons say?',
@@ -864,7 +864,7 @@ export const topics = {
       {
         art: 'text',
         absaetze: [
-          'Everything here is calculated, nothing stored: the basis is the housekeepers’ entries (shift start and end, breaks, other cleaning, start and finish per room) plus guest taps and check-outs. The period is in the address — a state can be linked and printed.',
+          'Everything here is calculated, not stored. It’s based on housekeepers’ entries (shift start and end, breaks, other cleaning, and start and finish times for each room), plus guest taps and check-outs. The selected period appears in the web address, so you can share or print a snapshot.',
         ],
       },
       {
@@ -872,7 +872,7 @@ export const topics = {
         eintraege: [
           {
             frage: 'What do net work time and remaining time mean?',
-            antwort: 'Net = shift without breaks. Remaining time = net minus room cleaning minus other cleaning — that is, walking, setup, waiting. A high remaining time usually means long walks or idle time between requests.',
+            antwort: 'Net work time = shift time minus breaks. Remaining time = net work time minus room cleaning and other cleaning — in other words, time spent walking, setting up, or waiting. A high remaining-time figure usually points to long walks or idle time between requests.',
           },
           {
             frage: 'What counts as “flagged”?',
@@ -880,15 +880,15 @@ export const topics = {
           },
           {
             frage: 'Why do former housekeepers still appear in the table?',
-            antwort: 'Because the work record survives leaving. Anyone whose access has ended stays visible for their period. Only permanent deletion removes the entries — which is why it’s safeguarded by typing the name.',
+            antwort: 'Because work records remain after someone leaves. Anyone whose access has ended remains visible for the period they worked. Only permanent deletion removes their entries, which is why deletion requires typing the name.',
           },
           {
             frage: 'Does the front desk’s “Mark cleaning as done” count?',
-            antwort: 'It writes a cleaning entry so daily cleaning counts as done — but the “per housekeeper” table shows housekeepers only. If cleanings are regularly marked as done at the desk, be aware that the reports don’t attribute these cleanings to any housekeeper.',
+            antwort: 'It creates a cleaning record so the daily cleaning counts as completed. However, the “Per housekeeper” table includes only housekeepers. If front desk staff regularly mark cleanings as complete, those cleanings won’t be attributed to any housekeeper in the reports.',
           },
           {
             frage: 'Why is the “per housekeeper” table missing?',
-            antwort: 'The property has chosen “Housekeeping activities: team only” under Property & rules. Then there’s only the property total as a sum over the shifts; entries no longer carry a person after the shift ends. Switching back only works going forward — what’s anonymized stays anonymized.',
+            antwort: 'Under Property & rules, the property has selected “Housekeeping activities: team only.” Reports then show only the property-wide total across shifts, and entries are no longer linked to an individual after the shift ends. Switching back applies only going forward; anonymized entries stay anonymous.',
           },
           {
             frage: 'What is the “Demand” section for?',
@@ -926,7 +926,7 @@ export const topics = {
         eintraege: [
           {
             frage: 'Where does the display name appear?',
-            antwort: 'In the portal header, in the room history at check-in and check-out, on completed requests and in the staff list. It’s changed everywhere at once.',
+            antwort: 'It appears in the portal header, the room history at check-in and check-out, completed requests, and the staff list. The change takes effect everywhere at once.',
           },
           {
             frage: 'Why does changing the password require the current one?',
@@ -942,7 +942,7 @@ export const topics = {
           },
           {
             frage: 'What stays the same with a new sign-in address?',
-            antwort: 'Everything except the address: password, roles in all properties, display name and history. For the owner, invoices go to the new address from then on; billing details, payment method and plan stay unchanged.',
+            antwort: 'Everything except the email address stays the same: password, roles across all properties, display name, and history. For the owner, invoices will go to the new address; billing details, payment method, and plan remain unchanged.',
           },
           {
             frage: 'I received a notice about a changed address, but it wasn’t me.',
