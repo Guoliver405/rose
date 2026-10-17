@@ -1,6 +1,6 @@
 # Sprachen des Hauses und mehrsprachiger Service-Baukasten – Bauplan (17.10.2026)
 
-Entschieden im Dialog mit dem User am 17.10.2026. **Gebaut am 17.10.:** Sprachwahl des Gastes, Umschalter, Legende nach Abschnitt 4.2, englischer Entwurf des Gästeportals, Erläuterungen und Tabelle zum Gegenlesen ([Uebersetzung-Gaesteportal-en-2026-10-17.xlsx](Uebersetzung-Gaesteportal-en-2026-10-17.xlsx)). **Noch nicht gebaut:** Einstellungen Heimat- und Rückfallsprache (die Rückfallsprache wird schon gelesen, `policies.fallbackLanguage`), Kopplung der Blatt-Sprache, mehrsprachiger Service-Baukasten. Gehört zur ersten
+Entschieden im Dialog mit dem User am 17.10.2026. **Gebaut am 17.10.:** Sprachwahl des Gastes, Umschalter, Legende nach Abschnitt 4.2, englischer Entwurf des Gästeportals, Erläuterungen und Tabelle zum Gegenlesen ([Uebersetzung-Gaesteportal-en-2026-10-17.xlsx](Uebersetzung-Gaesteportal-en-2026-10-17.xlsx)). **Gebaut am 17.10. (Nachmittag):** Einstellungen Heimat- und Rückfallsprache und die Kopplung der Blatt-Sprache (Abschnitt „Sprachen“ auf der Gästezugang-Seite). **Noch nicht gebaut:** mehrsprachiger Service-Baukasten. Gehört zur ersten
 Übersetzung (Englisch, Gästeportal) – siehe TODO „Mehrsprachigkeit“ und
 [2026-10-11_Mehrsprachigkeit-Auslagerung.md](2026-10-11_Mehrsprachigkeit-Auslagerung.md), Abschnitt 7.
 
