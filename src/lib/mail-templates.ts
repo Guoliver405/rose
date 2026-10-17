@@ -11,7 +11,7 @@
  * hier steht nur noch der Aufbau. I/O-frei und getestet: HTML und Reintext
  * entstehen aus denselben Sätzen, damit sie nicht auseinanderlaufen.
  */
-import { format, getMessages, parseRich, type AdminMessages, type Vars } from './i18n'
+import { format, getMessages, parseRich, type AdminMessages, type Locale, type Vars } from './i18n'
 
 export type MailContent = { subject: string; html: string; text: string }
 
@@ -37,18 +37,22 @@ const STYLE_BODY = "font-family:system-ui,-apple-system,'Segoe UI',sans-serif;co
 const STYLE_BUTTON = 'background:#2563eb;color:#ffffff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:bold'
 const STYLE_SMALL = 'margin-top:24px;font-size:13px;color:#64748b'
 
-/** Texte der Vorlagen — heute immer Deutsch, das Personal arbeitet in der Sprache des Hauses. */
-function t() {
-  return getMessages().mail.templates
+/**
+ * Texte der Vorlagen. Ohne Sprache Deutsch; seit 17.10.2026 geben Mails aus
+ * der Verwaltung (Einladung, Passwort-Link) die Sprache der auslösenden
+ * Person mit (`locale`).
+ */
+function t(locale?: Locale) {
+  return getMessages(locale).mail.templates
 }
 
 function knopf(url: string, label: string): string {
   return `<p style="margin:24px 0"><a href="${escapeHtml(url)}" style="${STYLE_BUTTON}">${escapeHtml(label)}</a></p>`
 }
 
-function linkZeile(url: string): string {
+function linkZeile(url: string, locale?: Locale): string {
   const u = escapeHtml(url)
-  return `<p style="${STYLE_SMALL}">${escapeHtml(t().fallback)}<br><a href="${u}">${u}</a></p>`
+  return `<p style="${STYLE_SMALL}">${escapeHtml(t(locale).fallback)}<br><a href="${u}">${u}</a></p>`
 }
 
 /**
@@ -57,24 +61,26 @@ function linkZeile(url: string): string {
  * Werbung einsortiert hat (Juli 2026).
  */
 export function inviteMail(m: {
+  locale?: Locale
   hotelName: string
   displayName: string
-  rolle: 'Rezeption' | 'Manager'
+  /** Rolle in der Sprache der Mail (`admin.settings.myAccess.roles`). */
+  rolle: string
   url: string
   /** Wer eingeladen hat — steht in der Mail, damit sie sich einordnen lässt. */
   invitedBy?: string
 }): MailContent {
-  const v = t().invite
+  const v = t(m.locale).invite
   const vars = { name: m.displayName, role: m.rolle, hotel: m.hotelName, by: m.invitedBy ?? '' }
   const satz = m.invitedBy ? v.invitedBy : v.invited
 
   const html = `<!doctype html>
-<html lang="de"><body style="${STYLE_BODY}">
+<html lang="${m.locale ?? 'de'}"><body style="${STYLE_BODY}">
   <p>${escapeHtml(format(v.greeting, vars))}</p>
   <p>${richHtml(satz, vars)}</p>
   <p>${escapeHtml(v.body)}</p>
   ${knopf(m.url, v.button)}
-  ${linkZeile(m.url)}
+  ${linkZeile(m.url, m.locale)}
   <p style="${STYLE_SMALL}">${escapeHtml(v.note)}</p>
 </body></html>`
 
@@ -93,20 +99,20 @@ export function inviteMail(m: {
 }
 
 /** Link zum Zurücksetzen des Passworts (oder zum ersten Setzen nach einer Einladung). */
-export function recoveryMail(m: { url: string; einladung?: boolean }): MailContent {
-  const v = t().recovery
+export function recoveryMail(m: { url: string; einladung?: boolean; locale?: Locale }): MailContent {
+  const v = t(m.locale).recovery
   const einleitung = m.einladung ? v.introInvite : v.intro
 
   const html = `<!doctype html>
-<html lang="de"><body style="${STYLE_BODY}">
-  <p>${escapeHtml(t().greeting)}</p>
+<html lang="${m.locale ?? 'de'}"><body style="${STYLE_BODY}">
+  <p>${escapeHtml(t(m.locale).greeting)}</p>
   <p>${escapeHtml(einleitung)}</p>
   ${knopf(m.url, m.einladung ? v.buttonInvite : v.button)}
-  ${linkZeile(m.url)}
+  ${linkZeile(m.url, m.locale)}
   <p style="${STYLE_SMALL}">${escapeHtml(v.note)}</p>
 </body></html>`
 
-  const text = [t().greeting, '', einleitung, '', m.url, '', v.note].join('\n')
+  const text = [t(m.locale).greeting, '', einleitung, '', m.url, '', v.note].join('\n')
 
   return { subject: m.einladung ? v.subjectInvite : v.subject, html, text }
 }

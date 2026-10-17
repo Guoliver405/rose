@@ -11,7 +11,7 @@ import HilfeLeiste from '@/components/hilfe/HilfeLeiste'
 import LotsePilot from '@/components/lotse/LotsePilot'
 import HelpMessagesProvider from '@/components/hilfe/HelpMessages'
 import { getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 export default async function AdminLayout({
   children,
@@ -24,7 +24,7 @@ export default async function AdminLayout({
   if (!ctx) redirect('/admin')
 
   const base = `/h/${ctx.hotelSlug}/admin`
-  const messages = getMessages(await getLocale())
+  const messages = getMessages(await getAdminLocale())
   const t = messages.admin.overview.nav
 
   // Offene Service-Anfragen als Nav-Badge — Realtime-Refresh + revalidatePath

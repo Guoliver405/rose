@@ -246,6 +246,11 @@ export const settings = {
 
   myAccess: {
     title: 'Mein Zugang',
+    /** Sprache der Oberfläche — eigene Wahl, gilt für dieses Gerät. */
+    language: {
+      heading: 'Sprache der Oberfläche',
+      hint: 'Gilt für dieses Gerät. Ohne eigene Wahl folgt RoSe der Sprache des Geräts. Hilfe und Konto sind vorerst nur auf Deutsch.',
+    },
     roles: {
       admin: 'Inhaber',
       manager: 'Manager',

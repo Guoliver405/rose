@@ -29,8 +29,8 @@
 
 import { createAdminClient } from '@/utils/supabase/service'
 import { guideLines, type GuestGuide } from '@/lib/guest-guide'
-import { format, getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { format, getMessages, type Locale } from '@/lib/i18n'
+import { getAdminLocale } from '@/utils/locale'
 import { SHEETS } from '@/lib/i18n/sheets'
 import {
   emailChangeConfirmMail, emailChangedNoticeMail, inviteMail, plainText, recoveryMail, richHtml, simConfirmMail, simExistsMail,
@@ -45,7 +45,7 @@ const API = 'https://api.resend.com/emails'
 
 /** Meldungen des Versands in der Sprache der Anfrage. */
 async function mailErrors() {
-  return getMessages(await getLocale()).mail.errors
+  return getMessages(await getAdminLocale()).mail.errors
 }
 const SUPPRESSIONS_API = 'https://api.resend.com/suppressions'
 
@@ -540,16 +540,18 @@ export function sendInviteMail(m: {
   hotelId: string
   hotelName: string
   displayName: string
-  rolle: 'Rezeption' | 'Manager'
+  rolle: string
   url: string
   invitedBy?: string
   release?: boolean
+  /** Sprache der einladenden Person — die Mail geht in ihr heraus. */
+  locale?: Locale
 }): Promise<MailResult> {
   const inhalt = inviteMail(m)
   return dispatch({
     purpose: 'invite',
     to: m.to,
-    fromName: format(getMessages().mail.fromVia, { hotel: m.hotelName }),
+    fromName: format(getMessages(m.locale).mail.fromVia, { hotel: m.hotelName }),
     ...inhalt,
     hotelId: m.hotelId,
     userId: m.userId,
@@ -568,6 +570,8 @@ export function sendRecoveryMail(m: {
   url: string
   einladung?: boolean
   release?: boolean
+  /** Sprache der Mail; ohne Angabe Deutsch. */
+  locale?: Locale
 }): Promise<MailResult> {
   const inhalt = recoveryMail(m)
   return dispatch({
@@ -585,7 +589,7 @@ export function sendRecoveryMail(m: {
 
 /** Bestätigungslink an die neue Anmelde-Adresse — gedrosselt je Person wie jede Mail. */
 export async function sendEmailChangeConfirmMail(m: { to: string; userId: string; url: string; hours: number }): Promise<MailResult> {
-  const texts = getMessages(await getLocale()).admin.settings.myAccess.mails
+  const texts = getMessages(await getAdminLocale()).admin.settings.myAccess.mails
   return dispatch({
     purpose: 'email_change',
     to: m.to,
@@ -597,7 +601,7 @@ export async function sendEmailChangeConfirmMail(m: { to: string; userId: string
 
 /** Hinweis an die bisherige Adresse, nachdem umgestellt wurde. */
 export async function sendEmailChangedNoticeMail(m: { to: string; userId: string; newEmail: string }): Promise<MailResult> {
-  const texts = getMessages(await getLocale()).admin.settings.myAccess.mails
+  const texts = getMessages(await getAdminLocale()).admin.settings.myAccess.mails
   return dispatch({
     purpose: 'email_changed',
     to: m.to,

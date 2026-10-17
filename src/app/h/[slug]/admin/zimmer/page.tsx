@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { getAdminContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import { getMessages, intlLocale } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 import RoomSetup, { type SetupRoom } from './RoomSetup'
 
 export default async function RoomSetupPage({
@@ -16,7 +16,7 @@ export default async function RoomSetupPage({
   const ctx = await getAdminContext(slug)
   if (!ctx) redirect(`/h/${slug}/admin`)
 
-  const locale = await getLocale()
+  const locale = await getAdminLocale()
   const admin = getMessages(locale).admin
   const m = admin.rooms
   const supabase = await createClient()

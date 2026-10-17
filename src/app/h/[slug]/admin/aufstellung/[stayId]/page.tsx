@@ -8,7 +8,7 @@ import { parseCurrency } from '@/lib/money'
 import { parseTimeZone } from '@/lib/tz'
 import BillSheet from './BillSheet'
 import { getMessages, intlLocale } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 /**
  * Druckbare Aufstellung der Zusatzleistungen eines Aufenthalts.
@@ -43,7 +43,7 @@ export default async function AufstellungPage({
 
   const room = Array.isArray(stay.rooms) ? stay.rooms[0] : stay.rooms
   const bill = await loadStayBill(admin, ctx.hotelId, stay.id, parseCurrency(ctx.policies))
-  const locale = await getLocale()
+  const locale = await getAdminLocale()
   const m = getMessages(locale).print
 
   return (

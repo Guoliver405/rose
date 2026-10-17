@@ -3,7 +3,7 @@ import LegalFooter from '@/components/LegalFooter'
 import Rich from '@/components/i18n/Rich'
 import { getMessages } from '@/lib/i18n'
 import { maskEmail } from '@/lib/email-change'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 import { peekEmailChange } from '@/utils/email-change'
 import ConfirmEmailForm from './ConfirmEmailForm'
 
@@ -24,7 +24,7 @@ export default async function EmailBestaetigenPage({
   searchParams: Promise<{ token?: string }>
 }) {
   const { token } = await searchParams
-  const m = getMessages(await getLocale()).admin.settings.myAccess.confirm
+  const m = getMessages(await getAdminLocale()).admin.settings.myAccess.confirm
   const offen = await peekEmailChange(token)
 
   return (

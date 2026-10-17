@@ -11,11 +11,11 @@ import {
 import { mailReady, sendGuestAccessMail, type MailResult } from '@/utils/mail'
 import { buildGuestGuide, parseSheetLanguages, type GuestGuide } from '@/lib/guest-guide'
 import { format, getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 /** Meldungen dieses Bereichs plus die gemeinsamen (nicht angemeldet, Zimmer nicht gefunden). */
 async function messages() {
-  const admin = getMessages(await getLocale()).admin
+  const admin = getMessages(await getAdminLocale()).admin
   return { ...admin.common.errors, ...admin.overview.errors }
 }
 
@@ -104,7 +104,7 @@ export async function checkInAction(
   if (activeStay) return { error: e.roomOccupied }
 
   if (!force) {
-    const w = getMessages(await getLocale()).admin.overview.checkInWarnings
+    const w = getMessages(await getAdminLocale()).admin.overview.checkInWarnings
     const reasons: string[] = []
     if (state?.checkout_pending) reasons.push(w.notCleaned)
     if (state?.priority) reasons.push(w.priorityOpen)

@@ -1,32 +1,56 @@
 /**
  * Texte eines Bereichs zum Gegenlesen exportieren (17.10.2026):
  *
- *   node scripts/translation-export.mjs guest en > texte.json
+ *   node --import ./scripts/ts-resolve.mjs scripts/translation-export.mjs guest en > texte.json
  *
  * Liest die Sprachdateien direkt (Node entfernt die Typen selbst) und gibt je
  * Text Schlüssel, Ort, Erläuterung, Deutsch und Zielsprache als JSON aus. Die
- * Excel-Tabelle baut `translation-sheet.py` daraus.
+ * Excel-Tabelle baut `translation-sheet.py` daraus. Erläuterungen dürfen von
+ * einem Abschnitt geerbt sein (`LooseContext`, Verwaltung).
  */
 const [area = 'guest', lang = 'en'] = process.argv.slice(2)
 const base = new URL('../src/lib/i18n/', import.meta.url)
 
-const de = (await import(new URL(`de/${area}.ts`, base)))[area]
-const target = (await import(new URL(`${lang}/${area}.ts`, base)))[area]
-const context = (await import(new URL(`de/${area}.context.ts`, base)))[`${area}Context`]
+/** Wo Texte und Erläuterungen eines Bereichs liegen. */
+const AREAS = {
+  guest: { file: 'guest.ts', ctx: 'de/guest.context.ts', ctxName: 'guestContext' },
+  service: { file: 'service.ts', ctx: 'de/service.context.ts', ctxName: 'serviceContext' },
+  admin: { file: 'admin/index.ts', ctx: 'de/admin/context.ts', ctxName: 'adminContext' },
+  mail: { file: 'mail.ts', ctx: 'de/mail.context.ts', ctxName: 'mailContext' },
+  print: { file: 'print.ts', ctx: 'de/print.context.ts', ctxName: 'printContext' },
+}
+const a = AREAS[area]
+if (!a) throw new Error(`Unbekannter Bereich: ${area}`)
+
+const de = (await import(new URL(`de/${a.file}`, base)))[area]
+const target = (await import(new URL(`${lang}/${a.file}`, base)))[area]
+const context = (await import(new URL(a.ctx, base)))[a.ctxName]
 
 function flatten(obj, prefix = '') {
   return Object.entries(obj).flatMap(([k, v]) =>
-    typeof v === 'string' || (v && typeof v.where === 'string')
-      ? [[`${prefix}${k}`, v]]
-      : flatten(v, `${prefix}${k}.`),
+    typeof v === 'string' ? [[`${prefix}${k}`, v]] : flatten(v, `${prefix}${k}.`),
   )
 }
 const get = (obj, key) => key.split('.').reduce((o, k) => o?.[k], obj)
+const isCtx = v => v && typeof v === 'object' && typeof v.where === 'string'
+
+/** Nächste Erläuterung auf dem Weg zum Text — wie `contextFor` in format.ts. */
+function contextFor(key) {
+  let node = context
+  let found = null
+  for (const part of ['', ...key.split('.')]) {
+    if (part) node = node?.[part]
+    if (isCtx(node)) return node
+    if (isCtx(node?._)) found = node._
+    if (node === undefined) break
+  }
+  return found
+}
 
 const rows = flatten(de).map(([key, text]) => ({
   key,
-  where: get(context, key)?.where ?? '',
-  note: get(context, key)?.note ?? '',
+  where: contextFor(key)?.where ?? '',
+  note: contextFor(key)?.note ?? '',
   de: text,
   target: get(target, key) ?? '',
 }))

@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/service'
 import { testzugaengeErlaubt } from '@/lib/test-accounts'
 import { getMessages, intlLocale } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 import PersonalManager, { type MaidRow, type ManagerRow, type ReceptionRow } from './PersonalManager'
 
 export default async function PersonalPage({
@@ -15,7 +15,7 @@ export default async function PersonalPage({
   const { slug } = await params
   const ctx = await getManagementContext(slug)
   if (!ctx) redirect('/admin')
-  const locale = await getLocale()
+  const locale = await getAdminLocale()
   const messages = getMessages(locale).admin
 
   const supabase = await createClient()

@@ -22,7 +22,7 @@ function currencyOptions(intl: string): { code: string; name: string }[] {
 import LogoForm from '../LogoForm'
 import { UnsavedChanges } from '@/components/unsaved/UnsavedChanges'
 import { getMessages, intlLocale } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 export default async function HotelSettingsPage({
   params,
@@ -32,7 +32,7 @@ export default async function HotelSettingsPage({
   const { slug } = await params
   const ctx = await getAdminContext(slug)
   if (!ctx) redirect(`/h/${slug}/admin/einstellungen`)
-  const locale = await getLocale()
+  const locale = await getAdminLocale()
   const m = getMessages(locale).admin.settings
 
   const supabase = await createClient()

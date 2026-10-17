@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { siteUrl } from "@/lib/site";
 import { getMessages } from "@/lib/i18n";
-import { getLocale } from "@/utils/locale";
+import { getAdminLocale } from "@/utils/locale";
 import MessagesProvider from "@/components/i18n/MessagesProvider";
 
 const geistSans = Geist({
@@ -27,7 +27,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const locale = await getLocale();
+  const locale = await getAdminLocale();
   const { mail, admin } = getMessages(locale);
   return (
     <html

@@ -6,7 +6,7 @@ import { createAdminClient } from '@/utils/supabase/service'
 import { getAdminContext } from '@/utils/auth'
 import { ensureBillingSnapshots } from '@/utils/billing'
 import { format, getMessages, intlLocale, plural } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 /**
  * Texte der Meldungen: eigene plus die gemeinsamen (`noPermission`,
@@ -14,7 +14,7 @@ import { getLocale } from '@/utils/locale'
  * für Pluralformen.
  */
 async function messages() {
-  const locale = await getLocale()
+  const locale = await getAdminLocale()
   const admin = getMessages(locale).admin
   return {
     e: { ...admin.common.errors, ...admin.rooms.errors },

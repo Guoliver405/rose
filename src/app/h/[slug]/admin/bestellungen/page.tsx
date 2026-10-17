@@ -3,7 +3,7 @@ import { getManagementContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import OrdersBoard, { type OrderRow } from './OrdersBoard'
 import { getMessages, intlLocale } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 export default async function BestellungenPage({
   params,
@@ -13,7 +13,7 @@ export default async function BestellungenPage({
   const { slug } = await params
   const ctx = await getManagementContext(slug)
   if (!ctx) redirect('/login')
-  const locale = await getLocale()
+  const locale = await getAdminLocale()
   const m = getMessages(locale).admin.overview.orders
 
   const supabase = await createClient()

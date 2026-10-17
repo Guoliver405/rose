@@ -8,7 +8,7 @@ import { buildGuestSheets } from '@/lib/guest-guide'
 import { logoUrlFor } from '@/utils/logo'
 import RoomQrSheet, { type RoomQrData } from './RoomQrSheet'
 import { getMessages, intlLocale } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 /**
  * Zimmer-QR-Aushänge: ein Blatt je Zimmer, wahlweise DIN A4 (eine Seite je
@@ -52,7 +52,7 @@ export default async function AushangPage({
     .sort((a, b) => a.number.localeCompare(b.number, 'de', { numeric: true }))
 
   const isAdmin = ctx.role !== 'reception'
-  const locale = await getLocale()
+  const locale = await getAdminLocale()
   const m = getMessages(locale).print.roomSigns
   const backHref = isAdmin
     ? `/h/${ctx.hotelSlug}/admin/einstellungen/gastzugang`

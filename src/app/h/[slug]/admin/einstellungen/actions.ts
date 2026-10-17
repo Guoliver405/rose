@@ -18,14 +18,14 @@ import { isValidSlug, SLUG_MAX_LENGTH } from '@/lib/slug'
 import { normalizeLinkUrl } from '@/lib/service-link-templates'
 import { isCurrency, parseCurrency } from '@/lib/money'
 import { format, getMessages, isLocale } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 import { cancelEmailChange, requestEmailChange } from '@/utils/email-change'
 import type { MailResult } from '@/utils/mail'
 
 type ActionResult = { error?: string }
 
 async function messages() {
-  const { common, settings } = getMessages(await getLocale()).admin
+  const { common, settings } = getMessages(await getAdminLocale()).admin
   return { ...common.errors, ...settings.errors }
 }
 
@@ -254,7 +254,7 @@ export async function requestEmailChangeAction(
   formData: FormData,
   release = false,
 ): Promise<{ error?: string; email?: string; expiresAt?: string | null; mail?: MailResult }> {
-  const t = getMessages(await getLocale()).admin.settings.myAccess.email
+  const t = getMessages(await getAdminLocale()).admin.settings.myAccess.email
   const e = await messages()
   const ctx = await getManagementContext(slug)
   if (!ctx) return { error: e.notSignedIn }
@@ -317,7 +317,7 @@ export async function uploadHotelLogoAction(
   const bytes = new Uint8Array(await datei.arrayBuffer())
   const check = validateLogoUpload(bytes.byteLength, bytes.subarray(0, LOGO_HEAD_BYTES))
   if ('error' in check) {
-    const lm = getMessages(await getLocale()).account.houses.logo
+    const lm = getMessages(await getAdminLocale()).account.houses.logo
     return { error: check.error === 'tooLarge' ? format(lm.tooLarge, { kb: check.kb }) : lm[check.error] }
   }
 

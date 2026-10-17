@@ -16,10 +16,10 @@ import { createAdminClient } from '@/utils/supabase/service'
 import { getAdminContext } from '@/utils/auth'
 import { generatePin, generateToken, clampPinLength } from '@/lib/ids'
 import { format, getMessages, intlLocale, plural } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 async function messages() {
-  const locale = await getLocale()
+  const locale = await getAdminLocale()
   const { common, settings } = getMessages(locale).admin
   return { e: { ...common.errors, ...settings.errors }, notes: settings.testScenario.notes, intl: intlLocale(locale) }
 }

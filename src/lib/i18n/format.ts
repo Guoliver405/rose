@@ -96,3 +96,32 @@ export function flattenContext(obj: object, prefix = ''): [string, TextContext][
       : flattenContext(v as object, `${prefix}${k}.`),
   )
 }
+
+/**
+ * Erläuterungen für große Bereiche (Verwaltung, seit 17.10.2026): Ein
+ * Abschnitt darf seine Erläuterung an alle Texte darunter vererben — als
+ * `TextContext` an Stelle des ganzen Abschnitts oder als `_` neben einzelnen
+ * Texten. Jeder Schlüssel ist optional; `contextFor` sucht die nächste
+ * Erläuterung auf dem Weg zum Text.
+ */
+export type LooseContext<T> =
+  | TextContext
+  | ({ _?: TextContext } & { [K in keyof T]?: T[K] extends string ? TextContext : LooseContext<T[K]> })
+
+function isTextContext(v: unknown): v is TextContext {
+  return typeof v === 'object' && v !== null && typeof (v as TextContext).where === 'string'
+}
+
+/** Erläuterung zu einem Schlüsselpfad (`dialog.bill.toCollect`) — die nächste auf dem Weg dorthin. */
+export function contextFor(tree: unknown, key: string): TextContext | null {
+  let node: unknown = tree
+  let found: TextContext | null = null
+  for (const part of ['', ...key.split('.')]) {
+    if (part) node = (node as Record<string, unknown> | undefined)?.[part]
+    if (isTextContext(node)) return node
+    const inherited = (node as { _?: unknown } | undefined)?._
+    if (isTextContext(inherited)) found = inherited
+    if (node === undefined) break
+  }
+  return found
+}

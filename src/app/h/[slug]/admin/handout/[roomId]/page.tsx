@@ -9,7 +9,7 @@ import { logoUrlFor } from '@/utils/logo'
 import { buildGuestSheets } from '@/lib/guest-guide'
 import GuestHandoutCard from './GuestHandoutCard'
 import { format, getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 /**
  * Druckbares Gast-Handout nach dem Check-in — der Zettel, den der Gast
@@ -57,7 +57,7 @@ export default async function HandoutPage({
         ? roomAccessUrl(origin, token.token)
         : manualUrl
   const deepLink = accessMode === 'link' || Boolean(token)
-  const m = getMessages(await getLocale()).print
+  const m = getMessages(await getAdminLocale()).print
 
   return (
     <div className="flex flex-col items-center gap-5 py-6">

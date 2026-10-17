@@ -321,7 +321,9 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       **17.10.: Service-Baukasten mehrsprachig gebaut** (Self-Service, Rückfall je Feld, Beispiel-Services zweisprachig).
       **17.10.: Reinigungsboard auf Englisch gebaut** (Sprache folgt dem Gerät); Gegenlesen offen:
       [Uebersetzung-Reinigungsboard-en-2026-10-17.xlsx](Sessions/Uebersetzung-Reinigungsboard-en-2026-10-17.xlsx).
-      Nächster Bereich: Verwaltung; Rechtstexte erst nach der anwaltlichen Prüfung.
+      **17.10.: Verwaltung Etappe 1 auf Englisch** (Rezeption, Mails, Druckseiten; Sprache unter „Mein Zugang“); Gegenlesen offen:
+      `Sessions/Uebersetzung-Verwaltung-{admin,mail,print}-en-2026-10-17.xlsx`.
+      Etappe 2: Hilfe und Lotsen, Konto/Abrechnung, Anmeldung/Registrierung; Rechtstexte erst nach der anwaltlichen Prüfung.
 - [ ] **Thailändisch als Belastungsprobe** — probehalber implementieren, um zu
       sehen, wie weit das Sprach-System trägt: nicht-lateinische Schrift,
       andere Zeilenumbruch-Regeln (keine Leerzeichen zwischen Wörtern),

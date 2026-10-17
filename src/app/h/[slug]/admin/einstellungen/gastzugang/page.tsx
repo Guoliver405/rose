@@ -11,7 +11,7 @@ import SprachenForm from '../SprachenForm'
 import { UnsavedChanges } from '@/components/unsaved/UnsavedChanges'
 import Rich from '@/components/i18n/Rich'
 import { getMessages, parseFallbackLanguage, parseHomeLanguage } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 /**
  * Gäste-Zugang — welcher Weg führt ins Gäste-Portal?
@@ -33,7 +33,7 @@ export default async function GastzugangPage({
   const { slug } = await params
   const ctx = await getAdminContext(slug)
   if (!ctx) redirect(`/h/${slug}/admin/einstellungen`)
-  const m = getMessages(await getLocale()).admin.settings
+  const m = getMessages(await getAdminLocale()).admin.settings
 
   const supabase = await createClient()
   const { data: hotel } = await supabase

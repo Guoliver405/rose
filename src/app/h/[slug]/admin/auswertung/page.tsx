@@ -14,7 +14,7 @@ import {
 import { addDaysKey, parseTimeZone, zonedDateKey, zonedDayRange } from '@/lib/tz'
 import { groupForPairing, pairingKey, parseStaffTracking } from '@/lib/staff-tracking'
 import { format, getMessages, intlLocale, plural } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 import Rich from '@/components/i18n/Rich'
 
 /** „YYYY-MM-DD" oder null. */
@@ -44,7 +44,7 @@ export default async function AuswertungPage({
   // Arbeitszeit-Auswertung ist Personaldatenverarbeitung → verwaltende Rolle.
   const ctx = await getAdminContext(slug)
   if (!ctx) redirect(`/h/${slug}/admin`)
-  const locale = await getLocale()
+  const locale = await getAdminLocale()
   const loc = intlLocale(locale)
   const m = getMessages(locale).admin.staff.report
 

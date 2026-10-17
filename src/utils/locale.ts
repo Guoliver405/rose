@@ -1,5 +1,5 @@
 import { cookies, headers } from 'next/headers'
-import { DEFAULT_LOCALE, GUEST_LOCALES, LOCALE_COOKIE, parseFallbackLanguage, resolveLocale, SERVICE_LOCALES, type Locale } from '@/lib/i18n'
+import { ADMIN_LOCALES, DEFAULT_LOCALE, GUEST_LOCALES, LOCALE_COOKIE, parseFallbackLanguage, resolveLocale, SERVICE_LOCALES, type Locale } from '@/lib/i18n'
 
 /**
  * Sprache der laufenden Anfrage für alle Bereiche außer dem Gästeportal —
@@ -27,6 +27,16 @@ export async function getGuestLocale(policies?: Record<string, unknown> | null):
  */
 export async function getServiceLocale(policies?: Record<string, unknown> | null): Promise<Locale> {
   return deviceLocale(SERVICE_LOCALES, policies)
+}
+
+/**
+ * Sprache der Verwaltung — Rezeption, Inhaber, Manager (seit 17.10.2026):
+ * eigene Wahl unter „Mein Zugang“ → Sprache des Geräts → Deutsch. Ohne die
+ * Rückfallsprache des Hauses: Server-Actions kennen das Haus oft erst nach
+ * der ersten Meldung, und Seite und Meldung sollen dieselbe Sprache sprechen.
+ */
+export async function getAdminLocale(): Promise<Locale> {
+  return deviceLocale(ADMIN_LOCALES, null)
 }
 
 async function deviceLocale(offered: readonly Locale[], policies?: Record<string, unknown> | null): Promise<Locale> {

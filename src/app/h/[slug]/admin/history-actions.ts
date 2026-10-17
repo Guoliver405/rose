@@ -15,7 +15,7 @@ import { createAdminClient } from '@/utils/supabase/service'
 import { parseStaffTracking } from '@/lib/staff-tracking'
 import { getManagementContext } from '@/utils/auth'
 import { format, getMessages, type AdminMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 type H = AdminMessages['overview']['history']
 
@@ -76,7 +76,7 @@ function stitchLabels(h: H): Record<string, string> {
 export async function getRoomHistoryAction(slug: string, roomId: string): Promise<RoomHistoryResult> {
   // Bewusst Management (nicht Admin-only): Beschwerde-Aufklärung ist
   // Tagesgeschäft der Rezeption.
-  const msg = getMessages(await getLocale()).admin
+  const msg = getMessages(await getAdminLocale()).admin
   const h = msg.overview.history
   const ctx = await getManagementContext(slug)
   if (!ctx) return { error: msg.common.errors.notSignedIn }

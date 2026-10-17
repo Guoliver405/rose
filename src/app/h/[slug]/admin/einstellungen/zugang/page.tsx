@@ -4,8 +4,9 @@ import { ArrowLeft } from 'lucide-react'
 import { getManagementContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import ZugangForm from '../ZugangForm'
-import { getMessages, intlLocale } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { ADMIN_LOCALES, getMessages, intlLocale } from '@/lib/i18n'
+import LanguageSwitch from '@/components/LanguageSwitch'
+import { getAdminLocale } from '@/utils/locale'
 import { pendingEmailChange } from '@/utils/email-change'
 import { mailReady } from '@/utils/mail'
 import { EMAIL_CHANGE_TTL_HOURS } from '@/lib/email-change'
@@ -32,7 +33,7 @@ export default async function ZugangPage({
   const { slug } = await params
   const ctx = await getManagementContext(slug)
   if (!ctx) redirect('/login')
-  const locale = await getLocale()
+  const locale = await getAdminLocale()
   const m = getMessages(locale).admin.settings
 
   const supabase = await createClient()
@@ -70,6 +71,13 @@ export default async function ZugangPage({
         ttlHours={EMAIL_CHANGE_TTL_HOURS}
         m={m.myAccess}
       />
+
+      {/* Sprache der Oberfläche: eigene Wahl für dieses Gerät (Cookie, wie in den Portalen). */}
+      <section className="flex flex-col gap-2 rounded-xl border border-edge bg-surface p-4">
+        <h2 className="text-sm font-bold text-ink-soft">{m.myAccess.language.heading}</h2>
+        <div><LanguageSwitch current={locale} offered={ADMIN_LOCALES} inline /></div>
+        <p className="text-xs text-ink-muted">{m.myAccess.language.hint}</p>
+      </section>
     </div>
   )
 }

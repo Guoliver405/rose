@@ -23,6 +23,13 @@ export const GUEST_LOCALES: readonly Locale[] = ['de', 'en']
 /** Sprachen, in denen das Reinigungsboard vollständig übersetzt ist (seit 17.10.2026). */
 export const SERVICE_LOCALES: readonly Locale[] = ['de', 'en']
 
+/**
+ * Sprachen der Verwaltung (Rezeptions-Portal, Mails, Druckseiten; seit
+ * 17.10.2026). Hilfe, Lotsen und Konto folgen in einer zweiten Etappe und
+ * bleiben bis dahin deutsch.
+ */
+export const ADMIN_LOCALES: readonly Locale[] = ['de', 'en']
+
 /** Name jeder Sprache in ihrer eigenen Schreibweise — für den Umschalter, keine Flaggen. */
 export const LOCALE_NAMES: Record<Locale, string> = { de: 'Deutsch', en: 'English' }
 

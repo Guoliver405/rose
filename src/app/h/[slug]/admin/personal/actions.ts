@@ -8,12 +8,12 @@ import { confirmUrl, sendInviteMail, sendRecoveryMail, type MailResult } from '@
 import { generatePin, generateToken } from '@/lib/ids'
 import { buildMaidEmail, normalizeUsername } from '@/lib/maid'
 import { testzugaengeErlaubt } from '@/lib/test-accounts'
-import { format, getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { format, getMessages, type Locale } from '@/lib/i18n'
+import { getAdminLocale } from '@/utils/locale'
 
 /** Meldungen in der Sprache der Anfrage — gemeinsame (Berechtigung) und die des Personal-Bereichs. */
 async function messages() {
-  const admin = getMessages(await getLocale()).admin
+  const admin = getMessages(await getAdminLocale()).admin
   return { ...admin.common.errors, ...admin.staff.errors }
 }
 
@@ -611,8 +611,9 @@ async function legeMitgliedschaftAn(
  */
 export type Zugangsdaten = { displayName: string; email: string; password: string }
 
-function rolleLabel(role: 'reception' | 'manager'): 'Rezeption' | 'Manager' {
-  return role === 'manager' ? 'Manager' : 'Rezeption'
+/** Rolle in der Sprache der Mail — dieselben Wörter wie unter „Mein Zugang“. */
+function rolleLabel(role: 'reception' | 'manager', locale: Locale): string {
+  return getMessages(locale).admin.settings.myAccess.roles[role]
 }
 
 async function ladeEin(opts: {
@@ -669,7 +670,7 @@ async function ladeEin(opts: {
       // Rolle aus denselben Werten). ACHTUNG: `user_metadata` ist vom Nutzer
       // selbst änderbar und darf NIE für Berechtigungen herangezogen werden —
       // die stehen in `hotel_members` bzw. `account_members`.
-      data: { name: displayName, hotel: hotelName, rolle: rolleLabel(role) },
+      data: { name: displayName, hotel: hotelName, rolle: rolleLabel(role, 'de') },
     },
   })
   const tokenHash = link?.properties?.hashed_token
@@ -689,13 +690,15 @@ async function ladeEin(opts: {
 
   // Zugang steht — jetzt die Mail. Scheitert sie, bleibt der Zugang mit
   // „Einladung offen" in der Liste, und „Erneut senden" ist der Ausweg.
+  const locale = await getAdminLocale()
   const mail = await sendInviteMail({
     to: email,
     userId: link.user.id,
     hotelId,
     hotelName,
     displayName,
-    rolle: rolleLabel(role),
+    rolle: rolleLabel(role, locale),
+    locale,
     url: confirmUrl(tokenHash, 'invite', '/passwort-neu'),
     invitedBy,
   })
@@ -728,6 +731,7 @@ export async function resendInvitationAction(
   const { ctx, email, url } = vorbereitet
 
   const mail = await sendRecoveryMail({
+    locale: await getAdminLocale(),
     to: email,
     userId,
     hotelId: ctx.hotelId,

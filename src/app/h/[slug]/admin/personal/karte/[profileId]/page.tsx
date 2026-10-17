@@ -5,7 +5,7 @@ import { getManagementContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import MaidPinCard from '@/components/MaidPinCard'
 import { getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 /**
  * Standalone-Druckseite für die Maid-Zugangskarte. Bewusst eigene Seite
@@ -44,7 +44,7 @@ export default async function MaidCardPage({
   // Hand braucht die Hotel-Adresse, weil Benutzernamen nur je Hotel eindeutig sind.
   const loginUrl = `${origin}/service/auto/${card.token}`
   const manualUrl = `${origin}/h/${ctx.hotelSlug}/service/login`
-  const m = getMessages(await getLocale()).print.accessCard
+  const m = getMessages(await getAdminLocale()).print.accessCard
 
   return (
     <div className="flex flex-col items-center gap-5 py-6">

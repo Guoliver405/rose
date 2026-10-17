@@ -4,10 +4,10 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/utils/supabase/service'
 import { getManagementContext } from '@/utils/auth'
 import { getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 async function messages() {
-  const admin = getMessages(await getLocale()).admin
+  const admin = getMessages(await getAdminLocale()).admin
   return { ...admin.common.errors, ...admin.overview.errors }
 }
 

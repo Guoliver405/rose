@@ -8,7 +8,7 @@ import { getManagementContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import { parseGuestAccessMode } from '@/lib/guest-access'
 import { getMessages, type AdminMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 type TileId = keyof AdminMessages['settings']['hub']['tiles']
 
@@ -51,7 +51,7 @@ export default async function EinstellungenHubPage({
   const { slug } = await params
   const ctx = await getManagementContext(slug)
   if (!ctx) redirect('/admin')
-  const m = getMessages(await getLocale()).admin.settings
+  const m = getMessages(await getAdminLocale()).admin.settings
 
   // Manager hat im Haus dieselben Rechte wie der Inhaber — nur die
   // Rezeption bekommt den verkürzten Hub.

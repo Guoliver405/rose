@@ -5,7 +5,7 @@ import { getAdminContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import TestScenarioPanel from '../TestScenarioPanel'
 import { getMessages, intlLocale } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 // VORÜBERGEHEND — Test-Szenario-Seeding, siehe ../test-actions.ts.
 export default async function TestScenarioPage({
@@ -16,7 +16,7 @@ export default async function TestScenarioPage({
   const { slug } = await params
   const ctx = await getAdminContext(slug)
   if (!ctx) redirect(`/h/${slug}/admin/einstellungen`)
-  const locale = await getLocale()
+  const locale = await getAdminLocale()
   const m = getMessages(locale).admin.settings
 
   const supabase = await createClient()

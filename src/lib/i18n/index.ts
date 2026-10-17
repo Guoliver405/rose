@@ -12,6 +12,9 @@ import { landing } from './de/landing'
 import { legal } from './de/legal'
 import { guest as enGuest } from './en/guest'
 import { service as enService } from './en/service'
+import { admin as enAdmin } from './en/admin'
+import { mail as enMail } from './en/mail'
+import { print as enPrint } from './en/print'
 import { DEFAULT_LOCALE, INTL_LOCALES, type Locale } from './locales'
 
 /**
@@ -39,7 +42,7 @@ export type { LandingMessages } from './de/landing'
 export type { LegalMessages } from './de/legal'
 
 export {
-  DEFAULT_LOCALE, GUEST_LOCALES, SERVICE_LOCALES, INTL_LOCALES, LOCALE_COOKIE, LOCALE_NAMES, LOCALES,
+  ADMIN_LOCALES, DEFAULT_LOCALE, GUEST_LOCALES, SERVICE_LOCALES, INTL_LOCALES, LOCALE_COOKIE, LOCALE_NAMES, LOCALES,
   isLocale, matchAcceptLanguage, parseFallbackLanguage, parseHomeLanguage, resolveLocale, type Locale,
 } from './locales'
 
@@ -53,7 +56,7 @@ export type Messages = typeof de
  */
 const MESSAGES: Record<Locale, Messages> = {
   de,
-  en: { ...de, guest: enGuest, service: enService },
+  en: { ...de, guest: enGuest, service: enService, admin: enAdmin, mail: enMail, print: enPrint },
 }
 
 export function getMessages(locale: Locale = DEFAULT_LOCALE): Messages {

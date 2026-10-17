@@ -5,11 +5,11 @@ import { createAdminClient } from '@/utils/supabase/service'
 import { getAdminContext, getManagementContext } from '@/utils/auth'
 import { generateToken } from '@/lib/ids'
 import { getMessages } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 /** Meldungen der Aushang-Seite in der Sprache der Anfrage. */
 async function messages() {
-  return getMessages(await getLocale()).print.roomSigns.errors
+  return getMessages(await getAdminLocale()).print.roomSigns.errors
 }
 
 /**

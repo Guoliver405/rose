@@ -12,7 +12,7 @@ import { formatHHMM, parseTimeZone } from '@/lib/tz'
 import RoomGrid, { type FloorGroup, type RoomTileData } from './RoomGrid'
 import SetupBanner from './SetupBanner'
 import { format, getMessages, intlLocale } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 import Rich from '@/components/i18n/Rich'
 
 export default async function AdminOverviewPage({
@@ -23,7 +23,7 @@ export default async function AdminOverviewPage({
   const { slug } = await params
   const ctx = await getManagementContext(slug)
   if (!ctx) redirect('/admin')
-  const locale = await getLocale()
+  const locale = await getAdminLocale()
   const m = getMessages(locale).admin.overview
 
   const supabase = await createClient()

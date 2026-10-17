@@ -8,11 +8,11 @@ import { seedExampleServices } from '@/utils/example-services'
 import { normalizeLinkUrl } from '@/lib/service-link-templates'
 import { parseItemTranslations, parseServiceTranslations, serviceLang } from '@/lib/service-i18n'
 import { format, getMessages, isLocale, parseHomeLanguage } from '@/lib/i18n'
-import { getLocale } from '@/utils/locale'
+import { getAdminLocale } from '@/utils/locale'
 
 /** Meldungen: eigene plus die gemeinsamen (`noPermission`). */
 async function messages() {
-  const admin = getMessages(await getLocale()).admin
+  const admin = getMessages(await getAdminLocale()).admin
   return { ...admin.common.errors, ...admin.services.errors }
 }
 
