@@ -4,6 +4,7 @@ import { guest as en } from './en/guest'
 import { guestContext } from './de/guest.context'
 import { flattenContext, flattenMessages } from './format'
 import { buildGuestSheet } from '../guest-guide'
+import { sheet as enSheet } from './en/sheet'
 
 /*
  * Englisch fürs Gästeportal (17.10.2026, amerikanisches Englisch) und die
@@ -38,8 +39,10 @@ describe('Gästeportal — Englisch', () => {
     expect([...enAll].filter(([, t]) => (t.match(/“/g) ?? []).length !== (t.match(/”/g) ?? []).length)).toEqual([])
   })
 
-  it('schreibt amerikanisch, nicht britisch', () => {
-    expect([...enAll].filter(([, t]) => /colour|favour|organis|centre|cancelled|travell/i.test(t))).toEqual([])
+  it('schreibt amerikanisch, nicht britisch — auch auf dem englischen Blatt', () => {
+    const british = /colour|favour|organis|centre|cancelled|travell|licence/i
+    expect([...enAll].filter(([, t]) => british.test(t))).toEqual([])
+    expect(flattenMessages(enSheet).filter(([, t]) => british.test(t))).toEqual([])
   })
 
   it('hält die Knopf-Beschriftungen kurz — sie stehen auch auf dem gedruckten Blatt', () => {

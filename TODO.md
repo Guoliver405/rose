@@ -314,6 +314,9 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       **17.10.: Sprachen des Hauses und Service-Baukasten entschieden** (Heimat- und Rückfallsprache,
       Blatt-Sprache gekoppelt, Baukasten mehrsprachig im Self-Service ohne automatische Übersetzung):
       [Sprachen-des-Hauses-Plan-2026-10-17.md](Sessions/Sprachen-des-Hauses-Plan-2026-10-17.md).
+      **17.10.: Gästeportal auf Englisch gebaut** (Sprachwahl, Umschalter, Legende, Entwurf).
+      Offen: **Gegenlesen durch den User** ([Uebersetzung-Gaesteportal-en-2026-10-17.xlsx](Sessions/Uebersetzung-Gaesteportal-en-2026-10-17.xlsx)),
+      Einstellungen Heimat-/Rückfallsprache mit Kopplung der Blatt-Sprache, Service-Baukasten mehrsprachig.
 - [ ] **Thailändisch als Belastungsprobe** — probehalber implementieren, um zu
       sehen, wie weit das Sprach-System trägt: nicht-lateinische Schrift,
       andere Zeilenumbruch-Regeln (keine Leerzeichen zwischen Wörtern),
