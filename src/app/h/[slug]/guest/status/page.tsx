@@ -141,7 +141,7 @@ export default async function GuestStatusPage({
   return (
     <main className="flex flex-1 flex-col gap-6 py-4">
       <header className="text-center">
-        <p className="text-sm text-ink-muted">{ctx.hotelName}</p>
+        <p className="text-sm text-ink-muted">{ctx.hotelName ?? m.brand.portal}</p>
         <h1 className="text-2xl font-black text-ink">{format(m.status.room, { number: ctx.roomNumber })}</h1>
       </header>
 

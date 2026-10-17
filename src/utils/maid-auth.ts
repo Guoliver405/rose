@@ -10,7 +10,8 @@ export type MaidContext = {
   hotelId: string
   displayName: string
   username: string
-  hotelName: string
+  /** Name des Hauses; null nur, wenn keiner gepflegt ist — den Rückfall wählt die Seite aus der Sprachdatei. */
+  hotelName: string | null
   /** Mandant in der URL — für Redirects nach `/h/<slug>/service/…`. */
   hotelSlug: string
   policies: Record<string, unknown>
@@ -56,7 +57,7 @@ export const getMaidContext = cache(async (): Promise<MaidContext | null> => {
     hotelId: profile.hotel_id,
     displayName: profile.display_name,
     username: profile.username,
-    hotelName: hotel.name ?? 'Hotel',
+    hotelName: hotel.name || null,
     hotelSlug: hotel.slug,
     policies: (hotel.policies ?? {}) as Record<string, unknown>,
     accessToken: session.access_token,

@@ -241,7 +241,7 @@ export default async function ServiceBoardPage({
           <span className="text-lg font-black text-ink">
             Ro<span className="text-blocked">Se</span>
             <span className="ml-2 hidden text-sm font-semibold text-ink-muted sm:inline">
-              {format(m.brand.boardOf, { hotel: ctx.hotelName })}
+              {ctx.hotelName ? format(m.brand.boardOf, { hotel: ctx.hotelName }) : m.brand.board}
             </span>
           </span>
           <div className="ml-auto flex items-center gap-3">

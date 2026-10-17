@@ -16,7 +16,8 @@ export type GuestContext = {
   roomId: string
   roomNumber: string
   hotelId: string
-  hotelName: string
+  /** Name des Hauses; null nur, wenn keiner gepflegt ist — den Rückfall wählt die Seite aus der Sprachdatei. */
+  hotelName: string | null
   /** Mandant in der URL — für Redirects nach `/h/<slug>/guest/…`. */
   hotelSlug: string
   guestSignal: 'none' | 'please_clean' | 'dnd'
@@ -82,7 +83,7 @@ export const getGuestContext = cache(async (): Promise<GuestContext | null> => {
     roomId: stay.room_id,
     roomNumber: room.number,
     hotelId: stay.hotel_id,
-    hotelName: hotel.name ?? 'Hotel',
+    hotelName: hotel.name || null,
     hotelSlug: hotel.slug,
     guestSignal: (state?.guest_signal ?? 'none') as GuestContext['guestSignal'],
     cleanNotBefore: state?.clean_not_before ?? null,
