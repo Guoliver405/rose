@@ -5,6 +5,7 @@ import { getMessages, GUEST_LOCALES, intlLocale } from '@/lib/i18n'
 import { parseItemTranslations, parseServiceTranslations, serviceLang } from '@/lib/service-i18n'
 import { parseCurrency } from '@/lib/money'
 import { getAdminLocale } from '@/utils/locale'
+import { parseHomeLanguage } from '@/lib/i18n/locales'
 import ServicesManager, { type ServiceRow } from './ServicesManager'
 
 export default async function ServicesPage({
@@ -58,11 +59,21 @@ export default async function ServicesPage({
     items: itemsByService.get(s.id) ?? [],
   }))
 
+  // Vorlagen für Verweise: Name und Beschreibung werden zum Grundtext des
+  // Service und stehen deshalb in der Heimatsprache des Hauses (wie die
+  // Beispiel-Services); Regionen und Hinweise lesen nur Rezeption und
+  // Management — in der Sprache der Oberfläche.
+  const homeTemplates = getMessages(parseHomeLanguage(ctx.policies)).admin.services.linkTemplates
+  const servicesMessages = {
+    ...admin.services,
+    linkTemplates: { ...admin.services.linkTemplates, names: homeTemplates.names, descriptions: homeTemplates.descriptions },
+  }
+
   return (
     <ServicesManager
       hotelSlug={ctx.hotelSlug}
       services={rows}
-      m={admin.services}
+      m={servicesMessages}
       common={admin.common}
       intlLocale={intlLocale(locale)}
       offered={GUEST_LOCALES}
