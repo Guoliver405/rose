@@ -3,7 +3,8 @@ import { format, getMessages } from '@/lib/i18n'
 import { getLocale } from '@/utils/locale'
 import { slugify, uniqueSlug } from '@/lib/slug'
 import { DEFAULT_PIN_LENGTH } from '@/lib/ids'
-import serviceTemplates from '@/lib/service-templates.json'
+import { seedExampleServices } from '@/utils/example-services'
+import { parseHomeLanguage } from '@/lib/i18n/locales'
 import { ensureStripeCustomer, stripeReady } from '@/utils/stripe'
 
 /*
@@ -116,19 +117,9 @@ export async function createHotelAccount(input: HotelAccountInput): Promise<Hote
     }
   }
 
-  // ── Beispiel-Services. Nicht fatal.
-  for (const t of serviceTemplates) {
-    const { data: svc } = await admin
-      .from('service_definitions')
-      .insert({ hotel_id: hotel.id, name: t.name, description: t.description, urgent: t.urgent })
-      .select('id')
-      .single()
-    if (svc && t.items.length > 0) {
-      await admin.from('service_items').insert(
-        t.items.map((i, idx) => ({ service_id: svc.id, hotel_id: hotel.id, label: i.label, price_cents: i.price_cents, sort_order: idx })),
-      )
-    }
-  }
+  // ── Beispiel-Services, in der Heimatsprache des Hauses. Nicht fatal.
+  const seeded = await seedExampleServices(admin, hotel.id, parseHomeLanguage(input.policies ?? {}))
+  if (seeded.error) console.error('[hotel-account] Beispiel-Services:', seeded.error)
 
   // ── Stripe-Kunde. Nicht fatal: fehlt er, holt ihn die Zahlungsweg-Seite nach.
   const stripe = stripeReady()

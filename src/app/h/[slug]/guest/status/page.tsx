@@ -15,6 +15,7 @@ import GuestSignalPanel from './GuestSignalPanel'
 import GuestCleaningStatusCard from './GuestCleaningStatusCard'
 import ReviewLink from '@/components/ReviewLink'
 import { parseReviewUrl, showReviewHint } from '@/lib/review'
+import { localizeItem, localizeService, parseItemTranslations, parseServiceTranslations, serviceLang } from '@/lib/service-i18n'
 import GuestServicesPanel, { type GuestLink, type GuestOrder, type GuestService } from './GuestServicesPanel'
 
 export default async function GuestStatusPage({
@@ -56,12 +57,12 @@ export default async function GuestStatusPage({
   const [{ data: services }, { data: items }, { data: orders }, { data: lastDone }] = await Promise.all([
     admin
       .from('service_definitions')
-      .select('id, name, description, archived_at, link_url, maintenance')
+      .select('id, name, description, archived_at, link_url, maintenance, lang, translations')
       .eq('hotel_id', ctx.hotelId)
       .order('name'),
     admin
       .from('service_items')
-      .select('id, service_id, label, price_cents')
+      .select('id, service_id, label, price_cents, translations')
       .eq('hotel_id', ctx.hotelId)
       .is('archived_at', null)
       .order('label'),
@@ -99,12 +100,24 @@ export default async function GuestStatusPage({
   })
   const due = stayoverDueTime(stayover)
 
+  // Services in der Sprache des Gastes (17.10.2026): je Feld die Übersetzung
+  // des Hauses, sonst der Grundtext — nie ein leeres Feld.
+  const langOf = new Map((services ?? []).map(s => [s.id, serviceLang(s.lang)]))
+  const text = new Map((services ?? []).map(s => [s.id, localizeService({
+    name: s.name, description: s.description, lang: serviceLang(s.lang),
+    translations: parseServiceTranslations(s.translations),
+  }, locale)]))
+  const itemLabel = new Map((items ?? []).map(i => [i.id, localizeItem(
+    { label: i.label, translations: parseItemTranslations(i.translations) },
+    langOf.get(i.service_id) ?? 'de', locale,
+  )]))
+
   const itemsByService = new Map<string, GuestService['items']>()
   for (const item of items ?? []) {
     if (!itemsByService.has(item.service_id)) itemsByService.set(item.service_id, [])
     itemsByService.get(item.service_id)!.push({
       id: item.id,
-      label: item.label,
+      label: itemLabel.get(item.id) ?? item.label,
       priceCents: item.price_cents,
     })
   }
@@ -116,8 +129,8 @@ export default async function GuestStatusPage({
     .filter(s => !s.link_url)
     .map(s => ({
       id: s.id,
-      name: s.name,
-      description: s.description,
+      name: text.get(s.id)?.name ?? s.name,
+      description: text.get(s.id)?.description ?? s.description,
       maintenance: Boolean(s.maintenance),
       items: itemsByService.get(s.id) ?? [],
     }))
@@ -125,13 +138,19 @@ export default async function GuestStatusPage({
   // keine Bestellung, deshalb eigener Abschnitt unter den Services.
   const guestLinks: GuestLink[] = active
     .filter(s => Boolean(s.link_url))
-    .map(s => ({ id: s.id, name: s.name, description: s.description, url: s.link_url as string }))
+    .map(s => ({
+      id: s.id, name: text.get(s.id)?.name ?? s.name,
+      description: text.get(s.id)?.description ?? s.description, url: s.link_url as string,
+    }))
 
-  const serviceNameById = new Map((services ?? []).map(s => [s.id, s.name]))
+  // Eigene Anfragen: Name und Optionen in der Sprache des Gastes, soweit die
+  // Option noch existiert (`item_id` im Snapshot seit 17.10.2026); sonst der
+  // eingefrorene Grundtext.
   const guestOrders: GuestOrder[] = (orders ?? []).map(o => ({
     id: o.id,
-    serviceName: serviceNameById.get(o.service_id) ?? m.services.fallbackName,
-    itemLabels: ((o.items_snapshot ?? []) as { label: string }[]).map(i => i.label),
+    serviceName: text.get(o.service_id)?.name ?? m.services.fallbackName,
+    itemLabels: ((o.items_snapshot ?? []) as { label: string; item_id?: string }[])
+      .map(i => (i.item_id && itemLabel.get(i.item_id)) || i.label),
     status: o.status as GuestOrder['status'],
     createdAt: o.created_at,
   }))

@@ -1,16 +1,18 @@
 'use client'
 
 import { useMemo, useRef, useState, useTransition } from 'react'
-import { Archive, ExternalLink, Hammer, Link2, Loader2, Plus, Siren, Sparkles, Wrench } from 'lucide-react'
+import { Archive, Check, ExternalLink, Hammer, Languages, Link2, Loader2, Plus, Siren, Sparkles, Wrench, X } from 'lucide-react'
 import { formatCents } from '@/lib/money'
 import { serviceLinkTemplates, type ServiceLinkTemplate } from '@/lib/service-link-templates'
 import { format, plural } from '@/lib/i18n/format'
 import type { AdminMessages } from '@/lib/i18n'
 import Rich from '@/components/i18n/Rich'
+import { LOCALE_NAMES, type Locale } from '@/lib/i18n/locales'
+import { missingLanguages, type ItemTranslations, type ServiceTranslations } from '@/lib/service-i18n'
 import {
   archiveServiceAction, archiveServiceItemAction, createExampleServicesAction,
   createServiceAction, createServiceItemAction, setServiceMaintenanceAction, setServiceUrgentAction,
-  updateServiceLinkAction,
+  updateServiceLinkAction, updateServiceTranslationAction,
 } from './actions'
 
 export type ServiceRow = {
@@ -22,7 +24,10 @@ export type ServiceRow = {
   maintenance: boolean
   /** Verweis: Kachel mit Link nach außen, keine Bestellung. Nicht null = Verweis. */
   linkUrl: string | null
-  items: { id: string; label: string; priceCents: number | null }[]
+  /** Sprache der Grundtexte (Heimatsprache beim Anlegen). */
+  lang: Locale
+  translations: ServiceTranslations
+  items: { id: string; label: string; priceCents: number | null; translations: ItemTranslations }[]
 }
 
 type Kind = 'order' | 'link'
@@ -31,13 +36,15 @@ type Kind = 'order' | 'link'
 const em = (t: string) => <span className="font-semibold text-ink-soft">{t}</span>
 
 export default function ServicesManager({
-  hotelSlug, services, m, common, intlLocale,
+  hotelSlug, services, m, common, intlLocale, offered,
 }: {
   hotelSlug: string
   services: ServiceRow[]
   m: AdminMessages['services']
   common: AdminMessages['common']
   intlLocale: string
+  /** Sprachen des Gästeportals — in diese soll jeder Service übersetzt sein. */
+  offered: readonly Locale[]
 }) {
   const c = m.create
   const sv = m.service
@@ -48,6 +55,23 @@ export default function ServicesManager({
   const [kind, setKind] = useState<Kind>('order')
   const [templateHint, setTemplateHint] = useState<string | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
+  /** Offenes Übersetzungsformular: Service und Sprache. */
+  const [openTr, setOpenTr] = useState<{ id: string; locale: Locale } | null>(null)
+  const lg = m.languages
+
+  // Wo fehlt noch etwas? Je Service die Sprachen, je Sprache die Services.
+  const missing = useMemo(
+    () => new Map(services.map(s => [s.id, missingLanguages(s, s.linkUrl ? [] : s.items, offered)])),
+    [services, offered],
+  )
+  const missingByLocale = offered
+    .map(locale => ({ locale, ids: services.filter(s => missing.get(s.id)?.includes(locale)).map(s => s.id) }))
+    .filter(x => x.ids.length > 0)
+
+  function openTranslation(id: string, locale: Locale) {
+    setOpenTr({ id, locale })
+    document.getElementById(`service-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   /** Vorlage füllt nur das Formular vor — angelegt wird erst mit „Anlegen". */
   function applyTemplate(t: ServiceLinkTemplate) {
@@ -216,6 +240,27 @@ export default function ServicesManager({
         </p>
       )}
 
+      {/* Drängen, nicht sperren: welche Sprachen des Gästeportals noch fehlen. */}
+      {missingByLocale.map(({ locale, ids }) => {
+        const home = LOCALE_NAMES[services.find(s => s.id === ids[0])?.lang ?? 'de']
+        return (
+          <div key={locale} className="flex flex-wrap items-center gap-3 rounded-xl border border-attention-tint-edge bg-attention-tint px-4 py-3 text-sm text-attention-deepest">
+            <Languages className="h-5 w-5 shrink-0" />
+            <span className="min-w-0 flex-1">
+              <Rich text={plural(intlLocale, ids.length, lg.banner, { lang: LOCALE_NAMES[locale] })} />{' '}
+              <span className="text-xs">{format(lg.bannerHint, { lang: LOCALE_NAMES[locale], home })}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => openTranslation(ids[0], locale)}
+              className="rounded-lg border border-attention-tint-edge bg-surface px-3 py-1.5 text-sm font-bold text-ink-soft hover:text-ink"
+            >
+              {lg.bannerJump}
+            </button>
+          </div>
+        )
+      })}
+
       {services.length === 0 ? (
         <div className="rounded-xl border border-edge bg-surface p-8 text-center">
           <Wrench className="mx-auto mb-2 h-8 w-8 text-ink-muted" />
@@ -237,6 +282,7 @@ export default function ServicesManager({
         services.map((s, i) => (
           <section
             key={s.id}
+            id={`service-${s.id}`}
             data-lotse={i === 0 ? 'services.liste' : undefined}
             className="rounded-xl border border-edge bg-surface p-4"
           >
@@ -289,6 +335,52 @@ export default function ServicesManager({
               </div>
             </div>
             {s.description && <p className="mt-1 text-sm text-ink-muted">{s.description}</p>}
+
+            {/* Sprachen dieses Service: Grundtext, übersetzt oder fehlt. */}
+            {offered.length > 1 && (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+                <span className="font-semibold text-ink-muted">{lg.label}</span>
+                {offered.map(locale => {
+                  const isHome = locale === s.lang
+                  const lacks = missing.get(s.id)?.includes(locale) ?? false
+                  const open = openTr?.id === s.id && openTr.locale === locale
+                  return (
+                    <button
+                      key={locale}
+                      type="button"
+                      disabled={isHome}
+                      title={isHome ? undefined : format(lg.editTitle, { lang: LOCALE_NAMES[locale] })}
+                      onClick={() => setOpenTr(open ? null : { id: s.id, locale })}
+                      className={`flex items-center gap-1 rounded-full border px-2.5 py-0.5 font-bold uppercase ${
+                        isHome
+                          ? 'border-edge bg-surface-muted text-ink-soft'
+                          : lacks
+                            ? 'border-attention-tint-edge bg-attention-tint text-attention-deepest hover:border-attention'
+                            : 'border-positive-pill-edge bg-positive-tint text-positive-deep hover:border-positive'
+                      } ${open ? 'ring-2 ring-action' : ''}`}
+                    >
+                      {locale}
+                      {isHome
+                        ? <span className="font-semibold normal-case">· {lg.home}</span>
+                        : lacks
+                          ? <span className="font-semibold normal-case">· {lg.missing}</span>
+                          : <Check className="h-3 w-3" />}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+            {openTr?.id === s.id && (
+              <TranslationEditor
+                key={openTr.locale}
+                service={s}
+                locale={openTr.locale}
+                m={lg}
+                pending={pending}
+                onSave={formData => run(() => updateServiceTranslationAction(hotelSlug, s.id, openTr.locale, formData), () => setOpenTr(null))}
+                onClose={() => setOpenTr(null)}
+              />
+            )}
 
             {confirmArchiveId === s.id && (
               <div className="mt-3 rounded-lg border border-edge bg-surface-sunken p-3">
@@ -425,5 +517,97 @@ export default function ServicesManager({
         ))
       )}
     </div>
+  )
+}
+
+/**
+ * Übersetzung eines Service in eine Sprache — Name, Beschreibung, Optionen.
+ * Der Grundtext steht jeweils darunter, damit man ihn kopieren und in ein
+ * Übersetzungswerkzeug geben kann; leere Felder heißen „noch nicht übersetzt“.
+ */
+function TranslationEditor({ service, locale, m, pending, onSave, onClose }: {
+  service: ServiceRow
+  locale: Locale
+  m: AdminMessages['services']['languages']
+  pending: boolean
+  onSave: (formData: FormData) => void
+  onClose: () => void
+}) {
+  const t = service.translations[locale]
+  const lang = LOCALE_NAMES[locale]
+  const input =
+    'w-full rounded-lg border border-edge bg-surface-elevated px-3 py-1.5 text-sm font-semibold text-ink placeholder:text-ink-muted focus:border-action focus:outline-none'
+  const original = (text: string) => (
+    <span className="text-[11px] font-normal text-ink-muted">{format(m.original, { text })}</span>
+  )
+
+  return (
+    <form
+      lang={locale}
+      onSubmit={e => { e.preventDefault(); onSave(new FormData(e.currentTarget)) }}
+      className="mt-3 flex flex-col gap-3 rounded-lg border border-edge bg-surface-sunken p-3"
+    >
+      <div className="flex items-start gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold text-ink">{format(m.editorTitle, { lang })}</p>
+          <p className="mt-0.5 text-xs text-ink-muted">
+            {format(m.editorIntro, { lang, home: LOCALE_NAMES[service.lang] })}
+          </p>
+        </div>
+        <button type="button" onClick={onClose} aria-label={m.close} className="text-ink-muted hover:text-ink">
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+        {m.name}
+        <input name="name" defaultValue={t?.name ?? ''} placeholder={service.name} maxLength={120} className={input} />
+        {original(service.name)}
+      </label>
+
+      {service.description && (
+        <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+          {m.description}
+          <textarea
+            name="description" defaultValue={t?.description ?? ''} placeholder={service.description}
+            maxLength={500} rows={2} className={input}
+          />
+          {original(service.description)}
+        </label>
+      )}
+
+      {!service.linkUrl && service.items.length > 0 && (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1 text-xs font-semibold text-ink-muted">{m.options}</legend>
+          {service.items.map(item => (
+            <label key={item.id} className="flex flex-col gap-1">
+              <input
+                name={`item:${item.id}`} defaultValue={item.translations[locale]?.label ?? ''}
+                placeholder={item.label} maxLength={120} aria-label={item.label} className={input}
+              />
+              {original(item.label)}
+            </label>
+          ))}
+        </fieldset>
+      )}
+
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={pending}
+          className="flex items-center gap-1.5 rounded-lg bg-action px-3 py-1.5 text-sm font-bold text-action-foreground hover:bg-action-strong disabled:opacity-50"
+        >
+          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+          {m.save}
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:text-ink"
+        >
+          {m.close}
+        </button>
+      </div>
+    </form>
   )
 }

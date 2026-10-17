@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation'
 import { getAdminContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
-import { getMessages, intlLocale } from '@/lib/i18n'
+import { getMessages, GUEST_LOCALES, intlLocale } from '@/lib/i18n'
+import { parseItemTranslations, parseServiceTranslations, serviceLang } from '@/lib/service-i18n'
 import { getLocale } from '@/utils/locale'
 import ServicesManager, { type ServiceRow } from './ServicesManager'
 
@@ -21,13 +22,13 @@ export default async function ServicesPage({
   const [{ data: services }, { data: items }] = await Promise.all([
     supabase
       .from('service_definitions')
-      .select('id, name, description, urgent, maintenance, link_url')
+      .select('id, name, description, urgent, maintenance, link_url, lang, translations')
       .eq('hotel_id', ctx.hotelId)
       .is('archived_at', null)
       .order('name'),
     supabase
       .from('service_items')
-      .select('id, service_id, label, price_cents')
+      .select('id, service_id, label, price_cents, translations')
       .eq('hotel_id', ctx.hotelId)
       .is('archived_at', null)
       .order('label'),
@@ -40,6 +41,7 @@ export default async function ServicesPage({
       id: item.id,
       label: item.label,
       priceCents: item.price_cents,
+      translations: parseItemTranslations(item.translations),
     })
   }
 
@@ -50,6 +52,8 @@ export default async function ServicesPage({
     linkUrl: s.link_url ?? null,
     description: s.description,
     urgent: s.urgent,
+    lang: serviceLang(s.lang),
+    translations: parseServiceTranslations(s.translations),
     items: itemsByService.get(s.id) ?? [],
   }))
 
@@ -60,6 +64,7 @@ export default async function ServicesPage({
       m={admin.services}
       common={admin.common}
       intlLocale={intlLocale(locale)}
+      offered={GUEST_LOCALES}
     />
   )
 }

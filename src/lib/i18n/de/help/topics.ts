@@ -602,6 +602,10 @@ export const topics = {
             antwort: 'Der Gast sieht ihn bei der Anfrage, und beim Check-out steht die erbrachte Leistung damit auf der Aufstellung. Ohne Preis erscheint eine Option auf keiner Aufstellung – was nichts kostet, muss niemand prüfen. RoSe bucht und kassiert nichts; es rechnet zusammen.',
           },
           {
+            frage: 'Wie bekommen Gäste die Services in ihrer Sprache?',
+            antwort: 'Sie legen jeden Service in Ihrer Heimatsprache an. Unter dem Service zeigen Sprach-Chips, in welche Sprachen des Gästeportals er schon übersetzt ist – ein Tipp auf eine Sprache öffnet die Felder für Name, Beschreibung und Optionen, der Grundtext steht jeweils darunter. Übersetzen dürfen Sie mit einem Werkzeug Ihrer Wahl. Fehlt eine Übersetzung, sieht der Gast den Grundtext, nie ein leeres Feld. Die Rezeption sieht Anfragen immer in der Heimatsprache. Die Beispiel-Services sind schon übersetzt.',
+          },
+          {
             frage: 'Ich benenne einen Service um. Ändert das alte Anfragen?',
             antwort: 'Nein. Name, Optionen und Preise werden zum Zeitpunkt der Anfrage eingefroren; alte Anfragen und Aufstellungen bleiben, wie sie waren. Das Kennzeichen „Meldung ans Haus“ dagegen wirkt sofort auch auf offene Anfragen – es entscheidet über Verhalten, nicht über den Inhalt eines Belegs.',
           },

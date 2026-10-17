@@ -5,7 +5,8 @@ import { createAdminClient } from '@/utils/supabase/service'
 import { getAccountContext } from '@/utils/auth'
 import { slugify, uniqueSlug } from '@/lib/slug'
 import { DEFAULT_PIN_LENGTH } from '@/lib/ids'
-import serviceTemplates from '@/lib/service-templates.json'
+import { seedExampleServices } from '@/utils/example-services'
+import { parseHomeLanguage } from '@/lib/i18n/locales'
 import {
   deleteAccountData, deleteHotelData, previewAccountDeletion, previewHotelDeletion,
   type DeletionPreview,
@@ -87,26 +88,9 @@ export async function createHotelAction(formData: FormData): Promise<Result & { 
     .single()
   if (error) return { error: format(e.createFailed, { message: error.message }) }
 
-  // Beispiel-Services seeden — gleiche Vorlagen wie beim Anlegen eines
-  // Mandanten per Skript. Ganz normale Services, jederzeit archivierbar.
-  for (const t of serviceTemplates) {
-    const { data: svc } = await admin
-      .from('service_definitions')
-      .insert({ hotel_id: hotel.id, name: t.name, description: t.description, urgent: t.urgent })
-      .select('id')
-      .single()
-    if (svc && t.items.length > 0) {
-      await admin.from('service_items').insert(
-        t.items.map((i, idx) => ({
-          service_id: svc.id,
-          hotel_id: hotel.id,
-          label: i.label,
-          price_cents: i.price_cents,
-          sort_order: idx,
-        })),
-      )
-    }
-  }
+  // Beispiel-Services — dieselbe Stelle wie Registrierung und Baukasten.
+  // Ganz normale Services, jederzeit archivierbar. Neues Haus: Heimatsprache Vorgabe.
+  await seedExampleServices(admin, hotel.id, parseHomeLanguage({}))
 
   revalidatePath('/admin')
   return { slug }

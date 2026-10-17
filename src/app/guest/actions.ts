@@ -265,7 +265,9 @@ export async function placeOrderAction(
     // Name UND Optionen einfrieren: Eine Umbenennung im Baukasten soll weder
     // den Verlauf noch die Check-out-Aufstellung rueckwirkend aendern.
     service_name: service.name,
-    items_snapshot: chosen.map(i => ({ label: i.label, price_cents: i.price_cents })),
+    // `item_id` lässt das Gästeportal die Option in der Sprache des Gastes
+    // zeigen; Rezeption und Aufstellung lesen nur `label` (Grundtext).
+    items_snapshot: chosen.map(i => ({ label: i.label, price_cents: i.price_cents, item_id: i.id })),
     note: trimmedNote || null,
   })
   if (error) return { error: e.sendFailed }

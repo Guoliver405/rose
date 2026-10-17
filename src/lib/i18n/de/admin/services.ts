@@ -66,6 +66,34 @@ export const services = {
   },
 
   /**
+   * Sprachen eines Service (17.10.2026): Das Haus legt in seiner
+   * Heimatsprache an und übersetzt selbst – der Baukasten zeigt, wo etwas
+   * fehlt, und sperrt nichts. `{lang}`/`{home}` = Name der Sprache.
+   */
+  languages: {
+    label: 'Sprachen:',
+    home: 'Grundtext',
+    missing: 'fehlt',
+    editTitle: 'Übersetzung {lang} bearbeiten',
+    editorTitle: 'Übersetzung {lang}',
+    editorIntro:
+      'Gäste, die das Gästeportal in {lang} sehen, bekommen diese Texte. Leer gelassene Felder sehen sie in {home}. Übersetzen dürfen Sie mit einem Werkzeug Ihrer Wahl – fügen Sie das Ergebnis einfach hier ein.',
+    name: 'Name',
+    description: 'Beschreibung',
+    options: 'Optionen',
+    original: 'Grundtext: {text}',
+    save: 'Übersetzung speichern',
+    close: 'Schließen',
+    saved: 'Gespeichert.',
+    banner: {
+      one: '<b>{count} Service</b> ist noch nicht vollständig in {lang} übersetzt.',
+      other: '<b>{count} Services</b> sind noch nicht vollständig in {lang} übersetzt.',
+    },
+    bannerHint: 'Gäste mit {lang} sehen dort die Texte in {home}. Speichern geht trotzdem – übersetzen Sie, wann es passt.',
+    bannerJump: 'Zum ersten',
+  },
+
+  /**
    * Vorlagen für Verweise (`src/lib/service-link-templates.ts`). Die Dienste
    * selbst (Marke, Adresse) sind Daten; `{brand}` setzt den Markennamen ein.
    */
@@ -106,5 +134,6 @@ export const services = {
     nameTooShort: 'Name muss mindestens {min} Zeichen haben.',
     labelMissing: 'Bezeichnung fehlt.',
     priceInvalid: 'Preis nicht lesbar – z. B. „4,50“ oder leer lassen.',
+    unknownLanguage: 'Unbekannte Sprache.',
   },
 }

@@ -4,9 +4,10 @@ import { revalidatePath } from 'next/cache'
 import { createAdminClient } from '@/utils/supabase/service'
 import { getAdminContext } from '@/utils/auth'
 import { parseEuroToCents } from '@/lib/money'
-import serviceTemplates from '@/lib/service-templates.json'
+import { seedExampleServices } from '@/utils/example-services'
 import { normalizeLinkUrl } from '@/lib/service-link-templates'
-import { format, getMessages } from '@/lib/i18n'
+import { parseItemTranslations, parseServiceTranslations, serviceLang } from '@/lib/service-i18n'
+import { format, getMessages, isLocale, parseHomeLanguage } from '@/lib/i18n'
 import { getLocale } from '@/utils/locale'
 
 /** Meldungen: eigene plus die gemeinsamen (`noPermission`). */
@@ -60,39 +61,10 @@ export async function createExampleServicesAction(slug: string): Promise<ActionR
   const ctx = await getAdminContext(slug)
   if (!ctx) return { error: e.noPermission }
 
-  const admin = createAdminClient()
-  const { data: existing } = await admin
-    .from('service_definitions')
-    .select('name')
-    .eq('hotel_id', ctx.hotelId)
-  const existingNames = new Set((existing ?? []).map(s => s.name.toLowerCase()))
-
-  let created = 0
-  for (const t of serviceTemplates) {
-    if (existingNames.has(t.name.toLowerCase())) continue
-    const { data: svc, error } = await admin
-      .from('service_definitions')
-      .insert({
-        hotel_id: ctx.hotelId, name: t.name, description: t.description,
-        urgent: t.urgent, maintenance: t.maintenance ?? false,
-      })
-      .select('id')
-      .single()
-    if (error) return { error: error.message }
-    if (t.items.length > 0) {
-      const { error: itemErr } = await admin.from('service_items').insert(
-        t.items.map((i, idx) => ({
-          service_id: svc.id,
-          hotel_id: ctx.hotelId,
-          label: i.label,
-          price_cents: i.price_cents,
-          sort_order: idx,
-        })),
-      )
-      if (itemErr) return { error: itemErr.message }
-    }
-    created++
-  }
+  const { created, error } = await seedExampleServices(
+    createAdminClient(), ctx.hotelId, parseHomeLanguage(ctx.policies), { skipExisting: true },
+  )
+  if (error) return { error }
 
   revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
   if (created === 0) return { error: e.examplesExist }
@@ -137,6 +109,8 @@ export async function createServiceAction(slug: string, formData: FormData): Pro
     urgent,
     maintenance,
     link_url: linkUrl,
+    // Grundtexte in der Heimatsprache des Hauses (17.10.2026).
+    lang: parseHomeLanguage(ctx.policies),
   })
   if (error) return { error: error.message }
 
@@ -263,6 +237,62 @@ export async function archiveServiceItemAction(slug: string, itemId: string): Pr
     .eq('id', itemId)
     .eq('hotel_id', ctx.hotelId)
   if (error) return { error: error.message }
+
+  revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
+  return {}
+}
+
+/**
+ * Übersetzung eines Service in EINE Sprache speichern (17.10.2026): Name,
+ * Beschreibung und die Beschriftungen aller aktiven Optionen. Das Haus
+ * übersetzt selbst — leere Felder heißen „noch nicht übersetzt“, das
+ * Gästeportal zeigt dann den Grundtext. Die Grundtexte bleiben unberührt.
+ *
+ * Formularfelder: `name`, `description`, je Option `item:<id>`.
+ */
+export async function updateServiceTranslationAction(
+  slug: string,
+  serviceId: string,
+  locale: string,
+  formData: FormData,
+): Promise<ActionResult> {
+  const e = await messages()
+  const ctx = await getAdminContext(slug)
+  if (!ctx) return { error: e.noPermission }
+  if (!isLocale(locale)) return { error: e.unknownLanguage }
+
+  const admin = createAdminClient()
+  const [{ data: service }, { data: items }] = await Promise.all([
+    admin.from('service_definitions').select('id, hotel_id, lang, translations').eq('id', serviceId).maybeSingle(),
+    admin.from('service_items').select('id, translations').eq('service_id', serviceId).eq('hotel_id', ctx.hotelId).is('archived_at', null),
+  ])
+  if (!service || service.hotel_id !== ctx.hotelId) return { error: e.serviceNotFound }
+  if (locale === serviceLang(service.lang)) return { error: e.unknownLanguage }
+
+  const translations = parseServiceTranslations(service.translations)
+  const next = parseServiceTranslations({ [locale]: { name: formData.get('name'), description: formData.get('description') } })
+  if (next[locale]) translations[locale] = next[locale]
+  else delete translations[locale]
+
+  const { error } = await admin
+    .from('service_definitions')
+    .update({ translations })
+    .eq('id', serviceId)
+    .eq('hotel_id', ctx.hotelId)
+  if (error) return { error: error.message }
+
+  for (const item of items ?? []) {
+    const itemTr = parseItemTranslations(item.translations)
+    const label = parseItemTranslations({ [locale]: { label: formData.get(`item:${item.id}`) } })[locale]
+    if (label) itemTr[locale] = label
+    else delete itemTr[locale]
+    const { error: itemErr } = await admin
+      .from('service_items')
+      .update({ translations: itemTr })
+      .eq('id', item.id)
+      .eq('hotel_id', ctx.hotelId)
+    if (itemErr) return { error: itemErr.message }
+  }
 
   revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
   return {}

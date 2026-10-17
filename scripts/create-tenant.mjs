@@ -113,7 +113,12 @@ const templates = JSON.parse(
 for (const t of templates) {
   const { data: svc, error: svcErr } = await admin
     .from('service_definitions')
-    .insert({ hotel_id: hotel.id, name: t.name, description: t.description, urgent: t.urgent })
+    // Vorlagen sind mehrsprachig (17.10.2026): Grundtexte deutsch, Englisch als Übersetzung.
+    .insert({
+      hotel_id: hotel.id, name: t.name.de, description: t.description.de, urgent: t.urgent,
+      maintenance: t.maintenance, lang: 'de',
+      translations: { en: { name: t.name.en, description: t.description.en } },
+    })
     .select('id')
     .single()
   if (svcErr) { console.error('WARNUNG Beispiel-Service:', svcErr.message); continue }
@@ -122,9 +127,10 @@ for (const t of templates) {
       t.items.map((i, idx) => ({
         service_id: svc.id,
         hotel_id: hotel.id,
-        label: i.label,
+        label: i.label.de,
         price_cents: i.price_cents,
         sort_order: idx,
+        translations: { en: { label: i.label.en } },
       }))
     )
     if (itemErr) console.error('WARNUNG Beispiel-Service-Optionen:', itemErr.message)
