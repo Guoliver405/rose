@@ -3,6 +3,7 @@ import { createAdminClient } from '@/utils/supabase/service'
 import type { BillingDetails } from '@/lib/vat'
 import { format, getMessages, type AccountMessages } from '@/lib/i18n'
 import { getAdminLocale } from '@/utils/locale'
+import { invoiceLocale } from '@/lib/invoice'
 
 /** Texte der Stripe-Anbindung: Meldungen und die gespeicherte Kurzbezeichnung des Zahlungswegs. */
 async function texts() {
@@ -198,7 +199,7 @@ export async function ensureStripeCustomer(accountId: string): Promise<{ custome
       address: billing.billingAddress
         ? { ...billing.billingAddress, line2: billing.billingAddress.line2 ?? undefined }
         : undefined,
-      preferred_locales: ['de'],
+      preferred_locales: [invoiceLocale(billing.billingAddress?.country)],
       metadata: { account_id: accountId },
     })
     const { error } = await admin.from('accounts').update({ stripe_customer_id: customer.id }).eq('id', accountId)
@@ -227,6 +228,8 @@ export async function syncCustomerBillingDetails(
     await stripe.customers.update(ensured.customerId, {
       name: details.name,
       address: { ...details.address, line2: details.address.line2 ?? undefined },
+      // Stripes eigene Beschriftungen der Rechnung in derselben Sprache wie unsere Texte.
+      preferred_locales: [invoiceLocale(details.address.country)],
     })
 
     // Tax-IDs abgleichen: genau eine eu_vat mit dem gewünschten Wert, sonst keine.

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   INVOICE_DUE_DAYS, dateKeyFromUnix, invoiceFooter, invoiceIdempotencyKey, invoiceLineDescription,
-  invoiceMemo, isOverdue, mapStripeInvoiceStatus, periodLabel, periodRangeLabel, previousMonthPeriod,
+  invoiceLocale, invoiceMemo, isOverdue, mapStripeInvoiceStatus, periodLabel, periodRangeLabel, previousMonthPeriod,
 } from './invoice'
 import { MIN_MONTHLY_CENTS, PRICE_PER_ROOM_CENTS, billingLine } from './pricing'
 import { formatCents } from './money'
@@ -48,6 +48,21 @@ describe('Rechnungstexte', () => {
     expect(f).toContain('HRB 102734')
     expect(f).toContain('USt-IdNr. DE434570609')
     expect(f).toContain(`${INVOICE_DUE_DAYS} Tagen`)
+  })
+
+  it('Sprache nach dem Land der Rechnungsanschrift: deutschsprachig Deutsch, sonst Englisch', () => {
+    expect(['DE', 'at', 'CH', 'LI'].map(invoiceLocale)).toEqual(['de', 'de', 'de', 'de'])
+    expect(['FR', 'NL', 'US', 'TH'].map(invoiceLocale)).toEqual(['en', 'en', 'en', 'en'])
+    expect(invoiceLocale(null)).toBe('de')
+  })
+
+  it('schreibt die Rechnung auf Englisch — Datum ausgeschrieben, Preise im englischen Format', () => {
+    const line = billingLine(12, registriert, sept)
+    expect(invoiceLineDescription(line, sept, 'en')).toBe(`RoSe — usage in September 2026: 12 rooms × ${formatCents(PRICE_PER_ROOM_CENTS, 'en-US')}`)
+    expect(invoiceMemo(previousMonthPeriod(new Date(2026, 9, 1)), 'en')).toMatch(/^Service period Sep 1, 2026 – Sep 30, 2026\./)
+    const f = invoiceFooter('en')
+    expect(f).toContain('VAT ID DE434570609')
+    expect(f).toContain(`${INVOICE_DUE_DAYS} days`)
   })
 
   it('bildet einen stabilen Idempotenzschlüssel je Konto und Periode', () => {

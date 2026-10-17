@@ -122,7 +122,7 @@ export const billing = {
   details: {
     title: 'Rechnungsdaten',
     intro:
-      'Stehen auf jeder Rechnung. Die Anschrift bestimmt die Umsatzsteuer: Deutschland 19 %, Unternehmen in der EU mit USt-IdNr. ohne deutsche Steuer (Reverse Charge), außerhalb der EU ohne deutsche Steuer.',
+      'Stehen auf jeder Rechnung. Die Anschrift bestimmt die Umsatzsteuer: Deutschland 19 %, Unternehmen in der EU mit USt-IdNr. ohne deutsche Steuer (Reverse Charge), außerhalb der EU ohne deutsche Steuer. Auch die Sprache der Rechnung richtet sich nach dem Land: deutschsprachige Länder Deutsch, sonst Englisch.',
     name: 'Rechnungsempfänger (Firma)',
     line1: 'Straße und Hausnummer',
     line2: 'Adresszusatz (optional)',
@@ -185,7 +185,7 @@ export const billing = {
     bankTransfer: 'Überweisung auf Rechnung',
   },
 
-  /** Texte auf der Stripe-Rechnung (Position, Vermerk, Fußzeile). Sprache der Rechnung: heute Deutsch. */
+  /** Texte auf der Stripe-Rechnung (Position, Vermerk, Fußzeile). Sprache der Rechnung nach dem Land der Rechnungsanschrift (`invoiceLocale`). */
   invoice: {
     rooms: { one: '{count} Zimmer', other: '{count} Zimmer' },
     line: 'RoSe – Nutzung im {month}: {rooms} × {price}',

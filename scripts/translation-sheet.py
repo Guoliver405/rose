@@ -53,7 +53,7 @@ READERS = {
     "admin": "Leser sind Rezeption, Inhaber und Manager, am Rechner oder Tablet. Sachlich und freundlich; „property“ statt „hotel“; Begriffe wie in den Portalen („front desk“, „access card“, „check-in sheet“, „room sign“).",
     "mail": "Leser der E-Mails sind Personal und Kontoinhaber; die Statuszeile liest die Verwaltung unter einem Sende-Knopf.",
     "print": "Bedienung der Druckseiten für die Rezeption; Aufstellung und Zugangskarte werden gedruckt und ausgehändigt.",
-    "account": "Leser sind Kontoinhaber (Abrechnung) bzw. Inhaber und Manager (Häuser-Seite). Steuer- und Vertragsbegriffe genau (VAT ID, reverse charge, terms and conditions). Die Rechnungstexte gehen derzeit auf Deutsch heraus.",
+    "account": "Leser sind Kontoinhaber (Abrechnung) bzw. Inhaber und Manager (Häuser-Seite). Steuer- und Vertragsbegriffe genau (VAT ID, reverse charge, terms and conditions). Die Rechnungstexte gehen an Kunden außerhalb deutschsprachiger Länder auf Englisch heraus.",
     "auth": "Anmeldung, Registrierung und Passwort der Verwaltung. Knapp; die Seite „Passwort zurücksetzen“ verrät bewusst nicht, ob es zu einer Adresse ein Konto gibt.",
     "simulator": "Leser sind Inhaber und Manager, die ihr Haus durchrechnen. Sachlich; „Ohne Steuerung“ heißt ohne Software. Simulierte Reinigungskräfte heißen „Housekeeper A“ usw., Pronomen neutral (they).",
     "landing": "Landing Page für Hoteliers, die RoSe noch nicht kennen: werbend, aber ehrlich. „Hotel“ für die Branche, „property“ für das einzelne Haus. Dazu das Tagesbild (landing.day), das auch der Simulator zeigt.",

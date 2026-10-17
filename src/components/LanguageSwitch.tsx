@@ -40,10 +40,10 @@ export default function LanguageSwitch({ current, offered, inline = false }: {
             router.refresh()
           })
         }}
-        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        className="absolute inset-0 h-full w-full cursor-pointer bg-surface-elevated text-ink opacity-0"
       >
         {offered.map(l => (
-          <option key={l} value={l} lang={l}>{LOCALE_NAMES[l]}</option>
+          <option key={l} value={l} lang={l} className="bg-surface-elevated text-ink">{LOCALE_NAMES[l]}</option>
         ))}
       </select>
     </div>

@@ -4,8 +4,8 @@ import type { billing as de } from '../../de/account/billing'
 /**
  * Account — plan & billing, payment method, billing details, invoices.
  * American English. The texts on the Stripe invoice itself (`invoice`) are
- * translated for completeness; invoices are still issued in German
- * (`INVOICE_LOCALE` in `lib/invoice.ts`).
+ * used for customers outside German-speaking countries
+ * (`invoiceLocale` in `lib/invoice.ts`).
  */
 export const billing = {
   kinds: {
@@ -122,7 +122,7 @@ export const billing = {
   details: {
     title: 'Billing details',
     intro:
-      'These appear on every invoice. The address determines the VAT: Germany 19%; businesses in the EU with a VAT ID without German VAT (reverse charge); outside the EU without German VAT.',
+      'These appear on every invoice. The address determines the VAT: Germany 19%; businesses in the EU with a VAT ID without German VAT (reverse charge); outside the EU without German VAT. The invoice language also follows the country: German for German-speaking countries, English otherwise.',
     name: 'Invoice recipient (company)',
     line1: 'Street and number',
     line2: 'Address line 2 (optional)',

@@ -5,12 +5,12 @@ import {
   billingDetailsComplete, getAccountBilling, stripeClient, stripeReady, type AccountBilling,
 } from '@/utils/stripe'
 import { billingLine } from '@/lib/pricing'
-import { getMessages } from '@/lib/i18n'
+import { getMessages, type Locale } from '@/lib/i18n'
 import { getLocale } from '@/utils/locale'
 import { countBillableRooms, monthPeriod, periodKey, type BillingPeriod } from '@/lib/rooms'
 import {
   INVOICE_DUE_DAYS, SAAS_TAX_CODE, dateKeyFromUnix, invoiceFooter, invoiceIdempotencyKey,
-  invoiceLineDescription, invoiceMemo, invoicePeriodFieldName, mapStripeInvoiceStatus, periodRangeLabel, previousMonthPeriod,
+  invoiceLineDescription, invoiceLocale, invoiceMemo, invoicePeriodFieldName, mapStripeInvoiceStatus, periodRangeLabel, previousMonthPeriod,
   type MirrorStatus,
 } from '@/lib/invoice'
 
@@ -63,6 +63,8 @@ export type CreateInvoiceInput = {
   description: string
   memo: string
   footer: string
+  /** Sprache der Rechnung — nach dem Land der Rechnungsanschrift (`invoiceLocale`). */
+  locale: Locale
   /** Karte/Lastschrift ⇒ Einzug; Überweisung ⇒ Rechnung mit Bankverbindung. */
   collection: 'charge' | 'bank_transfer' | 'send'
   idempotencyKey: string
@@ -105,7 +107,7 @@ export function stripeGateway(): InvoiceGateway {
         pending_invoice_items_behavior: 'exclude',
         description: input.memo,
         footer: input.footer,
-        custom_fields: [{ name: invoicePeriodFieldName(), value: periodRangeLabel(input.period) }],
+        custom_fields: [{ name: invoicePeriodFieldName(input.locale), value: periodRangeLabel(input.period, input.locale) }],
         rendering: { pdf: { page_size: 'a4' } },
         metadata: {
           account_id: input.accountId,
@@ -262,6 +264,7 @@ export async function ensureInvoiceForPeriod(
     return 'failed'
   }
 
+  const locale = invoiceLocale(billing.billingAddress?.country)
   try {
     const inv = await gateway.createInvoice({
       customerId: billing.stripeCustomerId!,
@@ -269,9 +272,10 @@ export async function ensureInvoiceForPeriod(
       mirrorId: mirror.id,
       period,
       amountCents: line.cents,
-      description: invoiceLineDescription(line, period.start),
-      memo: invoiceMemo(period),
-      footer: invoiceFooter(),
+      description: invoiceLineDescription(line, period.start, locale),
+      memo: invoiceMemo(period, locale),
+      footer: invoiceFooter(locale),
+      locale,
       collection: collectionFor(billing),
       idempotencyKey: invoiceIdempotencyKey(accountId, period),
     })
