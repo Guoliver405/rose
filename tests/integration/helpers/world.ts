@@ -198,11 +198,34 @@ export async function destroyWorld(world: World): Promise<void> {
  *
  * Bewusst eng: gelöscht wird nur, was das vollständige Muster `itest-<6 hex>`
  * im Namen trägt UND älter als zwei Stunden ist. Die Altersgrenze schützt
- * einen parallel laufenden zweiten Lauf.
+ * einen parallel laufenden zweiten Lauf (etwa CI neben einem lokalen Lauf).
+ *
+ * **Das Alter eines Laufs bestimmen seine Auth-Nutzer, nicht die Konten.**
+ * Abrechnungstests datieren `accounts.created_at` zurück (Freimonat) — der
+ * Abgleich darüber hielt das frische Konto eines laufenden Tests für einen
+ * Rest und löschte es dem Test unter den Füßen weg („Konto nicht gefunden.“,
+ * 17.10.2026). `auth.users.created_at` fasst kein Test an.
  */
 async function sweepStaleRuns(): Promise<void> {
   const admin = serviceClient()
   const cutoff = new Date(Date.now() - STALE_MS).toISOString()
+
+  // Auth-Nutzer zuerst: sie liefern die Kennungen der Läufe, die noch jung
+  // sind, und hängen an keiner Kaskade der Konten — alte müssen einzeln weg.
+  const youngRuns = new Set<string>()
+  for (let page = 1; page <= 20; page++) {
+    const { data } = await admin.auth.admin.listUsers({ page, perPage: 200 })
+    const users = data?.users ?? []
+    if (users.length === 0) break
+
+    for (const u of users) {
+      const run = u.email?.match(TOKEN_RE)?.[0]
+      if (!run) continue
+      if (u.created_at && u.created_at > cutoff) { youngRuns.add(run); continue }
+      await admin.auth.admin.deleteUser(u.id)
+    }
+    if (users.length < 200) break
+  }
 
   const { data: accounts } = await admin
     .from('accounts')
@@ -211,22 +234,9 @@ async function sweepStaleRuns(): Promise<void> {
     .lt('created_at', cutoff)
 
   for (const a of accounts ?? []) {
-    if (!TOKEN_RE.test(a.name)) continue
+    const run = a.name.match(TOKEN_RE)?.[0]
+    if (!run || youngRuns.has(run)) continue
     await admin.from('accounts').delete().eq('id', a.id)
-  }
-
-  // Auth-Nutzer hängen an keiner Kaskade der Konten und müssen einzeln weg.
-  for (let page = 1; page <= 20; page++) {
-    const { data } = await admin.auth.admin.listUsers({ page, perPage: 200 })
-    const users = data?.users ?? []
-    if (users.length === 0) break
-
-    for (const u of users) {
-      if (!u.email || !TOKEN_RE.test(u.email)) continue
-      if (u.created_at && u.created_at > cutoff) continue
-      await admin.auth.admin.deleteUser(u.id)
-    }
-    if (users.length < 200) break
   }
 }
 
