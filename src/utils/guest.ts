@@ -98,7 +98,6 @@ export const getGuestContext = cache(async (): Promise<GuestContext | null> => {
 
 export type EndedStay = {
   hotelId: string
-  hotelName: string
   hotelSlug: string
   /** Geprüfter Bewertungslink des Hauses oder null. */
   reviewUrl: string | null
@@ -119,18 +118,17 @@ export const getEndedStay = cache(async (): Promise<EndedStay | null> => {
   const admin = createAdminClient()
   const { data: stay } = await admin
     .from('stays')
-    .select('hotel_id, checked_out_at, hotels(name, slug, policies)')
+    .select('hotel_id, checked_out_at, hotels(slug, policies)')
     .eq('session_token', token)
     .not('checked_out_at', 'is', null)
     .maybeSingle()
   if (!stay?.checked_out_at || !isWithinThankYouWindow(stay.checked_out_at, new Date())) return null
 
-  type HotelEmbed = { name: string | null; slug: string; policies: unknown }
-  const hotel = one(stay.hotels as unknown as HotelEmbed | HotelEmbed[] | null)
+  type EndedHotelEmbed = { slug: string; policies: unknown }
+  const hotel = one(stay.hotels as unknown as EndedHotelEmbed | EndedHotelEmbed[] | null)
   if (!hotel) return null
   return {
     hotelId: stay.hotel_id,
-    hotelName: hotel.name ?? 'Hotel',
     hotelSlug: hotel.slug,
     reviewUrl: parseReviewUrl((hotel.policies ?? {}) as Record<string, unknown>),
   }
