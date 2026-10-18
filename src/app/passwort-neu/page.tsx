@@ -37,7 +37,7 @@ export default async function PasswortNeuPage({
       <LanguageSwitch current={locale} offered={ADMIN_LOCALES} />
       <div className="text-center">
         <h1 className="text-3xl font-black text-ink">
-          <RoseLogo />
+          <RoseLogo size="hero" />
         </h1>
         <p className="mt-1 text-sm text-ink-muted">
           {istEinladung ? m.titleInvite : m.title}

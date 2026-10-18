@@ -35,7 +35,7 @@ export default async function GuestEntryPage({
       <LanguageSwitch current={locale} offered={GUEST_LOCALES} />
       <div className="text-center">
         <h1 className="text-3xl font-black text-ink">
-          <RoseLogo />
+          <RoseLogo size="hero" />
         </h1>
         <p className="mt-1 text-sm text-ink-muted">{m.brand.signIn}</p>
         <p className="mt-3 font-semibold text-ink-soft">{hotel.name}</p>

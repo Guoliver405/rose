@@ -81,17 +81,9 @@ export default async function LandingPage() {
 
 /* ── Bausteine ──────────────────────────────────────────────────── */
 
-/**
- * Wortmarke in drei Größen. Das Logo trägt ein Symbol mit feinen Formen und
- * braucht deshalb mehr Größe als der frühere reine Schriftzug (`text-xl`).
- */
+/** Wortmarke der Landing Page; Größen siehe `RoseLogo`. */
 function Brand({ size = 'header' }: { size?: 'header' | 'hero' | 'footer' }) {
-  const cls = { header: 'text-[2.25rem]', hero: 'text-6xl', footer: 'text-[1.75rem]' }[size]
-  return (
-    <span className={`${cls} leading-none text-ink`}>
-      <RoseLogo />
-    </span>
-  )
+  return <span className="leading-none text-ink"><RoseLogo size={size} /></span>
 }
 
 function Header({ m, locale }: { m: M['header']; locale: Locale }) {

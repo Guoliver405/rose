@@ -35,7 +35,7 @@ export default async function KontoShell({
         {/* Feste Höhe ab `lg` wie im Haus-Layout — die Hilfe-Leiste hängt daran. */}
         <div className="mx-auto flex max-w-[900px] items-center gap-4 px-4 py-3 lg:h-[52px] lg:py-0">
           <span className="text-lg font-black text-ink">
-            <RoseLogo />
+            <RoseLogo size="header" />
           </span>
           <div className="ml-auto flex items-center gap-3">
             {/* Kontexthilfe wie im Haus-Layout. */}

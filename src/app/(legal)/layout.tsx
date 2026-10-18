@@ -16,7 +16,7 @@ export default async function LegalLayout({ children }: Readonly<{ children: Rea
       <header className="border-b border-edge bg-surface">
         <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between gap-4 px-4">
           <Link href="/" aria-label={m.homeLabel} className="text-xl font-black text-ink">
-            <RoseLogo />
+            <RoseLogo size="header" />
           </Link>
           <nav className="flex items-center gap-4 text-sm font-medium text-ink-soft">
             <Link href="/impressum" className="hover:text-ink">{m.nav.impressum}</Link>

@@ -58,7 +58,8 @@ export default async function ServiceLoginPage({
             <KeyRound className="h-8 w-8 text-attention-strong" />
           </div>
           <h1 className="text-2xl font-black text-ink">
-            <RoseLogo /> {m.brand.board}
+            <span className="mb-2 flex justify-center"><RoseLogo size="hero" /></span>
+            {m.brand.board}
           </h1>
           {/* Hotelname kommt aus dem Slug der URL — früher stand hier das
               erstbeste Hotel der Datenbank (limit(1)), also ein fremder Name. */}

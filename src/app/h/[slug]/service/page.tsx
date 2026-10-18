@@ -241,7 +241,7 @@ export default async function ServiceBoardPage({
       <header className="sticky top-0 z-40 border-b border-edge bg-surface">
         <div className="mx-auto flex max-w-[1100px] items-center gap-4 px-4 py-3">
           <span className="text-lg font-black text-ink">
-            <RoseLogo />
+            <RoseLogo size="header" />
             <span className="ml-2 hidden text-sm font-semibold text-ink-muted sm:inline">
               {ctx.hotelName ? format(m.brand.boardOf, { hotel: ctx.hotelName }) : m.brand.board}
             </span>

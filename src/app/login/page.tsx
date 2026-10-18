@@ -21,7 +21,7 @@ export default async function LoginPage() {
       <LanguageSwitch current={locale} offered={ADMIN_LOCALES} />
       <div className="text-center">
         <h1 className="text-3xl font-black text-ink">
-          <RoseLogo />
+          <RoseLogo size="hero" />
         </h1>
         <p className="mt-1 text-sm text-ink-muted">{m.title}</p>
       </div>

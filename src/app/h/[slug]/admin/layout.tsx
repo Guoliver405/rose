@@ -60,7 +60,7 @@ export default async function AdminLayout({
             liegt dort ohnehin frei über der Seite. */}
         <div className="mx-auto flex max-w-[1400px] items-center gap-6 px-4 py-3 lg:h-[52px] lg:py-0">
           <Link href={base} className="text-lg font-black text-ink">
-            <RoseLogo />
+            <RoseLogo size="header" />
             <span className="ml-2 text-sm font-semibold text-ink-muted">{ctx.hotelName}</span>
           </Link>
 

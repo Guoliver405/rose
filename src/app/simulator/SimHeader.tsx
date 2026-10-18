@@ -19,7 +19,7 @@ export default async function SimHeader({ signedIn, hotel = false }: {
     <header className="border-b border-edge bg-surface">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-3 px-4">
         <Link href="/simulator" className="flex min-w-0 items-baseline gap-2">
-          <span className="text-xl font-black text-ink"><RoseLogo /></span>
+          <span className="text-xl font-black text-ink"><RoseLogo size="header" /></span>
           <span className="truncate text-sm font-semibold text-ink-soft">{simulatorName(locale)}</span>
         </Link>
         <nav className="flex shrink-0 items-center gap-2 text-sm">
