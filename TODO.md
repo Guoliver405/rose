@@ -20,6 +20,17 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
       Antwort-Mail ([Protokoll](Sessions/2026-10-11_Lizenzvertrag-Gegenentwurf.md)).
       **Wartet auf Bernd** (Telefonat); danach Steuerberater und Anwalt.
 
+- [ ] **Pilotkunden länger kostenlos — erst, wenn der erste Pilot konkret
+      wird** (18.10.). Heute gibt es dafür keinen Hebel: die freie Zeit hängt
+      allein an `accounts.created_at`, und ein verschobenes Datum macht nur
+      Monate *ab* dem Datum frei — die Monate davor würden berechnet. Plan:
+      nullbare Spalte `accounts.free_until`, `isFreePeriod` in
+      [pricing.ts](src/lib/pricing.ts) wertet Monate davor als frei (dann
+      gilt es für Anzeige, Monatslauf und Schlussrechnung zugleich), keine
+      Oberfläche, gesetzt per SQL. Nebenbei: Testkonten mit abgelaufener
+      freier Zeit bekommen seit dem Lauf am 01.10. Rechnungen und auf
+      `/admin` eine Überfällig-Warnung (Sandbox, nichts belastet).
+
 - [x] ~~**Login-Actions testen**~~ — 05.09. erledigt:
       [login.test.ts](tests/integration/login.test.ts) fährt beide Actions
       gegen die Testwelt, inklusive *fünf Fehlversuche sperren nur den eigenen
