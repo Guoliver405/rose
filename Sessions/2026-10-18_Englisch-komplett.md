@@ -40,6 +40,17 @@ Dazu am 17.10.: Heimat- und Rückfallsprache je Haus, mehrsprachiger Service-Bau
 - Rechtstexte englisch erst nach der anwaltlichen Prüfung.
 - Weitere Sprachen im Gästeportal (die Blätter können schon es/fr) — **erst nach dem Test des Sprachwechsels mit Englisch**.
 
+## 5. Nachtrag 18.10. abends: Logo, Markenfarben, Pilotkunden
+
+- **Logo V15** (vom User entworfen): Wortmarke „R + Symbol + Se“, das Symbol (ein rotes über zwei grünen Fünfecken) ist das „o“. Grün auf **#059669** angepasst (emerald-600, passt zum Grün der Boards; die Vorlage hatte #2FA36B), Rot **#F43F5E** (= rose-500) bleibt — Entscheidung des Users. Tokens `--rs-brand-green`/`--rs-brand-red`, bewusst unabhängig von Theme- und Farbenblind-Modi.
+- [RoseLogo.tsx](../src/components/brand/RoseLogo.tsx) ersetzt die zweifarbige Text-Wortmarke an allen 16 Stellen und im OG-Bild; feste Größen `header` 29 px (alle Kopfzeilen), `hero` 48 px (Anmeldeseiten, RoSe-Formel), `footer` 22 px — der User fand das Logo in Schriftgröße zu klein. Reinigungs-Anmeldung: Logo über „Reinigungsboard“ statt daneben.
+- Landing-Titel: Hervorhebung grün statt rosé.
+- Logo-Set als SVG unter `Design/Logo-V15/`; `node scripts/brand-icons.mjs` erzeugt PNGs, `favicon.ico`, `icon.svg`, `apple-icon.png` (iPhone-Icon ohne eigene Rundung). Die Übersichtsgrafik des Users ist nicht übernommen (altes Grün).
+- Englische Landing Page: „Housekeeping on request“ statt der wörtlichen Übersetzung „Cleaning only when the guest wants it“ (Überschrift, Feature, Fließtext). „Cleaning on Demand“ als Etikett verworfen — klingt nach Abruf-Dienst, kollidiert mit „auf Wunsch“.
+- **Überfällig-Warnung auf Testkonten** geklärt: Monatslauf am 01.10. rechnete den September für Konten ab, deren freie Zeit (Juli/August) vorbei war; ohne Zahlungsweg als Überweisung, fällig 15.10., seit 16.10. überfällig. Kein Fehler, Sandbox. Dazu ein Entwurf für „Stripe-Testhaus“ mit Kunde aus dem alten GoodMood-Konto.
+- **Pilotkunden länger kostenlos:** heute kein Hebel (freie Zeit hängt allein an `accounts.created_at`). User: warten, bis es akut wird — Plan in [TODO.md](../TODO.md) (`accounts.free_until`, per SQL gesetzt).
+- Nicht im Browser gesehen: Kopfzeilen von Rezeption und Reinigungsboard (Anmeldung nötig) — beim nächsten Blick in Produktion prüfen.
+
 ## 🔖 Wiederaufnahme
 
-Nächster Schritt ist ein **Test des Sprachwechsels mit Englisch durch den User** (alle drei Portale, Umschalter, Mails, Druckblätter, Rechnung bei einer Anschrift außerhalb des deutschsprachigen Raums). Danach weitere Sprachen: neue Sprache in `GUEST_LOCALES`/`ADMIN_LOCALES`/`SERVICE_LOCALES` (`src/lib/i18n/locales.ts`), Dateien unter `src/lib/i18n/<sprache>/` mit `satisfies Shape<…>`, Wächter-Tests nach dem Muster der `*-en.test.ts`, Gegenlese-Tabelle mit `translation-sheet.py all <sprache>`.
+Nächster Schritt ist ein **Test des Sprachwechsels mit Englisch durch den User** (er will tiefer in die Übersetzung einsteigen; Funde gesammelt und gebündelt korrigieren, Differenz mit `--since` gegen den Stand vom 18.10.) (alle drei Portale, Umschalter, Mails, Druckblätter, Rechnung bei einer Anschrift außerhalb des deutschsprachigen Raums). Danach weitere Sprachen: neue Sprache in `GUEST_LOCALES`/`ADMIN_LOCALES`/`SERVICE_LOCALES` (`src/lib/i18n/locales.ts`), Dateien unter `src/lib/i18n/<sprache>/` mit `satisfies Shape<…>`, Wächter-Tests nach dem Muster der `*-en.test.ts`, Gegenlese-Tabelle mit `translation-sheet.py all <sprache>`.
