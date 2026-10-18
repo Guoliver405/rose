@@ -7,6 +7,7 @@ import Rich from '@/components/i18n/Rich'
 import { ADMIN_LOCALES, getMessages } from '@/lib/i18n'
 import LanguageSwitch from '@/components/LanguageSwitch'
 import { getAdminLocale } from '@/utils/locale'
+import { RoseLogo } from '@/components/brand/RoseLogo'
 
 /**
  * Self-Service-Registrierung (Phase 6b).
@@ -27,7 +28,7 @@ export default async function RegistrierenPage() {
       <LanguageSwitch current={locale} offered={ADMIN_LOCALES} />
       <div className="text-center">
         <h1 className="text-3xl font-black text-ink">
-          Ro<span className="text-blocked">Se</span>
+          <RoseLogo />
         </h1>
         <p className="mt-1 text-sm text-ink-muted">{m.title}</p>
       </div>

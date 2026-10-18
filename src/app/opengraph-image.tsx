@@ -5,6 +5,9 @@ import { PROVIDER } from '@/lib/provider'
 import { DEFAULT_LOCALE, getMessages } from '@/lib/i18n'
 import { format } from '@/lib/i18n/format'
 import { getLocale } from '@/utils/locale'
+import {
+  WORDMARK_VIEWBOX, WORD_R, WORD_SYM_TOP, WORD_SYM_RIGHT, WORD_SYM_LEFT, WORD_S, WORD_E,
+} from '@/components/brand/logo-paths'
 
 /**
  * Link-Vorschau (WhatsApp, Mail, LinkedIn): 1200×630, im Code erzeugt, damit
@@ -27,6 +30,9 @@ const SLATE_700 = '#334155'
 const SLATE_300 = '#cbd5e1'
 const SLATE_400 = '#94a3b8'
 const ROSE = '#f43f5e'
+/** Markenfarben wie `--rs-brand-*` in globals.css (Satori kennt keine CSS-Variablen). */
+const BRAND_GREEN = '#059669'
+const BRAND_RED = '#f43f5e'
 
 type OgTile = keyof ReturnType<typeof getMessages>['landing']['page']['og']['tiles']
 
@@ -51,9 +57,14 @@ export default async function Image() {
         }}
       >
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', width: 640 }}>
-          <div style={{ display: 'flex', fontSize: 56, fontWeight: 900, letterSpacing: -2 }}>
-            <span>Ro</span><span style={{ color: ROSE }}>Se</span>
-          </div>
+          <svg viewBox={WORDMARK_VIEWBOX} width={150} height={45} role="img" aria-label="RoSe">
+            <path d={WORD_R} fill={BRAND_GREEN} />
+            <path d={WORD_SYM_TOP} fill={BRAND_RED} />
+            <path d={WORD_SYM_RIGHT} fill={BRAND_GREEN} />
+            <path d={WORD_SYM_LEFT} fill={BRAND_GREEN} />
+            <path d={WORD_S} fill="white" />
+            <path d={WORD_E} fill="white" />
+          </svg>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div style={{ fontSize: 52, fontWeight: 800, lineHeight: 1.1 }}>
               {m.claim}

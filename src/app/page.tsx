@@ -17,6 +17,7 @@ import { format } from '@/lib/i18n/format'
 import { getAdminLocale } from '@/utils/locale'
 import LanguageSwitch from '@/components/LanguageSwitch'
 import { ADMIN_LOCALES, type Locale } from '@/lib/i18n/locales'
+import { RoseLogo } from '@/components/brand/RoseLogo'
 
 type M = LandingMessages['page']
 
@@ -83,7 +84,7 @@ export default async function LandingPage() {
 function Brand() {
   return (
     <span className="text-xl font-black text-ink">
-      Ro<span className="text-blocked">Se</span>
+      <RoseLogo />
     </span>
   )
 }
@@ -128,7 +129,7 @@ function Hero({ m }: { m: M['hero'] }) {
         {m.badge}
       </p>
       <h1 className="mx-auto max-w-3xl text-4xl font-black leading-tight text-ink sm:text-5xl">
-        <Rich text={m.title} tags={{ hl: c => <span className="text-blocked">{c}</span> }} />
+        <Rich text={m.title} tags={{ hl: c => <span className="text-brand-green">{c}</span> }} />
       </h1>
       <p className="mx-auto mt-4 max-w-2xl text-lg text-ink-soft">
         {m.text}

@@ -11,6 +11,7 @@ import LegalFooter from '@/components/LegalFooter'
 import { getMessages, SERVICE_LOCALES } from '@/lib/i18n'
 import { getServiceLocale } from '@/utils/locale'
 import LanguageSwitch from '@/components/LanguageSwitch'
+import { RoseLogo } from '@/components/brand/RoseLogo'
 
 export default async function ServiceLoginPage({
   params,
@@ -57,7 +58,7 @@ export default async function ServiceLoginPage({
             <KeyRound className="h-8 w-8 text-attention-strong" />
           </div>
           <h1 className="text-2xl font-black text-ink">
-            Ro<span className="text-blocked">Se</span> {m.brand.board}
+            <RoseLogo /> {m.brand.board}
           </h1>
           {/* Hotelname kommt aus dem Slug der URL — früher stand hier das
               erstbeste Hotel der Datenbank (limit(1)), also ein fremder Name. */}

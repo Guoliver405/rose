@@ -16,6 +16,7 @@ import { maidLogoutAction } from './login/actions'
 import ServiceBoard, { type BoardFloor, type BoardRoom } from './ServiceBoard'
 import { format, getMessages, intlLocale } from '@/lib/i18n'
 import { getServiceLocale } from '@/utils/locale'
+import { RoseLogo } from '@/components/brand/RoseLogo'
 
 export default async function ServiceBoardPage({
   params,
@@ -240,7 +241,7 @@ export default async function ServiceBoardPage({
       <header className="sticky top-0 z-40 border-b border-edge bg-surface">
         <div className="mx-auto flex max-w-[1100px] items-center gap-4 px-4 py-3">
           <span className="text-lg font-black text-ink">
-            Ro<span className="text-blocked">Se</span>
+            <RoseLogo />
             <span className="ml-2 hidden text-sm font-semibold text-ink-muted sm:inline">
               {ctx.hotelName ? format(m.brand.boardOf, { hotel: ctx.hotelName }) : m.brand.board}
             </span>

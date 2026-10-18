@@ -11,6 +11,7 @@
 @source not "../../Supabase_sql/*.sql";
 @source not "../../Supabase_sql/archive/*.sql";
 @source not "../../tests/**/*.ts";
+@source not "../../Design/**";
 
 /* ─────────────────────────────────────────────────────────────────
    PRIMITIVE — Rohe Farb-Werte. Niemals direkt in Komponenten.
@@ -111,6 +112,13 @@
   --rs-slate-900:    #0f172a;
   --rs-slate-950:    #020617;
   --rs-white:        #ffffff;
+
+  /* Markenfarben des Logos (V15). Bewusst NICHT an Status-Farben gebunden:
+     Dark Mode, Farbenblind- und Kontrast-Modi lassen sie unverändert,
+     weil Favicon, Druck und OG-Bild ohnehin feste Werte tragen.
+     Grün = emerald-600 (3,8:1 auf Weiß, 4,7:1 auf Navy), Rot = rose-500. */
+  --rs-brand-green:  #059669;
+  --rs-brand-red:    #f43f5e;
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -621,6 +629,9 @@
   --color-foreground: var(--color-text-primary);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  --color-brand-green:       var(--rs-brand-green);
+  --color-brand-red:         var(--rs-brand-red);
 
   --color-positive:          var(--color-positive-bar);
   --color-positive-strong:   var(--color-positive-icon);

@@ -6,6 +6,7 @@ import { parseGuestAccessMode } from '@/lib/guest-access'
 import { getMessages, GUEST_LOCALES } from '@/lib/i18n'
 import LanguageSwitch from '@/components/LanguageSwitch'
 import { getGuestLocale } from '@/utils/locale'
+import { RoseLogo } from '@/components/brand/RoseLogo'
 
 /**
  * Baseline-Einstieg des Gastes: Hotel-URL + Zimmernummer + PIN.
@@ -34,7 +35,7 @@ export default async function GuestEntryPage({
       <LanguageSwitch current={locale} offered={GUEST_LOCALES} />
       <div className="text-center">
         <h1 className="text-3xl font-black text-ink">
-          Ro<span className="text-blocked">Se</span>
+          <RoseLogo />
         </h1>
         <p className="mt-1 text-sm text-ink-muted">{m.brand.signIn}</p>
         <p className="mt-3 font-semibold text-ink-soft">{hotel.name}</p>

@@ -12,6 +12,7 @@ import LotsePilot from '@/components/lotse/LotsePilot'
 import HelpMessagesProvider from '@/components/hilfe/HelpMessages'
 import { getMessages } from '@/lib/i18n'
 import { getAdminLocale } from '@/utils/locale'
+import { RoseLogo } from '@/components/brand/RoseLogo'
 
 export default async function AdminLayout({
   children,
@@ -59,7 +60,7 @@ export default async function AdminLayout({
             liegt dort ohnehin frei über der Seite. */}
         <div className="mx-auto flex max-w-[1400px] items-center gap-6 px-4 py-3 lg:h-[52px] lg:py-0">
           <Link href={base} className="text-lg font-black text-ink">
-            Ro<span className="text-blocked">Se</span>
+            <RoseLogo />
             <span className="ml-2 text-sm font-semibold text-ink-muted">{ctx.hotelName}</span>
           </Link>
 

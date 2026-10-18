@@ -2,6 +2,7 @@ import Link from 'next/link'
 import LegalFooter from '@/components/LegalFooter'
 import { getMessages } from '@/lib/i18n'
 import { getLocale } from '@/utils/locale'
+import { RoseLogo } from '@/components/brand/RoseLogo'
 
 /**
  * Rahmen der Rechtsseiten (Impressum, Datenschutz, AGB): schmale Lesespalte,
@@ -15,7 +16,7 @@ export default async function LegalLayout({ children }: Readonly<{ children: Rea
       <header className="border-b border-edge bg-surface">
         <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between gap-4 px-4">
           <Link href="/" aria-label={m.homeLabel} className="text-xl font-black text-ink">
-            Ro<span className="text-blocked">Se</span>
+            <RoseLogo />
           </Link>
           <nav className="flex items-center gap-4 text-sm font-medium text-ink-soft">
             <Link href="/impressum" className="hover:text-ink">{m.nav.impressum}</Link>

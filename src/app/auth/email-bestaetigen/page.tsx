@@ -6,6 +6,7 @@ import { maskEmail } from '@/lib/email-change'
 import { getAdminLocale } from '@/utils/locale'
 import { peekEmailChange } from '@/utils/email-change'
 import ConfirmEmailForm from './ConfirmEmailForm'
+import { RoseLogo } from '@/components/brand/RoseLogo'
 
 export const metadata: Metadata = { robots: { index: false, follow: false } }
 
@@ -32,7 +33,7 @@ export default async function EmailBestaetigenPage({
       <main className="flex flex-1 flex-col items-center justify-center gap-8 p-8">
         <div className="text-center">
           <h1 className="text-3xl font-black text-ink">
-            Ro<span className="text-blocked">Se</span>
+            <RoseLogo />
           </h1>
           <p className="mt-1 text-sm text-ink-muted">{m.title}</p>
         </div>
