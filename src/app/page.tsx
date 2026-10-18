@@ -81,9 +81,14 @@ export default async function LandingPage() {
 
 /* ── Bausteine ──────────────────────────────────────────────────── */
 
-function Brand() {
+/**
+ * Wortmarke in drei Größen. Das Logo trägt ein Symbol mit feinen Formen und
+ * braucht deshalb mehr Größe als der frühere reine Schriftzug (`text-xl`).
+ */
+function Brand({ size = 'header' }: { size?: 'header' | 'hero' | 'footer' }) {
+  const cls = { header: 'text-[2.25rem]', hero: 'text-6xl', footer: 'text-[1.75rem]' }[size]
   return (
-    <span className="text-xl font-black text-ink">
+    <span className={`${cls} leading-none text-ink`}>
       <RoseLogo />
     </span>
   )
@@ -226,7 +231,7 @@ function Formula({ m, intl }: { m: M['formula']; intl: string }) {
       </div>
       <p className="mt-6 flex items-center justify-center gap-3 text-2xl font-black text-ink">
         <Equal aria-hidden className="h-7 w-7 text-ink-muted" strokeWidth={2.5} />
-        <Brand />
+        <Brand size="hero" />
       </p>
       <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-ink-muted">
         {format(m.footnote, { price: formatCents(PRICE_PER_ROOM_CENTS, intl) })}
@@ -577,8 +582,8 @@ function Footer({ m }: { m: M['footer'] }) {
   return (
     <footer className="border-t border-edge bg-surface-sunken">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-8 text-sm text-ink-muted sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <Brand />
+        <div className="flex items-center gap-3">
+          <Brand size="footer" />
           <span>{m.tagline}</span>
         </div>
         <nav className="flex flex-wrap gap-4">
