@@ -61,8 +61,8 @@ export const page = {
     sealTop: 'Cleaning',
     sealBottom: 'on request',
     badge: 'Sustainable hospitality',
-    heading: 'Cleaning only when the guest wants it',
-    text: 'Daily room cleaning is a habit, not a wish: 70% of guests don’t need it every day. With RoSe, “cleaning on request” becomes your property’s standard — guests tap when they want something, and everything else is left alone. That saves water, detergent, and energy, and it’s a sustainability argument you can make visible to guests and booking platforms.',
+    heading: 'Housekeeping on request',
+    text: 'Daily room cleaning is a habit, not a wish: 70% of guests don’t need it every day. With RoSe, “housekeeping on request” becomes your property’s standard — guests tap when they want something, and everything else is left alone. That saves water, detergent, and energy, and it’s a sustainability argument you can make visible to guests and booking platforms.',
     wins: {
       water: {
         title: 'Water and detergent',
@@ -184,7 +184,7 @@ export const page = {
       },
       green: {
         title: 'Sustainable on request',
-        text: 'Cleaning only when the guest wants it — less water, detergent, and walking, and a visible argument for your sustainability profile.',
+        text: 'Housekeeping on request — less water, detergent, and walking, and a visible argument for your sustainability profile.',
       },
       proof: {
         title: 'Evidence instead of gut feeling',
