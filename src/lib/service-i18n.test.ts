@@ -72,8 +72,8 @@ describe('Beispiel-Services — von Anfang an übersetzt', () => {
   const all = templates as ServiceTemplate[]
   it('jede Vorlage bringt alle Produktsprachen mit', () => {
     for (const t of all) {
-      expect(Object.keys(t.name).sort()).toEqual(['de', 'en'])
-      for (const i of t.items) expect(Object.keys(i.label).sort()).toEqual(['de', 'en'])
+      expect(Object.keys(t.name).sort()).toEqual(['de', 'en', 'es', 'fr'])
+      for (const i of t.items) expect(Object.keys(i.label).sort()).toEqual(['de', 'en', 'es', 'fr'])
     }
   })
   it('Grundtexte in der Heimatsprache, der Rest als Übersetzung', () => {

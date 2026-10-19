@@ -2,6 +2,7 @@
  * Texte eines Bereichs zum Gegenlesen exportieren (17.10.2026):
  *
  *   node --import ./scripts/ts-resolve.mjs scripts/translation-export.mjs guest en > texte.json
+ *   node --import ./scripts/ts-resolve.mjs scripts/translation-export.mjs guest en,fr,es > texte.json
  *
  * Liest die Sprachdateien direkt (Node entfernt die Typen selbst) und gibt je
  * Text Schlüssel, Ort, Erläuterung, Deutsch und Zielsprache als JSON aus. Die
@@ -33,7 +34,12 @@ const a = AREAS[area]
 if (!a) throw new Error(`Unbekannter Bereich: ${area}`)
 
 const de = (await import(new URL(`de/${a.file}`, base)))[area]
-const target = (await import(new URL(`${lang}/${a.file}`, base)))[area]
+// Mehrere Zielsprachen mit Komma („en,fr,es“, seit 19.10.2026): dann trägt jede Zeile `targets`.
+const langs = lang.split(',')
+const targets = Object.fromEntries(
+  await Promise.all(langs.map(async l => [l, (await import(new URL(`${l}/${a.file}`, base)))[area]])),
+)
+const target = targets[langs[0]]
 const context = a.ctx ? (await import(new URL(a.ctx, base)))[a.ctxName] : { _: { where: a.where, note: a.note } }
 
 function flatten(obj, prefix = '') {
@@ -63,5 +69,6 @@ const rows = flatten(de).filter(([key]) => !DATA_KEY.test(key)).map(([key, text]
   note: contextFor(key)?.note ?? '',
   de: text,
   target: get(target, key) ?? '',
+  ...(langs.length > 1 ? { targets: Object.fromEntries(langs.map(l => [l, get(targets[l], key) ?? ''])) } : {}),
 }))
 process.stdout.write(JSON.stringify({ area, lang, rows }, null, 1))

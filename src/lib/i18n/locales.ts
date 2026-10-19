@@ -7,21 +7,20 @@
  * eigene Wahl (Cookie) → Sprache des Geräts (`Accept-Language`), soweit
  * angeboten → Rückfallsprache des Hauses → `DEFAULT_LOCALE`.
  *
- * Seit 17.10.2026 gibt es Englisch, übersetzt ist zunächst nur das
- * Gästeportal (`GUEST_LOCALES`); alle anderen Bereiche bleiben deutsch und
- * fragen weiter `getLocale()`.
+ * Seit 17.10.2026 gibt es Englisch, seit 19.10.2026 Französisch und
+ * Spanisch — jeweils für alle Bereiche außer den Rechtstexten.
  *
  * Ohne I/O, getestet in `locales.test.ts`.
  */
-export const LOCALES = ['de', 'en'] as const
+export const LOCALES = ['de', 'en', 'fr', 'es'] as const
 export type Locale = (typeof LOCALES)[number]
 export const DEFAULT_LOCALE: Locale = 'de'
 
 /** Sprachen, in denen das Gästeportal vollständig übersetzt ist. */
-export const GUEST_LOCALES: readonly Locale[] = ['de', 'en']
+export const GUEST_LOCALES: readonly Locale[] = ['de', 'en', 'fr', 'es']
 
 /** Sprachen, in denen das Reinigungsboard vollständig übersetzt ist (seit 17.10.2026). */
-export const SERVICE_LOCALES: readonly Locale[] = ['de', 'en']
+export const SERVICE_LOCALES: readonly Locale[] = ['de', 'en', 'fr', 'es']
 
 /**
  * Sprachen der Verwaltung (Rezeptions-Portal, Mails, Druckseiten, Hilfe und
@@ -29,13 +28,13 @@ export const SERVICE_LOCALES: readonly Locale[] = ['de', 'en']
  * 17.10.2026). Rechnungen folgen nicht der Oberfläche, sondern dem Land der
  * Rechnungsanschrift (`invoiceLocale` in `lib/invoice.ts`).
  */
-export const ADMIN_LOCALES: readonly Locale[] = ['de', 'en']
+export const ADMIN_LOCALES: readonly Locale[] = ['de', 'en', 'fr', 'es']
 
 /** Name jeder Sprache in ihrer eigenen Schreibweise — für den Umschalter, keine Flaggen. */
-export const LOCALE_NAMES: Record<Locale, string> = { de: 'Deutsch', en: 'English' }
+export const LOCALE_NAMES: Record<Locale, string> = { de: 'Deutsch', en: 'English', fr: 'Français', es: 'Español' }
 
 /** Sprach-Tag für `Intl`/`toLocale…String`. */
-export const INTL_LOCALES: Record<Locale, string> = { de: 'de-DE', en: 'en-US' }
+export const INTL_LOCALES: Record<Locale, string> = { de: 'de-DE', en: 'en-US', fr: 'fr-FR', es: 'es-ES' }
 
 /** Cookie der eigenen Sprachwahl — unabhängig vom Aufenthalt, übersteht den Check-out. */
 export const LOCALE_COOKIE = 'rose_lang'

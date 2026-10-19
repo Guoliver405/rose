@@ -19,13 +19,23 @@ import { format, plural } from './i18n/format'
  * Sprache der Rechnung (18.10.2026): folgt dem **Land der Rechnungsanschrift**,
  * nicht der Oberfläche — die Rechnung entsteht im Monatslauf ohne Anfrage, und
  * sie ist ein Beleg für die Buchhaltung des Kunden. Deutschsprachige Länder
- * bekommen Deutsch, alle anderen Englisch; ohne Anschrift Deutsch.
+ * bekommen Deutsch, französisch- und spanischsprachige ihre Sprache, alle
+ * anderen Englisch; ohne Anschrift Deutsch.
  */
 const GERMAN_SPEAKING = new Set(['DE', 'AT', 'CH', 'LI'])
+/** Seit 19.10.2026: französisch- und spanischsprachige Länder in ihrer Sprache (Belgien und die Schweiz sind mehrsprachig und bleiben bei ihrer bisherigen Regel). */
+const FRENCH_SPEAKING = new Set(['FR', 'MC', 'LU'])
+const SPANISH_SPEAKING = new Set([
+  'ES', 'AD', 'MX', 'AR', 'CO', 'CL', 'PE', 'VE', 'EC', 'GT', 'CU', 'BO', 'DO', 'HN', 'PY', 'SV', 'NI', 'CR', 'PA', 'UY', 'GQ',
+])
 
 export function invoiceLocale(country: string | null | undefined): Locale {
   if (!country) return 'de'
-  return GERMAN_SPEAKING.has(country.toUpperCase()) ? 'de' : 'en'
+  const c = country.toUpperCase()
+  if (GERMAN_SPEAKING.has(c)) return 'de'
+  if (FRENCH_SPEAKING.has(c)) return 'fr'
+  if (SPANISH_SPEAKING.has(c)) return 'es'
+  return 'en'
 }
 
 const t = (l: Locale) => getMessages(l).account.billing.invoice

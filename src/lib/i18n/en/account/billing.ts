@@ -122,7 +122,7 @@ export const billing = {
   details: {
     title: 'Billing details',
     intro:
-      'These appear on every invoice. The address determines the VAT: Germany 19%; businesses in the EU with a VAT ID without German VAT (reverse charge); outside the EU without German VAT. The invoice language also follows the country: German for German-speaking countries, English otherwise.',
+      'These appear on every invoice. The address determines the VAT: Germany 19%; businesses in the EU with a VAT ID without German VAT (reverse charge); outside the EU without German VAT. The invoice language also follows the country: German, French, or Spanish for countries that speak them, English otherwise.',
     name: 'Invoice recipient (company)',
     line1: 'Street and number',
     line2: 'Address line 2 (optional)',

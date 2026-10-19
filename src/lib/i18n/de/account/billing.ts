@@ -122,7 +122,7 @@ export const billing = {
   details: {
     title: 'Rechnungsdaten',
     intro:
-      'Stehen auf jeder Rechnung. Die Anschrift bestimmt die Umsatzsteuer: Deutschland 19 %, Unternehmen in der EU mit USt-IdNr. ohne deutsche Steuer (Reverse Charge), außerhalb der EU ohne deutsche Steuer. Auch die Sprache der Rechnung richtet sich nach dem Land: deutschsprachige Länder Deutsch, sonst Englisch.',
+      'Stehen auf jeder Rechnung. Die Anschrift bestimmt die Umsatzsteuer: Deutschland 19 %, Unternehmen in der EU mit USt-IdNr. ohne deutsche Steuer (Reverse Charge), außerhalb der EU ohne deutsche Steuer. Auch die Sprache der Rechnung richtet sich nach dem Land: deutschsprachige Länder Deutsch, französisch- und spanischsprachige ihre Sprache, sonst Englisch.',
     name: 'Rechnungsempfänger (Firma)',
     line1: 'Straße und Hausnummer',
     line2: 'Adresszusatz (optional)',

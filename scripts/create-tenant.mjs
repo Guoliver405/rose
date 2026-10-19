@@ -113,11 +113,13 @@ const templates = JSON.parse(
 for (const t of templates) {
   const { data: svc, error: svcErr } = await admin
     .from('service_definitions')
-    // Vorlagen sind mehrsprachig (17.10.2026): Grundtexte deutsch, Englisch als Übersetzung.
+    // Vorlagen sind mehrsprachig (17.10.2026): Grundtexte deutsch, alle anderen Sprachen als Übersetzung.
     .insert({
       hotel_id: hotel.id, name: t.name.de, description: t.description.de, urgent: t.urgent,
       maintenance: t.maintenance, lang: 'de',
-      translations: { en: { name: t.name.en, description: t.description.en } },
+      translations: Object.fromEntries(
+        Object.keys(t.name).filter(l => l !== 'de').map(l => [l, { name: t.name[l], description: t.description[l] }])
+      ),
     })
     .select('id')
     .single()
@@ -130,7 +132,7 @@ for (const t of templates) {
         label: i.label.de,
         price_cents: i.price_cents,
         sort_order: idx,
-        translations: { en: { label: i.label.en } },
+        translations: Object.fromEntries(Object.keys(i.label).filter(l => l !== 'de').map(l => [l, { label: i.label[l] }])),
       }))
     )
     if (itemErr) console.error('WARNUNG Beispiel-Service-Optionen:', itemErr.message)

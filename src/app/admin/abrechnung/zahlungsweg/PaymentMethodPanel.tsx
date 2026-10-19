@@ -115,7 +115,7 @@ export default function PaymentMethodPanel({
 }: {
   m: PanelMessages
   /** Sprache der Seite — Stripes Eingabefelder sprechen dieselbe. */
-  locale: 'de' | 'en'
+  locale: 'de' | 'en' | 'fr' | 'es'
   kinds: AccountMessages['billing']['kinds']
   publishableKey: string
   aktiv: { kind: PaymentMethodKind; label: string } | null

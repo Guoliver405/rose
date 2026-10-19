@@ -1,25 +1,55 @@
 [
   {
-    "name": { "de": "Technischer Dienst", "en": "Maintenance" },
+    "name": {
+      "de": "Technischer Dienst",
+      "en": "Maintenance",
+      "fr": "Service technique",
+      "es": "Servicio técnico"
+    },
     "description": {
       "de": "Etwas im Zimmer funktioniert nicht? Kurz beschreiben — wir kümmern uns schnellstmöglich. Kostenfrei.",
-      "en": "Something in your room isn’t working? Describe it briefly — we’ll take care of it as soon as possible. Free of charge."
+      "en": "Something in your room isn’t working? Describe it briefly — we’ll take care of it as soon as possible. Free of charge.",
+      "fr": "Quelque chose ne fonctionne pas dans votre chambre ? Décrivez-le brièvement — nous nous en occupons au plus vite. Gratuit.",
+      "es": "¿Algo no funciona en su habitación? Descríbalo brevemente y nos ocuparemos lo antes posible. Gratuito."
     },
     "urgent": true,
     "maintenance": true,
     "items": []
   },
   {
-    "name": { "de": "Wäscheservice", "en": "Laundry service" },
+    "name": {
+      "de": "Wäscheservice",
+      "en": "Laundry service",
+      "fr": "Service de blanchisserie",
+      "es": "Servicio de lavandería"
+    },
     "description": {
       "de": "Wäsche im Wäschesack an die Zimmertür hängen und bis 10:00 Uhr anmelden — zurück am Folgetag.",
-      "en": "Hang your laundry bag on the door and request pickup by 10:00 — returned the next day."
+      "en": "Hang your laundry bag on the door and request pickup by 10:00 — returned the next day.",
+      "fr": "Accrochez votre sac à linge à la porte et demandez l’enlèvement avant 10:00 — retour le lendemain.",
+      "es": "Cuelgue la bolsa de ropa en la puerta y solicite la recogida antes de las 10:00; se devuelve al día siguiente."
     },
     "urgent": false,
     "maintenance": false,
     "items": [
-      { "label": { "de": "Wäschesack klein", "en": "Small laundry bag" }, "price_cents": 1200 },
-      { "label": { "de": "Wäschesack groß", "en": "Large laundry bag" }, "price_cents": 2000 }
+      {
+        "label": {
+          "de": "Wäschesack klein",
+          "en": "Small laundry bag",
+          "fr": "Petit sac à linge",
+          "es": "Bolsa de ropa pequeña"
+        },
+        "price_cents": 1200
+      },
+      {
+        "label": {
+          "de": "Wäschesack groß",
+          "en": "Large laundry bag",
+          "fr": "Grand sac à linge",
+          "es": "Bolsa de ropa grande"
+        },
+        "price_cents": 2000
+      }
     ]
   }
 ]

@@ -42,7 +42,7 @@ export const sheet = {
   window: ' El portal admite solicitudes de limpieza a diario de {start} a {end}.',
   defer: ' También puede aplazar la limpieza hasta las {limit} como máximo: antes no vendrá nadie.',
   sustainabilityRoutine:
-    '¿Hoy no necesita limpieza? Un toque en «{skip}» (hoy sin limpieza) en el portal ahorra agua, detergente y energía; mañana se vuelve a limpiar.',
+    '¿Hoy no necesita limpieza? Un toque en «{skip}» en el portal ahorra agua, detergente y energía; mañana se vuelve a limpiar.',
   sustainabilityOnRequest:
     'Menos limpieza, menos consumo: cada limpieza que no hace falta ahorra agua, detergente y energía. Por eso solo vamos cuando usted lo desea.',
   access: {
@@ -53,7 +53,7 @@ export const sheet = {
   mail: {
     subject: 'Su acceso al portal de huéspedes: {hotel}, habitación {room}',
     greeting: 'Hola:',
-    intro: 'aquí tiene su acceso al portal de huéspedes de <b>{hotel}</b>, habitación <b>{room}</b>.',
+    intro: 'Aquí tiene su acceso al portal de huéspedes de <b>{hotel}</b>, habitación <b>{room}</b>.',
     open: 'Abrir el portal de huéspedes',
     pin: 'Su PIN:',
     fallback: 'Si el botón no funciona, abra esta dirección:',

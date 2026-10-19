@@ -52,7 +52,7 @@ describe('Simulator-Konto', () => {
   })
 
   it('Einwilligung auf Englisch: eigener Wortlaut, eigene Fassung — Text geändert ⇒ Version hochzählen', () => {
-    expect(MARKETING_TEXT_VERSIONS).toEqual({ de: '2026-09-26', en: '2026-10-18-en' })
+    expect(MARKETING_TEXT_VERSIONS).toEqual({ de: '2026-09-26', en: '2026-10-18-en', fr: '2026-10-19-fr', es: '2026-10-19-es' })
     expect(enAccount.marketing.text).toBe(
       'Yes, RoSe may occasionally inform me by email about new features and special offers — about RoSe only. My address will not be passed on. I can unsubscribe at any time with one click or in my account.',
     )

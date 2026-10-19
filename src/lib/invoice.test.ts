@@ -52,7 +52,8 @@ describe('Rechnungstexte', () => {
 
   it('Sprache nach dem Land der Rechnungsanschrift: deutschsprachig Deutsch, sonst Englisch', () => {
     expect(['DE', 'at', 'CH', 'LI'].map(invoiceLocale)).toEqual(['de', 'de', 'de', 'de'])
-    expect(['FR', 'NL', 'US', 'TH'].map(invoiceLocale)).toEqual(['en', 'en', 'en', 'en'])
+    expect(['NL', 'US', 'TH', 'BE'].map(invoiceLocale)).toEqual(['en', 'en', 'en', 'en'])
+    expect(['FR', 'lu', 'ES', 'MX'].map(invoiceLocale)).toEqual(['fr', 'fr', 'es', 'es'])
     expect(invoiceLocale(null)).toBe('de')
   })
 
