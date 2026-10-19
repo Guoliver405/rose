@@ -41,7 +41,7 @@ export const PROVIDER = {
 } as const
 
 /** Stand der Rechtstexte — in allen drei Seiten identisch angezeigt. */
-export const LEGAL_VERSION = 'September 2026'
+export const LEGAL_VERSION = 'Oktober 2026'
 
 /** Liefert die Felder, die noch einen `[…]`-Platzhalter tragen. */
 export function providerPlaceholders(): string[] {

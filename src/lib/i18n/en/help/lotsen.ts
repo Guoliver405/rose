@@ -127,7 +127,7 @@ export const lotsen = {
     },
     'einrichtung.ende': {
       title: 'Done — and here’s what’s next',
-      body: 'Your property is set up. Under “Help” you’ll always find all guides again, plus an overview of what’s still missing. Every guide can be started individually, as often as you like.',
+      body: 'Your property is set up. Under “Help” you’ll always find all guides again, plus an overview of what’s still missing. Every guide can be started individually, as often as you like. If something doesn’t work or you’re missing something, write to us via “Report a problem” — at the top of this page or at the bottom of the panel behind the “?.”',
     },
     'uebersicht.kpi': {
       title: 'The situation in one line',
@@ -151,6 +151,11 @@ export const lotsen = {
       title: 'At check-out, the amount is shown',
       body: 'If the guest ordered paid services, the dialog highlights what’s to be collected before you confirm — with “Details” as a printable statement: room, period, items with times, total. No guest name, no invoice. If nothing paid was ordered, there’s only a note and you check out as usual.',
       tun: 'Check-out closes open requests as “not provided” — check off what was actually provided in the same box beforehand. Later you can get back to the statement via the room’s history: the “Check-out” entry carries the link.',
+    },
+    'kopf.hilfe': {
+      title: 'Help — and “Report a problem”',
+      body: 'The “?” opens the explanation next to every page. At the bottom of that panel is “Report a problem”: for a bug, confusing wording, a question, or an idea, with a screenshot if you like. Our reply arrives here in RoSe under “My reports”; a red dot on the “?” tells you when it’s there. Please pass on what guests or housekeeping notice the same way.',
+      tun: 'Click the “?” and take a look at the panel — you don’t have to report anything.',
     },
     'anfragen.zaehler': {
       title: 'Everything guests request',

@@ -5,11 +5,11 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
 
 ## Vor den ersten echten Kunden
 
-- [ ] **„Problem melden“ in die Datenschutzerklärung** (19.10.2026) — Meldungen,
-      Bildschirmfotos (privater Speicher, gelöscht mit dem Abschluss) und der
-      mitgeschickte Kontext (Seite, Browser, Fehlermeldungen) sind neue
-      Verarbeitungen; ein Bildschirmfoto kann Gästedaten zeigen, das gehört
-      auch in den AVV. Text gemeinsam mit dem User formulieren.
+- [x] ~~**„Problem melden“ in die Datenschutzerklärung** (19.10.2026)~~ — am
+      selben Tag: Datenschutz Abschnitt 4 „Meldungen an den Support“, Abschnitt 5
+      und 9 ergänzt, AGB § 4 Abs. 3, § 8 Abs. 4, § 10 Abs. 1; Stand Oktober 2026.
+      **Offen bleibt der AVV selbst** (gibt es noch nicht als Dokument): Er muss
+      Bildschirmfotos in Support-Meldungen als Verarbeitung im Auftrag nennen.
 
 - [x] ~~**Zwei Migrationen einspielen, dann pushen** (16.09.)~~ — am selben
       Abend erledigt, Browser-Nachweis in

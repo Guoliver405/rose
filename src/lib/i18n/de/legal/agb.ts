@@ -42,7 +42,7 @@ export const agb: LegalPage = {
       blocks: [
         '(1) Der Anbieter bemüht sich um eine ununterbrochene Verfügbarkeit des Dienstes, schuldet jedoch keine bestimmte Verfügbarkeitsquote. Wartungsarbeiten kündigt der Anbieter nach Möglichkeit vorab an und legt sie in verkehrsarme Zeiten.',
         '(2) Ausfälle, die auf Umständen außerhalb des Einflussbereichs des Anbieters beruhen (insbesondere Störungen des Internets, höhere Gewalt, Ausfälle der eingesetzten Rechenzentrums- oder E-Mail-Dienstleister), hat der Anbieter nicht zu vertreten.',
-        '(3) Support erfolgt per E-Mail an {email} zu üblichen Geschäftszeiten. Eine Reaktionszeit wird nicht zugesichert.',
+        '(3) Support erfolgt über die Funktion „Problem melden“ im Verwaltungsportal oder per E-Mail an {email} zu üblichen Geschäftszeiten. Antworten auf eine Meldung stellt der Anbieter im Verwaltungsportal bereit und weist per E-Mail darauf hin. Eine Reaktionszeit wird nicht zugesichert.',
       ],
     },
     {
@@ -89,6 +89,7 @@ export const agb: LegalPage = {
         '(1) Soweit der Kunde über den Dienst personenbezogene Daten verarbeitet (Gäste-Aufenthalte, Service-Anfragen, Personal, Tätigkeitsnachweise), ist er Verantwortlicher im Sinne der DSGVO und der Anbieter sein Auftragsverarbeiter. Die Parteien schließen hierzu einen Auftragsverarbeitungsvertrag nach Art. 28 DSGVO, der Bestandteil dieses Vertrags ist und vom Anbieter bereitgestellt wird.',
         '(2) Der Anbieter setzt als Unterauftragsverarbeiter Dienstleister für Datenbank und Anmeldung (Supabase), Hosting (Vercel) und E-Mail-Versand (Resend) ein; Einzelheiten und Speicherorte nennt die <datenschutz>Datenschutzerklärung</datenschutz>. Über Wechsel informiert der Anbieter vorab; der Kunde kann aus wichtigem Grund widersprechen.',
         '(3) Der Dienst ist so gestaltet, dass Gäste anonym bleiben (kein Name, keine Kontaktdaten). Der Kunde ist dafür verantwortlich, diese Gestaltung nicht durch eigene Eintragungen zu unterlaufen.',
+        '(4) Fügt der Kunde einer Meldung an den Support ein Bildschirmfoto bei, beschränkt er es auf das, was für die Meldung nötig ist. Zeigt es personenbezogene Daten, verarbeitet der Anbieter sie im Rahmen der Auftragsverarbeitung ausschließlich zur Bearbeitung der Meldung und löscht das Bild mit deren Abschluss.',
       ],
     },
     {
@@ -102,7 +103,7 @@ export const agb: LegalPage = {
     {
       title: '§ 10 Gewährleistung, Haftung',
       blocks: [
-        '(1) Der Anbieter stellt den Dienst in dem Zustand bereit, in dem er sich zum Zeitpunkt der Nutzung befindet, und behebt gemeldete Fehler in angemessener Zeit. Der Kunde meldet Mängel unverzüglich in Textform mit einer nachvollziehbaren Beschreibung.',
+        '(1) Der Anbieter stellt den Dienst in dem Zustand bereit, in dem er sich zum Zeitpunkt der Nutzung befindet, und behebt gemeldete Fehler in angemessener Zeit. Der Kunde meldet Mängel unverzüglich in Textform mit einer nachvollziehbaren Beschreibung; eine Meldung über „Problem melden“ genügt.',
         '(2) Der Anbieter haftet unbeschränkt bei Vorsatz und grober Fahrlässigkeit, bei Verletzung von Leben, Körper oder Gesundheit, nach dem Produkthaftungsgesetz sowie im Umfang einer übernommenen Garantie.',
         '(3) Bei leicht fahrlässiger Verletzung einer wesentlichen Vertragspflicht (einer Pflicht, deren Erfüllung die ordnungsgemäße Durchführung des Vertrags überhaupt erst ermöglicht und auf deren Einhaltung der Kunde regelmäßig vertrauen darf) ist die Haftung auf den vertragstypischen, vorhersehbaren Schaden begrenzt, höchstens jedoch auf die vom Kunden in den zwölf Monaten vor dem schädigenden Ereignis gezahlte Vergütung. Im Übrigen ist die Haftung für leichte Fahrlässigkeit ausgeschlossen.',
         '(4) Für den Verlust von Daten haftet der Anbieter nach den vorstehenden Absätzen nur bis zu dem Betrag, der bei ordnungsgemäßer und regelmäßiger Sicherung durch den Kunden (§ 5 Abs. 2) zur Wiederherstellung erforderlich gewesen wäre.',

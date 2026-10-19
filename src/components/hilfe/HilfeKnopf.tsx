@@ -39,6 +39,7 @@ export default function HilfeKnopf() {
       title={titel}
       aria-label={titel}
       aria-pressed={offen}
+      data-lotse="kopf.hilfe"
       className={`relative flex h-9 w-9 items-center justify-center rounded-full border ${
         offen
           ? 'border-action bg-action text-action-foreground'

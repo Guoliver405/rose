@@ -132,7 +132,7 @@ export const lotsen = {
     },
     'einrichtung.ende': {
       title: 'Geschafft – und hier geht es weiter',
-      body: 'Ihr Haus ist eingerichtet. Unter „Hilfe“ finden Sie jederzeit alle Lotsen wieder, dazu eine Übersicht, was noch fehlt. Jeder Lotse lässt sich einzeln starten, so oft Sie wollen.',
+      body: 'Ihr Haus ist eingerichtet. Unter „Hilfe“ finden Sie jederzeit alle Lotsen wieder, dazu eine Übersicht, was noch fehlt. Jeder Lotse lässt sich einzeln starten, so oft Sie wollen. Hakt etwas oder fehlt Ihnen etwas, schreiben Sie uns über „Problem melden“ – oben auf dieser Seite oder unten in der Leiste hinter dem „?“.',
     },
     'uebersicht.kpi': {
       title: 'Das Lagebild in einer Zeile',
@@ -156,6 +156,11 @@ export const lotsen = {
       title: 'Beim Check-out steht der Betrag',
       body: 'Hat der Gast kostenpflichtige Leistungen bestellt, zeigt der Dialog schon vor der Bestätigung hervorgehoben, was zu kassieren ist – mit „Details“ als druckbare Aufstellung: Zimmer, Zeitraum, Posten mit Zeitpunkten, Summe. Kein Gastname, keine Rechnung. Wurde nichts Kostenpflichtiges bestellt, steht dort nur ein Hinweis, und Sie checken aus wie bisher.',
       tun: 'Offene Anfragen schließt der Check-out als „nicht erbracht“ – was tatsächlich erbracht wurde, haken Sie vorher im selben Kasten ab. Später kommen Sie über den Verlauf des Zimmers wieder an die Aufstellung: Der Eintrag „Check-out“ trägt den Link.',
+    },
+    'kopf.hilfe': {
+      title: 'Hilfe – und „Problem melden“',
+      body: 'Das „?“ klappt auf jeder Seite die Erklärung daneben auf. Unten in dieser Leiste steht „Problem melden“: für einen Fehler, einen missverständlichen Text, eine Frage oder eine Idee, gern mit Bildschirmfoto. Unsere Antwort kommt hier in RoSe unter „Meine Meldungen“; ein roter Punkt am „?“ zeigt an, wenn sie da ist. Was Gäste oder die Reinigung bemerken, geben Sie bitte auf diesem Weg weiter.',
+      tun: 'Klicken Sie auf das „?“ und sehen Sie sich die Leiste an – melden müssen Sie dafür nichts.',
     },
     'anfragen.zaehler': {
       title: 'Alles, was Gäste anfragen',

@@ -61,6 +61,14 @@ export const datenschutz: LegalPage = {
           ],
         },
         {
+          sub: 'Meldungen an den Support („Problem melden“)',
+          blocks: [
+            'Über „Problem melden“ im Verwaltungsportal schicken Kunden und ihre Zugänge uns Fehler, Fragen und Vorschläge. Wir verarbeiten dafür Art, Betreff und Text der Meldung, die Antworten im Gesprächsverlauf, Name und Rolle der meldenden Person, das betroffene Haus sowie ein Bildschirmfoto, wenn eines angehängt wird. Automatisch mitgeschickt werden die aufgerufene Seite, die Sprache, die Bildschirmgröße, die Browser-Kennung und die letzten Fehlermeldungen im Browser – damit wir das Problem nachvollziehen können, ohne nachzufragen. Eingaben in Formulare oder Inhalte der Seite gehören nicht dazu.',
+            'Eine Meldung sehen die meldende Person, der Kontoinhaber, die Manager des betroffenen Hauses und das RoSe-Team. Unsere Antwort steht in RoSe; per E-Mail geht nur ein Hinweis mit Link, ohne den Inhalt (Abschnitt 5). <b>Bildschirmfotos</b> liegen in einem nicht öffentlichen Speicher, sind nur über kurzlebige Links abrufbar und werden gelöscht, sobald die Meldung erledigt ist. Die Meldung selbst bleibt als Verlauf erhalten, bis das Haus oder das Konto gelöscht wird; auf Wunsch löschen wir sie früher.',
+            'Rechtsgrundlage ist die Erfüllung des Vertrags mit dem Kunden, zu dem der Support gehört (Art. 6 Abs. 1 lit. b DSGVO), und für die Daten der Mitarbeitenden, die für den Kunden melden, unser berechtigtes Interesse, Meldungen zuordnen und beantworten zu können (Art. 6 Abs. 1 lit. f DSGVO). Zeigt ein Bildschirmfoto Daten von Gästen oder Personal, verarbeiten wir diese im Auftrag des Hotels (Abschnitt 9).',
+          ],
+        },
+        {
           sub: 'Keine Analyse, kein Tracking',
           blocks: [
             'Wir setzen keine Analyse- oder Tracking-Werkzeuge ein, keine Werbe-Cookies und keine Inhalte von Drittanbietern, die Ihr Verhalten auswerten. Deshalb gibt es auch kein Cookie-Banner.',
@@ -71,7 +79,7 @@ export const datenschutz: LegalPage = {
     {
       title: '5. E-Mail-Versand',
       blocks: [
-        'E-Mails (Einladungen, Passwort zurücksetzen, Gast-Zugang auf Wunsch der Rezeption, Bestätigung eines Simulator-Kontos) werden über <b>Resend Inc.</b>, 2261 Market Street #5039, San Francisco, CA 94114, USA, versendet. Resend verarbeitet dafür Empfängeradresse, Betreff und Inhalt der E-Mail und führt ein Zustellprotokoll (Adresse, Zeitpunkt, Zustellstatus), das nach Ablauf der bei Resend eingestellten Frist gelöscht wird.',
+        'E-Mails (Einladungen, Passwort zurücksetzen, Gast-Zugang auf Wunsch der Rezeption, Bestätigung eines Simulator-Kontos, Hinweise zu Meldungen an den Support) werden über <b>Resend Inc.</b>, 2261 Market Street #5039, San Francisco, CA 94114, USA, versendet. Resend verarbeitet dafür Empfängeradresse, Betreff und Inhalt der E-Mail und führt ein Zustellprotokoll (Adresse, Zeitpunkt, Zustellstatus), das nach Ablauf der bei Resend eingestellten Frist gelöscht wird.',
         '<b>Gast-Zugang per E-Mail:</b> Gibt die Rezeption auf Wunsch eines Gastes dessen E-Mail-Adresse ein, verwendet RoSe sie ausschließlich für diesen einen Versand. Die Adresse wird <b>nicht in RoSe gespeichert</b>; der Aufenthalt bleibt anonym. Verantwortlich für diese Verarbeitung ist das Hotel (siehe Abschnitt 2); Rechtsgrundlage ist die Erfüllung des Beherbergungsvertrags gegenüber dem Gast (Art. 6 Abs. 1 lit. b DSGVO).',
       ],
     },
@@ -121,6 +129,12 @@ export const datenschutz: LegalPage = {
           sub: 'Mitarbeitende',
           blocks: [
             'Für Reinigungskräfte verarbeitet RoSe Anzeigename, Benutzername, PIN (gehasht) sowie Tätigkeitseinträge mit Zeitpunkt (Schichtbeginn und -ende, Pausen, Beginn und Abschluss einer Zimmerreinigung) und die aktuell gewählte Etage. Aus den Einträgen berechnet das Hotel Arbeits- und Reinigungszeiten (Auswertung). Für Rezeptions- und Managerzugänge werden Anzeigename und E-Mail-Adresse verarbeitet sowie, welche Person einen Check-in, Check-out oder eine erledigte Bestellung ausgelöst hat (Zimmer-Verlauf). Die Aufbewahrung richtet sich nach dem Hotel; beim Löschen eines Zugangs zeigt RoSe vorher an, welche Nachweise davon betroffen sind.',
+          ],
+        },
+        {
+          sub: 'Bildschirmfotos in Meldungen',
+          blocks: [
+            'Hängt ein Zugang des Hotels einer Meldung an den Support ein Bildschirmfoto an, auf dem Daten von Gästen oder Personal zu sehen sind, verarbeiten wir diese ausschließlich zur Bearbeitung der Meldung und löschen das Bild mit ihrem Abschluss, spätestens mit dem Haus oder Konto. Das Formular bittet darum, nur zu zeigen, was zum Problem gehört.',
           ],
         },
         {

@@ -101,6 +101,7 @@ const UEBERSICHT: Lotse = {
     { path: '', anchor: 'uebersicht.kachel' },
     { key: 'uebersicht.dialog', path: '' },
     { key: 'uebersicht.checkout', path: '' },
+    { path: '', anchor: 'kopf.hilfe' },
   ],
 }
 
