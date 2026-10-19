@@ -11,23 +11,26 @@
 // nach oben links und oben rechts, Stamm nach unten) teilt es in drei gleich
 // große Fünfecke: rote Blüte oben, zwei grüne Blätter unten.
 //
-// Alle Maße hängen an der Höhe H des Sechsecks. Zwei Fassungen, weil die
-// Wortmarke nie kleiner als ~17 px Symbolhöhe erscheint (Fußzeile), das
-// Favicon aber bis ~11 px: dort braucht der Steg anteilig mehr Breite, damit
-// er nach dem Rastern noch als Lücke sichtbar bleibt (≥ 1,5 px).
+// Alle Maße hängen an der Höhe H des Sechsecks, auch der Steg: eine Breite
+// für Wortmarke und Icon (15 %, etwas breiter als V15 mit 13 % bzw. 17 %),
+// damit das Symbol überall gleich aussieht. Im 16-px-Favicon (Symbol ~11 px
+// hoch) bleiben davon ~1,7 px Lücke, in der Fußzeile (~17 px) ~2,6 px.
 import { readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const SET = join(ROOT, 'Design', 'Logo-V15')
 
+/** Breite des Y-Stegs als Anteil der Sechseck-Höhe. */
+const GAP = 0.15
+
 const PRESETS = {
   // Wortmarke: gleiche Höhe und Mitte wie V15 (Oberkante 66,05, Unterkante
   // 184,35 — leichter Überhang über die Grundlinie wie bei runden Buchstaben).
-  wordmark: { cx: 245.6, cy: 125.2, h: 118.3, gap: 0.11 },
+  wordmark: { cx: 245.6, cy: 125.2, h: 118.3, gap: GAP },
   // Icon-Raster 512 × 512: Sechseck 420 breit, mittig.
-  icon: { cx: 256, cy: 256, h: 210 * Math.sqrt(3), gap: 0.14 },
+  icon: { cx: 256, cy: 256, h: 210 * Math.sqrt(3), gap: GAP },
 }
 // Eckenradien als Anteil von H: außen deutlich gerundet (macht das Sechseck
 // zum „o“), an Steg und Mitte nur gebrochen.
@@ -105,6 +108,8 @@ export function symbolPaths({ cx, cy, h, gap }) {
   return out
 }
 
+export { PRESETS }
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
 const word = symbolPaths(PRESETS.wordmark)
 const icon = symbolPaths(PRESETS.icon)
 
@@ -142,3 +147,4 @@ set('WORD_SYM_TOP', word.top); set('WORD_SYM_RIGHT', word.right); set('WORD_SYM_
 set('SYMBOL_TOP', icon.top); set('SYMBOL_RIGHT', icon.right); set('SYMBOL_LEFT', icon.left)
 await writeFile(ts, src)
 console.log('Symbol in Logo-Set und logo-paths.ts geschrieben.')
+}
