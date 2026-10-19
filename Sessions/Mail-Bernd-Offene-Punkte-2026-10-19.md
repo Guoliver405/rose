@@ -1,7 +1,8 @@
 # Mail an Bernd – offene Punkte, Stripe live schalten, AVV-Entwurf (Entwurf, 19.10.2026)
 
 > Entwurf von Claude im Auftrag von Oliver, nicht verschickt. Absender Oliver,
-> Empfänger Bernd Köhl. Anhang: `Verträge/AVV-RoSe-Entwurf-2026-10-19.pdf` (nicht im Repo).
+> Empfänger Bernd Köhl. Anhänge: `Verträge/AVV-RoSe-Entwurf-2026-10-19.pdf` (nicht im Repo)
+> und [Prompt-Support-Tickets-fuer-Bernd-2026-10-19.md](Prompt-Support-Tickets-fuer-Bernd-2026-10-19.md).
 > Grundlagen: [Mail-Bernd-Stripe-Live-2026-09-13.md](Mail-Bernd-Stripe-Live-2026-09-13.md),
 > [2026-10-11_Lizenzvertrag-Gegenentwurf.md](2026-10-11_Lizenzvertrag-Gegenentwurf.md), [TODO.md](../TODO.md).
 
@@ -82,6 +83,14 @@ und 42) – erst danach melden wir an.
 Gesprächsverlauf im System und Hinweis-Mail an support@rose-roomservice.app.
 Das Postfach leitet an mich weiter. Datenschutz und AGB sind dafür ergänzt
 (Stand Oktober 2026).
+
+**Für dein anderes System:** Du wolltest ein ähnliches Ticket-System einbauen.
+Im Anhang liegt ein Prompt für Claude Code, den du dort einfach einfügen
+kannst. Er ist allgemein gehalten, weil ich deine Architektur nicht kenne:
+Claude sieht sich zuerst dein System an, schlägt einen Bauplan vor und fragt
+dich, bevor es baut. Die Erfahrungen aus RoSe stecken drin – Dialog im System
+statt per Mail, Bildschirmfotos privat und gelöscht mit dem Abschluss,
+Hinweis-Mails ohne Inhalt.
 
 Viele Grüße
 Oliver
