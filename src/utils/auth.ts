@@ -1,5 +1,6 @@
 import { cache } from 'react'
 import { createClient } from '@/utils/supabase/server'
+import { parseSupportIds } from '@/lib/tickets'
 import { createAdminClient } from '@/utils/supabase/service'
 import { findHotelBySlug } from '@/utils/hotel'
 
@@ -248,7 +249,12 @@ type HotelRow = { id: string; slug: string; name: string; account_id: string }
 export async function landingRoute(): Promise<string | null> {
   const hotels = await listAccessibleHotels()
   // Kein Haus: vielleicht ein Konto des Housekeeping-Simulators (26.09.2026).
-  if (hotels.length === 0) return (await getSimContext())?.kind === 'sim' ? '/simulator' : null
+  if (hotels.length === 0) {
+    // Ein Konto des RoSe-Teams ohne eigenes Haus (19.10.2026): direkt zu den Meldungen.
+    const userId = await getAuthUserId()
+    if (userId && parseSupportIds(process.env.SUPPORT_USER_IDS).includes(userId.toLowerCase())) return '/support'
+    return (await getSimContext())?.kind === 'sim' ? '/simulator' : null
+  }
   const nurRezeption = hotels.every(h => h.role === 'reception')
   return nurRezeption ? `/h/${hotels[0].slug}/admin` : '/admin'
 }

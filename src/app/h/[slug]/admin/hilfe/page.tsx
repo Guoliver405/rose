@@ -3,11 +3,12 @@ import { redirect } from 'next/navigation'
 import {
   BedDouble, BookOpen, Building2, Check, ChevronRight, Circle, Compass, ConciergeBell, DoorOpen,
   BarChart3, ClipboardList, CreditCard, KeyRound, LayoutGrid, Printer, SlidersHorizontal,
-  Smartphone, Sparkles, Users, type LucideIcon,
+  Inbox, Smartphone, Sparkles, Users, type LucideIcon,
 } from 'lucide-react'
 import { getAccountContext, getManagementContext } from '@/utils/auth'
 import { createAdminClient } from '@/utils/supabase/service'
 import ErklaerungLink from '@/components/hilfe/ErklaerungLink'
+import TicketButton from '@/components/tickets/TicketDialog'
 import { hilfeZiel, themaText, themenFuer } from '@/lib/hilfe'
 import { einrichtungStart, lotseById, lotseStart, setupProgress, type SetupFacts } from '@/lib/lotsen'
 import { format, getMessages, intlLocale, plural } from '@/lib/i18n'
@@ -108,6 +109,17 @@ export default async function HilfePage({
       <div>
         <h1 className="text-xl font-black text-ink">{t.title}</h1>
         <p className="mt-1 text-sm text-ink-soft">{t.intro}</p>
+      </div>
+
+      {/* Auf dem Hub gibt es keine Leiste – „Problem melden“ steht deshalb hier. */}
+      <div className="flex flex-wrap items-center gap-3">
+        <TicketButton
+          slug={ctx.hotelSlug}
+          className="flex items-center gap-2 rounded-lg border border-edge bg-surface px-3 py-2 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink"
+        />
+        <Link href={`/h/${ctx.hotelSlug}/admin/meldungen`} className="flex items-center gap-1.5 text-sm font-semibold text-action hover:underline">
+          <Inbox className="h-4 w-4" /> {m.tickets.report.myReports}
+        </Link>
       </div>
 
       {fortschritt && (

@@ -3,7 +3,10 @@
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { BookOpen, ChevronRight, Compass, ExternalLink, List, X } from 'lucide-react'
+import { BookOpen, ChevronRight, Compass, ExternalLink, Inbox, List, X } from 'lucide-react'
+import TicketButton from '@/components/tickets/TicketDialog'
+import { useUnreadTickets } from '@/components/tickets/unread'
+import { plural } from '@/lib/i18n/format'
 import {
   hilfeUrl, istHilfeSeite, relativerPfad, themaBereich, themaById, themaFuerPfad, themaText, themenFuer,
   type HilfeThema,
@@ -47,6 +50,7 @@ export default function HilfeLeiste({
   const { help, symbols } = useHelpMessages()
   const t = help.ui.sidebar
   useEffect(() => { setzeNutzer(nutzer) }, [nutzer])
+  const unread = useUnreadTickets(pathname)
 
   // Esc schließt die Leiste — dieselbe Erwartung wie beim Lotsen. Der
   // Handler schreibt nur in den Store, kein setState im Effekt.
@@ -155,6 +159,26 @@ export default function HilfeLeiste({
             </ul>
           </>
         )}
+      </div>
+
+      {/* „Problem melden“ – unten in der Leiste, auf jeder Seite erreichbar.
+          Die Meldung nimmt die Seite mit, auf der man gerade steht. */}
+      <div className="mt-auto flex flex-col gap-2 border-t border-edge p-4">
+        <TicketButton
+          slug={slug}
+          className="flex items-center justify-center gap-2 rounded-lg border border-edge px-3 py-2 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink"
+        />
+        <Link
+          href={slug ? `/h/${slug}/admin/meldungen` : '/admin/meldungen'}
+          className="flex items-center justify-center gap-2 text-sm font-semibold text-action hover:underline"
+        >
+          <Inbox className="h-4 w-4" /> {help.tickets.report.myReports}
+          {unread > 0 && (
+            <span className="rounded-full bg-critical-pill px-2 py-0.5 text-xs font-bold text-critical-deepest">
+              {plural('de', unread, help.tickets.report.unread)}
+            </span>
+          )}
+        </Link>
       </div>
     </aside>
   )

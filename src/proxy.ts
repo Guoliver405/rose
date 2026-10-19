@@ -67,5 +67,7 @@ export const config = {
     '/service/:path*', '/h/:path*',
     // Housekeeping-Simulator (26.09.2026): eigene Anmeldung, Default-Cookies.
     '/simulator', '/simulator/:path*',
+    // Support-Seite des RoSe-Teams (19.10.2026), Default-Cookies wie die Verwaltung.
+    '/support', '/support/:path*',
   ],
 }

@@ -5,6 +5,12 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
 
 ## Vor den ersten echten Kunden
 
+- [ ] **„Problem melden“ in die Datenschutzerklärung** (19.10.2026) — Meldungen,
+      Bildschirmfotos (privater Speicher, gelöscht mit dem Abschluss) und der
+      mitgeschickte Kontext (Seite, Browser, Fehlermeldungen) sind neue
+      Verarbeitungen; ein Bildschirmfoto kann Gästedaten zeigen, das gehört
+      auch in den AVV. Text gemeinsam mit dem User formulieren.
+
 - [x] ~~**Zwei Migrationen einspielen, dann pushen** (16.09.)~~ — am selben
       Abend erledigt, Browser-Nachweis in
       [Sessions/2026-09-16_Gaststatus-Verweise-Teammodus.md](Sessions/2026-09-16_Gaststatus-Verweise-Teammodus.md).

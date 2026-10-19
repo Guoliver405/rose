@@ -202,3 +202,27 @@ export function emailChangedNoticeMail(m: { newEmail: string; imprintUrl: string
   const text = [t().greeting, '', plainText(v.intro, vars), '', plainText(v.notYou, vars)].join('\n')
   return { subject: v.subject, html, text }
 }
+
+/**
+ * Hinweis zu einer Meldung („Problem melden“, 19.10.2026) – an support@ oder an
+ * die meldende Person. Bewusst **ohne** den Text der Meldung: Er kann Gäste
+ * oder Personal nennen und gehört in RoSe, nicht in ein Postfach.
+ */
+export function ticketNoticeMail(m: {
+  subject: string
+  /** Sätze aus der Sprachdatei, schon mit Werten gefüllt. */
+  lines: string[]
+  url: string
+  button: string
+  locale?: Locale
+}): MailContent {
+  const html = `<!doctype html>
+<html lang="${m.locale ?? 'de'}"><body style="${STYLE_BODY}">
+  <p>${escapeHtml(t(m.locale).greeting)}</p>
+  ${m.lines.map(l => `<p>${escapeHtml(l)}</p>`).join('\n  ')}
+  ${knopf(m.url, m.button)}
+  ${linkZeile(m.url, m.locale)}
+</body></html>`
+  const text = [t(m.locale).greeting, '', ...m.lines.flatMap(l => [l, '']), m.url].join('\n')
+  return { subject: m.subject, html, text }
+}

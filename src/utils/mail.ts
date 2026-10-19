@@ -34,6 +34,7 @@ import { getAdminLocale } from '@/utils/locale'
 import { SHEETS } from '@/lib/i18n/sheets'
 import {
   emailChangeConfirmMail, emailChangedNoticeMail, inviteMail, plainText, recoveryMail, richHtml, simConfirmMail, simExistsMail,
+  type MailContent,
 } from '@/lib/mail-templates'
 import { simulatorName } from '@/lib/sim-account'
 import {
@@ -633,6 +634,32 @@ export async function sendSimExistsMail(m: { to: string; userId: string | null }
     to: m.to,
     fromName: 'RoSe',
     ...simExistsMail({ loginUrl: `${siteBase()}/login`, resetUrl: `${siteBase()}/passwort-vergessen`, toolName: simulatorName(locale), locale }),
+    userId: m.userId ?? undefined,
+  })
+}
+
+// ─── Meldungen („Problem melden“) ────────────────────────────────────────────
+
+/**
+ * Hinweis zu einer Meldung – an support@ (neue Meldung, Rückmeldung eines
+ * Kunden) oder an die meldende Person (Antwort des RoSe-Teams). Ohne Bezug auf
+ * eine Person läuft keine Drossel: Mehrere Meldungen in einer Minute sollen
+ * alle ankommen. Die Antwort an den Kunden trägt seine ID und ist damit je
+ * Minute gedrosselt – eine zweite Antwort kurz danach landet trotzdem in RoSe.
+ */
+export function sendTicketMail(m: {
+  purpose: 'ticket_new' | 'ticket_reply' | 'ticket_answer'
+  to: string
+  content: MailContent
+  hotelId?: string | null
+  userId?: string | null
+}): Promise<MailResult> {
+  return dispatch({
+    purpose: m.purpose,
+    to: m.to,
+    fromName: 'RoSe',
+    ...m.content,
+    hotelId: m.hotelId ?? undefined,
     userId: m.userId ?? undefined,
   })
 }

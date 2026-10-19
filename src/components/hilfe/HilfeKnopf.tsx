@@ -6,6 +6,7 @@ import { istHilfeSeite, relativerPfad, themaFuerPfad, themaText } from '@/lib/hi
 import { format } from '@/lib/i18n/format'
 import { useHelpMessages } from './HelpMessages'
 import { schalteLeiste, useLeiste } from './leiste'
+import { useUnreadTickets } from '@/components/tickets/unread'
 
 /**
  * Das „?" in der Kopfzeile — klappt die Hilfe-Leiste (`HilfeLeiste`) ein und
@@ -21,6 +22,8 @@ export default function HilfeKnopf() {
   const pathname = usePathname()
   const { offen } = useLeiste()
   const { help } = useHelpMessages()
+  // Neue Antwort auf eine Meldung: ein Punkt am „?“ (die Leiste nennt die Zahl).
+  const unread = useUnreadTickets(pathname)
   const rel = relativerPfad(pathname)
   if (!rel || istHilfeSeite(rel.pfad, rel.bereich)) return null
 
@@ -36,13 +39,16 @@ export default function HilfeKnopf() {
       title={titel}
       aria-label={titel}
       aria-pressed={offen}
-      className={`flex h-9 w-9 items-center justify-center rounded-full border ${
+      className={`relative flex h-9 w-9 items-center justify-center rounded-full border ${
         offen
           ? 'border-action bg-action text-action-foreground'
           : 'border-edge text-ink-soft hover:border-edge-strong hover:text-ink'
       }`}
     >
       <CircleHelp className="h-5 w-5" />
+      {unread > 0 && (
+        <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-surface bg-critical" aria-hidden="true" />
+      )}
     </button>
   )
 }

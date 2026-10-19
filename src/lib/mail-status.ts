@@ -25,6 +25,8 @@ export type MailPurpose =
   | 'invite' | 'recovery' | 'guest_access' | 'sim_confirm'
   // Anmelde-Adresse ändern (11.10.2026): Link an die neue, Hinweis an die alte Adresse.
   | 'email_change' | 'email_changed'
+  // „Problem melden“ (19.10.2026): neue Meldung und Rückmeldung an support@, Antwort an die meldende Person.
+  | 'ticket_new' | 'ticket_reply' | 'ticket_answer'
 
 export type MailStatus =
   | 'queued'      // Zeile angelegt, Resend noch nicht gefragt

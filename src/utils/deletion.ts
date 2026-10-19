@@ -26,6 +26,7 @@
 
 import { createAdminClient } from '@/utils/supabase/service'
 import { purgeHotelLogos } from '@/utils/logo'
+import { purgeTicketScreenshots } from '@/utils/tickets'
 import { deleteStripeCustomer } from '@/utils/stripe'
 import { finalBillPreview, settleAccountBeforeDeletion, type InvoiceGateway } from '@/utils/invoicing'
 import type { SupabaseClient } from '@supabase/supabase-js'
@@ -248,6 +249,9 @@ async function purgeHotel(
   // Hotel-ID nicht mehr aus einer Zeile zu lesen.
   const logoFehler = await purgeHotelLogos(hotelId)
   if (logoFehler.error) return `hotel-logos: ${logoFehler.error}`
+  // Bildschirmfotos der Meldungen zu diesem Haus – gleiche Falle, gleicher Ort.
+  const fotoFehler = await purgeTicketScreenshots({ hotelId })
+  if (fotoFehler.error) return `ticket-screenshots: ${fotoFehler.error}`
 
   const { error } = await admin.from('hotels').delete().eq('id', hotelId)
   if (error) return `hotels: ${error.message}`
@@ -304,6 +308,10 @@ export async function deleteAccountData(
   // Stripe-Webhook entfernt ihn, sobald die letzte Rechnung erledigt ist.
   const { data: acc } = await admin.from('accounts').select('stripe_customer_id').eq('id', accountId).maybeSingle()
   if (acc?.stripe_customer_id && !settled.openInvoices) await deleteStripeCustomer(acc.stripe_customer_id as string)
+
+  // Meldungen ohne Haus hängen nur am Konto – ihre Bildschirmfotos samt Ordner.
+  const fotoFehler = await purgeTicketScreenshots({ accountId })
+  if (fotoFehler.error) return { error: `ticket-screenshots: ${fotoFehler.error}` }
 
   const { error } = await admin.from('accounts').delete().eq('id', accountId)
   if (error) return { error: `accounts: ${error.message}` }
