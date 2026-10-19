@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   BODY_MAX, SUBJECT_MAX, canSeeTicket, detectScreenshotMime, mailableAddress, parseContext, parseSupportIds,
-  sanitizeContext, screenshotPath, validateScreenshot, validateTicketInput, type ViewerAccess,
+  sanitizeContext, screenshotPath, ticketRef, validateScreenshot, validateTicketInput, type ViewerAccess,
 } from './tickets'
 
 const ACC_A = '11111111-1111-4111-8111-111111111111'
@@ -44,6 +44,13 @@ describe('canSeeTicket – wer eine Meldung sieht', () => {
 
   it('ein Inhaber eines anderen Kontos sieht nichts', () => {
     expect(canSeeTicket(ticket(), ME, [{ hotelId: H2, accountId: ACC_B, role: 'admin' }])).toBe(false)
+  })
+})
+
+describe('ticketRef – Kennung statt Zähler', () => {
+  it('schreibt M- und mindestens vier Stellen', () => {
+    expect(ticketRef(2)).toBe('M-0002')
+    expect(ticketRef(12345)).toBe('M-12345')
   })
 })
 

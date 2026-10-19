@@ -31,6 +31,16 @@ export const BODY_MAX = 5000
 /** Mehr Meldungen je Person und Stunde sind kein Nutzerverhalten. */
 export const TICKETS_PER_HOUR = 10
 
+/**
+ * Vorgangsnummer zur Anzeige: `M-0002` statt `2`. Die Nummer zählt über alle
+ * Kunden hinweg; als nackte Zahl las sie sich wie „Ihre zweite Meldung“
+ * (Rückmeldung des Users, 19.10.2026). Mit Präfix und Nullen ist sie eine
+ * Kennung, die man in Mail und Gespräch nennen kann.
+ */
+export function ticketRef(n: number): string {
+  return `M-${String(n).padStart(4, '0')}`
+}
+
 export function isTicketKind(v: unknown): v is TicketKind {
   return typeof v === 'string' && (TICKET_KINDS as readonly string[]).includes(v)
 }

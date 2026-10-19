@@ -6,7 +6,7 @@ import { getAdminLocale } from '@/utils/locale'
 import { siteBase, sendTicketMail } from '@/utils/mail'
 import { ticketNoticeMail } from '@/lib/mail-templates'
 import {
-  cleanBody, isTicketStatus, mailableAddress, parseContext, screenshotPath, TICKETS_PER_HOUR, validateScreenshot,
+  cleanBody, isTicketStatus, ticketRef, mailableAddress, parseContext, screenshotPath, TICKETS_PER_HOUR, validateScreenshot,
   validateTicketInput, type ScreenshotMime, type TicketRole, type TicketStatus,
 } from '@/lib/tickets'
 import {
@@ -167,7 +167,7 @@ async function notifySupport(purpose: 'ticket_new' | 'ticket_reply', ticketId: s
     const where = found.hotelName
       ? format(m.mails.house, { house: found.hotelName })
       : format(m.mails.accountWide, { account: found.accountName })
-    const vars = { number: found.number, name: replier ?? found.reporterName, role: m.support.role[found.reporterRole], where, kind: m.kinds[found.kind] }
+    const vars = { ref: ticketRef(found.number), name: replier ?? found.reporterName, role: m.support.role[found.reporterRole], where, kind: m.kinds[found.kind] }
     const content = ticketNoticeMail({
       subject: format(purpose === 'ticket_new' ? m.mails.newSubject : m.mails.replySubject, vars),
       lines: [format(purpose === 'ticket_new' ? m.mails.newIntro : m.mails.replyIntro, vars)],
@@ -189,7 +189,7 @@ async function notifyReporter(ticket: TicketRow): Promise<void> {
     if (!to) return
     const locale: Locale = isLocale(ticket.context.locale) ? ticket.context.locale : 'de'
     const m = getMessages(locale).help.tickets.mails
-    const vars = { number: ticket.number, subject: ticket.subject }
+    const vars = { ref: ticketRef(ticket.number), subject: ticket.subject }
     const content = ticketNoticeMail({
       subject: format(m.answerSubject, vars),
       lines: [format(m.answerIntro, vars), m.answerNote],

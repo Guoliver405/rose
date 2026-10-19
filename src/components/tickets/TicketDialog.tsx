@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { CheckCircle2, ImagePlus, MessageSquareWarning, X } from 'lucide-react'
 import { format } from '@/lib/i18n/format'
-import { SCREENSHOT_MAX_BYTES, SCREENSHOT_MAX_EDGE, SUBJECT_MAX, TICKET_KINDS, type TicketKind } from '@/lib/tickets'
+import { SCREENSHOT_MAX_BYTES, SCREENSHOT_MAX_EDGE, SUBJECT_MAX, TICKET_KINDS, ticketRef, type TicketKind } from '@/lib/tickets'
 import { reportProblemAction } from '@/app/tickets/actions'
 import { useHelpMessages } from '@/components/hilfe/HelpMessages'
 import { installErrorBuffer, recentErrors } from './error-buffer'
@@ -133,7 +133,8 @@ function TicketDialog({ slug, onClose }: { slug: string | null; onClose: () => v
         {done ? (
           <div className="flex flex-col items-center gap-3 py-4 text-center">
             <CheckCircle2 className="h-10 w-10 text-positive-strong" />
-            <p className="text-lg font-bold text-ink">{format(r.done, { number: done.number })}</p>
+            <p className="text-lg font-bold text-ink">{r.done}</p>
+            <p className="rounded-lg border border-edge px-3 py-1.5 text-sm text-ink-soft">{format(r.doneRef, { ref: ticketRef(done.number) })}</p>
             <p className="text-sm text-ink-soft">{r.doneHint}</p>
             <div className="mt-2 flex gap-2">
               <Link href={done.url} onClick={onClose} className="rounded-lg bg-action px-4 py-2 text-sm font-bold text-action-foreground hover:bg-action-strong">

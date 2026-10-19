@@ -24,9 +24,9 @@ export const helpContext = {
     _: { where: 'Nachbauten von Reinigungsboard und Gästeportal im Hilfe-Bereich', note: 'Beispielwerte (Hausname, Services) frei übersetzen; Preise im Format der Sprache. {path} = Adresse, {count} = Anzahl.' },
   },
   tickets: {
-    _: { where: '„Problem melden“: Formular in der Hilfe-Leiste, Seite „Meine Meldungen“, Gesprächsverlauf einer Meldung', note: 'Leser: Rezeption, Inhaber, Manager – gesiezt, freundlich, kurz. „Meldung“ = Ticket. {number} = laufende Nummer der Meldung, {name} = Person, {date} = Datum und Uhrzeit, {count} = Anzahl.' },
+    _: { where: '„Problem melden“: Formular in der Hilfe-Leiste, Seite „Meine Meldungen“, Gesprächsverlauf einer Meldung', note: 'Leser: Rezeption, Inhaber, Manager – gesiezt, freundlich, kurz. „Meldung“ = Ticket. {ref} = Vorgangsnummer der Meldung (z. B. M-0002), {name} = Person, {date} = Datum und Uhrzeit, {count} = Anzahl.' },
     support: { where: 'Support-Seite des RoSe-Teams (intern)', note: 'Nur für das RoSe-Team; sachlich. {role} = Rolle der meldenden Person.' },
-    mails: { where: 'Hinweis-E-Mails zu einer Meldung – an das RoSe-Team bzw. an die meldende Person', note: 'Ohne den Inhalt der Meldung, nur Hinweis und Link. {number} = Nummer, {kind} = Art, {name} = Person, {role} = Rolle, {where} = „dem Haus …“/„dem Konto …“, {house}/{account} = Name, {subject} = Betreff.' },
+    mails: { where: 'Hinweis-E-Mails zu einer Meldung – an das RoSe-Team bzw. an die meldende Person', note: 'Ohne den Inhalt der Meldung, nur Hinweis und Link. {ref} = Vorgangsnummer, {kind} = Art, {name} = Person, {role} = Rolle, {where} = „dem Haus …“/„dem Konto …“, {house}/{account} = Name, {subject} = Betreff.' },
   },
 } satisfies LooseContext<HelpMessages>
 

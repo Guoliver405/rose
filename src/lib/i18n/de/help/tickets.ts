@@ -41,7 +41,8 @@ export const tickets = {
     sending: 'Wird gesendet …',
     cancel: 'Abbrechen',
     close: 'Schließen',
-    done: 'Danke! Ihre Meldung {number} ist angekommen.',
+    done: 'Danke! Ihre Meldung ist angekommen.',
+    doneRef: 'Vorgangsnummer {ref} – bei Rückfragen genügt diese Nummer.',
     doneHint: 'Unsere Antwort finden Sie unter „Meine Meldungen“. Ein Punkt am „?“ zeigt an, wenn sie da ist.',
     toList: 'Zu meinen Meldungen',
   },
@@ -116,13 +117,13 @@ export const tickets = {
 
   /** Hinweis-Mails – nie mit dem Inhalt der Meldung, nur mit Link. */
   mails: {
-    newSubject: 'Neue Meldung {number}: {kind}',
+    newSubject: 'Neue Meldung {ref}: {kind}',
     newIntro: 'Es gibt eine neue Meldung von {name} ({role}) zu {where}.',
-    replySubject: 'Rückmeldung zu Meldung {number}',
-    replyIntro: '{name} hat auf Meldung {number} geantwortet.',
+    replySubject: 'Rückmeldung zu Meldung {ref}',
+    replyIntro: '{name} hat auf Meldung {ref} geantwortet.',
     open: 'Meldung öffnen',
-    answerSubject: 'Antwort auf Ihre Meldung {number}',
-    answerIntro: 'Das RoSe-Team hat auf Ihre Meldung {number} („{subject}“) geantwortet.',
+    answerSubject: 'Antwort auf Ihre Meldung {ref}',
+    answerIntro: 'Das RoSe-Team hat auf Ihre Meldung {ref} („{subject}“) geantwortet.',
     answerNote: 'Die Antwort steht in RoSe unter „Meine Meldungen“ – aus Datenschutzgründen nicht in dieser E-Mail.',
     accountWide: 'dem Konto {account}',
     house: 'dem Haus {house}',

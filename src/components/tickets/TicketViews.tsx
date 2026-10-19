@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ImageIcon } from 'lucide-react'
 import { format, type HelpMessages } from '@/lib/i18n'
-import type { TicketStatus } from '@/lib/tickets'
+import { ticketRef, type TicketStatus } from '@/lib/tickets'
 import type { TicketMessage, TicketRow } from '@/utils/tickets'
 
 /**
@@ -46,7 +46,7 @@ export function TicketList({
       {tickets.map(tk => (
         <li key={tk.id}>
           <Link href={href(tk)} className="flex flex-col gap-1 px-4 py-3 hover:bg-surface-sunken sm:flex-row sm:items-center sm:gap-4">
-            <span className="w-14 shrink-0 text-sm font-bold text-ink-muted">#{tk.number}</span>
+            <span className="w-16 shrink-0 font-mono text-sm font-bold text-ink-muted">{ticketRef(tk.number)}</span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-bold text-ink">{tk.subject}</span>
               <span className="block text-xs text-ink-muted">
@@ -73,7 +73,7 @@ export function TicketHeader({ ticket, t, intl, mode = 'customer' }: { ticket: T
   return (
     <div className="flex flex-col gap-1">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm font-bold text-ink-muted">#{ticket.number}</span>
+        <span className="font-mono text-sm font-bold text-ink-muted">{ticketRef(ticket.number)}</span>
         <StatusPill status={ticket.status} label={(mode === 'support' ? t.support.status : t.status)[ticket.status]} />
         <span className="text-xs font-semibold text-ink-muted">{t.kinds[ticket.kind]}</span>
       </div>
