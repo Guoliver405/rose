@@ -198,7 +198,7 @@ export const settings = {
       switchedToLink: 'Umgestellt auf individuelle Zugänge. Ab dem nächsten Check-in bekommt jeder Gast seinen eigenen QR-Code. Die Aushänge nehmen Sie aus einem Zimmer, sobald der dortige Gast ausgecheckt hat.',
       switchedToPin: 'Umgestellt auf feste QR-Codes je Zimmer. Ab dem nächsten Check-in gilt wieder QR-Code im Zimmer plus PIN – die Aushänge finden Sie jetzt unten auf dieser Seite.',
     },
-    confirmHint: 'Bisher gilt die Vorgabe (fester QR-Code je Zimmer). Bestätigen Sie die Wahl einmal – auch wenn Sie dabei bleiben. Erst dann hält das Haus das Verfahren fest, und der Punkt gilt in der Einrichtung als erledigt.',
+    confirmHint: 'Noch nicht bestätigt – bis dahin gilt die Vorgabe (fester QR-Code je Zimmer). Weil das Verfahren bestimmt, wie Gäste ins Gästeportal kommen, soll es einmal bewusst gewählt sein: Bestätigen Sie es, auch wenn Sie bei der Vorgabe bleiben. Dann ist der Punkt in der Einrichtung erledigt.',
     buttons: {
       switch: 'Verfahren umstellen',
       alreadySet: 'Bereits eingestellt',

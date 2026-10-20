@@ -194,7 +194,7 @@ export const settings = {
       switchedToLink: 'Se ha cambiado al acceso personal. A partir del próximo check-in, cada huésped recibe su propio código QR. Retire los carteles de una habitación en cuanto su huésped haya hecho el check-out.',
       switchedToPin: 'Se ha cambiado al código QR fijo por habitación. A partir del próximo check-in vuelve a ser el código QR de la habitación más el PIN; encontrará los carteles de habitación al final de esta página.',
     },
-    confirmHint: 'Ahora se aplica el método predeterminado (código QR fijo por habitación). Confirme su elección una vez, aunque la mantenga. Solo entonces el establecimiento registra el método y el paso de configuración cuenta como completado.',
+    confirmHint: 'Aún sin confirmar; hasta entonces se aplica el método predeterminado (código QR fijo por habitación). Como el método decide cómo acceden los huéspedes al portal, conviene elegirlo una vez de forma consciente: confírmelo aunque mantenga el predeterminado. Así queda completado este paso de la configuración.',
     buttons: {
       switch: 'Cambiar de método',
       alreadySet: 'Ya configurado',

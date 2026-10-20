@@ -153,6 +153,12 @@ export default function RoomSetup({
           : plural(intlLocale, res.created ?? 0, c.created),
       )
       setNumbersInput('')
+      // Nächste Etage vorschlagen — wer Etage für Etage anlegt, tippt sonst
+      // jedes Mal selbst um (Blindtest 20.10.2026).
+      if (mode === 'individual') {
+        const f = parseInt(floor, 10)
+        if (Number.isInteger(f)) setFloor(String(f + 1))
+      }
     })
   }
 

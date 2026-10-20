@@ -194,7 +194,7 @@ export const settings = {
       switchedToLink: 'Switched to personal access. From the next check-in, every guest gets their own QR code. Remove the signs from a room as soon as its guest has checked out.',
       switchedToPin: 'Switched to fixed QR codes per room. From the next check-in, it’s the QR code in the room plus PIN again — you’ll find the room signs at the bottom of this page.',
     },
-    confirmHint: 'The default currently applies (fixed QR code per room). Confirm your choice once — even if you keep it. Only then does the property record the method, and the setup step counts as done.',
+    confirmHint: 'Not confirmed yet — until then, the default applies (fixed QR code per room). Because the method decides how guests get into the guest portal, it should be chosen deliberately once: confirm it, even if you keep the default. That completes this setup step.',
     buttons: {
       switch: 'Switch method',
       alreadySet: 'Already set',

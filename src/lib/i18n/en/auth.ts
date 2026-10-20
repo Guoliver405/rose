@@ -15,6 +15,8 @@ export const auth = {
 
   signup: {
     title: 'Create account',
+    /** Nur mit Zahlungsweg (Stripe): Schritt 2 ist dann die Seite „Zahlungsweg“. */
+    step: 'Step 1 of 2 — account and property',
     inviteCode: 'Invitation code',
     inviteCodeHint: 'RoSe is in an early test phase — registration is still limited to invited properties.',
     houseName: 'Property name',

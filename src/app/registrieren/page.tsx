@@ -8,6 +8,7 @@ import { ADMIN_LOCALES, getMessages } from '@/lib/i18n'
 import LanguageSwitch from '@/components/LanguageSwitch'
 import { getAdminLocale } from '@/utils/locale'
 import { RoseLogo } from '@/components/brand/RoseLogo'
+import { stripeReady } from '@/utils/stripe'
 
 /**
  * Self-Service-Registrierung (Phase 6b).
@@ -31,6 +32,8 @@ export default async function RegistrierenPage() {
           <RoseLogo size="hero" />
         </h1>
         <p className="mt-1 text-sm text-ink-muted">{m.title}</p>
+        {/* Gibt es einen Zahlungsweg, folgt „Schritt 2 von 2“ — ohne Schritt 1 las sich das wie ein Sprung. */}
+        {stripeReady() && <p className="mt-0.5 text-xs font-semibold text-ink-soft">{m.step}</p>}
       </div>
 
       <SignupForm m={m} />

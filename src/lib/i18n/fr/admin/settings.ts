@@ -194,7 +194,7 @@ export const settings = {
       switchedToLink: 'Passage à l’accès personnel effectué. À partir du prochain check-in, chaque client reçoit son propre QR code. Retirez les affiches d’une chambre dès que son client a fait le check-out.',
       switchedToPin: 'Passage au QR code fixe par chambre effectué. À partir du prochain check-in, c’est de nouveau le QR code dans la chambre plus le PIN ; vous trouverez les affiches de chambre en bas de cette page.',
     },
-    confirmHint: 'Le réglage par défaut s’applique actuellement (QR code fixe par chambre). Confirmez votre choix une fois, même si vous le conservez. C’est seulement alors que l’établissement enregistre la méthode et que l’étape de configuration est considérée comme terminée.',
+    confirmHint: 'Pas encore confirmé — d’ici là, le réglage par défaut s’applique (QR code fixe par chambre). Comme la méthode détermine comment les clients accèdent au portail client, elle doit être choisie une fois en connaissance de cause : confirmez-la, même si vous gardez le réglage par défaut. L’étape de configuration est alors terminée.',
     buttons: {
       switch: 'Changer de méthode',
       alreadySet: 'Déjà réglé',

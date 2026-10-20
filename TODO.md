@@ -137,7 +137,7 @@ geprüft – ohne Befund. Protokoll des Agenten: `RoSe-Blindtest/protokoll.md`
       Wisch): Oberfläche grau ohne Text, der Agent prüfte jedes Mal nach.
       Großteils Dev-Modus (Turbopack übersetzt beim ersten Aufruf) – in
       Produktion nachmessen, bevor etwas gebaut wird.
-- [ ] Kleinigkeiten: Etagen-Feld springt nach „Anlegen“ nicht auf die nächste
+- [x] ~~Kleinigkeiten~~ — 20.10. erledigt: Etagen-Feld zählt nach dem Anlegen weiter; Wortlaut beim Gästezugang begründet jetzt, warum auch die Vorgabe bestätigt wird; Registrierung zeigt „Schritt 1 von 2“ (nur mit Zahlungsweg). Etage 2 über Etage 1 bleibt – gewollt wie im Gebäude und in der Übersicht. Im Browser geprüft. Ursprünglich: Etagen-Feld springt nach „Anlegen“ nicht auf die nächste
       Etage; Zimmerliste zeigt Etage 2 über Etage 1 (gewollt wie im Gebäude?);
       „Bestätigen Sie die Wahl einmal – auch wenn Sie dabei bleiben“ beim
       Gästezugang irritiert (bewusste Entscheidung vom 22.09., Wortlaut prüfen);
