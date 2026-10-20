@@ -222,7 +222,8 @@ export const overview = {
 
   unsaved: {
     leaveQuestion: 'Certaines modifications ne sont pas enregistrées. Quitter la page quand même ?',
-    saved: 'Enregistré.',
+    /** `{time}` = Uhrzeit des Speicherns (24 Stunden). */
+    saved: 'Enregistré à {time}.',
     title: 'Modifications non enregistrées',
     failed: 'Non enregistré : voir la remarque dans la section.',
     discard: 'Annuler les modifications',

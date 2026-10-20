@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { CheckCircle2, CircleDot, Loader2, RotateCcw, Save } from 'lucide-react'
 import { useClientMessages } from '@/components/i18n/MessagesProvider'
+import { format } from '@/lib/i18n/format'
 
 /**
  * Ungespeicherte Änderungen auf langen Einstellungsseiten (26.09.2026).
@@ -44,7 +45,8 @@ export function UnsavedChanges({ children }: { children: ReactNode }) {
   const leaveQuestion = t.leaveQuestion
   const [sections, setSections] = useState<Record<string, UnsavedSection>>({})
   const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+  // Uhrzeit des letzten Speicherns („HH:MM“) — solange sie steht, zeigt die Leiste die Bestätigung.
+  const [saved, setSaved] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
 
   const set = useCallback((id: string, section: UnsavedSection | null) => {
@@ -91,10 +93,12 @@ export function UnsavedChanges({ children }: { children: ReactNode }) {
     }
   }, [leaveQuestion])
 
-  // „Gespeichert" kurz stehen lassen, dann verschwindet die Leiste.
+  // „Gespeichert um …" stehen lassen, dann verschwindet die Leiste. Länger als
+  // ein Blick (20.10.2026): Nach 2,5 s war unsicher, ob überhaupt gespeichert
+  // wurde — die dauerhafte Meldung am Formularende liegt außer Sicht (Blindtest).
   useEffect(() => {
     if (!saved) return
-    const id = setTimeout(() => setSaved(false), 2500)
+    const id = setTimeout(() => setSaved(null), 8000)
     return () => clearTimeout(id)
   }, [saved])
 
@@ -106,7 +110,10 @@ export function UnsavedChanges({ children }: { children: ReactNode }) {
       if (!(await s.save())) { ok = false; break }
     }
     setSaving(false)
-    if (ok) setSaved(true)
+    if (ok) {
+      const now = new Date()
+      setSaved(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`)
+    }
     else setFailed(true)
   }
 
@@ -124,11 +131,15 @@ export function UnsavedChanges({ children }: { children: ReactNode }) {
         <div className="sticky bottom-3 z-20 mt-2" data-unsaved-bar>
           <div
             role="status"
-            className="flex flex-wrap items-center gap-3 rounded-xl border border-edge-strong bg-surface-elevated px-4 py-3 shadow-lg"
+            className={`flex flex-wrap items-center gap-3 rounded-xl border px-4 py-3 shadow-lg ${
+              saved && !anyDirty
+                ? 'border-positive-pill-edge bg-positive-tint'
+                : 'border-edge-strong bg-surface-elevated'
+            }`}
           >
             {saved && !anyDirty ? (
-              <p className="flex items-center gap-1.5 text-sm font-bold text-positive-deep">
-                <CheckCircle2 className="h-4 w-4" /> {t.saved}
+              <p className="flex items-center gap-2 text-base font-bold text-positive-deepest">
+                <CheckCircle2 className="h-5 w-5" /> {format(t.saved, { time: saved })}
               </p>
             ) : (
               <>

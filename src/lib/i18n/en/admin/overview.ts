@@ -222,7 +222,8 @@ export const overview = {
 
   unsaved: {
     leaveQuestion: 'There are unsaved changes. Leave the page anyway?',
-    saved: 'Saved.',
+    /** `{time}` = Uhrzeit des Speicherns (24 Stunden). */
+    saved: 'Saved at {time}.',
     title: 'Unsaved changes',
     failed: 'Not saved — see the note in the section.',
     discard: 'Discard',

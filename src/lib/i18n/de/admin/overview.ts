@@ -233,7 +233,8 @@ export const overview = {
   /** Leiste „Ungespeicherte Änderungen“ der langen Einstellungsseiten (über den MessagesProvider). */
   unsaved: {
     leaveQuestion: 'Es gibt ungespeicherte Änderungen. Seite trotzdem verlassen?',
-    saved: 'Gespeichert.',
+    /** `{time}` = Uhrzeit des Speicherns (24 Stunden). */
+    saved: 'Gespeichert um {time} Uhr.',
     title: 'Ungespeicherte Änderungen',
     failed: 'Nicht gespeichert – der Hinweis steht beim Abschnitt.',
     discard: 'Verwerfen',

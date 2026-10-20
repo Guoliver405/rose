@@ -222,7 +222,8 @@ export const overview = {
 
   unsaved: {
     leaveQuestion: 'Hay cambios sin guardar. ¿Salir de la página de todos modos?',
-    saved: 'Guardado.',
+    /** `{time}` = Uhrzeit des Speicherns (24 Stunden). */
+    saved: 'Guardado a las {time}.',
     title: 'Cambios sin guardar',
     failed: 'No guardado: vea la nota en la sección.',
     discard: 'Descartar',

@@ -119,7 +119,7 @@ geprüft – ohne Befund. Protokoll des Agenten: `RoSe-Blindtest/protokoll.md`
       welche Gast-Sprachen es pflegen will; gemahnt wird nur für diese.
 - [x] ~~**„Dringend an / aus“, „Meldung ans Haus an / aus“**~~ — 20.10. behoben: Schalter (`role="switch"`) mit fester Beschriftung „Dringend“ / „Meldung ans Haus“, der Zustand steckt im Schalter; hell und dunkel geprüft. Ursprünglicher Befund: – unklar, ob Zustand
       oder Aktion (es ist die Aktion). Als Schalter mit Zustand darstellen.
-- [ ] **„Gespeichert“ wird übersehen** (Leiste „Ungespeicherte Änderungen“,
+- [x] ~~**„Gespeichert“ wird übersehen**~~ — 20.10. behoben: Die Leiste zeigt „Gespeichert um HH:MM Uhr.“ grün hinterlegt und 8 statt 2,5 s; die Bestätigung am Formularende liegt auf langen Seiten außer Sicht. Im Browser geprüft. Ursprünglicher Befund: (Leiste „Ungespeicherte Änderungen“,
       „Verfahren bestätigen“ beim Gästezugang): Der Agent war jedes Mal
       unsicher, ob gespeichert wurde. Rückmeldung länger und deutlicher.
 - [ ] **Wisch-Schieber sind nicht als solche erkennbar** (Schicht beginnen,
