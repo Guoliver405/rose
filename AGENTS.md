@@ -209,6 +209,16 @@ Protokoll. Erster Lauf in diesem Sinn: [Testplan-Nachlauf-2026-09-03.md](Session
 [Testplan-Walkthrough.md](Sessions/Testplan-Walkthrough.md) bleibt als
 Protokoll des Erstdurchlaufs stehen.
 
+**Blindtest (vierte Schicht, seit 20.10.2026):** Ein KI-Agent ohne
+Projektwissen bedient RoSe nur über die Oberfläche nach einem Lastenheft und
+schreibt ein Reibungsprotokoll — er findet, was User und Claude nicht mehr
+sehen, weil sie das System kennen. Eigene Claude-Sitzung (Sonnet) in
+`F:\Coding_Projekte\RoSe-Blindtest` außerhalb des Repos, lokal (Claude meldet
+sich in Produktion nicht selbst an), mit Abbruchbedingungen gegen
+Token-Verbrauch. Aufbau, Regeln, Verbrauch und Fallen (Dev-Modus verfälscht,
+Accessibility-Baum des Werkzeugs zeigt verschachtelte Namen nicht):
+[Blindtest-Verfahren.md](Sessions/Blindtest/Blindtest-Verfahren.md).
+
 CI läuft über [.github/workflows/ci.yml](.github/workflows/ci.yml) bei Push auf
 `main` und bei Pull Requests, in zwei Jobs:
 
@@ -391,7 +401,8 @@ wird dort durchgestrichen statt gelöscht.
 
 Wie in HotCord: Protokolle unter `Sessions/` ablegen, aktuellsten Stand hier verlinken.
 
-- [Sessions/2026-10-20_Review-Uebersetzungen.md](Sessions/2026-10-20_Review-Uebersetzungen.md) — **Aktuellster Stand (20.10.2026):** Review der Übersetzungen eingespielt (7 Korrekturen), neue französische Begriffe überall einheitlich, zwei Korrekturen bewusst nur zum Teil übernommen. **Für Wiederaufnahme: Block am Ende.**
+- [Sessions/2026-10-20_Blindtest-Pilot.md](Sessions/2026-10-20_Blindtest-Pilot.md) — **Aktuellster Stand (20.10.2026 abends):** Blindtest-Pilot mit einem unwissenden Agenten (nur Browser, kein Projektwissen), zehn Funde abgearbeitet und in Produktion (Uhrzeit der Routine, Preis am Service, Übersetzungsbanner, Schalter, „Gespeichert“, Wisch-Hinweis, Anmeldeadressen, Kleinigkeiten, aria-pressed), Reaktionszeiten in Produktion nachgemessen. Verfahren: [Blindtest-Verfahren.md](Sessions/Blindtest/Blindtest-Verfahren.md). **Für Wiederaufnahme: Abschnitt 6 und Block am Ende.**
+- [Sessions/2026-10-20_Review-Uebersetzungen.md](Sessions/2026-10-20_Review-Uebersetzungen.md) — Vormittag desselben Tages: Review der Übersetzungen eingespielt (7 Korrekturen), neue französische Begriffe überall einheitlich, zwei Korrekturen bewusst nur zum Teil übernommen. **Für Wiederaufnahme: Block am Ende.**
 - [Sessions/2026-10-19_Franzoesisch-Spanisch.md](Sessions/2026-10-19_Franzoesisch-Spanisch.md) — Voriger Stand (19.10.2026 nachmittags): Französisch und Spanisch in allen Bereichen (außer Rechtstexten), Glossar, Review-Liste aller Sprachen in einer Tabelle mit Rückimport über den Schlüssel. **Für Wiederaufnahme: Block am Ende** — als Nächstes das Review des Users.
 - [Sessions/2026-10-19_Logo-Sechseck-und-Problem-melden.md](Sessions/2026-10-19_Logo-Sechseck-und-Problem-melden.md) — Vormittag desselben Tages: Logo-Symbol als symmetrisches Sechseck (liest sich als „o“), „Problem melden“ mit Tickets in RoSe, Support-Seite und Hinweis-Mails (vom User live getestet), Rechtstexte ergänzt, AVV-Entwurf und Mail an Bernd (Stripe live schalten). **Für Wiederaufnahme: Block am Ende.**
 - [Sessions/2026-10-18_Englisch-komplett.md](Sessions/2026-10-18_Englisch-komplett.md) — Voriger Stand (17.–18.10.2026): die ganze Anwendung auf Deutsch und Englisch** (außer Rechtstexten und Vorschaubild); Sprache je Bereich, Entscheidungen, Gegenlesen als Differenz; Nachtrag (Abschnitt 5): neues Logo V15 mit Markenfarben, Favicon und App-Icons, Pilotkunden vertagt. **Für Wiederaufnahme: Block am Ende** — als Nächstes testet der User den Sprachwechsel mit Englisch, danach weitere Sprachen.
