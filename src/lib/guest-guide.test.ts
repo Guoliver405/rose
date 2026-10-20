@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { parseFallbackLanguage } from './i18n/locales'
 import {
   GUIDE_LANGS, buildGuestGuide, buildGuestGuides, buildGuestSheet, buildGuestSheets,
-  guideLines, parseSheetLanguages, sheetLabels,
+  guideLines, maintainedLanguages, parseSheetLanguages, sheetLabels,
   type GuideLang,
 } from './guest-guide'
 
@@ -309,5 +309,21 @@ describe('buildGuestSheets', () => {
         }
       }
     }
+  })
+})
+
+describe('maintainedLanguages — welche Übersetzungen der Baukasten anmahnt', () => {
+  const offered = ['de', 'en', 'fr', 'es'] as const
+
+  it('Vorgabe: Rückfall Deutsch, Blätter de + en ⇒ nur de und en', () => {
+    expect(maintainedLanguages({}, offered)).toEqual(['de', 'en'])
+  })
+
+  it('nimmt Rückfallsprache und zweite Blatt-Sprache, nicht den Rest', () => {
+    expect(maintainedLanguages({ homeLanguage: 'de', fallbackLanguage: 'en', sheetLanguage2: 'fr' }, offered)).toEqual(['en', 'fr'])
+  })
+
+  it('ohne zweite Blatt-Sprache bleibt nur die Rückfallsprache', () => {
+    expect(maintainedLanguages({ fallbackLanguage: 'es', sheetLanguage2: '' }, offered)).toEqual(['es'])
   })
 })

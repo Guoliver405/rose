@@ -70,6 +70,8 @@ export const services = {
     label: 'Langues :',
     home: 'texte source',
     missing: 'manquant',
+    /** Sprache, die das Haus nicht gewählt hat – übersetzbar, aber ohne Mahnung. */
+    optional: 'facultatif',
     editTitle: 'Modifier la traduction en {lang}',
     editorTitle: 'Traduction en {lang}',
     editorIntro:

@@ -38,7 +38,7 @@ type Kind = 'order' | 'link'
 const em = (t: string) => <span className="font-semibold text-ink-soft">{t}</span>
 
 export default function ServicesManager({
-  hotelSlug, services, m, common, intlLocale, offered, currency,
+  hotelSlug, services, m, common, intlLocale, offered, maintained, currency,
 }: {
   hotelSlug: string
   services: ServiceRow[]
@@ -47,6 +47,8 @@ export default function ServicesManager({
   intlLocale: string
   /** Sprachen des Gästeportals — in diese soll jeder Service übersetzt sein. */
   offered: readonly Locale[]
+  /** Sprachen, die das Haus gewählt hat (Rückfall, Blätter) — nur für sie mahnt der Baukasten. */
+  maintained: readonly Locale[]
   /** Währung der Service-Preise dieses Hauses (ISO 4217). */
   currency: string
 }) {
@@ -68,7 +70,9 @@ export default function ServicesManager({
     () => new Map(services.map(s => [s.id, missingLanguages(s, s.linkUrl ? [] : s.items, offered)])),
     [services, offered],
   )
-  const missingByLocale = offered
+  // Gemahnt wird nur für die Sprachen, die das Haus gewählt hat; die übrigen
+  // bleiben übersetzbar und heißen am Chip „optional“.
+  const missingByLocale = maintained
     .map(locale => ({ locale, ids: services.filter(s => missing.get(s.id)?.includes(locale)).map(s => s.id) }))
     .filter(x => x.ids.length > 0)
 
@@ -356,6 +360,7 @@ export default function ServicesManager({
                 {offered.map(locale => {
                   const isHome = locale === s.lang
                   const lacks = missing.get(s.id)?.includes(locale) ?? false
+                  const optional = lacks && !maintained.includes(locale)
                   const open = openTr?.id === s.id && openTr.locale === locale
                   return (
                     <button
@@ -367,7 +372,9 @@ export default function ServicesManager({
                       className={`flex items-center gap-1 rounded-full border px-2.5 py-0.5 font-bold uppercase ${
                         isHome
                           ? 'border-edge bg-surface-muted text-ink-soft'
-                          : lacks
+                          : optional
+                            ? 'border-edge bg-surface text-ink-muted hover:border-edge-strong'
+                            : lacks
                             ? 'border-attention-tint-edge bg-attention-tint text-attention-deepest hover:border-attention'
                             : 'border-positive-pill-edge bg-positive-tint text-positive-deep hover:border-positive'
                       } ${open ? 'ring-2 ring-action' : ''}`}
@@ -375,7 +382,9 @@ export default function ServicesManager({
                       {locale}
                       {isHome
                         ? <span className="font-semibold normal-case">· {lg.home}</span>
-                        : lacks
+                        : optional
+                          ? <span className="font-semibold normal-case">· {lg.optional}</span>
+                          : lacks
                           ? <span className="font-semibold normal-case">· {lg.missing}</span>
                           : <Check className="h-3 w-3" />}
                     </button>

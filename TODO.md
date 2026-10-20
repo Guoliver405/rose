@@ -107,7 +107,12 @@ geprüft – ohne Befund. Protokoll des Agenten: `RoSe-Blindtest/protokoll.md`
       einzige Option ankreuzen, „Bestellen“ bleibt bis dahin grau, ohne
       Hinweis. Idee: Preisfeld beim Anlegen (legt eine Option an), und bei
       genau einer Option ist sie vorausgewählt.
-- [ ] **Übersetzungsbanner drängt Sprachen auf, die das Haus nicht braucht.**
+- [x] ~~**Übersetzungsbanner drängt Sprachen auf, die das Haus nicht braucht.**~~
+      — 20.10. behoben ohne neue Einstellung: gemahnt wird nur für
+      Rückfallsprache und Blatt-Sprachen (`maintainedLanguages` in
+      [guest-guide.ts](src/lib/guest-guide.ts), getestet); die übrigen
+      Sprachen bleiben übersetzbar, Chip „optional“ ohne Warnfarbe. Im Browser
+      nachgewiesen. Ursprünglicher Befund:
       Eine deutsche Pension bekommt nach dem ersten Service „noch nicht
       vollständig in Français/Español übersetzt“ und „EN · fehlt / FR · fehlt /
       ES · fehlt“ – wirkte wie ein Fehler oder eine Pflicht. Idee: Haus wählt,

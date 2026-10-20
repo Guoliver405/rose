@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { maintainedLanguages } from '@/lib/guest-guide'
 import { getAdminContext } from '@/utils/auth'
 import { createClient } from '@/utils/supabase/server'
 import { getMessages, GUEST_LOCALES, intlLocale } from '@/lib/i18n'
@@ -78,6 +79,7 @@ export default async function ServicesPage({
       common={admin.common}
       intlLocale={intlLocale(locale)}
       offered={GUEST_LOCALES}
+      maintained={maintainedLanguages(ctx.policies, GUEST_LOCALES)}
       currency={parseCurrency(ctx.policies)}
     />
   )

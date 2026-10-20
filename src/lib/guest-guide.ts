@@ -291,6 +291,19 @@ export function parseSheetLanguages(policies: Record<string, unknown>): GuideLan
   return zweite && zweite !== erste ? [erste, zweite] : [erste]
 }
 
+/**
+ * Sprachen, für die der Service-Baukasten Übersetzungen anmahnt (20.10.2026):
+ * Rückfallsprache und Blatt-Sprachen des Hauses — die hat es selbst gewählt.
+ * Die Heimatsprache fällt je Service ohnehin heraus (Grundtext). Alle übrigen
+ * Sprachen des Gästeportals bleiben übersetzbar, gelten aber als „optional“;
+ * vorher mahnte der Baukasten eine deutsche Pension für Französisch und
+ * Spanisch (Fund aus dem Blindtest).
+ */
+export function maintainedLanguages(policies: Record<string, unknown>, offered: readonly Locale[]): Locale[] {
+  const wanted = new Set<string>([parseFallbackLanguage(policies), ...parseSheetLanguages(policies)])
+  return offered.filter(locale => wanted.has(locale))
+}
+
 export type GuestSheetOptions = GuestGuideOptions
 
 /** Ein Sprachblock des gedruckten Blattes. */

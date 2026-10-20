@@ -79,6 +79,8 @@ export const services = {
     label: 'Sprachen:',
     home: 'Grundtext',
     missing: 'fehlt',
+    /** Sprache, die das Haus nicht gewählt hat – übersetzbar, aber ohne Mahnung. */
+    optional: 'optional',
     editTitle: 'Übersetzung {lang} bearbeiten',
     editorTitle: 'Übersetzung {lang}',
     editorIntro:
