@@ -34,9 +34,14 @@ Commits `72d1263` (Review) und `fde71f1` (Einheitlichkeit). `npm run verify`: 76
 
 Die offenen Punkte aus dem Protokoll vom 19.10. hat der Reviewer nicht kommentiert. Damit gelten die Fassungen als angenommen:
 
-- Spanisch „Bleibezimmer“ auf Landing Page und im Simulator unterschiedlich – weiter offen, bei Gelegenheit vereinheitlichen.
-- Vereinzelt „housekeeping“ auf der spanischen Landing Page.
 - Festgelegte Begriffe wie „ticket“/„incidencia“, „À suivre“/„Siguiente“, „recouche“, „sans coordination“.
+
+## Spanisch vereinheitlicht (nachmittags)
+
+Die zwei offenen Punkte vom 19.10. auf Wunsch des Users geschlossen:
+
+- **„Bleibezimmer“ = „habitación ocupada“**, wie schon in Simulator, Hilfe, Symbolen und Einstellungen; passt zu „habitación de salida“. Auf der Landing Page (Tagesvergleich, Nutzenrechner) ersetzt es „habitación con estancia en curso“. „Estancia en curso“ bleibt dort, wo ein laufender Aufenthalt gemeint ist (Zimmer-Dialog, Symbole, Hilfe). In der Formel des Nutzenrechners kamen dadurch zweimal „ocupadas“ mit verschiedener Bedeutung vor. Jetzt steht dort „habitaciones ocupadas sin salida ese día“ gegen „habitaciones con huéspedes“.
+- **„housekeeping“ als Abteilung = „limpieza“** („el equipo de limpieza“, „panel de limpieza“), wie in der App selbst („Panel de limpieza“, „personal de limpieza“). Das ist neutraler Wortschatz für Spanien und Lateinamerika. „Housekeeping“ bleibt nur im Produktnamen „Simulador Housekeeping“ (Glossar) und in Quellentiteln.
 
 ## Wiederaufnahme
 

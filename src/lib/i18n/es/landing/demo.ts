@@ -60,7 +60,7 @@ export const demo = {
       text: 'La casilla pasa a ámbar; una solicitud trae la campana y el contador.',
     },
     board: {
-      who: 'Housekeeping',
+      who: 'Limpieza',
       title: 'Dirigido y coordinado',
       text: '{maid} empieza con un deslizamiento y termina: recepción ve verde.',
     },

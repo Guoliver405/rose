@@ -25,7 +25,7 @@ export const roi = {
   },
 
   bars: {
-    skipped: 'Limpiezas de habitaciones con estancia en curso que se omiten ({count} al mes)',
+    skipped: 'Limpiezas de habitaciones ocupadas que se omiten ({count} al mes)',
     coordination: 'Menos tiempo muerto en las {count} limpiezas restantes',
   },
   hours: '{count} h',
@@ -38,7 +38,7 @@ export const roi = {
     preset: 'Predefinido:',
     presets: { vorsichtig: 'prudente', typisch: 'típico' },
     a1: {
-      label: 'A1 · Duración de la limpieza de una habitación con estancia en curso',
+      label: 'A1 · Duración de la limpieza de una habitación ocupada',
       hint: 'Medido 20–25 min, por habitación en general 15–30 min; 18 min es un cálculo prudente [Q3, Q4, Q7, Q8]',
     },
     a2: {
@@ -50,8 +50,8 @@ export const roi = {
       hint: 'Los fabricantes citan un 25–67 %; nosotros tomamos ≈ 7–10 % [Q6]',
     },
     formula: {
-      one: 'Proporción de habitaciones con estancia en curso = 1 − 1 / duración de la estancia ({share} de las habitaciones ocupadas con {nights} noche). Mes = {days} días. Coste por hora predeterminado: salario mínimo alemán 13,90 € × 1,23 por costes del empleador [Q5].',
-      other: 'Proporción de habitaciones con estancia en curso = 1 − 1 / duración de la estancia ({share} de las habitaciones ocupadas con {nights} noches). Mes = {days} días. Coste por hora predeterminado: salario mínimo alemán 13,90 € × 1,23 por costes del empleador [Q5].',
+      one: 'Proporción de habitaciones ocupadas sin salida ese día = 1 − 1 / duración de la estancia (con {nights} noche, {share} de las habitaciones con huéspedes). Mes = {days} días. Coste por hora predeterminado: salario mínimo alemán 13,90 € × 1,23 por costes del empleador [Q5].',
+      other: 'Proporción de habitaciones ocupadas sin salida ese día = 1 − 1 / duración de la estancia (con {nights} noches, {share} de las habitaciones con huéspedes). Mes = {days} días. Coste por hora predeterminado: salario mínimo alemán 13,90 € × 1,23 por costes del empleador [Q5].',
     },
   },
 
@@ -62,11 +62,11 @@ export const roi = {
     items: {
       Q1: 'AHLA, «Hotel Room Cleaning Practices Reflect Guest Preferences», 2022: el 70 % de los huéspedes no desea limpieza diaria; el 38 % solo bajo petición, el 19 % solo en el check-out.',
       Q2: 'Lodging Magazine, «The Value of Opting Out», 2024: 20 % de renuncia como valor de planificación de un establecimiento Hilton.',
-      Q3: 'CityShift Finance, estudio de caso sobre opt-out: 34 % de renuncia tras 18 meses; 25 minutos por habitación con estancia en curso; ahorro solo con una planificación del personal ajustada.',
-      Q4: 'Estudio de tiempos de Heath & Company, publicado en Hotel Business, 2018: habitaciones de salida 43 minutos de media, habitaciones con estancia en curso casi 20 minutos menos (EE. UU.).',
+      Q3: 'CityShift Finance, estudio de caso sobre opt-out: 34 % de renuncia tras 18 meses; 25 minutos por habitación ocupada; ahorro solo con una planificación del personal ajustada.',
+      Q4: 'Estudio de tiempos de Heath & Company, publicado en Hotel Business, 2018: habitaciones de salida 43 minutos de media, habitaciones ocupadas casi 20 minutos menos (EE. UU.).',
       Q5: 'Salario mínimo legal alemán de 13,90 €/h a partir de 2026 (DGB); Destatis: unos 23 € de costes del empleador por cada 100 € de salario bruto.',
-      Q6: 'Datos de fabricantes de software de housekeeping: 25–67 % de aumento de productividad (Stayntouch, Flexkeeping vía Lodging Magazine); calculamos a propósito con una fracción de ello.',
-      Q7: 'Reinigung Aktuell, 2015: habitaciones de salida unos 35 minutos, habitaciones con estancia en curso unos 25, alrededor de 14 habitaciones por persona de limpieza (hotel de cuatro estrellas, Viena).',
+      Q6: 'Datos de fabricantes de software de gestión de limpieza: 25–67 % de aumento de productividad (Stayntouch, Flexkeeping vía Lodging Magazine); calculamos a propósito con una fracción de ello.',
+      Q7: 'Reinigung Aktuell, 2015: habitaciones de salida unos 35 minutos, habitaciones ocupadas unos 25, alrededor de 14 habitaciones por persona de limpieza (hotel de cuatro estrellas, Viena).',
       Q8: 'CCOHS (Centro canadiense de salud y seguridad en el trabajo), «Hotel Housekeeping»: de 15 a 30 minutos por habitación, unas 16 habitaciones por turno.',
     },
   },

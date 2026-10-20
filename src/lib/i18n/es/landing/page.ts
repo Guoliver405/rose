@@ -3,16 +3,16 @@ import type { LandingMessages } from '../../de/landing'
 
 /**
  * Página de inicio (`/`) en español. «Hotel» para el sector,
- * «establecimiento» para la casa concreta, «housekeeping» como departamento y producto.
+ * «establecimiento» para la casa concreta, «limpieza» como departamento; «Housekeeping» solo en el nombre del simulador.
  * Precios y cifras llegan de `pricing.ts` como variables.
  */
 export const page = {
   meta: {
     title: 'RoSe – RoomService para hoteles de cualquier tamaño',
     description:
-      'Las peticiones de limpieza, «No molestar» y las solicitudes de servicio de los huéspedes llegan en directo a recepción y a housekeeping, sin app para huéspedes ni proyecto PMS. {price} por habitación y mes, al menos un mes completo gratis.',
+      'Las peticiones de limpieza, «No molestar» y las solicitudes de servicio de los huéspedes llegan en directo a recepción y al equipo de limpieza, sin app para huéspedes ni proyecto PMS. {price} por habitación y mes, al menos un mes completo gratis.',
     ogDescription:
-      'Check-in con un clic, huéspedes por código QR, limpieza coordinada. Tres portales para recepción, housekeeping y huéspedes.',
+      'Check-in con un clic, huéspedes por código QR, limpieza coordinada. Tres portales para recepción, limpieza y huéspedes.',
     ogLocale: 'es_ES',
     siteName: 'RoSe – RoomService',
   },
@@ -27,7 +27,7 @@ export const page = {
   hero: {
     badge: 'De la casa rural a la cadena hotelera',
     title: 'Gestionar la limpieza y ofrecer servicios: <hl>digital y eficiente</hl>',
-    text: 'El huésped pulsa «Limpiar mi habitación», recepción lo ve al instante y housekeeping lo resuelve desde el panel. RoSe conecta todas las áreas en tiempo real, en un sistema intuitivo, sin formación, sin problemas de datos y sin proyecto PMS.',
+    text: 'El huésped pulsa «Limpiar mi habitación», recepción lo ve al instante y el equipo de limpieza lo resuelve desde el panel. RoSe conecta todas las áreas en tiempo real, en un sistema intuitivo, sin formación, sin problemas de datos y sin proyecto PMS.',
     start: 'Empezar gratis',
     demo: 'Demo del producto',
   },
@@ -103,7 +103,7 @@ export const page = {
         ],
       },
       housekeeping: {
-        title: 'Housekeeping',
+        title: 'Limpieza',
         lead: 'Un panel para todo el equipo.',
         points: [
           'Vista por plantas: peticiones, salidas, prioridades, con una recomendación de por dónde conviene empezar',
@@ -139,7 +139,7 @@ export const page = {
         text: 'La campana en la casilla de la habitación, la solicitud en la lista; lo urgente parpadea en rojo.',
       },
       board: {
-        who: 'Housekeeping',
+        who: 'Limpieza',
         title: 'Dirigido y coordinado',
         text: 'Con prioridades y atento: ajustado automáticamente a la demanda y coordinado entre el equipo.',
       },
@@ -168,7 +168,7 @@ export const page = {
       },
       dnd: {
         title: '«No molestar» se respeta',
-        text: '«No molestar» retira la habitación del panel de housekeeping: nadie llama a la puerta en vano.',
+        text: '«No molestar» retira la habitación del panel de limpieza: nadie llama a la puerta en vano.',
       },
       daily: {
         title: 'Limpieza diaria',
@@ -199,7 +199,7 @@ export const page = {
     items: {
       small: {
         title: 'Pensión, casa rural y apartamentos turísticos',
-        text: 'La recepción suele ser también cocina, servicio y housekeeping. RoSe mantiene la visión general: quién se va, dónde se pide limpieza, qué se ha pedido, sin montones de papeles. Desde {min} al mes.',
+        text: 'La recepción suele ser también cocina, servicio y limpieza. RoSe mantiene la visión general: quién se va, dónde se pide limpieza, qué se ha pedido, sin montones de papeles. Desde {min} al mes.',
       },
       boutique: {
         title: 'Hotel boutique y aparthotel',
@@ -207,7 +207,7 @@ export const page = {
       },
       city: {
         title: 'Hotel urbano con varias plantas',
-        text: 'Housekeeping propio o externo: el panel de plantas recomienda por dónde conviene empezar y recepción ve en directo quién trabaja dónde. Las estadísticas ofrecen tiempos de trabajo y de limpieza por persona de limpieza.',
+        text: 'Equipo de limpieza propio o externo: el panel de plantas recomienda por dónde conviene empezar y recepción ve en directo quién trabaja dónde. Las estadísticas ofrecen tiempos de trabajo y de limpieza por persona de limpieza.',
       },
       chain: {
         title: 'Cadena hotelera y resort',
@@ -223,7 +223,7 @@ export const page = {
     perRoom: 'por habitación y mes, más IVA',
     minimum: 'Importe mínimo <b>{min}</b> al mes: hasta {rooms} habitaciones paga, por tanto, una tarifa fija.',
     included: [
-      'Los tres portales: recepción, housekeeping, huéspedes',
+      'Los tres portales: recepción, limpieza, huéspedes',
       'Establecimientos, accesos y personal de limpieza ilimitados',
       'Catálogo de servicios, limpieza diaria, franjas horarias',
       'Carteles de habitación, hojas de check-in, tarjetas de acceso, correo electrónico a huéspedes',
@@ -283,7 +283,7 @@ export const page = {
   footer: {
     tagline: '– RoomService, ligero.',
     reception: 'Recepción',
-    housekeeping: 'Housekeeping',
+    housekeeping: 'Limpieza',
     guests: 'Portal de huéspedes',
     imprint: 'Aviso legal (en alemán)',
     privacy: 'Privacidad (en alemán)',
@@ -293,7 +293,7 @@ export const page = {
   og: {
     alt: 'RoSe – limpieza, peticiones y servicios al mismo ritmo',
     claim: 'Limpieza, peticiones y servicios, al mismo ritmo',
-    sub: 'Tres portales para recepción, housekeeping y huéspedes. Sin app para huéspedes, sin proyecto PMS.',
+    sub: 'Tres portales para recepción, limpieza y huéspedes. Sin app para huéspedes, sin proyecto PMS.',
     price: '{price} por habitación y mes · primer mes completo gratis',
     floor: 'Planta 2',
     counts: '2 pendientes · 1 en curso',
