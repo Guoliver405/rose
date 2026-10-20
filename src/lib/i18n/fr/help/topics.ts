@@ -697,8 +697,8 @@ export const topics = {
             text: 'Une période à l’intérieur du service ; aucun ménage n’est possible pendant ce temps. La fin de la pause reprend le service.',
           },
           {
-            zeichen: { art: 'pille', text: 'Autre nettoyage', ton: 'attention' },
-            label: 'Autre nettoyage',
+            zeichen: { art: 'pille', text: 'Autres tâches de nettoyage', ton: 'attention' },
+            label: 'Autres tâches de nettoyage',
             text: 'Couloirs, hall, salle du petit-déjeuner — du travail sans chambre, sous forme de période. Commencer le ménage d’une chambre y met fin automatiquement.',
           },
           {

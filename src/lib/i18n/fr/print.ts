@@ -62,7 +62,7 @@ export const print = {
 
   accessCard: {
     back: 'Retour au personnel',
-    title: 'Carte d’accès ménage',
+    title: 'Carte d’accès du personnel d’étage',
     scan: 'Scanner le QR code → connexion automatique',
     qrAlt: 'QR code vers le tableau du ménage',
     manual: 'Connexion manuelle → identifiants',

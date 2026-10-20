@@ -104,7 +104,7 @@ export const demo = {
   },
 
   board: {
-    title: 'Tableau du ménage',
+    title: 'Tableau de suivi du ménage',
     floor: 'Étage 2',
     next: 'À suivre · {count} en attente',
     inWork: '{count} en cours',

@@ -70,7 +70,7 @@ export const service = {
     },
 
     finish: 'Finish cleaning',
-    abort: 'Cancel cleaning (room stays open)',
+    abort: 'Stop cleaning (room remains pending)',
     start: 'Start cleaning',
     otherInRoom: '{name} is in this room right now.',
     staleNamed: '{name}’s cleaning apparently wasn’t finished — the room counts as open again.',

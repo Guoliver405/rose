@@ -20,7 +20,7 @@ export const guest = {
     pin: 'PIN',
     submit: 'Se connecter',
     submitting: 'Connexion…',
-    pinHint: 'Vous recevez votre code PIN au check-in, à la réception.',
+    pinHint: 'Vous recevrez votre code PIN à la réception lors de votre arrivée.',
     linkModeHint:
       'Nous utilisons des accès personnels : scannez le QR code de la feuille reçue au check-in ou ouvrez le lien de votre e-mail. Le formulaire ci-dessous ne sert que si vous avez reçu un code PIN au check-in.',
     invalidLink: 'Ce lien n’est pas valable.',

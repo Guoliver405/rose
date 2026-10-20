@@ -8,8 +8,8 @@ import type { ServiceMessages } from '../de/service'
  */
 export const service = {
   brand: {
-    board: 'Tableau du ménage',
-    boardOf: 'Tableau du ménage · {hotel}',
+    board: 'Tableau de suivi du ménage',
+    boardOf: 'Tableau de suivi du ménage · {hotel}',
   },
 
   common: {
@@ -24,7 +24,7 @@ export const service = {
   board: {
     youClean: 'Vous faites la {number}',
     onBreak: 'Pause',
-    onOther: 'Autre nettoyage',
+    onOther: 'Autres tâches de nettoyage',
     onShift: 'En service',
     onShiftSince: 'En service depuis {time}',
     offShift: 'Pas en service',
@@ -82,7 +82,7 @@ export const service = {
     startShiftFirst: 'Prenez d’abord votre service, ensuite vous pourrez commencer ici.',
     busyElsewhere: 'Vous êtes encore dans une autre chambre — terminez ou annulez d’abord là-bas.',
     guestDnd: 'Le client ne souhaite pas être dérangé.',
-    deferredUntil: 'Ménage pas avant {time} — la chambre se libère ensuite d’elle-même.',
+    deferredUntil: 'Ménage à partir de {time} — la chambre réapparaît ensuite automatiquement dans la liste.',
     guestDeclined: 'Le client ne souhaite pas de ménage aujourd’hui.',
     nothingToDo: 'Aucun ménage en attente pour cette chambre.',
   },
