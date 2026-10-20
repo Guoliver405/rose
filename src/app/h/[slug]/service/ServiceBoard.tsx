@@ -281,6 +281,7 @@ export default function ServiceBoard({
           ein Fehltipper soll nicht aus der Etage werfen. */}
       {myFloor && (
         <SlideAction
+          hint={m.common.slideHint}
           label={b.backToFloors}
           variant="neutral"
           size="compact"
@@ -324,6 +325,7 @@ export default function ServiceBoard({
                     : format(b.switchLoad, { floor: floorLabel(switchFloor, m) })}
               </p>
               <SlideAction
+                hint={m.common.slideHint}
                 label={format(b.switchTo, { floor: floorLabel(switchFloor, m) })}
                 variant={switchHint.reason === 'priority' ? 'priority' : 'neutral'}
                 size="compact"
@@ -537,6 +539,7 @@ function RoomDialog({
           {mineActive && (
             <>
               <SlideAction
+                hint={m.common.slideHint}
                 label={b.finish}
                 variant="success"
                 disabled={pending}
@@ -567,6 +570,7 @@ function RoomDialog({
 
           {canStart && (
             <SlideAction
+              hint={m.common.slideHint}
               label={b.start}
               variant={startVariant}
               disabled={pending}

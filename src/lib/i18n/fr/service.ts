@@ -19,6 +19,7 @@ export const service = {
     room: 'Chambre {number}',
     someone: 'Quelqu’un de l’équipe',
     close: 'Fermer',
+    slideHint: 'Faites glisser pour confirmer',
   },
 
   board: {

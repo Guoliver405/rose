@@ -34,6 +34,7 @@ export const serviceContext = {
     room: { where: DIALOG + ' → Überschrift', note: '{number} = Zimmernummer.' },
     someone: { where: 'Überall, wo der Name einer Kollegin nicht genannt wird (Team-Modus)', note: 'Neutral, ohne Geschlecht.' },
     close: { where: DIALOG + ' → Knopf', note: 'Dialog schließen.' },
+    slideHint: { where: 'Wisch-Schieber, kurz statt der Beschriftung, wenn jemand nur tippt', note: 'Sehr kurz; die Bahn ist schmal.' },
   },
 
   board: {

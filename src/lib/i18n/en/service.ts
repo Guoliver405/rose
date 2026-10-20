@@ -22,6 +22,7 @@ export const service = {
     room: 'Room {number}',
     someone: 'Someone from the team',
     close: 'Close',
+    slideHint: 'Swipe to confirm',
   },
 
   board: {

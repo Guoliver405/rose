@@ -54,6 +54,7 @@ export default function SlideAction({
   variant,
   size = 'default',
   direction = 'ltr',
+  hint,
   onConfirm,
 }: {
   label: string
@@ -65,6 +66,11 @@ export default function SlideAction({
   size?: 'default' | 'compact'
   /** `rtl` = von rechts nach links ziehen — passend für Zurück-Wege. */
   direction?: 'ltr' | 'rtl'
+  /**
+   * Text, der nach einem bloßen Tipp kurz statt der Beschriftung erscheint
+   * („Zum Bestätigen wischen“). Ohne ihn rutscht nur der Griff an.
+   */
+  hint?: string
   onConfirm: () => void
 }) {
   const compact = size === 'compact'
@@ -74,6 +80,14 @@ export default function SlideAction({
   /** Zurückgelegte Strecke ab Ruhepunkt (0 = Ausgangslage). */
   const [travel, setTravel] = useState(0)
   const [dragging, setDrag] = useState(false)
+  /**
+   * Ein Tipp statt eines Zuges (20.10.2026): Griff rutscht kurz an, die Bahn
+   * sagt „wischen“ — vorher tat ein Tipp einfach nichts, und nirgends stand,
+   * dass gewischt werden muss (Blindtest).
+   */
+  const [nudging, setNudging] = useState(false)
+  const nudgeTimers = useRef<number[]>([])
+  useEffect(() => () => nudgeTimers.current.forEach(id => window.clearTimeout(id)), [])
   /**
    * Greifpunkt und Stand des laufenden Zuges. Bewusst eine Ref und kein
    * State: Zeiger-Ereignisse können schneller eintreffen, als React neu
@@ -117,6 +131,20 @@ export default function SlideAction({
   // `done` von außen: Griff steht am Ziel — ohne den Zustand zu spiegeln.
   const shownTravel = done ? max : travel
 
+  /** Unter dieser Strecke gilt ein Loslassen als Tipp, nicht als Zug. */
+  const TAP_TRAVEL = 8
+
+  const nudge = () => {
+    nudgeTimers.current.forEach(id => window.clearTimeout(id))
+    const peek = Math.min(40, measureMax() * 0.25)
+    setNudging(true)
+    setTravel(peek)
+    nudgeTimers.current = [
+      window.setTimeout(() => setTravel(0), 250),
+      window.setTimeout(() => setNudging(false), 2000),
+    ]
+  }
+
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (inactive) return
     const track = trackRef.current
@@ -129,7 +157,11 @@ export default function SlideAction({
     const handleLeft = rtl
       ? rect.width - PADDING - HANDLE - travel
       : PADDING + travel
-    if (localX < handleLeft - GRAB_SLACK || localX > handleLeft + HANDLE + GRAB_SLACK) return
+    if (localX < handleLeft - GRAB_SLACK || localX > handleLeft + HANDLE + GRAB_SLACK) {
+      // Daneben getippt: kein Zug, aber zeigen, wie es geht.
+      nudge()
+      return
+    }
 
     dragRef.current = { pointerStart: e.clientX, startTravel: travel, current: travel }
     setMax(measureMax())
@@ -164,6 +196,8 @@ export default function SlideAction({
       // Kurz Erfolg anzeigen, dann zurücksetzen — falls die Komponente nicht
       // ohnehin durch ein Re-Render ihren `done`-Zustand ändert oder verschwindet.
       window.setTimeout(() => setTravel(0), 400)
+    } else if (finalTravel < TAP_TRAVEL) {
+      nudge()
     } else {
       setTravel(0)
     }
@@ -186,7 +220,11 @@ export default function SlideAction({
       aria-valuenow={max > 0 ? Math.round((shownTravel / max) * 100) : 0}
     >
       <div className={`pointer-events-none absolute inset-0 flex items-center justify-center font-black ${compact ? 'text-xs' : 'text-sm'} ${styles.text}`}>
-        {done ? (doneLabel ?? label) : rtl ? `${arrow}  ${label}` : `${label}  ${arrow}`}
+        {done
+          ? (doneLabel ?? label)
+          : nudging && hint
+            ? hint
+            : rtl ? `${arrow}  ${label}` : `${label}  ${arrow}`}
       </div>
       <div
         style={{

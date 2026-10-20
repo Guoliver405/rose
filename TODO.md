@@ -122,7 +122,7 @@ geprüft – ohne Befund. Protokoll des Agenten: `RoSe-Blindtest/protokoll.md`
 - [x] ~~**„Gespeichert“ wird übersehen**~~ — 20.10. behoben: Die Leiste zeigt „Gespeichert um HH:MM Uhr.“ grün hinterlegt und 8 statt 2,5 s; die Bestätigung am Formularende liegt auf langen Seiten außer Sicht. Im Browser geprüft. Ursprünglicher Befund: (Leiste „Ungespeicherte Änderungen“,
       „Verfahren bestätigen“ beim Gästezugang): Der Agent war jedes Mal
       unsicher, ob gespeichert wurde. Rückmeldung länger und deutlicher.
-- [ ] **Wisch-Schieber sind nicht als solche erkennbar** (Schicht beginnen,
+- [x] ~~**Wisch-Schieber sind nicht als solche erkennbar**~~ — 20.10. behoben: Ein Tipp (auf den Griff oder daneben) lässt den Griff kurz anrutschen, und die Bahn zeigt 2 s „Zum Bestätigen wischen“ (`SlideAction` `hint`, Reinigungsportal in vier Sprachen; Landing-Demo und Hilfe-Nachbau nur das Anrutschen). Tipp löst nichts aus, Wischen wie bisher – im Browser geprüft. Ursprünglicher Befund: (Schicht beginnen,
       Reinigung starten/abschließen): ein Tipp tut nichts, nirgends steht
       „wischen“. Absicht gegen Fehltipper bleibt – aber ein Tipp sollte den
       Hinweis „Zum Bestätigen nach rechts wischen“ zeigen (kurzes Anstupsen des

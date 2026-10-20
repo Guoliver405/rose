@@ -37,6 +37,7 @@ export default function StatusPanel({
   cleaning,
   today,
   m,
+  slideHint,
   intlLocale,
 }: {
   /** Mandant aus der URL — der Weg zurück aufs Board trägt ihn mit. */
@@ -46,6 +47,8 @@ export default function StatusPanel({
   cleaning: { roomNumber: string; startedAt: string | null } | null
   today: TodayTotals
   m: ServiceMessages['status']
+  /** „Zum Bestätigen wischen“ — erscheint, wenn jemand den Schieber nur antippt. */
+  slideHint: string
   /** Sprach-Tag für Uhrzeiten („de-DE“). */
   intlLocale: string
 }) {
@@ -131,6 +134,7 @@ export default function StatusPanel({
 
         {!shift.onShift ? (
           <SlideAction
+            hint={slideHint}
             label={m.shiftStart}
             variant="success"
             disabled={pending}
@@ -139,6 +143,7 @@ export default function StatusPanel({
         ) : (
           <>
             <SlideAction
+              hint={slideHint}
               label={shift.onBreak ? m.breakEnd : m.breakStart}
               variant={shift.onBreak ? 'success' : 'warning'}
               disabled={pending}
@@ -146,6 +151,7 @@ export default function StatusPanel({
             />
 
             <SlideAction
+              hint={slideHint}
               label={shift.onOther ? m.otherEnd : m.otherStart}
               variant={shift.onOther ? 'success' : 'neutral'}
               disabled={pending || (shift.onBreak && !shift.onOther)}
@@ -158,6 +164,7 @@ export default function StatusPanel({
             )}
 
             <SlideAction
+              hint={slideHint}
               label={m.shiftEnd}
               variant="danger"
               disabled={pending || Boolean(cleaning)}

@@ -70,7 +70,8 @@ export default async function ServiceStatusPage({
 
   const team = parseStaffTracking(ctx.policies) === 'team'
   const locale = await getServiceLocale(ctx.policies)
-  const m = getMessages(locale).service.status
+  const service = getMessages(locale).service
+  const m = service.status
 
   return (
     <>
@@ -94,6 +95,7 @@ export default async function ServiceStatusPage({
         otherCleaningMs: stats.otherCleaningMs,
       }}
       m={m}
+      slideHint={service.common.slideHint}
       intlLocale={intlLocale(locale)}
     />
     {/* Team-Modus: Die Tagesbilanz liest die eigenen Stiche — nach dem
