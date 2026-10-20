@@ -41,7 +41,7 @@ export const lotsen = {
       subtitle: 'Le catalogue de services : ce que les clients peuvent commander sur le portail',
     },
     reinigung: {
-      title: 'Le tableau du ménage',
+      title: 'Le tableau de suivi du ménage',
       subtitle: 'Simulation : connexion, service, étages, curseurs — ce que l’agent d’étage voit sur son téléphone',
     },
     gast: {
@@ -66,7 +66,7 @@ export const lotsen = {
     },
     'zimmer.anlegen': {
       title: 'Tout commence par les chambres',
-      body: 'Sans chambres, pas de check-in, pas de tableau du ménage et pas d’affiches. Ici, vous créez des étages entiers d’un coup — inutile de tout saisir un par un.',
+      body: 'Sans chambres, pas de check-in, pas de tableau de suivi du ménage et pas d’affiches. Ici, vous créez des étages entiers d’un coup — inutile de tout saisir un par un.',
     },
     'zimmer.modus': {
       title: 'Deux façons de créer beaucoup de chambres',
@@ -87,7 +87,7 @@ export const lotsen = {
     },
     'regeln.routine': {
       title: 'Ménage à la demande uniquement — ou quotidien',
-      body: 'Par défaut, le ménage quotidien est désactivé : les chambres sont nettoyées quand le client le demande ou après le check-out. Cela économise eau, lessive et temps de travail. Si vous l’activez, les chambres occupées apparaissent d’elles-mêmes sur le tableau du ménage à l’heure choisie, à partir du lendemain de l’arrivée.',
+      body: 'Par défaut, le ménage quotidien est désactivé : les chambres sont nettoyées quand le client le demande ou après le check-out. Cela économise eau, lessive et temps de travail. Si vous l’activez, les chambres occupées apparaissent d’elles-mêmes sur le tableau de suivi du ménage à l’heure choisie, à partir du lendemain de l’arrivée.',
     },
     'regeln.checkout': {
       title: '« Check-out jusqu’à » est l’heure au plus tôt du ménage quotidien',
@@ -192,7 +192,7 @@ export const lotsen = {
     },
     'regeln.checkin': {
       title: '« Check-in à partir de » pilote les départs',
-      body: 'Les chambres de départ doivent être prêtes à cette heure. Le tableau du ménage travaille avec cette heure : plus il reste de départs ouverts et plus le check-in approche, plus il attire les agents d’étage vers les étages avec des départs — à peine les jours calmes, nettement les jours chargés. Une priorité définie par la réception passe toujours en premier.',
+      body: 'Les chambres de départ doivent être prêtes à cette heure. Le tableau de suivi du ménage travaille avec cette heure : plus il reste de départs ouverts et plus le check-in approche, plus il attire les agents d’étage vers les étages avec des départs — à peine les jours calmes, nettement les jours chargés. Une priorité définie par la réception passe toujours en premier.',
     },
     'regeln.aufschub': {
       title: '« Pas avant » — le client reporte',
@@ -299,8 +299,8 @@ export const lotsen = {
       body: 'Entre le début et la fin, la chambre apparaît « en cours » pour tout le monde. Si la fin est oubliée, la chambre se rouvre d’elle-même après le délai réglé, et l’historique note que le délai a été dépassé — au lieu qu’un processus à moitié fini reste là pour toujours.',
     },
     'reinigung.status': {
-      title: 'Pause, autre nettoyage, fin de service',
-      body: 'Tous les changements d’état se trouvent sur une page à part, pas sur le tableau — ainsi le bouton retour du téléphone fonctionne. Les pauses et l’autre nettoyage sont des périodes au sein du service et ne peuvent chevaucher rien d’autre ; la fin de service clôt les deux. En dessous figure le bilan du jour de l’agent d’étage.',
+      title: 'Pause, autres tâches de nettoyage, fin de service',
+      body: 'Tous les changements d’état se trouvent sur une page à part, pas sur le tableau — ainsi le bouton retour du téléphone fonctionne. Les pauses et les autres tâches de nettoyage sont des périodes au sein du service et ne peuvent chevaucher rien d’autre ; la fin de service clôt les deux. En dessous figure le bilan du jour de l’agent d’étage.',
     },
     'reinigung.verlassen': {
       title: 'Quitter un étage est un acte délibéré',
@@ -316,7 +316,7 @@ export const lotsen = {
     },
     'gast.reinigen': {
       title: 'Un appui suffit',
-      body: '« Nettoyer ma chambre » enregistre la demande, et la chambre apparaît aussitôt sur le tableau du ménage et dans la vue d’ensemble de la réception. Un nouvel appui la retire. Rien de tout cela n’est un rendez-vous — l’équipe d’étage passe quand cela s’intègre dans sa tournée.',
+      body: '« Nettoyer ma chambre » enregistre la demande, et la chambre apparaît aussitôt sur le tableau de suivi du ménage et dans la vue d’ensemble de la réception. Un nouvel appui la retire. Rien de tout cela n’est un rendez-vous — l’équipe d’étage passe quand cela s’intègre dans sa tournée.',
       tun: 'Appuyez donc dessus ; la simulation réagit comme le vrai portail.',
     },
     'gast.aufschub': {
@@ -349,7 +349,7 @@ export const lotsen = {
     },
     'auswertung.kennzahlen': {
       title: 'Tout est calculé, rien n’est stocké',
-      body: 'Les chiffres viennent des pointages des agents d’étage : début et fin de service, pauses, autre nettoyage, début et fin par chambre. Le « Temps de travail net » est le service sans les pauses ; le « Temps restant » est ce qui n’était ni chambre ni autre nettoyage — trajets et préparation.',
+      body: 'Les chiffres viennent des pointages des agents d’étage : début et fin de service, pauses, autres tâches de nettoyage, début et fin par chambre. Le « Temps de travail net » est le service sans les pauses ; le « Temps restant » est ce qui n’était ni chambre ni autres tâches de nettoyage — trajets et préparation.',
     },
     'auswertung.auffaellig': {
       title: 'Les pointages invraisemblables ne comptent pas dans les totaux',
@@ -390,7 +390,7 @@ export const lotsen = {
       label: 'Chambres configurées',
       todo: 'Configurer les chambres',
       done: { one: '{count} chambre en service', other: '{count} chambres en service' },
-      open: 'Sans chambres, pas de check-in ni de tableau du ménage',
+      open: 'Sans chambres, pas de check-in ni de tableau de suivi du ménage',
     },
     regeln: {
       label: 'Règles de l’établissement vérifiées',
@@ -408,7 +408,7 @@ export const lotsen = {
       label: 'Agent d’étage ajouté',
       todo: 'Ajouter un agent d’étage',
       done: { one: 'Un compte d’agent d’étage', other: '{count} comptes d’agents d’étage' },
-      open: 'Sans compte, personne n’accède au tableau du ménage',
+      open: 'Sans compte, personne n’accède au tableau de suivi du ménage',
     },
     services: {
       label: 'Services configurés',

@@ -2,7 +2,7 @@ import type { Shape } from '../../format'
 import type { SimMessages } from '../../de/help/sim'
 
 /**
- * Aide — simulations du tableau du ménage et du portail client. Les boutons et
+ * Aide — simulations du tableau de suivi du ménage et du portail client. Les boutons et
  * lignes d’état viennent de `service.ts` et `guest.ts` ; ici seulement ce que les
  * vrais portails n’ont pas : en-tête de page, explications, exemples. Français.
  */
@@ -15,11 +15,11 @@ export const sim = {
 
   reinigung: {
     page: {
-      title: 'Le tableau du ménage',
+      title: 'Le tableau de suivi du ménage',
       intro:
         'Voici le tableau que vos agents d’étage utilisent sur leur téléphone. Il s’agit d’une simulation avec des chambres d’exemple ; rien n’est enregistré et personne n’est averti. Essayez tout librement. Le guide rétablit la vue adaptée à chaque étape.',
       why:
-        'Pourquoi une simulation plutôt qu’une visite du vrai tableau ? Le tableau du ménage a sa propre connexion et sa propre session : il n’est pas accessible depuis la réception. Pour voir le vrai tableau, connectez-vous à <code>{path}</code> avec le compte d’un agent d’étage.',
+        'Pourquoi une simulation plutôt qu’une visite du vrai tableau ? Le tableau de suivi du ménage a sa propre connexion et sa propre session : il n’est pas accessible depuis la réception. Pour voir le vrai tableau, connectez-vous à <code>{path}</code> avec le compte d’un agent d’étage.',
     },
     frame: {
       login: 'Ménage — connexion',
@@ -27,7 +27,7 @@ export const sim = {
     },
     scanCard: 'Scanner la carte d’accès',
     or: 'ou',
-    withinShift: 'Les pauses et l’autre nettoyage ont lieu pendant le service.',
+    withinShift: 'Les pauses et les autres tâches de nettoyage ont lieu pendant le service.',
     nothingToDo: 'rien à faire',
     noTask: 'Aucun ménage n’est ouvert pour cette chambre — elle n’est pas bloquée, il n’y a simplement rien à faire pour le moment.',
   },

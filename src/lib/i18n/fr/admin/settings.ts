@@ -74,7 +74,7 @@ export const settings = {
     staleHint: 'Si un ménage a été commencé mais pas terminé, la chambre redevient ouverte sur le tableau après ce délai. L’historique indique alors « Ménage non terminé (délai dépassé) ».',
     daily: {
       label: 'Faire le ménage quotidien des chambres occupées',
-      hint: 'À partir du lendemain de l’arrivée, les chambres occupées apparaissent d’elles-mêmes sur le tableau du ménage à l’heure choisie, jusqu’à ce qu’elles aient été nettoyées ce jour-là. Exceptions : « Ne pas déranger », « Pas de ménage aujourd’hui » et le jour du départ.',
+      hint: 'À partir du lendemain de l’arrivée, les chambres occupées apparaissent d’elles-mêmes sur le tableau de suivi du ménage à l’heure choisie, jusqu’à ce qu’elles aient été nettoyées ce jour-là. Exceptions : « Ne pas déranger », « Pas de ménage aujourd’hui » et le jour du départ.',
       from: 'tous les jours à partir de <time></time>',
     },
     checkoutUntil: {
@@ -83,7 +83,7 @@ export const settings = {
     },
     checkinFrom: {
       label: 'Check-in à partir de <time></time>',
-      hint: 'Les chambres de départ doivent être prêtes d’ici là. Le tableau du ménage en tient compte : plus il reste de départs ouverts et plus le check-in approche, plus il oriente les agents d’étage vers les étages avec des départs — à peine les jours calmes, nettement les jours chargés.',
+      hint: 'Les chambres de départ doivent être prêtes d’ici là. Le tableau de suivi du ménage en tient compte : plus il reste de départs ouverts et plus le check-in approche, plus il oriente les agents d’étage vers les étages avec des départs — à peine les jours calmes, nettement les jours chargés.',
     },
     defer: {
       label: 'Les clients peuvent reporter le ménage (« pas avant »)',

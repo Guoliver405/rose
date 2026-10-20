@@ -90,7 +90,7 @@ export const topics = {
           },
           {
             frage: 'Quand dois-je définir une priorité ?',
-            antwort: 'Pour les réclamations et les cas particuliers, définissez une priorité manuellement ; elle n’est jamais définie automatiquement. La chambre remonte sur le tableau du ménage et l’étage est signalé par un voyant violet. La priorité disparaît d’elle-même quand le ménage est terminé.',
+            antwort: 'Pour les réclamations et les cas particuliers, définissez une priorité manuellement ; elle n’est jamais définie automatiquement. La chambre remonte sur le tableau de suivi du ménage et l’étage est signalé par un voyant violet. La priorité disparaît d’elle-même quand le ménage est terminé.',
           },
           {
             frage: 'Que se passe-t-il exactement au check-out ?',
@@ -243,7 +243,7 @@ export const topics = {
           },
           {
             frage: 'Hors service ou supprimer ?',
-            antwort: 'Pour des travaux ou une fermeture temporaire, nous recommandons de mettre la chambre « Hors service » : aucun check-in n’y est possible, elle n’apparaît ni sur le tableau du ménage ni sur les affiches, et tout son historique est conservé. Un clic la remet en service, et le numéro de chambre reste réservé. Supprimer une chambre est définitif et libère le numéro.',
+            antwort: 'Pour des travaux ou une fermeture temporaire, nous recommandons de mettre la chambre « Hors service » : aucun check-in n’y est possible, elle n’apparaît ni sur le tableau de suivi du ménage ni sur les affiches, et tout son historique est conservé. Un clic la remet en service, et le numéro de chambre reste réservé. Supprimer une chambre est définitif et libère le numéro.',
           },
           {
             frage: 'Qu’est-ce qui part avec la suppression ?',
@@ -304,7 +304,7 @@ export const topics = {
           },
           {
             frage: 'À quoi sert « Check-in à partir de » ?',
-            antwort: 'Les chambres de départ doivent être prêtes à cette heure-là. Le tableau du ménage compare le travail des départs ouverts au temps restant jusqu’au check-in et aux agents d’étage en service. Plus c’est serré, plus il recommande les étages avec des départs, et il propose même de changer d’étage en cours de route. Une priorité définie par la réception passe toujours en premier.',
+            antwort: 'Les chambres de départ doivent être prêtes à cette heure-là. Le tableau de suivi du ménage compare le travail des départs ouverts au temps restant jusqu’au check-in et aux agents d’étage en service. Plus c’est serré, plus il recommande les étages avec des départs, et il propose même de changer d’étage en cours de route. Une priorité définie par la réception passe toujours en premier.',
           },
           {
             frage: '« Pas avant » — comment choisir la limite ?',
@@ -557,7 +557,7 @@ export const topics = {
         art: 'verweise',
         eintraege: [
           {
-            label: 'Le tableau du ménage',
+            label: 'Le tableau de suivi du ménage',
             hinweis: 'Ce que voit l’agent d’étage après la connexion',
             ziel: { art: 'thema', id: 'reinigung' },
           },
@@ -651,13 +651,13 @@ export const topics = {
     ],
   },
   reinigung: {
-    title: 'Le tableau du ménage',
+    title: 'Le tableau de suivi du ménage',
     subtitle: 'Couleurs, états, curseurs, étages — ce que l’agent d’étage voit sur son téléphone et pourquoi',
     bloecke: [
       {
         art: 'legende',
         titel: 'La barre au-dessus du numéro',
-        hinweis: 'Il n’y a pas de vert « prête » sur le tableau du ménage — le vert y signifie « en cours ».',
+        hinweis: 'Il n’y a pas de vert « prête » sur le tableau de suivi du ménage — le vert y signifie « en cours ».',
         eintraege: [
           { zeichen: { art: 'balken', id: 'priority' } },
           { zeichen: { art: 'balken', id: 'working' } },
@@ -760,8 +760,8 @@ export const topics = {
             antwort: 'Choisir un étage, c’est s’y enregistrer : l’équipe et la réception voient qui travaille où, et la recommandation « À suivre » en tient compte. Une erreur de toucher ne doit faire sortir personne de l’étage, c’est pourquoi le chemin du retour est un curseur.',
           },
           {
-            frage: 'Une pause et un autre nettoyage peuvent-ils avoir lieu en même temps ?',
-            antwort: 'Non — ce sont deux périodes à l’intérieur du service, qui ne peuvent chevaucher rien d’autre. Commencer une pause termine un autre nettoyage en cours, et finir son service termine les deux. Tous les changements se font sur la page « Statut », pas sur le tableau.',
+            frage: 'Une pause et d’autres tâches de nettoyage peuvent-elles avoir lieu en même temps ?',
+            antwort: 'Non — ce sont deux périodes à l’intérieur du service, qui ne peuvent chevaucher rien d’autre. Commencer une pause termine les autres tâches de nettoyage en cours, et finir son service termine les deux. Tous les changements se font sur la page « Statut », pas sur le tableau.',
           },
           {
             frage: 'Connexion refusée alors que le code PIN est correct.',
@@ -769,7 +769,7 @@ export const topics = {
           },
           {
             frage: 'Comment la réception sait-elle quel travail a été fait ?',
-            antwort: 'Par les pointages : début et fin du service, pauses, autre nettoyage, début et fin par chambre. À partir de ceux-ci, les statistiques calculent les temps de travail et de ménage ; l’historique de la chambre montre chaque ménage avec un nom — en mode équipe, « Équipe d’étage ».',
+            antwort: 'Par les pointages : début et fin du service, pauses, autres tâches de nettoyage, début et fin par chambre. À partir de ceux-ci, les statistiques calculent les temps de travail et de ménage ; l’historique de la chambre montre chaque ménage avec un nom — en mode équipe, « Équipe d’étage ».',
           },
         ],
       },
@@ -812,7 +812,7 @@ export const topics = {
           },
           {
             frage: 'Que fait « Nettoyer ma chambre » ?',
-            antwort: 'La chambre apparaît immédiatement comme ouverte sur le tableau du ménage et dans votre vue d’ensemble. Il n’y a pas de rendez-vous ; l’équipe d’étage s’en occupe au fil de sa tournée. Un nouvel appui annule la demande. Avec « pas avant », le client choisit une heure pleine, et la chambre n’est pas disponible pour le ménage avant.',
+            antwort: 'La chambre apparaît immédiatement comme ouverte sur le tableau de suivi du ménage et dans votre vue d’ensemble. Il n’y a pas de rendez-vous ; l’équipe d’étage s’en occupe au fil de sa tournée. Un nouvel appui annule la demande. Avec « pas avant », le client choisit une heure pleine, et la chambre n’est pas disponible pour le ménage avant.',
           },
           {
             frage: 'Que dit la carte d’état au-dessus des boutons ?',
@@ -864,7 +864,7 @@ export const topics = {
       {
         art: 'text',
         absaetze: [
-          'Tout ici est calculé, rien n’est stocké. La base, ce sont les pointages des agents d’étage (début et fin du service, pauses, autre nettoyage, début et fin par chambre), plus les actions des clients et les check-out. La période choisie figure dans l’adresse web, vous pouvez donc partager ou imprimer un état.',
+          'Tout ici est calculé, rien n’est stocké. La base, ce sont les pointages des agents d’étage (début et fin du service, pauses, autres tâches de nettoyage, début et fin par chambre), plus les actions des clients et les check-out. La période choisie figure dans l’adresse web, vous pouvez donc partager ou imprimer un état.',
         ],
       },
       {
@@ -872,7 +872,7 @@ export const topics = {
         eintraege: [
           {
             frage: 'Que signifient temps de travail net et temps restant ?',
-            antwort: 'Temps de travail net = temps de service moins les pauses. Temps restant = temps de travail net moins le ménage des chambres et l’autre nettoyage — autrement dit, le temps passé à se déplacer, à préparer ou à attendre. Un temps restant élevé indique généralement de longs trajets ou des temps morts entre les demandes.',
+            antwort: 'Temps de travail net = temps de service moins les pauses. Temps restant = temps de travail net moins le ménage des chambres et les autres tâches de nettoyage — autrement dit, le temps passé à se déplacer, à préparer ou à attendre. Un temps restant élevé indique généralement de longs trajets ou des temps morts entre les demandes.',
           },
           {
             frage: 'Qu’est-ce qui compte comme « anomalie » ?',
@@ -904,7 +904,7 @@ export const topics = {
         art: 'verweise',
         eintraege: [
           {
-            label: 'Le tableau du ménage',
+            label: 'Le tableau de suivi du ménage',
             hinweis: 'D’où viennent les pointages',
             ziel: { art: 'thema', id: 'reinigung' },
           },

@@ -8,7 +8,7 @@ export const app = {
     metaDescription: 'Faites le calcul pour votre établissement : le ménage sans coordination et avec RoSe, sur de nombreux jours.',
     welcome: 'Adresse confirmée — bienvenue dans le {name}.',
     deleted: 'Vos données du simulateur ont été supprimées. Votre accès à RoSe est conservé.',
-    intro: 'Faites le calcul pour votre établissement : taille, personnel, horaires et comportement des clients. Le simulateur joue de nombreux jours, chacun avec d’autres clients, deux fois — sans coordination et avec RoSe — et montre ce qu’apporte la coordination. Les règles « avec RoSe » sont celles du vrai tableau du ménage.',
+    intro: 'Faites le calcul pour votre établissement : taille, personnel, horaires et comportement des clients. Le simulateur joue de nombreux jours, chacun avec d’autres clients, deux fois — sans coordination et avec RoSe — et montre ce qu’apporte la coordination. Les règles « avec RoSe » sont celles du vrai tableau de suivi du ménage.',
     teaser: {
       heading: 'Gratuit, avec une adresse e-mail — sans données de paiement',
       points: [

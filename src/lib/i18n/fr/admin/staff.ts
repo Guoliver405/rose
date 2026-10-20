@@ -24,7 +24,7 @@ export const staff = {
     maidHint:
       'Les agents d’étage se connectent avec leur <b>identifiant</b> et leur code PIN, pas avec le nom affiché, qui n’apparaît que sur le tableau et sur la carte d’accès. Le code PIN (6 chiffres) et la carte d’accès sont créés automatiquement : remettez-les via « Imprimer la carte ».',
     emptyMaids: 'Aucun agent d’étage pour l’instant.',
-    emptyMaidsHint: 'Chaque agent d’étage reçoit son propre compte avec un code PIN et une carte d’accès au tableau du ménage.',
+    emptyMaidsHint: 'Chaque agent d’étage reçoit son propre compte avec un code PIN et une carte d’accès au tableau de suivi du ménage.',
 
     createReception: 'Ajouter un compte réception',
     receptionNamePlaceholder: 'p. ex. Réception matin',
@@ -166,7 +166,7 @@ export const staff = {
     roomCleaning: 'Ménage des chambres',
     rooms: { one: '{count} chambre', other: '{count} chambres' },
     avgPerRoom: 'Moy. par chambre',
-    otherCleaning: 'Autre nettoyage',
+    otherCleaning: 'Autres tâches de nettoyage',
     otherCount: '{count}×',
     otherCountLegacy: '{count}× · {legacy} anciens pointages sans durée',
     rest: 'Temps restant',
@@ -197,7 +197,7 @@ export const staff = {
     openShifts: '+{count} ouverts',
     openShiftsTitle: '{count}× fin de service oubliée — non compris dans le temps de travail',
     explainer:
-      'Les durées proviennent des pointages des agents d’étage (service, pause, début/fin de ménage). Les pointages oubliés ne sont pas plafonnés en silence, mais retirés des totaux et listés sous « À vérifier » : services de plus de {maxShift} h, pauses et autres nettoyages de plus de {maxBreak} h, ménages de chambre sans fin ou de plus de {stale} minutes. Le « Temps restant » est le reste du temps de travail net (déplacements, préparation). Cliquez sur un nom pour afficher le journal quotidien.',
+      'Les durées proviennent des pointages des agents d’étage (service, pause, début/fin de ménage). Les pointages oubliés ne sont pas plafonnés en silence, mais retirés des totaux et listés sous « À vérifier » : services de plus de {maxShift} h, pauses et autres tâches de nettoyage de plus de {maxBreak} h, ménages de chambre sans fin ou de plus de {stale} minutes. Le « Temps restant » est le reste du temps de travail net (déplacements, préparation). Cliquez sur un nom pour afficher le journal quotidien.',
 
     dayLog: 'Journal quotidien — {name}',
     closeDayLog: 'fermer',
@@ -210,9 +210,9 @@ export const staff = {
       shift_end: 'Fin de service',
       break_start: 'Début de pause',
       break_end: 'Fin de pause',
-      other_cleaning: 'Autre nettoyage (pointage unique)',
-      other_start: 'Début d’un autre nettoyage',
-      other_end: 'Fin d’un autre nettoyage',
+      other_cleaning: 'Autres tâches de nettoyage (pointage unique)',
+      other_start: 'Début des autres tâches de nettoyage',
+      other_end: 'Fin des autres tâches de nettoyage',
       clean_start: 'Ménage commencé',
       clean_done: 'Ménage terminé',
       clean_aborted: 'Ménage interrompu',

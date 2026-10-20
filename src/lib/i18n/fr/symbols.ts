@@ -6,7 +6,7 @@ export const symbols = {
   symbols: {
     deactivated: {
       label: 'Hors service',
-      text: 'Aucun check-in n’est possible dans cette chambre et elle n’apparaît sur aucun tableau du ménage. Son historique est conservé ; vous pouvez la remettre en service sous Chambres et étages.',
+      text: 'Aucun check-in n’est possible dans cette chambre et elle n’apparaît sur aucun tableau de suivi du ménage. Son historique est conservé ; vous pouvez la remettre en service sous Chambres et étages.',
     },
     occupied: {
       label: 'Occupée',
@@ -18,11 +18,11 @@ export const symbols = {
     },
     dnd: {
       label: 'Ne pas déranger',
-      text: 'Le client l’a activé sur le portail. Personne ne frappe, le ménage quotidien n’a pas lieu et la chambre est grisée sur le tableau du ménage. Seul le client peut le désactiver.',
+      text: 'Le client l’a activé sur le portail. Personne ne frappe, le ménage quotidien n’a pas lieu et la chambre est grisée sur le tableau de suivi du ménage. Seul le client peut le désactiver.',
     },
     clean: {
       label: 'Le client demande le ménage',
-      text: 'Un appui sur le portail fait apparaître la chambre comme ouverte sur le tableau du ménage, sans rendez-vous. L’équipe d’étage la nettoie quand cela s’intègre dans sa tournée.',
+      text: 'Un appui sur le portail fait apparaître la chambre comme ouverte sur le tableau de suivi du ménage, sans rendez-vous. L’équipe d’étage la nettoie quand cela s’intègre dans sa tournée.',
     },
     deferred: {
       label: 'Ménage à partir de HH:MM',
@@ -42,7 +42,7 @@ export const symbols = {
     },
     priority: {
       label: 'Prioritaire',
-      text: 'Défini manuellement par la réception en cas de réclamation ou de cas particulier. La chambre remonte sur le tableau du ménage et l’étage affiche un voyant violet. Jamais automatique.',
+      text: 'Défini manuellement par la réception en cas de réclamation ou de cas particulier. La chambre remonte sur le tableau de suivi du ménage et l’étage affiche un voyant violet. Jamais automatique.',
     },
     cleaning: {
       label: 'Ménage en cours',
@@ -64,7 +64,7 @@ export const symbols = {
     },
     working: {
       label: 'En cours',
-      text: 'Uniquement sur le tableau du ménage : un membre de l’équipe se trouve dans la chambre. Sur l’écran de la réception, seul l’indicateur de chargement le montre ; la barre garde sa couleur.',
+      text: 'Uniquement sur le tableau de suivi du ménage : un membre de l’équipe se trouve dans la chambre. Sur l’écran de la réception, seul l’indicateur de chargement le montre ; la barre garde sa couleur.',
     },
     checkout: {
       label: 'Check-out effectué',
@@ -88,7 +88,7 @@ export const symbols = {
     },
     neutral: {
       label: 'Sans tâche',
-      text: 'Uniquement sur le tableau du ménage : libre, occupée sans demande, « Ne pas déranger » ou demande prévue plus tard. La chambre reste visible mais grisée — elle n’est pas bloquée.',
+      text: 'Uniquement sur le tableau de suivi du ménage : libre, occupée sans demande, « Ne pas déranger » ou demande prévue plus tard. La chambre reste visible mais grisée — elle n’est pas bloquée.',
     },
     deactivated: {
       label: 'Hors service',

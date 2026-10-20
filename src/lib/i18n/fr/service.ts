@@ -2,7 +2,7 @@ import type { Shape } from '../format'
 import type { ServiceMessages } from '../de/service'
 
 /**
- * Tableau du ménage — français (19.10.2026). Structure et contexte de chaque
+ * Tableau de suivi du ménage — français (19.10.2026). Structure et contexte de chaque
  * texte : `de/service.ts` et `de/service.context.ts`. On vouvoie l’équipe ;
  * les états des tuiles restent courts, les termes suivent le portail client.
  */
@@ -82,7 +82,7 @@ export const service = {
     startShiftFirst: 'Prenez d’abord votre service, ensuite vous pourrez commencer ici.',
     busyElsewhere: 'Vous êtes encore dans une autre chambre — terminez ou annulez d’abord là-bas.',
     guestDnd: 'Le client ne souhaite pas être dérangé.',
-    deferredUntil: 'Ménage à partir de {time} — la chambre réapparaît ensuite automatiquement dans la liste.',
+    deferredUntil: 'Ménage pas avant {time} — la chambre réapparaît ensuite automatiquement dans la liste.',
     guestDeclined: 'Le client ne souhaite pas de ménage aujourd’hui.',
     nothingToDo: 'Aucun ménage en attente pour cette chambre.',
   },
@@ -92,7 +92,7 @@ export const service = {
     title: 'Mon statut',
     youCleanRoom: 'Vous faites la chambre {number}',
     onBreak: 'Pause',
-    onOther: 'Autre nettoyage en cours',
+    onOther: 'Autres tâches de nettoyage en cours',
     onShift: 'En service',
     offShift: 'Pas en service',
     since: 'depuis {time}',
@@ -100,17 +100,17 @@ export const service = {
     workToday: 'Temps de travail aujourd’hui',
     breakToday: 'Pause aujourd’hui',
     roomsToday: 'Chambres aujourd’hui',
-    otherCleaning: 'Autre nettoyage',
+    otherCleaning: 'Autres tâches de nettoyage',
     change: 'Changer de statut',
     shiftStart: 'Prendre son service',
     shiftEnd: 'Finir son service',
     breakStart: 'Commencer la pause',
     breakEnd: 'Finir la pause',
-    otherStart: 'Commencer un autre nettoyage',
-    otherEnd: 'Finir l’autre nettoyage',
+    otherStart: 'Commencer d’autres tâches de nettoyage',
+    otherEnd: 'Finir les autres tâches de nettoyage',
     endBreakFirst: 'Finissez d’abord votre pause — les activités ne peuvent pas se chevaucher.',
     roomStillOpen: 'La chambre {number} est encore en cours — terminez-la ou annulez-la d’abord sur le tableau.',
-    otherEndsWithShift: 'Un autre nettoyage en cours se termine automatiquement avec votre service.',
+    otherEndsWithShift: 'Les autres tâches de nettoyage en cours se terminent automatiquement avec votre service.',
     saving: 'enregistrement…',
     teamMode:
       'Cet établissement évalue le ménage uniquement par équipe. Vous voyez votre bilan du jour pendant votre service ; à la fin du service, vos pointages sont conservés sans votre nom.',
@@ -147,7 +147,7 @@ export const service = {
     alreadyCleaning: 'Un ménage est déjà en cours — terminez-le ou annulez-le d’abord.',
     roomNotFound: 'Chambre introuvable.',
     guestDnd: 'Le client ne souhaite pas être dérangé.',
-    guestDeferred: 'Ménage pas avant {time} — la chambre se libère ensuite d’elle-même.',
+    guestDeferred: 'Ménage pas avant {time} — la chambre réapparaît ensuite automatiquement dans la liste.',
     nothingOpen: 'Aucun ménage en attente pour cette chambre.',
     nothingOpenNow: 'Aucun ménage en attente pour cette chambre pour le moment.',
     takenByOther: 'Quelqu’un de l’équipe fait déjà cette chambre.',
