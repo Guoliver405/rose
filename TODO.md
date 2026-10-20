@@ -127,7 +127,7 @@ geprüft – ohne Befund. Protokoll des Agenten: `RoSe-Blindtest/protokoll.md`
       „wischen“. Absicht gegen Fehltipper bleibt – aber ein Tipp sollte den
       Hinweis „Zum Bestätigen nach rechts wischen“ zeigen (kurzes Anstupsen des
       Griffs). Am Handy wohl weniger schlimm als für einen Klick-Bot.
-- [ ] **Anmeldeadressen fehlen dort, wo man sie braucht.** Der Check-in nennt
+- [x] ~~**Anmeldeadressen fehlen dort, wo man sie braucht.**~~ — 20.10. behoben: Der Check-in-Dialog nennt unter der PIN die Gast-Anmeldung („Ohne QR-Code: … öffnen, Zimmernummer und PIN eingeben“), die Personal-Seite unter dem Formular die Anmeldung der Reinigung; vier Sprachen, im Browser geprüft. Ursprünglicher Befund: Der Check-in nennt
       nur die PIN (nicht die Adresse, nicht dass die Zimmernummer mit
       eingegeben wird); die Adresse für die Reinigungskraft steht nicht auf der
       Personal-Seite, nur auf der Karte. Der Agent fand beide nur unter Hotel &

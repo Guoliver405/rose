@@ -23,6 +23,8 @@ export const staff = {
     usernamePlaceholder: 'e.g. maria',
     maidHint:
       'Housekeepers sign in with the <b>username</b> and PIN — not the display name, which only appears on the board and the access card. The PIN (6 digits) and access card are created automatically — hand them over via “Print card.”',
+    /** `{url}` = Anmeldeseite der Reinigung dieses Hauses. */
+    maidLogin: 'Signing in without the access card: {url}',
     emptyMaids: 'No housekeepers yet.',
     emptyMaidsHint: 'Each housekeeper gets their own account with a PIN and an access card for the housekeeping board.',
 

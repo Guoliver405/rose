@@ -23,6 +23,8 @@ export const staff = {
     usernamePlaceholder: 'p. ej., maria',
     maidHint:
       'El personal de limpieza inicia sesión con el <b>nombre de usuario</b> y el PIN, no con el nombre visible, que solo aparece en el panel y en la tarjeta de acceso. El PIN (6 dígitos) y la tarjeta de acceso se crean automáticamente: entréguelos mediante «Imprimir tarjeta».',
+    /** `{url}` = Anmeldeseite der Reinigung dieses Hauses. */
+    maidLogin: 'Inicio de sesión sin tarjeta de acceso: {url}',
     emptyMaids: 'Aún no hay personal de limpieza.',
     emptyMaidsHint: 'Cada persona de limpieza recibe su propia cuenta con un PIN y una tarjeta de acceso al panel de limpieza.',
 

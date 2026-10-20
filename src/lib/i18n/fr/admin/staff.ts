@@ -23,6 +23,8 @@ export const staff = {
     usernamePlaceholder: 'p. ex. maria',
     maidHint:
       'Les agents d’étage se connectent avec leur <b>identifiant</b> et leur code PIN, pas avec le nom affiché, qui n’apparaît que sur le tableau et sur la carte d’accès. Le code PIN (6 chiffres) et la carte d’accès sont créés automatiquement : remettez-les via « Imprimer la carte ».',
+    /** `{url}` = Anmeldeseite der Reinigung dieses Hauses. */
+    maidLogin: 'Connexion sans carte d’accès : {url}',
     emptyMaids: 'Aucun agent d’étage pour l’instant.',
     emptyMaidsHint: 'Chaque agent d’étage reçoit son propre compte avec un code PIN et une carte d’accès au tableau de suivi du ménage.',
 

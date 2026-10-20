@@ -1,5 +1,6 @@
 'use client'
 
+import { siteUrl } from '@/lib/site'
 import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import {
@@ -593,6 +594,10 @@ function RoomDialog({
                 <p className="mt-2 text-xs text-action-deep">
                   {d.pin.hint}
                   {checkedInLabel && !freshMode ? ` ${format(d.checkedInAt, { date: checkedInLabel })}` : ''}
+                </p>
+                {/* Ohne Aushang im Zimmer hat der Gast sonst keine Adresse (Blindtest). */}
+                <p className="mt-1 [overflow-wrap:anywhere] text-xs text-action-deep">
+                  {format(d.pin.manual, { url: `${siteUrl()}/h/${hotelSlug}/guest` })}
                 </p>
               </>
             )}

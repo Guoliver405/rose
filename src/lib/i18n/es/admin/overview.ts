@@ -91,6 +91,8 @@ export const overview = {
       headingFresh: 'Check-in realizado: PIN del huésped',
       heading: 'PIN del huésped',
       hint: 'Comuníqueselo al huésped: escanea el código QR de la habitación e introduce el PIN.',
+      /** `{url}` = Anmeldeseite der Gäste dieses Hauses. */
+      manual: 'Sin código QR: abrir {url} e introducir el número de habitación y el PIN; ambos figuran también en la hoja de check-in.',
       print: 'Imprimir hoja de check-in',
     },
     warningTitle: 'Habitación no lista',

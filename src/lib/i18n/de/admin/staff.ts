@@ -30,6 +30,8 @@ export const staff = {
     usernamePlaceholder: 'z. B. maria',
     maidHint:
       'Mit dem <b>Benutzernamen</b> und der PIN meldet sich die Reinigungskraft an – nicht mit dem Anzeigenamen, der steht nur auf Board und Zugangskarte. PIN (6 Ziffern) und Zugangskarte werden automatisch erzeugt – danach über „Karte drucken“ aushändigen.',
+    /** `{url}` = Anmeldeseite der Reinigung dieses Hauses. */
+    maidLogin: 'Anmeldung ohne Zugangskarte: {url}',
     emptyMaids: 'Noch keine Reinigungskräfte angelegt.',
     emptyMaidsHint: 'Jede Reinigungskraft bekommt einen eigenen Zugang mit PIN und Zugangskarte fürs Reinigungsboard.',
 

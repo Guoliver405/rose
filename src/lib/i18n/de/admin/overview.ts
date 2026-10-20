@@ -96,6 +96,8 @@ export const overview = {
       headingFresh: 'Check-in erfolgreich – Gast-PIN',
       heading: 'Gast-PIN',
       hint: 'Dem Gast mitteilen – er scannt den QR-Code im Zimmer und gibt die PIN ein.',
+      /** `{url}` = Anmeldeseite der Gäste dieses Hauses. */
+      manual: 'Ohne QR-Code: {url} öffnen, Zimmernummer und PIN eingeben – beides steht auch auf dem Check-in-Blatt.',
       print: 'Check-in-Blatt drucken',
     },
     warningTitle: 'Zimmer nicht bereit',

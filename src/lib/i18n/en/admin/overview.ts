@@ -91,6 +91,8 @@ export const overview = {
       headingFresh: 'Check-in complete — guest PIN',
       heading: 'Guest PIN',
       hint: 'Tell the guest — they scan the QR code in the room and enter the PIN.',
+      /** `{url}` = Anmeldeseite der Gäste dieses Hauses. */
+      manual: 'Without the QR code: open {url} and enter the room number and PIN — both are also on the check-in sheet.',
       print: 'Print check-in sheet',
     },
     warningTitle: 'Room not ready',

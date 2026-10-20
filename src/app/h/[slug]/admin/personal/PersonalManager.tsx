@@ -1,5 +1,6 @@
 'use client'
 
+import { siteUrl } from '@/lib/site'
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -690,6 +691,9 @@ export default function PersonalManager({
           </div>
           <p data-lotse="personal.karte" className="mt-2 text-xs text-ink-muted">
             <Rich text={m.maidHint} />
+          </p>
+          <p className="mt-1 [overflow-wrap:anywhere] text-xs text-ink-muted">
+            {format(m.maidLogin, { url: `${siteUrl()}/h/${hotelSlug}/service/login` })}
           </p>
         </form>
       )}
