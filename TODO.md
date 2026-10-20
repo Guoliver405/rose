@@ -117,7 +117,7 @@ geprüft – ohne Befund. Protokoll des Agenten: `RoSe-Blindtest/protokoll.md`
       vollständig in Français/Español übersetzt“ und „EN · fehlt / FR · fehlt /
       ES · fehlt“ – wirkte wie ein Fehler oder eine Pflicht. Idee: Haus wählt,
       welche Gast-Sprachen es pflegen will; gemahnt wird nur für diese.
-- [ ] **„Dringend an / aus“, „Meldung ans Haus an / aus“** – unklar, ob Zustand
+- [x] ~~**„Dringend an / aus“, „Meldung ans Haus an / aus“**~~ — 20.10. behoben: Schalter (`role="switch"`) mit fester Beschriftung „Dringend“ / „Meldung ans Haus“, der Zustand steckt im Schalter; hell und dunkel geprüft. Ursprünglicher Befund: – unklar, ob Zustand
       oder Aktion (es ist die Aktion). Als Schalter mit Zustand darstellen.
 - [ ] **„Gespeichert“ wird übersehen** (Leiste „Ungespeicherte Änderungen“,
       „Verfahren bestätigen“ beim Gästezugang): Der Agent war jedes Mal

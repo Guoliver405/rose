@@ -42,10 +42,9 @@ export const services = {
     urgentBadge: 'urgente',
     maintenanceBadge: 'Aviso',
     linkBadge: 'Enlace',
-    urgentOff: 'Urgente: desactivar',
-    urgentOn: 'Urgente: activar',
-    maintenanceOff: 'Aviso: desactivar',
-    maintenanceOn: 'Aviso: activar',
+    /** Beschriftung der Schalter – die Eigenschaft, nicht die Aktion. */
+    urgent: 'Urgente',
+    maintenance: 'Aviso',
     archive: 'Archivar',
     archiveConfirm:
       '¿Archivar «{name}»? El servicio desaparece del portal de huéspedes; las solicitudes existentes se conservan.',

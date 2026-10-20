@@ -323,22 +323,21 @@ export default function ServicesManager({
               <div className="ml-auto flex items-center gap-2">
                 {!s.linkUrl && (
                   <>
-                    <button
-                      type="button"
+                    {/* Schalter statt Knopf (20.10.2026): Die Beschriftung nennt die
+                        Eigenschaft, der Schalter ihren Zustand — „Dringend an“ ließ
+                        offen, ob es Zustand oder Aktion ist (Blindtest). */}
+                    <Switch
+                      label={sv.urgent}
+                      checked={s.urgent}
                       disabled={pending}
-                      onClick={() => run(() => setServiceUrgentAction(hotelSlug, s.id, !s.urgent))}
-                      className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
-                    >
-                      {s.urgent ? sv.urgentOff : sv.urgentOn}
-                    </button>
-                    <button
-                      type="button"
+                      onChange={() => run(() => setServiceUrgentAction(hotelSlug, s.id, !s.urgent))}
+                    />
+                    <Switch
+                      label={sv.maintenance}
+                      checked={s.maintenance}
                       disabled={pending}
-                      onClick={() => run(() => setServiceMaintenanceAction(hotelSlug, s.id, !s.maintenance))}
-                      className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
-                    >
-                      {s.maintenance ? sv.maintenanceOff : sv.maintenanceOn}
-                    </button>
+                      onChange={() => run(() => setServiceMaintenanceAction(hotelSlug, s.id, !s.maintenance))}
+                    />
                   </>
                 )}
                 <button
@@ -574,6 +573,39 @@ export default function ServicesManager({
         ))
       )}
     </div>
+  )
+}
+
+/** Ein-/Aus-Schalter mit fester Beschriftung; der Zustand steckt im Schalter (`role="switch"`). */
+function Switch({ label, checked, disabled, onChange }: {
+  label: string
+  checked: boolean
+  disabled: boolean
+  onChange: () => void
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={onChange}
+      className="flex items-center gap-2 rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
+    >
+      <span
+        aria-hidden
+        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+          checked ? 'bg-action' : 'bg-surface-muted ring-1 ring-inset ring-edge-strong'
+        }`}
+      >
+        <span
+          className={`inline-block h-4 w-4 rounded-full shadow transition-transform ${
+            checked ? 'translate-x-[18px] bg-surface-elevated' : 'translate-x-0.5 bg-ink-muted'
+          }`}
+        />
+      </span>
+      {label}
+    </button>
   )
 }
 

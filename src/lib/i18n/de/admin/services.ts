@@ -45,10 +45,9 @@ export const services = {
     urgentBadge: 'dringend',
     maintenanceBadge: 'Meldung ans Haus',
     linkBadge: 'Verweis',
-    urgentOff: 'Dringend aus',
-    urgentOn: 'Dringend an',
-    maintenanceOff: 'Meldung ans Haus aus',
-    maintenanceOn: 'Meldung ans Haus an',
+    /** Beschriftung der Schalter – die Eigenschaft, nicht die Aktion. */
+    urgent: 'Dringend',
+    maintenance: 'Meldung ans Haus',
     archive: 'Archivieren',
     archiveConfirm:
       '„{name}“ archivieren? Der Service verschwindet aus dem Gästeportal; bestehende Anfragen bleiben erhalten.',

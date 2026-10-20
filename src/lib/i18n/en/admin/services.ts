@@ -42,10 +42,9 @@ export const services = {
     urgentBadge: 'urgent',
     maintenanceBadge: 'Maintenance report',
     linkBadge: 'Link',
-    urgentOff: 'Urgent off',
-    urgentOn: 'Urgent on',
-    maintenanceOff: 'Maintenance report off',
-    maintenanceOn: 'Maintenance report on',
+    /** Beschriftung der Schalter – die Eigenschaft, nicht die Aktion. */
+    urgent: 'Urgent',
+    maintenance: 'Maintenance report',
     archive: 'Archive',
     archiveConfirm:
       'Archive “{name}”? The service disappears from the guest portal; existing requests are kept.',
