@@ -1,6 +1,6 @@
 # Offene Punkte
 
-Stand 27.09.2026. Herkunft in Klammern; Erledigtes wird gestrichen, nicht
+Stand 20.10.2026. Herkunft in Klammern; Erledigtes wird gestrichen, nicht
 gelöscht, damit erkennbar bleibt, was einmal offen war.
 
 ## Vor den ersten echten Kunden
@@ -66,6 +66,80 @@ gelöscht, damit erkennbar bleibt, was einmal offen war.
 - [ ] **GUI-Fall L17** in Produktion ([GUI-Testkatalog](Sessions/GUI-Testkatalog.md)).
 - [ ] **Werbe-Mails mit Abmeldelink**, falls sie gebaut werden (Datenschutz Abschnitt 7).
 - [ ] **Rechtstexte des Simulators** anwaltlich prüfen lassen (mit den AGB).
+
+## Funde aus dem Blindtest (20.10.2026)
+
+Herkunft: Pilot eines „unwissenden Agenten“ (Sonnet, eigene Sitzung in
+`F:\Coding_Projekte\RoSe-Blindtest` ohne Repo-Zugriff, nur Browser, lokal):
+Pension Lindenhof registrieren, 8 Zimmer, Regeln, eine Reinigungskraft,
+Frühstück als Zusatzleistung, zwei Check-ins, Gast, Rezeption, Reinigung,
+Check-out. 189 Browser-Aktionen, A–I erledigt, J (Check-out) danach von Hand
+geprüft – ohne Befund. Protokoll des Agenten: `RoSe-Blindtest/protokoll.md`
+(neben dem Repo). Einordnung unten mit Systemwissen.
+
+**Fehler**
+
+- [ ] **Gästeportal nennt die falsche Uhrzeit der täglichen Reinigung.**
+      [status/page.tsx:102](src/app/h/[slug]/guest/status/page.tsx) ruft
+      `stayoverDueTime(stayover)` ohne `knownStayover` auf und zeigt deshalb
+      immer das Spätere aus Routine-Zeit und Check-out-Frist. Zimmer 102 hatte
+      ein Abreisedatum (übermorgen), das Board reinigt morgen also ab 10:00 –
+      der Gast las „ab morgen täglich ab 11:00“. Für den Satz „ab morgen“ ist
+      maßgeblich, ob **morgen** ein bekannter Bleibetag ist. Prüfen, ob
+      `guest-guide.ts:188` (Check-in-Blatt, Mail) denselben Fall hat; die
+      Auswertung (`auswertung/page.tsx:109`) ist hausweit und darf bleiben.
+
+**Bedienung**
+
+- [ ] **Preis nur über eine „Option“.** „Neuen Service anlegen“ hat kein
+      Preisfeld; erwartet wurde der Preis am Service. Danach muss der Gast die
+      einzige Option ankreuzen, „Bestellen“ bleibt bis dahin grau, ohne
+      Hinweis. Idee: Preisfeld beim Anlegen (legt eine Option an), und bei
+      genau einer Option ist sie vorausgewählt.
+- [ ] **Übersetzungsbanner drängt Sprachen auf, die das Haus nicht braucht.**
+      Eine deutsche Pension bekommt nach dem ersten Service „noch nicht
+      vollständig in Français/Español übersetzt“ und „EN · fehlt / FR · fehlt /
+      ES · fehlt“ – wirkte wie ein Fehler oder eine Pflicht. Idee: Haus wählt,
+      welche Gast-Sprachen es pflegen will; gemahnt wird nur für diese.
+- [ ] **„Dringend an / aus“, „Meldung ans Haus an / aus“** – unklar, ob Zustand
+      oder Aktion (es ist die Aktion). Als Schalter mit Zustand darstellen.
+- [ ] **„Gespeichert“ wird übersehen** (Leiste „Ungespeicherte Änderungen“,
+      „Verfahren bestätigen“ beim Gästezugang): Der Agent war jedes Mal
+      unsicher, ob gespeichert wurde. Rückmeldung länger und deutlicher.
+- [ ] **Wisch-Schieber sind nicht als solche erkennbar** (Schicht beginnen,
+      Reinigung starten/abschließen): ein Tipp tut nichts, nirgends steht
+      „wischen“. Absicht gegen Fehltipper bleibt – aber ein Tipp sollte den
+      Hinweis „Zum Bestätigen nach rechts wischen“ zeigen (kurzes Anstupsen des
+      Griffs). Am Handy wohl weniger schlimm als für einen Klick-Bot.
+- [ ] **Anmeldeadressen fehlen dort, wo man sie braucht.** Der Check-in nennt
+      nur die PIN (nicht die Adresse, nicht dass die Zimmernummer mit
+      eingegeben wird); die Adresse für die Reinigungskraft steht nicht auf der
+      Personal-Seite, nur auf der Karte. Der Agent fand beide nur unter Hotel &
+      Regeln. Zu prüfen: Hinweis „Adresse und Zugang stehen auf dem
+      Check-in-Blatt“ bzw. Adresse unter der neu angelegten Kraft.
+- [ ] **Keine Rückmeldung während Aktionen** (Anlegen, Erledigt, Kachel öffnen,
+      Wisch): Oberfläche grau ohne Text, der Agent prüfte jedes Mal nach.
+      Großteils Dev-Modus (Turbopack übersetzt beim ersten Aufruf) – in
+      Produktion nachmessen, bevor etwas gebaut wird.
+- [ ] Kleinigkeiten: Etagen-Feld springt nach „Anlegen“ nicht auf die nächste
+      Etage; Zimmerliste zeigt Etage 2 über Etage 1 (gewollt wie im Gebäude?);
+      „Bestätigen Sie die Wahl einmal – auch wenn Sie dabei bleiben“ beim
+      Gästezugang irritiert (bewusste Entscheidung vom 22.09., Wortlaut prüfen);
+      „Schritt 2 von 2“ beim Zahlungsweg ohne sichtbaren Schritt 1.
+
+**Barrierefreiheit**
+
+- [ ] **Bedienelemente ohne zugängliche Beschriftung:** Knöpfe im Gästeportal
+      (nur „button“), Einstellungs-Kacheln (nicht als Link erkennbar),
+      Eingabefelder der Anmeldeseite ohne zugeordnetes Label (von Hand
+      nachgeprüft). Trifft Screenreader genauso wie Test-Agenten.
+
+**Für den nächsten Blindtest**
+
+- [ ] Lokal mit Produktions-Build statt Dev-Server (spart Wartezeit und
+      Kontroll-Aktionen); Limit für den vollen Pilot ~200 Aktionen; größere
+      Häuser und mehrere Kräfte gleichzeitig erst danach. Verbrauch des
+      Piloten: kaum messbar im 5-Stunden-Fenster (Sonnet, ~160k Kontext).
 
 ## Produktentscheidungen
 
