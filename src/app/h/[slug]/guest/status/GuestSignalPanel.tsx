@@ -92,6 +92,8 @@ export default function GuestSignalPanel({
       <button
         type="button"
         disabled={pending || cleanBlocked}
+        // Umschalter: Screenreader hören, ob der Wunsch gerade aktiv ist.
+        aria-pressed={signal === 'please_clean'}
         onClick={() => choose('please_clean')}
         className={`flex items-center gap-3 rounded-2xl border-2 px-5 py-4 text-left disabled:opacity-50 ${
           signal === 'please_clean'
@@ -160,6 +162,7 @@ export default function GuestSignalPanel({
         <button
           type="button"
           disabled={pending}
+          aria-pressed={skipToday}
           onClick={toggleSkip}
           className={`flex items-center gap-3 rounded-2xl border-2 px-5 py-4 text-left disabled:opacity-50 ${
             skipToday
@@ -180,6 +183,7 @@ export default function GuestSignalPanel({
       <button
         type="button"
         disabled={pending}
+        aria-pressed={signal === 'dnd'}
         onClick={() => choose('dnd')}
         className={`flex items-center gap-3 rounded-2xl border-2 px-5 py-4 text-left disabled:opacity-50 ${
           signal === 'dnd'

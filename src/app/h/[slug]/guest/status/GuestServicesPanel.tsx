@@ -198,6 +198,7 @@ function ServiceCard({
     <div className="overflow-hidden rounded-2xl border-2 border-edge bg-surface-elevated">
       <button
         type="button"
+        aria-expanded={open}
         onClick={onToggle}
         className="flex w-full items-center gap-3 px-5 py-4 text-left"
       >
@@ -224,6 +225,7 @@ function ServiceCard({
                 key={item.id}
                 type="button"
                 disabled={pending}
+                aria-pressed={active}
                 onClick={() => toggleItem(item.id)}
                 className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left disabled:opacity-50 ${
                   active

@@ -145,7 +145,19 @@ geprüft – ohne Befund. Protokoll des Agenten: `RoSe-Blindtest/protokoll.md`
 
 **Barrierefreiheit**
 
-- [ ] **Bedienelemente ohne zugängliche Beschriftung:** Knöpfe im Gästeportal
+- [x] ~~**Bedienelemente ohne zugängliche Beschriftung:**~~ — 20.10.
+      nachgeprüft: großteils ein Anzeigefehler des Browser-Werkzeugs, nicht von
+      RoSe. Kacheln sind echte Links mit Text, Anmeldefelder liegen in einem
+      umschließenden `<label>`, die Gast-Knöpfe tragen ihren Text — der
+      Accessibility-Baum des Werkzeugs zeigt verschachtelte Namen nur nicht an.
+      Eine DOM-Prüfung auf 12 Seiten fand kein Feld ohne Beschriftung (außer
+      dem versteckten Datei-Feld des Logos, das ein beschrifteter Knopf
+      öffnet). Echte Lücke und behoben: Umschalter im Gästeportal meldeten
+      ihren Zustand nicht — jetzt `aria-pressed` an Reinigen/Verzicht/DND und
+      den Optionen, `aria-expanded` an der Service-Kopfzeile. **Für den
+      nächsten Blindtest:** Der Agent soll fehlende Namen nicht als Befund
+      werten, ohne sie per Bildschirmfoto zu prüfen. Ursprünglicher Befund
+      (meine Bestätigung „von Hand nachgeprüft“ war ein Irrtum): Knöpfe im Gästeportal
       (nur „button“), Einstellungs-Kacheln (nicht als Link erkennbar),
       Eingabefelder der Anmeldeseite ohne zugeordnetes Label (von Hand
       nachgeprüft). Trifft Screenreader genauso wie Test-Agenten.
