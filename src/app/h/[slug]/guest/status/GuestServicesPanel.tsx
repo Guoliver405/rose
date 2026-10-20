@@ -14,6 +14,8 @@ export type GuestService = {
   /** Meldung ans Haus (Defekt) statt bestellbarer Leistung — der Knopf heißt dann „Melden“. */
   maintenance: boolean
   items: { id: string; label: string; priceCents: number | null }[]
+  /** Preis des Service als Ganzes — gilt nur ohne Optionen (20.10.2026). */
+  priceCents: number | null
 }
 
 /** Verweis: Kachel, die einen Link nach außen öffnet — Trinkgeld-App, Lieferdienst. Keine Bestellung. */
@@ -163,7 +165,10 @@ function ServiceCard({
   currency: string
 }) {
   const [pending, startTransition] = useTransition()
-  const [selected, setSelected] = useState<Set<string>>(new Set())
+  // Genau eine Option: vorausgewählt — sonst bliebe „Bestellen“ ohne
+  // erkennbaren Grund grau, bis der Gast die einzige Möglichkeit ankreuzt.
+  const initial = () => new Set(service.items.length === 1 ? [service.items[0].id] : [])
+  const [selected, setSelected] = useState<Set<string>>(initial)
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -182,7 +187,7 @@ function ServiceCard({
     startTransition(async () => {
       const res = await placeOrderAction(service.id, [...selected], note)
       if (res.error) { setError(res.error); return }
-      setSelected(new Set())
+      setSelected(initial())
       setNote('')
       setSuccess(true)
       setTimeout(() => setSuccess(false), 4000)
@@ -202,6 +207,11 @@ function ServiceCard({
             <span className="block text-sm text-ink-muted">{service.description}</span>
           )}
         </span>
+        {service.items.length === 0 && service.priceCents !== null && (
+          <span className="shrink-0 text-sm font-semibold text-ink-muted">
+            {formatMinor(service.priceCents, currency, intlLocale)}
+          </span>
+        )}
         <ChevronDown className={`h-5 w-5 shrink-0 text-ink-muted transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 

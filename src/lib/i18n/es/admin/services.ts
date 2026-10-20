@@ -19,6 +19,7 @@ export const services = {
     namePlaceholder: 'p. ej. Toallas adicionales',
     description: 'Descripción (opcional)',
     descriptionPlaceholder: 'Breve indicación para el huésped',
+    price: 'Precio en {currency} (opcional)',
     linkUrl: 'Dirección (enlace)',
     urgent: 'Urgente',
     maintenance: 'Aviso',
@@ -26,7 +27,7 @@ export const services = {
     linkExplanation:
       'Un <b>enlace</b> es un mosaico del portal de huéspedes que abre una web externa: una app de propinas para el equipo de limpieza, comida a domicilio, un taxi. No crea ninguna solicitud y no aparece ni en el panel de recepción ni en el resumen del check-out. El proveedor es responsable del contenido y la protección de datos del destino; el portal no integra nada, solo enlaza.',
     urgentExplanation:
-      'Las solicitudes urgentes parpadean en rojo en recepción, en el mosaico de la habitación y en la navegación. Las opciones y los precios se definen en el servicio después de crearlo.',
+      'Las solicitudes urgentes parpadean en rojo en recepción, en el mosaico de la habitación y en la navegación. Las opciones con precio propio (por ejemplo, tamaños) se añaden en el servicio después de crearlo.',
     maintenanceExplanation:
       'Un <b>aviso</b> sirve para averías y reparaciones: afecta a la habitación, no a la estancia. Estas solicitudes siguen abiertas al hacer el check-out (una avería no desaparece con el huésped), no aparecen en ningún resumen y muestran una advertencia en el siguiente check-in.',
   },
@@ -54,10 +55,14 @@ export const services = {
     test: 'Probar',
     archiveOption: 'Archivar opción',
     archiveOptionAria: 'Archivar {label}',
-    noOptions: 'Sin opciones: el huésped elige el servicio en su conjunto.',
+    noOptions: 'Sin opciones: el huésped pide el servicio en su conjunto.',
     option: 'Opción',
     optionPlaceholder: 'p. ej. Toalla grande',
     price: 'Precio en {currency} (opcional)',
+    wholePrice: 'Precio del servicio en {currency} (opcional)',
+    savePrice: 'Guardar precio',
+    /** `{price}` = Preis des Service, z. B. „14,50 €“. */
+    wholePriceIgnored: 'Este servicio tiene opciones: se aplican sus precios. El precio del servicio ({price}) no se cobra.',
     addOption: 'Añadir',
   },
 

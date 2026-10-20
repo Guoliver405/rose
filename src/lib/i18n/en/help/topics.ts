@@ -577,7 +577,7 @@ export const topics = {
       {
         art: 'text',
         absaetze: [
-          'A service takes only a few details: it consists of a name (“Laundry service”) and the options the guest chooses from, each optionally with a price. Two flags control the flow, nothing else — no categories, no responsibilities.',
+          'A service takes only a few details: it consists of a name (“Breakfast in the room”) and, optionally, a price — or of options the guest chooses from (“Laundry service”: shirt, pants), each with its own price. Two flags control the flow, nothing else — no categories, no responsibilities.',
         ],
       },
       {
@@ -601,7 +601,7 @@ export const topics = {
         eintraege: [
           {
             frage: 'What does a price do?',
-            antwort: 'The guest sees it when requesting, and at check-out the service provided appears with it on the statement. Without a price, an option appears on no statement — what costs nothing doesn’t need checking. RoSe doesn’t book or charge anything; it adds up.',
+            antwort: 'The guest sees it when requesting, and at check-out the service provided appears with it on the statement. A service without options carries its own price; if it has options, their prices apply. Without a price, a request appears on no statement — what costs nothing doesn’t need checking. RoSe doesn’t book or charge anything; it adds up.',
           },
           {
             frage: 'How do guests get the services in their language?',

@@ -100,9 +100,9 @@ export default function BillSheet({
                   <tr key={p.id} className="border-b border-edge align-top">
                     <td className="py-2 pr-3">
                       <span className="font-bold text-ink">{p.serviceName}</span>
-                      {p.items.length > 0 && (
+                      {p.items.some(i => !i.whole) && (
                         <span className="block text-xs text-ink-muted">
-                          {p.items.map(i => `${i.label} (${formatMinor(i.priceCents, bill.currency)})`).join(' · ')}
+                          {p.items.filter(i => !i.whole).map(i => `${i.label} (${formatMinor(i.priceCents, bill.currency)})`).join(' · ')}
                         </span>
                       )}
                       {!p.counted && (

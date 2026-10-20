@@ -122,8 +122,8 @@ export const lotsen = {
     },
     'services.liste': {
       title: 'Los precios llegan al resumen del check-out',
-      body: 'Las opciones pueden llevar precio; el huésped lo ve al hacer la solicitud. En el check-out, el diálogo de la habitación muestra el total de los servicios prestados, así que conviene mantener los precios al día aquí mismo. Sin precio, una solicitud no aparece en ningún resumen, y los avisos tampoco aparecen aunque tengan precio: no son un servicio al huésped. RoSe no reserva ni cobra nada, solo suma.',
-      tun: 'Indique un precio en una opción: a partir de la siguiente solicitud aparecerá en el resumen del check-out.',
+      body: 'Un servicio sin opciones puede llevar precio propio; si no, cada opción; el huésped lo ve al hacer la solicitud. En el check-out, el diálogo de la habitación muestra el total de los servicios prestados, así que conviene mantener los precios al día aquí mismo. Sin precio, una solicitud no aparece en ningún resumen, y los avisos tampoco aparecen aunque tengan precio: no son un servicio al huésped. RoSe no reserva ni cobra nada, solo suma.',
+      tun: 'Indique un precio en el servicio o en una opción: a partir de la siguiente solicitud aparecerá en el resumen del check-out.',
     },
     'einrichtung.ende': {
       title: 'Listo, y esto es lo que sigue',

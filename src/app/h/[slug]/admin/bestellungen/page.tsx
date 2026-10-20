@@ -43,7 +43,7 @@ export default async function BestellungenPage({
       // nicht umschreiben.
       serviceName: o.service_name ?? service?.name ?? m.fallbackService,
       urgent: service?.urgent ?? false,
-      items: ((o.items_snapshot ?? []) as { label: string; price_cents: number | null }[]),
+      items: ((o.items_snapshot ?? []) as { label: string; price_cents: number | null; whole?: boolean }[]),
       currency: (o.currency as string | null) ?? 'EUR',
       note: o.note,
       createdAt: o.created_at,

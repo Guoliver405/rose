@@ -28,7 +28,12 @@
 export type BillOrderStatus = 'open' | 'done' | 'cancelled'
 
 /** Eine Zeile aus `items_snapshot` — Feldnamen bewusst wie in der DB. */
-export type BillSnapshotItem = { label: string; price_cents?: number | null }
+/**
+ * Eine Zeile aus `items_snapshot` — Feldnamen bewusst wie in der DB. `whole`:
+ * Preis des Service als Ganzes (ohne Optionen, 20.10.2026); `label` ist dann
+ * der Service-Name, den die Anzeigen nicht ein zweites Mal nennen.
+ */
+export type BillSnapshotItem = { label: string; price_cents?: number | null; whole?: boolean }
 
 export type BillOrderInput = {
   id: string
@@ -48,7 +53,7 @@ export type BillOrderInput = {
 export type BillPosition = {
   id: string
   serviceName: string
-  items: { label: string; priceCents: number }[]
+  items: { label: string; priceCents: number; whole?: boolean }[]
   note: string | null
   status: BillOrderStatus
   createdAt: string
@@ -104,7 +109,7 @@ export function buildStayBill(orders: BillOrderInput[], fallbackCurrency = 'EUR'
 
     const items = (order.items ?? [])
       .filter(i => typeof i?.price_cents === 'number' && Number.isFinite(i.price_cents))
-      .map(i => ({ label: i.label, priceCents: i.price_cents as number }))
+      .map(i => ({ label: i.label, priceCents: i.price_cents as number, ...(i.whole ? { whole: true } : {}) }))
     const totalCents = items.reduce((sum, i) => sum + i.priceCents, 0)
     // Kostet nichts ⇒ nichts zu kassieren ⇒ nicht auf die Aufstellung.
     if (totalCents <= 0) {

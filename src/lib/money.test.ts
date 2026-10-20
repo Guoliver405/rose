@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { currencyDigits, formatCents, formatMinor, isCurrency, parseCurrency, parsePriceToMinor, pricePlaceholder } from './money'
+import { currencyDigits, formatCents, formatMinor, isCurrency, parseCurrency, parsePriceToMinor, priceInputValue, pricePlaceholder } from './money'
 
 describe('parsePriceToMinor — Euro (Vorgabe)', () => {
   it('versteht Komma und Punkt als Dezimaltrenner', () => {
@@ -72,5 +72,16 @@ describe('Währung je Haus (17.10.2026)', () => {
   it('Beispielpreis passend zur Währung', () => {
     expect(pricePlaceholder('EUR')).toBe('4,50')
     expect(pricePlaceholder('JPY')).toBe('500')
+  })
+})
+
+describe('priceInputValue', () => {
+  it('liefert einen Wert, den parsePriceToMinor unverändert zurückliest', () => {
+    expect(priceInputValue(1450, 'EUR', 'de-DE')).toBe('14,50')
+    expect(priceInputValue(123456, 'EUR', 'de-DE')).toBe('1234,56')
+    expect(priceInputValue(1200, 'JPY', 'en-US')).toBe('1200')
+    for (const [amount, currency] of [[1450, 'EUR'], [123456, 'EUR'], [1200, 'JPY']] as const) {
+      expect(parsePriceToMinor(priceInputValue(amount, currency), currency)).toBe(amount)
+    }
   })
 })

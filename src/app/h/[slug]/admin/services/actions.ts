@@ -92,6 +92,13 @@ export async function createServiceAction(slug: string, formData: FormData): Pro
 
   if (name.length < 2) return { error: format(e.nameTooShort, { min: 2 }) }
 
+  // Preis des Service als Ganzes (20.10.2026) — gilt, solange er keine
+  // Optionen hat. Kleinste Einheit der Währung des Hauses.
+  const priceRaw = isLink ? '' : ((formData.get('price') as string) ?? '').trim()
+  const currency = parseCurrency(ctx.policies)
+  const priceCents = parsePriceToMinor(priceRaw, currency)
+  if (priceRaw && priceCents === null) return { error: format(e.priceInvalid, { example: pricePlaceholder(currency) }) }
+
   // Verweis (16.09.2026): Kachel, die einen Link nach außen öffnet — keine
   // Anfrage, keine Optionen, keine Kennzeichen. Nur http(s), sonst könnte im
   // Gastportal ein `javascript:`-Ziel landen (die DB prüft das Schema mit).
@@ -109,6 +116,7 @@ export async function createServiceAction(slug: string, formData: FormData): Pro
     urgent,
     maintenance,
     link_url: linkUrl,
+    price_cents: priceCents,
     // Grundtexte in der Heimatsprache des Hauses (17.10.2026).
     lang: parseHomeLanguage(ctx.policies),
   })
@@ -183,6 +191,39 @@ export async function setServiceMaintenanceAction(
     .update({ maintenance })
     .eq('id', serviceId)
     .eq('hotel_id', ctx.hotelId)
+  if (error) return { error: error.message }
+
+  revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')
+  return {}
+}
+
+/**
+ * Preis des Service als Ganzes ändern oder entfernen (leer = kein Preis).
+ * Er gilt nur, solange der Service keine Optionen hat — siehe `placeOrderAction`.
+ */
+export async function setServicePriceAction(
+  slug: string,
+  serviceId: string,
+  rawPrice: string,
+): Promise<ActionResult> {
+  const e = await messages()
+  const ctx = await getAdminContext(slug)
+  if (!ctx) return { error: e.noPermission }
+
+  const priceRaw = rawPrice.trim()
+  const currency = parseCurrency(ctx.policies)
+  const priceCents = parsePriceToMinor(priceRaw, currency)
+  if (priceRaw && priceCents === null) return { error: format(e.priceInvalid, { example: pricePlaceholder(currency) }) }
+
+  const admin = createAdminClient()
+  const { data: service } = await admin
+    .from('service_definitions')
+    .select('id, hotel_id, link_url')
+    .eq('id', serviceId)
+    .maybeSingle()
+  if (!service || service.hotel_id !== ctx.hotelId || service.link_url) return { error: e.serviceNotFound }
+
+  const { error } = await admin.from('service_definitions').update({ price_cents: priceCents }).eq('id', serviceId)
   if (error) return { error: error.message }
 
   revalidatePath(`/h/${ctx.hotelSlug}/admin`, 'layout')

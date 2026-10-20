@@ -58,7 +58,7 @@ export default async function GuestStatusPage({
   const [{ data: services }, { data: items }, { data: orders }, { data: lastDone }] = await Promise.all([
     admin
       .from('service_definitions')
-      .select('id, name, description, archived_at, link_url, maintenance, lang, translations')
+      .select('id, name, description, archived_at, link_url, maintenance, price_cents, lang, translations')
       .eq('hotel_id', ctx.hotelId)
       .order('name'),
     admin
@@ -135,6 +135,7 @@ export default async function GuestStatusPage({
       description: text.get(s.id)?.description ?? s.description,
       maintenance: Boolean(s.maintenance),
       items: itemsByService.get(s.id) ?? [],
+      priceCents: (s.price_cents as number | null) ?? null,
     }))
   // Verweise: Kacheln, die nach außen öffnen (Trinkgeld-App, Lieferdienst) —
   // keine Bestellung, deshalb eigener Abschnitt unter den Services.
@@ -151,7 +152,8 @@ export default async function GuestStatusPage({
   const guestOrders: GuestOrder[] = (orders ?? []).map(o => ({
     id: o.id,
     serviceName: text.get(o.service_id)?.name ?? m.services.fallbackName,
-    itemLabels: ((o.items_snapshot ?? []) as { label: string; item_id?: string }[])
+    itemLabels: ((o.items_snapshot ?? []) as { label: string; item_id?: string; whole?: boolean }[])
+      .filter(i => !i.whole)
       .map(i => (i.item_id && itemLabel.get(i.item_id)) || i.label),
     status: o.status as GuestOrder['status'],
     createdAt: o.created_at,

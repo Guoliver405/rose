@@ -579,7 +579,7 @@ export const topics = {
       {
         art: 'text',
         absaetze: [
-          'Ein Service ist mit wenigen Angaben angelegt: Er besteht aus einem Namen („Wäscheservice“) und den Optionen, aus denen der Gast wählt, jede wahlweise mit Preis. Zwei Kennzeichen steuern den Ablauf, sonst nichts – keine Kategorien, keine Zuständigkeiten.',
+          'Ein Service ist mit wenigen Angaben angelegt: Er besteht aus einem Namen („Frühstück aufs Zimmer“) und wahlweise einem Preis – oder aus Optionen, aus denen der Gast wählt („Wäscheservice“: Hemd, Hose), jede mit eigenem Preis. Zwei Kennzeichen steuern den Ablauf, sonst nichts – keine Kategorien, keine Zuständigkeiten.',
         ],
       },
       {
@@ -603,7 +603,7 @@ export const topics = {
         eintraege: [
           {
             frage: 'Was bewirkt ein Preis?',
-            antwort: 'Der Gast sieht ihn bei der Anfrage, und beim Check-out steht die erbrachte Leistung damit auf der Aufstellung. Ohne Preis erscheint eine Option auf keiner Aufstellung – was nichts kostet, muss niemand prüfen. RoSe bucht und kassiert nichts; es rechnet zusammen.',
+            antwort: 'Der Gast sieht ihn bei der Anfrage, und beim Check-out steht die erbrachte Leistung damit auf der Aufstellung. Ein Service ohne Optionen trägt seinen Preis selbst; hat er Optionen, gelten deren Preise. Ohne Preis erscheint eine Anfrage auf keiner Aufstellung – was nichts kostet, muss niemand prüfen. RoSe bucht und kassiert nichts; es rechnet zusammen.',
           },
           {
             frage: 'Wie bekommen Gäste die Services in ihrer Sprache?',

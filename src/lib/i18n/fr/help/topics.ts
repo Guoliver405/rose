@@ -577,7 +577,7 @@ export const topics = {
       {
         art: 'text',
         absaetze: [
-          'Un service ne demande que peu d’informations : un nom (« Blanchisserie ») et les options parmi lesquelles le client choisit, chacune éventuellement avec un prix. Deux options pilotent le déroulement, rien d’autre — pas de catégories, pas de responsabilités.',
+          'Un service ne demande que peu d’informations : un nom (« Petit-déjeuner en chambre ») et éventuellement un prix — ou des options parmi lesquelles le client choisit (« Blanchisserie » : chemise, pantalon), chacune avec son propre prix. Deux options pilotent le déroulement, rien d’autre — pas de catégories, pas de responsabilités.',
         ],
       },
       {
@@ -601,7 +601,7 @@ export const topics = {
         eintraege: [
           {
             frage: 'À quoi sert un prix ?',
-            antwort: 'Le client le voit en faisant sa demande, et au check-out le service fourni figure avec son prix sur le récapitulatif. Sans prix, une option ne figure sur aucun récapitulatif — ce qui ne coûte rien n’a pas besoin d’être vérifié. RoSe ne comptabilise ni n’encaisse rien ; il additionne.',
+            antwort: 'Le client le voit en faisant sa demande, et au check-out le service fourni figure avec son prix sur le récapitulatif. Un service sans options porte lui-même son prix ; s’il a des options, leurs prix s’appliquent. Sans prix, une demande ne figure sur aucun récapitulatif — ce qui ne coûte rien n’a pas besoin d’être vérifié. RoSe ne comptabilise ni n’encaisse rien ; il additionne.',
           },
           {
             frage: 'Comment les clients obtiennent-ils les services dans leur langue ?',

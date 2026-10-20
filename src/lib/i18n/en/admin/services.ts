@@ -19,6 +19,7 @@ export const services = {
     namePlaceholder: 'e.g. Extra towels',
     description: 'Description (optional)',
     descriptionPlaceholder: 'Short note for the guest',
+    price: 'Price in {currency} (optional)',
     linkUrl: 'Address (link)',
     urgent: 'Urgent',
     maintenance: 'Maintenance report',
@@ -26,7 +27,7 @@ export const services = {
     linkExplanation:
       'A <b>link</b> is a tile in the guest portal that opens an outside website — a tipping app for the housekeeping team, food delivery, a taxi. It doesn’t create a request and appears neither on the front desk board nor on the check-out statement. The provider is responsible for the content and privacy of the destination; the portal embeds nothing, it only links.',
     urgentExplanation:
-      'Urgent requests flash red at the front desk — on the room tile and in the navigation. You set options and prices on the service after creating it.',
+      'Urgent requests flash red at the front desk — on the room tile and in the navigation. You add options with their own prices (such as sizes) on the service after creating it.',
     maintenanceExplanation:
       'A <b>maintenance report</b> is meant for defects and repairs — something about the room, not the stay. Such requests stay open at check-out (a defect doesn’t disappear with the guest), appear on no check-out statement, and show a warning at the next check-in.',
   },
@@ -54,10 +55,14 @@ export const services = {
     test: 'Test',
     archiveOption: 'Archive option',
     archiveOptionAria: 'Archive {label}',
-    noOptions: 'No options — the guest chooses the service as a whole.',
+    noOptions: 'No options — the guest orders the service as a whole.',
     option: 'Option',
     optionPlaceholder: 'e.g. Large towel',
     price: 'Price in {currency} (optional)',
+    wholePrice: 'Service price in {currency} (optional)',
+    savePrice: 'Save price',
+    /** `{price}` = Preis des Service, z. B. „14,50 €“. */
+    wholePriceIgnored: 'This service has options, so their prices apply. The service price ({price}) is not charged.',
     addOption: 'Add',
   },
 

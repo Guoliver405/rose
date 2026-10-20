@@ -122,8 +122,8 @@ export const lotsen = {
     },
     'services.liste': {
       title: 'Prices end up on the statement at check-out',
-      body: 'Options may carry a price; the guest sees it when requesting. At check-out, the room dialog shows the total of services provided — so it’s worth keeping prices up to date right here. Without a price, a request appears on no statement, and maintenance reports don’t appear there even with a price: they aren’t a service to the guest. RoSe doesn’t book or charge anything, it only adds up.',
-      tun: 'Enter a price for an option — from the next request on, it appears on the statement at check-out.',
+      body: 'A service without options may carry a price itself, otherwise each option; the guest sees it when requesting. At check-out, the room dialog shows the total of services provided — so it’s worth keeping prices up to date right here. Without a price, a request appears on no statement, and maintenance reports don’t appear there even with a price: they aren’t a service to the guest. RoSe doesn’t book or charge anything, it only adds up.',
+      tun: 'Enter a price on the service or on an option — from the next request on, it appears on the statement at check-out.',
     },
     'einrichtung.ende': {
       title: 'Done — and here’s what’s next',

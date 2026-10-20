@@ -122,8 +122,8 @@ export const lotsen = {
     },
     'services.liste': {
       title: 'Les prix figurent sur le récapitulatif au check-out',
-      body: 'Les options peuvent avoir un prix ; le client le voit en faisant sa demande. Au check-out, la fenêtre de la chambre affiche le total des services fournis — il vaut donc la peine de tenir les prix à jour ici même. Sans prix, une demande ne figure sur aucun récapitulatif, et les signalements n’y figurent pas même avec un prix : ce ne sont pas des services rendus au client. RoSe ne réserve et n’encaisse rien, il additionne seulement.',
-      tun: 'Saisissez un prix pour une option — dès la demande suivante, elle figure sur le récapitulatif au check-out.',
+      body: 'Un service sans options peut avoir lui-même un prix, sinon chaque option ; le client le voit en faisant sa demande. Au check-out, la fenêtre de la chambre affiche le total des services fournis — il vaut donc la peine de tenir les prix à jour ici même. Sans prix, une demande ne figure sur aucun récapitulatif, et les signalements n’y figurent pas même avec un prix : ce ne sont pas des services rendus au client. RoSe ne réserve et n’encaisse rien, il additionne seulement.',
+      tun: 'Saisissez un prix sur le service ou sur une option — dès la demande suivante, elle figure sur le récapitulatif au check-out.',
     },
     'einrichtung.ende': {
       title: 'C’est fait — et voici la suite',

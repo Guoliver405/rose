@@ -19,6 +19,7 @@ export const services = {
     namePlaceholder: 'p. ex. Serviettes supplémentaires',
     description: 'Description (facultatif)',
     descriptionPlaceholder: 'Courte indication pour le client',
+    price: 'Prix en {currency} (facultatif)',
     linkUrl: 'Adresse (lien)',
     urgent: 'Urgent',
     maintenance: 'Signalement',
@@ -26,7 +27,7 @@ export const services = {
     linkExplanation:
       'Un <b>lien</b> est une tuile du portail client qui ouvre un site externe : application de pourboires pour l’équipe d’étage, livraison de repas, taxi. Il ne crée pas de demande et n’apparaît ni sur le tableau de la réception ni sur le récapitulatif du check-out. Le prestataire est responsable du contenu et de la protection des données du site cible ; le portail n’intègre rien, il ne fait que renvoyer vers lui.',
     urgentExplanation:
-      'Les demandes urgentes clignotent en rouge à la réception, sur la tuile de la chambre et dans la navigation. Vous définissez les options et les prix sur le service après l’avoir créé.',
+      'Les demandes urgentes clignotent en rouge à la réception, sur la tuile de la chambre et dans la navigation. Vous ajoutez les options avec leur propre prix (par exemple des tailles) sur le service après l’avoir créé.',
     maintenanceExplanation:
       'Un <b>signalement</b> sert aux pannes et réparations : il concerne la chambre, pas le séjour. Ces demandes restent ouvertes au check-out (une panne ne disparaît pas avec le client), n’apparaissent sur aucun récapitulatif et déclenchent un avertissement au check-in suivant.',
   },
@@ -54,10 +55,14 @@ export const services = {
     test: 'Tester',
     archiveOption: 'Archiver l’option',
     archiveOptionAria: 'Archiver {label}',
-    noOptions: 'Aucune option : le client choisit le service dans son ensemble.',
+    noOptions: 'Aucune option : le client commande le service dans son ensemble.',
     option: 'Option',
     optionPlaceholder: 'p. ex. Grande serviette',
     price: 'Prix en {currency} (facultatif)',
+    wholePrice: 'Prix du service en {currency} (facultatif)',
+    savePrice: 'Enregistrer le prix',
+    /** `{price}` = Preis des Service, z. B. „14,50 €“. */
+    wholePriceIgnored: 'Ce service a des options : leurs prix s’appliquent. Le prix du service ({price}) n’est pas facturé.',
     addOption: 'Ajouter',
   },
 

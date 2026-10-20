@@ -127,8 +127,8 @@ export const lotsen = {
     },
     'services.liste': {
       title: 'Preise landen beim Check-out auf der Aufstellung',
-      body: 'Optionen dürfen einen Preis tragen; der Gast sieht ihn bei der Anfrage. Beim Check-out zeigt der Zimmer-Dialog die Summe der erbrachten Leistungen – deshalb lohnt es sich, die Preise gleich hier zu pflegen. Ohne Preis steht eine Anfrage auf keiner Aufstellung, und Meldungen ans Haus stehen dort auch mit Preis nicht: Sie sind keine Leistung an den Gast. RoSe bucht und kassiert nichts, es rechnet nur zusammen.',
-      tun: 'Tragen Sie bei einer Option einen Preis ein – ab der nächsten Anfrage steht sie damit beim Check-out auf der Aufstellung.',
+      body: 'Ein Service ohne Optionen darf selbst einen Preis tragen, sonst jede Option; der Gast sieht ihn bei der Anfrage. Beim Check-out zeigt der Zimmer-Dialog die Summe der erbrachten Leistungen – deshalb lohnt es sich, die Preise gleich hier zu pflegen. Ohne Preis steht eine Anfrage auf keiner Aufstellung, und Meldungen ans Haus stehen dort auch mit Preis nicht: Sie sind keine Leistung an den Gast. RoSe bucht und kassiert nichts, es rechnet nur zusammen.',
+      tun: 'Tragen Sie am Service oder bei einer Option einen Preis ein – ab der nächsten Anfrage steht sie damit beim Check-out auf der Aufstellung.',
     },
     'einrichtung.ende': {
       title: 'Geschafft – und hier geht es weiter',

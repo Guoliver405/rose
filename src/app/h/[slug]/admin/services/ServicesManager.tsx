@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useTransition } from 'react'
 import { Archive, Check, ExternalLink, Hammer, Languages, Link2, Loader2, Plus, Siren, Sparkles, Wrench, X } from 'lucide-react'
-import { formatMinor, pricePlaceholder } from '@/lib/money'
+import { formatMinor, priceInputValue, pricePlaceholder } from '@/lib/money'
 import { serviceLinkTemplates, type ServiceLinkTemplate } from '@/lib/service-link-templates'
 import { format, plural } from '@/lib/i18n/format'
 import type { AdminMessages } from '@/lib/i18n'
@@ -11,7 +11,7 @@ import { LOCALE_NAMES, type Locale } from '@/lib/i18n/locales'
 import { missingLanguages, type ItemTranslations, type ServiceTranslations } from '@/lib/service-i18n'
 import {
   archiveServiceAction, archiveServiceItemAction, createExampleServicesAction,
-  createServiceAction, createServiceItemAction, setServiceMaintenanceAction, setServiceUrgentAction,
+  createServiceAction, createServiceItemAction, setServiceMaintenanceAction, setServicePriceAction, setServiceUrgentAction,
   updateServiceLinkAction, updateServiceTranslationAction,
 } from './actions'
 
@@ -27,6 +27,8 @@ export type ServiceRow = {
   /** Sprache der Grundtexte (Heimatsprache beim Anlegen). */
   lang: Locale
   translations: ServiceTranslations
+  /** Preis des Service als Ganzes — gilt nur, solange er keine Optionen hat. */
+  priceCents: number | null
   items: { id: string; label: string; priceCents: number | null; translations: ItemTranslations }[]
 }
 
@@ -192,6 +194,15 @@ export default function ServicesManager({
             </label>
           ) : (
             <>
+              <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+                {format(c.price, { currency })}
+                <input
+                  name="price"
+                  inputMode="decimal"
+                  placeholder={pricePlaceholder(currency, intlLocale)}
+                  className="w-28 rounded-lg border border-edge bg-surface-elevated px-3 py-2 text-sm font-semibold text-ink placeholder:text-ink-muted focus:border-action focus:outline-none"
+                />
+              </label>
               <label className="flex items-center gap-2 pb-2 text-sm font-semibold text-ink-soft">
                 <input type="checkbox" name="urgent" className="h-4 w-4 accent-current" />
                 {c.urgent}
@@ -476,6 +487,41 @@ export default function ServicesManager({
                 </span>
               )}
             </div>
+
+            {/* Preis des Service als Ganzes — nur ohne Optionen wirksam. */}
+            {s.items.length === 0 ? (
+              <form
+                key={`price-${s.priceCents ?? 'none'}`}
+                onSubmit={e => {
+                  e.preventDefault()
+                  const raw = (new FormData(e.currentTarget).get('price') as string) ?? ''
+                  run(() => setServicePriceAction(hotelSlug, s.id, raw))
+                }}
+                className="mt-3 flex flex-wrap items-end gap-2"
+              >
+                <label className="flex flex-col gap-1 text-xs font-semibold text-ink-muted">
+                  {format(sv.wholePrice, { currency })}
+                  <input
+                    name="price"
+                    inputMode="decimal"
+                    defaultValue={s.priceCents !== null ? priceInputValue(s.priceCents, currency, intlLocale) : ''}
+                    placeholder={pricePlaceholder(currency, intlLocale)}
+                    className="w-28 rounded-lg border border-edge bg-surface-elevated px-3 py-1.5 text-sm font-semibold text-ink placeholder:text-ink-muted focus:border-action focus:outline-none"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  disabled={pending}
+                  className="rounded-lg border border-edge px-3 py-1.5 text-sm font-semibold text-ink-soft hover:border-edge-strong hover:text-ink disabled:opacity-50"
+                >
+                  {sv.savePrice}
+                </button>
+              </form>
+            ) : s.priceCents !== null && (
+              <p className="mt-2 text-xs text-ink-muted">
+                {format(sv.wholePriceIgnored, { price: formatMinor(s.priceCents, currency, intlLocale) })}
+              </p>
+            )}
 
             {/* Item hinzufügen */}
             <form

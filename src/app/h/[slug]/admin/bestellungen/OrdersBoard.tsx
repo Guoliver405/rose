@@ -14,7 +14,7 @@ export type OrderRow = {
   roomNumber: string
   serviceName: string
   urgent: boolean
-  items: { label: string; price_cents: number | null }[]
+  items: { label: string; price_cents: number | null; whole?: boolean }[]
   /** Währung der Preise, eingefroren bei der Anfrage. */
   currency: string
   note: string | null
@@ -101,7 +101,10 @@ export default function OrdersBoard({
                   {o.items.length > 0 && (
                     <p className="text-sm text-ink-soft">
                       {o.items.map(i =>
-                        i.price_cents !== null ? `${i.label} (${formatMinor(i.price_cents, o.currency)})` : i.label,
+                        // Preis des Service als Ganzes: der Name steht schon davor.
+                        i.whole && i.price_cents !== null
+                          ? formatMinor(i.price_cents, o.currency)
+                          : i.price_cents !== null ? `${i.label} (${formatMinor(i.price_cents, o.currency)})` : i.label,
                       ).join(' · ')}
                     </p>
                   )}
@@ -142,8 +145,8 @@ export default function OrdersBoard({
                 >
                   <span className="font-bold text-ink">{o.roomNumber}</span>
                   <span>{o.serviceName}</span>
-                  {o.items.length > 0 && (
-                    <span className="text-ink-muted">({o.items.map(i => i.label).join(', ')})</span>
+                  {o.items.some(i => !i.whole) && (
+                    <span className="text-ink-muted">({o.items.filter(i => !i.whole).map(i => i.label).join(', ')})</span>
                   )}
                   {o.notDone && (
                     <span className="rounded-full border border-edge-strong px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-ink-muted">

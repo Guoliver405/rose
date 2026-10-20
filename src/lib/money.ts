@@ -75,6 +75,16 @@ export function pricePlaceholder(currency: string, intlLocale = 'de-DE'): string
     .format(digits === 0 ? 500 : 4.5)
 }
 
+/**
+ * Betrag als Wert fürs Eingabefeld („14,50“, „1200“) — ohne Währungszeichen und
+ * ohne Tausendertrennung, damit `parsePriceToMinor` ihn unverändert zurückliest.
+ */
+export function priceInputValue(amount: number, currency: string, intlLocale = 'de-DE'): string {
+  const digits = currencyDigits(currency)
+  return new Intl.NumberFormat(intlLocale, { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: false })
+    .format(amount / 10 ** digits)
+}
+
 /** Preise von RoSe selbst (Abrechnung, Landing Page) — immer Euro. */
 export function formatCents(cents: number, intlLocale = 'de-DE'): string {
   return new Intl.NumberFormat(intlLocale, { style: 'currency', currency: 'EUR' }).format(cents / 100)

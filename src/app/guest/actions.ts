@@ -234,7 +234,7 @@ export async function placeOrderAction(
 
   const { data: service } = await admin
     .from('service_definitions')
-    .select('id, hotel_id, archived_at, name, link_url')
+    .select('id, hotel_id, archived_at, name, link_url, price_cents')
     .eq('id', serviceId)
     .maybeSingle()
   if (!service || service.hotel_id !== ctx.hotelId || service.archived_at) {
@@ -268,7 +268,14 @@ export async function placeOrderAction(
     service_name: service.name,
     // `item_id` lässt das Gästeportal die Option in der Sprache des Gastes
     // zeigen; Rezeption und Aufstellung lesen nur `label` (Grundtext).
-    items_snapshot: chosen.map(i => ({ label: i.label, price_cents: i.price_cents, item_id: i.id })),
+    // Ohne Optionen trägt der Service selbst den Preis (20.10.2026): als eine
+    // Position mit `whole`, damit Aufstellung und Board ihn ohne Sonderweg
+    // summieren — die Anzeigen wiederholen den Namen dafür nicht.
+    items_snapshot: hasItems
+      ? chosen.map(i => ({ label: i.label, price_cents: i.price_cents, item_id: i.id }))
+      : service.price_cents !== null
+        ? [{ label: service.name, price_cents: service.price_cents, whole: true }]
+        : [],
     // Währung einfrieren wie Name und Preis — sonst zeigte ein Wechsel alte Anfragen in der neuen Währung.
     currency: parseCurrency(ctx.policies),
     note: trimmedNote || null,

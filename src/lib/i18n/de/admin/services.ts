@@ -20,6 +20,7 @@ export const services = {
     namePlaceholder: 'z. B. Extra Handtücher',
     description: 'Beschreibung (optional)',
     descriptionPlaceholder: 'Kurzer Hinweis für den Gast',
+    price: 'Preis in {currency} (optional)',
     linkUrl: 'Adresse (Link)',
     urgent: 'Dringend',
     maintenance: 'Meldung ans Haus',
@@ -27,7 +28,7 @@ export const services = {
     linkExplanation:
       'Ein <b>Verweis</b> ist eine Kachel im Gästeportal, die einen Link nach außen öffnet – Trinkgeld-App für das Reinigungsteam, Lieferdienst, Taxi. Er erzeugt keine Anfrage und erscheint weder auf dem Board der Rezeption noch auf der Check-out-Aufstellung. Für Inhalt und Datenschutz des Ziels ist der Anbieter verantwortlich; das Portal bettet nichts ein, es verlinkt nur.',
     urgentExplanation:
-      'Dringende Anfragen blinken bei der Rezeption rot – an der Zimmer-Kachel und in der Navigation. Optionen und Preise legen Sie nach dem Anlegen am Service fest.',
+      'Dringende Anfragen blinken bei der Rezeption rot – an der Zimmer-Kachel und in der Navigation. Optionen mit eigenen Preisen (etwa Größen) legen Sie nach dem Anlegen am Service fest.',
     maintenanceExplanation:
       '<b>Meldung ans Haus</b> ist für Defekte und Instandhaltung gedacht – etwas am Zimmer, nicht am Aufenthalt. Solche Anfragen bleiben beim Check-out offen (ein Defekt verschwindet nicht mit dem Gast), erscheinen auf keiner Check-out-Aufstellung und warnen beim nächsten Check-in.',
   },
@@ -57,11 +58,15 @@ export const services = {
     test: 'Testen',
     archiveOption: 'Option archivieren',
     archiveOptionAria: '{label} archivieren',
-    noOptions: 'Keine Optionen – der Gast wählt den Service als Ganzes.',
+    noOptions: 'Keine Optionen – der Gast bestellt den Service als Ganzes.',
     option: 'Option',
     optionPlaceholder: 'z. B. Handtuch groß',
     /** `{currency}` = ISO-Code der Währung des Hauses, z. B. EUR. */
     price: 'Preis in {currency} (optional)',
+    wholePrice: 'Preis des Service in {currency} (optional)',
+    savePrice: 'Preis speichern',
+    /** `{price}` = Preis des Service, z. B. „14,50 €“. */
+    wholePriceIgnored: 'Der Service hat Optionen – deren Preise gelten. Der Preis des Service ({price}) wird nicht berechnet.',
     addOption: 'Hinzufügen',
   },
 

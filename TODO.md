@@ -97,7 +97,12 @@ geprüft – ohne Befund. Protokoll des Agenten: `RoSe-Blindtest/protokoll.md`
 
 **Bedienung**
 
-- [ ] **Preis nur über eine „Option“.** „Neuen Service anlegen“ hat kein
+- [x] ~~**Preis nur über eine „Option“.**~~ — 20.10. behoben: Preisfeld beim
+      Anlegen und an der Karte (`service_definitions.price_cents`, Migration
+      `2026-10-20_service_definitions_price.sql`), gilt nur ohne Optionen; die
+      Anfrage friert ihn als Position mit `whole` ein. Genau eine Option ist im
+      Gästeportal vorausgewählt. Im Browser nachgewiesen bis zur Aufstellung.
+      Ursprünglicher Befund: „Neuen Service anlegen“ hat kein
       Preisfeld; erwartet wurde der Preis am Service. Danach muss der Gast die
       einzige Option ankreuzen, „Bestellen“ bleibt bis dahin grau, ohne
       Hinweis. Idee: Preisfeld beim Anlegen (legt eine Option an), und bei

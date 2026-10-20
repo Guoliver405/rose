@@ -577,7 +577,7 @@ export const topics = {
       {
         art: 'text',
         absaetze: [
-          'Un servicio requiere pocos datos: un nombre («Servicio de lavandería») y las opciones entre las que elige el huésped, cada una opcionalmente con precio. Dos marcas controlan el proceso, nada más: ni categorías ni responsables.',
+          'Un servicio requiere pocos datos: un nombre («Desayuno en la habitación») y, opcionalmente, un precio, o bien opciones entre las que elige el huésped («Servicio de lavandería»: camisa, pantalón), cada una con su propio precio. Dos marcas controlan el proceso, nada más: ni categorías ni responsables.',
         ],
       },
       {
@@ -601,7 +601,7 @@ export const topics = {
         eintraege: [
           {
             frage: '¿Para qué sirve un precio?',
-            antwort: 'El huésped lo ve al hacer la solicitud, y en el check-out el servicio prestado figura con él en el resumen. Sin precio, una opción no figura en ningún resumen: lo que no cuesta nada no hace falta revisarlo. RoSe no contabiliza ni cobra nada; suma.',
+            antwort: 'El huésped lo ve al hacer la solicitud, y en el check-out el servicio prestado figura con él en el resumen. Un servicio sin opciones lleva su propio precio; si tiene opciones, se aplican los precios de estas. Sin precio, una solicitud no figura en ningún resumen: lo que no cuesta nada no hace falta revisarlo. RoSe no contabiliza ni cobra nada; suma.',
           },
           {
             frage: '¿Cómo reciben los huéspedes los servicios en su idioma?',
