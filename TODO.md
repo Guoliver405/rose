@@ -133,7 +133,7 @@ geprüft – ohne Befund. Protokoll des Agenten: `RoSe-Blindtest/protokoll.md`
       Personal-Seite, nur auf der Karte. Der Agent fand beide nur unter Hotel &
       Regeln. Zu prüfen: Hinweis „Adresse und Zugang stehen auf dem
       Check-in-Blatt“ bzw. Adresse unter der neu angelegten Kraft.
-- [ ] **Keine Rückmeldung während Aktionen** (Anlegen, Erledigt, Kachel öffnen,
+- [x] ~~**Keine Rückmeldung während Aktionen**~~ — 20.10. in Produktion nachgemessen (Test-Hotelkette, Sitzung des Users): Zimmer-Dialog öffnet in 6 ms, Check-in bis zur PIN 0,58 s, Check-out 0,65 s. Die 3–10 s des Blindtests waren der Dev-Modus; kein Umbau nötig. Nächster Blindtest mit Produktions-Build. Ursprünglicher Befund: (Anlegen, Erledigt, Kachel öffnen,
       Wisch): Oberfläche grau ohne Text, der Agent prüfte jedes Mal nach.
       Großteils Dev-Modus (Turbopack übersetzt beim ersten Aufruf) – in
       Produktion nachmessen, bevor etwas gebaut wird.
