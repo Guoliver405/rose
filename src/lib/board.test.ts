@@ -4,7 +4,7 @@ import {
   cleanDeferOptions, dateKeyAfterNights, isCleanDeferred, isDepartureToday, isRoomActive, isStayoverDue,
   isWithinCleaningWindow, localDateKey, parseCleanDefer, parseCleaningWindow, stayoverDueTime,
   parseStayoverPolicy, PRESENCE_STALE_HOURS, roomScore, staleCleaningCutoff, guestCleaningStatus,
-  canAnswerAtDoor, doorDeferUntil, isDeclinedToday, isKnownStayover,
+  canAnswerAtDoor, doorDeferUntil, isDeclinedToday, isKnownStayover, routineTomorrow,
   SCORE_WEIGHTS, departurePressure, departureWeight, shouldSwitchFloor,
   recommendFloor, floorSwitchHint, parseCheckinFrom, minutesToCheckin, type RecommendFloor,
 } from './board'
@@ -178,6 +178,27 @@ describe('stayoverDueTime', () => {
   it('nimmt das Spätere aus Routine-Zeit und Check-out-Frist', () => {
     expect(stayoverDueTime({ enabled: true, hour: 10, minute: 0, checkoutHour: 11, checkoutMinute: 0 })).toEqual({ hour: 11, minute: 0 })
     expect(stayoverDueTime({ enabled: true, hour: 13, minute: 15, checkoutHour: 11, checkoutMinute: 0 })).toEqual({ hour: 13, minute: 15 })
+  })
+})
+
+describe('routineTomorrow', () => {
+  const policy = { enabled: true, hour: 10, minute: 0, checkoutHour: 11, checkoutMinute: 0 }
+  const anreise = berlin(2026, 10, 20, 21, 0) // Di 20.10. abends, morgen = 21.10.
+
+  it('nennt die Routine-Zeit, wenn der Gast über morgen hinaus bleibt', () => {
+    expect(routineTomorrow(policy, '2026-10-22', anreise, B)).toEqual({ kind: 'time', hour: 10, minute: 0 })
+  })
+
+  it('nennt ohne Abreisedatum die Check-out-Frist', () => {
+    expect(routineTomorrow(policy, null, anreise, B)).toEqual({ kind: 'time', hour: 11, minute: 0 })
+  })
+
+  it('kennt morgen keine Routine, wenn morgen der Abreisetag ist', () => {
+    expect(routineTomorrow(policy, '2026-10-21', anreise, B)).toEqual({ kind: 'departure' })
+  })
+
+  it('ist aus, wenn das Haus nicht täglich reinigt', () => {
+    expect(routineTomorrow({ ...policy, enabled: false }, '2026-10-22', anreise, B)).toEqual({ kind: 'off' })
   })
 })
 

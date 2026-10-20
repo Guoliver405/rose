@@ -79,7 +79,13 @@ geprüft – ohne Befund. Protokoll des Agenten: `RoSe-Blindtest/protokoll.md`
 
 **Fehler**
 
-- [ ] **Gästeportal nennt die falsche Uhrzeit der täglichen Reinigung.**
+- [x] ~~**Gästeportal nennt die falsche Uhrzeit der täglichen Reinigung.**~~ —
+      20.10. behoben: `routineTomorrow` in [board.ts](src/lib/board.ts)
+      (getestet) rechnet für morgen — Routine-Zeit, wenn der Gast über morgen
+      hinaus bleibt, sonst die Frist; ist morgen der Abreisetag, neuer Text
+      `firstDayDeparture` (vier Sprachen). Check-in-Blatt und Mail hatten
+      denselben Fehler und bekommen `knownStayover`. Im Browser nachgewiesen.
+      Ursprünglicher Befund:
       [status/page.tsx:102](src/app/h/[slug]/guest/status/page.tsx) ruft
       `stayoverDueTime(stayover)` ohne `knownStayover` auf und zeigt deshalb
       immer das Spätere aus Routine-Zeit und Check-out-Frist. Zimmer 102 hatte

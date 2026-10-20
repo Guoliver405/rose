@@ -72,6 +72,7 @@ export const guest = {
     none: {
       title: 'Hoy no hay limpieza prevista.',
       firstDay: 'A partir de mañana limpiamos a diario desde las {time}. ¿Quiere limpieza ya hoy? Pulse «Limpiar mi habitación».',
+      firstDayDeparture: 'Mañana es su día de salida: la habitación se limpiará después del check-out. ¿Quiere limpieza ya hoy? Pulse «Limpiar mi habitación».',
       onRequest: 'Limpiamos bajo petición: pulse «Limpiar mi habitación» cuando lo desee.',
     },
   },

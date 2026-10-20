@@ -84,6 +84,7 @@ export const guestContext = {
     none: {
       title: { where: STATUS + ' → Titel, wenn heute nichts vorgesehen ist', note: 'Sachlich, kein Bedauern.' },
       firstDay: { where: STATUS + ' → Text am Anreisetag (Haus reinigt täglich)', note: '{time} = Uhrzeit der täglichen Reinigung. Tägliche Reinigung beginnt am Tag nach der Anreise.' },
+      firstDayDeparture: { where: STATUS + ' → Text am Anreisetag, wenn morgen schon die Abreise ist (Haus reinigt täglich)', note: 'Am Abreisetag gibt es keine tägliche Reinigung, gereinigt wird nach dem Check-out.' },
       onRequest: { where: STATUS + ' → Text (Haus reinigt nur auf Wunsch)', note: 'Der Gast muss selbst anfordern, sonst kommt niemand.' },
     },
   },

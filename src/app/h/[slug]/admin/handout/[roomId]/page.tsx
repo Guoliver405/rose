@@ -7,6 +7,8 @@ import { roomAccessUrl, stayAccessUrl, type GuestAccessMode } from '@/lib/guest-
 import { mailReady } from '@/utils/mail'
 import { logoUrlFor } from '@/utils/logo'
 import { buildGuestSheets } from '@/lib/guest-guide'
+import { isKnownStayover } from '@/lib/board'
+import { parseTimeZone } from '@/lib/tz'
 import GuestHandoutCard from './GuestHandoutCard'
 import { format, getMessages } from '@/lib/i18n'
 import { getAdminLocale } from '@/utils/locale'
@@ -34,7 +36,7 @@ export default async function HandoutPage({
     supabase.from('rooms').select('id, number, building').eq('hotel_id', ctx.hotelId).eq('id', roomId).maybeSingle(),
     supabase
       .from('stays')
-      .select('pin, guest_token, access_mode')
+      .select('pin, guest_token, access_mode, expected_checkout')
       .eq('hotel_id', ctx.hotelId)
       .eq('room_id', roomId)
       .is('checked_out_at', null)
@@ -86,7 +88,10 @@ export default async function HandoutPage({
           deepLink={deepLink}
           mailReady={mailReady()}
           logoUrl={logoUrlFor(ctx.logoPath)}
-          texts={buildGuestSheets(ctx.policies, { accessMode, deepLink })}
+          texts={buildGuestSheets(ctx.policies, {
+            accessMode, deepLink,
+            knownStayover: isKnownStayover(stay.expected_checkout, new Date(), parseTimeZone(ctx.policies)),
+          })}
           m={m.checkinSheet}
         />
       )}

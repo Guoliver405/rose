@@ -4,7 +4,7 @@ import { requireHotelBySlug } from '@/utils/hotel'
 import { createAdminClient } from '@/utils/supabase/service'
 import {
   clampStaleMinutes, cleanDeferOptions, guestCleaningStatus, isWithinCleaningWindow, parseCleanDefer,
-  parseCleaningWindow, parseStayoverPolicy, stayoverDueTime, todayStartIso, isDeclinedToday,
+  parseCleaningWindow, parseStayoverPolicy, routineTomorrow, todayStartIso, isDeclinedToday,
 } from '@/lib/board'
 import { formatHHMM, parseTimeZone } from '@/lib/tz'
 import { guestLogoutAction } from '@/app/guest/actions'
@@ -99,7 +99,8 @@ export default async function GuestStatusPage({
     now,
     timeZone: tz,
   })
-  const due = stayoverDueTime(stayover)
+  // Für den Hinweis am Anreisetag: was gilt MORGEN für diesen Aufenthalt?
+  const tomorrow = routineTomorrow(stayover, ctx.expectedCheckout, now, tz)
 
   // Services in der Sprache des Gastes (17.10.2026): je Feld die Übersetzung
   // des Hauses, sonst der Grundtext — nie ein leeres Feld.
@@ -170,7 +171,8 @@ export default async function GuestStatusPage({
 
       <GuestCleaningStatusCard
         status={status}
-        routineTime={stayover.enabled ? hhmm(due.hour, due.minute) : null}
+        routineTime={tomorrow.kind === 'time' ? hhmm(tomorrow.hour, tomorrow.minute) : null}
+        departureTomorrow={tomorrow.kind === 'departure'}
         timeZone={tz}
         m={m.status}
       />

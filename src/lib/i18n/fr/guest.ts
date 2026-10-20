@@ -72,6 +72,7 @@ export const guest = {
     none: {
       title: 'Aucun ménage n’est prévu aujourd’hui.',
       firstDay: 'À partir de demain, nous faisons le ménage chaque jour dès {time}. Vous souhaitez un ménage dès aujourd’hui ? Appuyez sur « Nettoyer ma chambre ».',
+      firstDayDeparture: 'Demain est votre jour de départ : la chambre sera faite après le check-out. Vous souhaitez un ménage dès aujourd’hui ? Appuyez sur « Nettoyer ma chambre ».',
       onRequest: 'Nous faisons le ménage à la demande : appuyez sur « Nettoyer ma chambre » quand vous le souhaitez.',
     },
   },

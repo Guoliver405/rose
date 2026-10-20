@@ -14,12 +14,15 @@ import { formatHHMM } from '@/lib/tz'
 export default function GuestCleaningStatusCard({
   status,
   routineTime,
+  departureTomorrow,
   timeZone,
   m,
 }: {
   status: GuestCleaningStatus
-  /** Fälligkeit der Routine des Hauses („11:00"), null ohne Routine — für den Hinweis am Anreisetag. */
+  /** Fälligkeit der Routine MORGEN für diesen Aufenthalt („10:00"), null ohne Routine — für den Hinweis am Anreisetag. */
   routineTime: string | null
+  /** Morgen ist der geplante Abreisetag — dann gibt es keine Routine, sondern die Reinigung nach dem Check-out. */
+  departureTomorrow: boolean
   /** Zeitzone des Hauses — Uhrzeiten gelten vor Ort. */
   timeZone: string
   m: GuestMessages['status']
@@ -124,9 +127,11 @@ export default function GuestCleaningStatusCard({
           <span>
             <span className={title}>{m.none.title}</span>
             <span className={`${sub} text-ink-soft`}>
-              {status.reason === 'first_day' && routineTime
-                ? format(m.none.firstDay, { time: routineTime })
-                : m.none.onRequest}
+              {status.reason === 'first_day' && departureTomorrow
+                ? m.none.firstDayDeparture
+                : status.reason === 'first_day' && routineTime
+                  ? format(m.none.firstDay, { time: routineTime })
+                  : m.none.onRequest}
             </span>
           </span>
         </div>

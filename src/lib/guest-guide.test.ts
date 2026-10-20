@@ -26,6 +26,11 @@ describe('buildGuestGuide — Reinigung', () => {
     expect(g.cleaning).toMatch(/Sie müssen nichts anfordern/)
   })
 
+  it('mit bekanntem Abreisedatum gilt die Routine-Zeit, nicht die Check-out-Frist', () => {
+    const g = buildGuestGuide({ stayoverAutoClean: true, stayoverAutoCleanTime: '9:30' }, { ...pinDeep, knownStayover: true })
+    expect(g.cleaning).toMatch(/täglich ab 09:30 Uhr/)
+  })
+
   it('nennt die Aufschieb-Grenze, solange das Haus sie anbietet', () => {
     expect(buildGuestGuide({}, pinDeep).cleaning).toMatch(/bis spätestens 11:00 Uhr aufschieben/)
     expect(buildGuestGuide({ cleanDeferUntil: '13:00' }, pinDeep).cleaning).toMatch(/bis spätestens 13:00 Uhr/)

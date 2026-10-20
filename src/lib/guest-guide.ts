@@ -98,6 +98,12 @@ export type GuestGuideOptions = {
   accessMode: GuestAccessMode
   /** Führt QR/Link direkt ins Zimmer (true) oder nur auf die Hotel-Adresse (false)? */
   deepLink: boolean
+  /**
+   * Steht beim Ausstellen fest, dass der Gast über heute hinaus bleibt
+   * (Abreisedatum in der Zukunft, `isKnownStayover`)? Dann gilt die Routine-Zeit
+   * selbst statt der Check-out-Frist — wie auf dem Board (20.10.2026).
+   */
+  knownStayover?: boolean
 }
 
 /** Beschriftungen des Zugangs-Bereichs — auf dem Blatt vierfach nebeneinander. */
@@ -183,9 +189,9 @@ export function buildGuestGuide(
     (window.enabled ? format(v.window, { start: window.start, end: window.end }) : '') +
     (defer.enabled ? format(v.defer, { limit: hhmm(defer.hour, defer.minute) }) : '')
 
-  // Genannt wird die Zeit, ab der die Routine WIRKLICH fällig wird — nie vor
-  // der Check-out-Frist des Hauses (siehe `stayoverDueTime`).
-  const due = stayoverDueTime(stayover)
+  // Genannt wird die Zeit, ab der die Routine WIRKLICH fällig wird — ohne
+  // bekanntes Abreisedatum nie vor der Check-out-Frist (siehe `stayoverDueTime`).
+  const due = stayoverDueTime(stayover, opts.knownStayover)
   const cleaning = stayover.enabled
     ? `${format(v.cleaningRoutine, { due: hhmm(due.hour, due.minute) })}${zusatz}`
     : `${v.cleaningOnRequest}${zusatz}`

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { addDaysKey, parseDateKey, parseTimeZone, zonedDateKey } from '@/lib/tz'
+import { isKnownStayover } from '@/lib/board'
 import { createAdminClient } from '@/utils/supabase/service'
 import { getManagementContext } from '@/utils/auth'
 import { generatePin, generateToken, clampPinLength } from '@/lib/ids'
@@ -399,7 +400,7 @@ export async function getGuestAccessAction(
 
   const { data: stay } = await admin
     .from('stays')
-    .select('id, pin, guest_token, access_mode')
+    .select('id, pin, guest_token, access_mode, expected_checkout')
     .eq('room_id', roomId)
     .is('checked_out_at', null)
     .maybeSingle()
@@ -411,6 +412,7 @@ export async function getGuestAccessAction(
   // Sprache und die Piktogramme sind Sache des Ausdrucks — eine Mail in zwei
   // Sprachen wäre doppelt so lang, ohne mehr zu sagen.
   const [mailLang] = parseSheetLanguages(ctx.policies)
+  const knownStayover = isKnownStayover(stay.expected_checkout, new Date(), parseTimeZone(ctx.policies))
 
   if (mode === 'link') {
     if (!stay.guest_token) return { error: e.stayWithoutAccess }
@@ -422,7 +424,7 @@ export async function getGuestAccessAction(
         hotelName: ctx.hotelName,
         url: stayAccessUrl(site, stay.guest_token),
         mailReady: mailReady(),
-        guide: buildGuestGuide(ctx.policies, { accessMode: 'link', deepLink: true }, mailLang),
+        guide: buildGuestGuide(ctx.policies, { accessMode: 'link', deepLink: true, knownStayover }, mailLang),
       },
     }
   }
@@ -440,7 +442,7 @@ export async function getGuestAccessAction(
       url: token ? roomAccessUrl(site, token.token) : `${site}/h/${ctx.hotelSlug}/guest`,
       pin: stay.pin ?? undefined,
       mailReady: mailReady(),
-      guide: buildGuestGuide(ctx.policies, { accessMode: 'pin', deepLink: Boolean(token) }, mailLang),
+      guide: buildGuestGuide(ctx.policies, { accessMode: 'pin', deepLink: Boolean(token), knownStayover }, mailLang),
     },
   }
 }

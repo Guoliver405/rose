@@ -75,6 +75,7 @@ export const guest = {
     none: {
       title: 'No cleaning is planned for today.',
       firstDay: 'Starting tomorrow, we clean daily from {time}. Would you like your room cleaned today? Tap “Clean my room.”',
+      firstDayDeparture: 'Tomorrow is your departure day, so your room will be cleaned after check-out. Would you like it cleaned today? Tap “Clean my room.”',
       onRequest: 'We clean on request — tap “Clean my room” whenever you like.',
     },
   },

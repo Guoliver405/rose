@@ -393,6 +393,26 @@ export function isKnownStayover(
   return expectedCheckout.slice(0, 10) > zonedDateKey(now, tz)
 }
 
+/**
+ * Was der Gast am Anreisetag über morgen erfährt („Ab morgen … ab HH:MM“),
+ * dieselbe Regel wie auf dem Board, nur für morgen gerechnet: Ist morgen sein
+ * Abreisetag, gibt es keine Routine; steht fest, dass er über morgen hinaus
+ * bleibt, gilt die Routine-Zeit, sonst die Check-out-Frist (20.10.2026 —
+ * vorher nannte das Gästeportal immer die Frist, Fund aus dem Blindtest).
+ */
+export function routineTomorrow(
+  policy: StayoverPolicy,
+  expectedCheckout: string | null | undefined,
+  now: Date = new Date(),
+  tz: string = DEFAULT_TIME_ZONE,
+): { kind: 'off' } | { kind: 'departure' } | { kind: 'time'; hour: number; minute: number } {
+  if (!policy.enabled) return { kind: 'off' }
+  const tomorrow = dateKeyAfterNights(now, 1, tz)
+  const planned = expectedCheckout?.slice(0, 10)
+  if (planned === tomorrow) return { kind: 'departure' }
+  return { kind: 'time', ...stayoverDueTime(policy, Boolean(planned && planned > tomorrow)) }
+}
+
 export function isStayoverDue(args: {
   policy: StayoverPolicy
   occupied: boolean
