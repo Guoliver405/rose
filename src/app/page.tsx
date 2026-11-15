@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { affiliateEnabled, refFromParam, withRef } from '@/lib/affiliate'
 import Link from 'next/link'
 import {
   BedDouble, BellRing, Check, ClipboardCheck, Clock, Droplets, Equal, KeyRound, Leaf,
@@ -51,28 +52,32 @@ export async function generateMetadata(): Promise<Metadata> {
  * zwischen täglicher Reinigung und Reinigung auf Wunsch (Rechnung in `cleaning-sim.ts`). Preise kommen aus `pricing.ts`,
  * damit Landing Page, AGB und Konto dieselben Zahlen zeigen.
  */
-export default async function LandingPage() {
-  const locale = await getAdminLocale()
+export default async function LandingPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const [locale, sp] = await Promise.all([getAdminLocale(), searchParams])
+  // Partnerprogramm: `/?ref=CODE` — der Code reist in den Links zur Registrierung
+  // und zum Simulator weiter, ohne Cookie.
+  const ref = affiliateEnabled() ? refFromParam(sp.ref) : ''
+  const signupHref = withRef('/registrieren', ref)
   const messages = getMessages(locale)
   const lm = messages.landing
   const m = lm.page
   const intl = intlLocale(locale)
   return (
     <div className="flex flex-1 flex-col bg-surface">
-      <Header m={m.header} locale={locale} />
+      <Header m={m.header} locale={locale} signupHref={signupHref} />
       <main className="flex-1">
-        <Hero m={m.hero} />
+        <Hero m={m.hero} signupHref={signupHref} />
         <PainPoints m={m.painPoints} />
         <Formula m={m.formula} intl={intl} />
         <Sustainability m={m.sustainability} />
         <ProductPreview m={m.product} demo={lm.demo} intlLocale={intl} />
         <Flow m={m.flow} />
-        <DayComparison m={m.comparison} day={lm.day} texts={messages.simulator.app.day} intlLocale={intl} />
+        <DayComparison m={m.comparison} day={lm.day} texts={messages.simulator.app.day} intlLocale={intl} simulatorHref={withRef('/simulator', ref)} />
         <FeatureGrid m={m.features} />
         <UseCases m={m.useCases} intl={intl} />
-        <Pricing m={m.pricing} roi={lm.roi} intlLocale={intl} />
+        <Pricing m={m.pricing} roi={lm.roi} intlLocale={intl} signupHref={signupHref} />
         <Faq m={m.faq} intl={intl} />
-        <SignupTeaser m={m.signup} />
+        <SignupTeaser m={m.signup} signupHref={signupHref} />
       </main>
       <Footer m={m.footer} />
     </div>
@@ -86,7 +91,7 @@ function Brand({ size = 'header' }: { size?: 'header' | 'hero' | 'footer' }) {
   return <span className="leading-none text-ink"><RoseLogo size={size} /></span>
 }
 
-function Header({ m, locale }: { m: M['header']; locale: Locale }) {
+function Header({ m, locale, signupHref }: { m: M['header']; locale: Locale; signupHref: string }) {
   return (
     <header className="sticky top-0 z-20 border-b border-edge bg-surface/85 backdrop-blur">
       <div className="mx-auto flex h-14 w-full max-w-5xl items-center justify-between gap-4 px-4">
@@ -108,7 +113,7 @@ function Header({ m, locale }: { m: M['header']; locale: Locale }) {
             {m.signIn}
           </Link>
           <Link
-            href="/registrieren"
+            href={signupHref}
             className="hidden rounded-lg bg-action px-3 py-1.5 text-sm font-semibold text-action-foreground hover:bg-action-strong sm:block"
           >
             {m.start}
@@ -119,7 +124,7 @@ function Header({ m, locale }: { m: M['header']; locale: Locale }) {
   )
 }
 
-function Hero({ m }: { m: M['hero'] }) {
+function Hero({ m, signupHref }: { m: M['hero']; signupHref: string }) {
   return (
     <section className="mx-auto w-full max-w-5xl px-4 pb-16 pt-14 text-center sm:pt-20">
       <p className="mx-auto mb-4 w-fit rounded-full border border-action-tint-edge bg-action-tint px-3 py-1 text-xs font-semibold text-action-deep">
@@ -133,7 +138,7 @@ function Hero({ m }: { m: M['hero'] }) {
       </p>
       <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
         <Link
-          href="/registrieren"
+          href={signupHref}
           className="rounded-xl bg-action px-6 py-3 font-bold text-action-foreground shadow-sm hover:bg-action-strong"
         >
           {m.start}
@@ -376,7 +381,8 @@ function Flow({ m }: { m: M['flow'] }) {
 
 /* ── Derselbe Tag, mit und ohne RoSe ───────────────────────────────────────── */
 
-function DayComparison({ m, day, texts, intlLocale }: {
+function DayComparison({ m, day, texts, intlLocale, simulatorHref }: {
+  simulatorHref: string
   m: M['comparison']
   day: LandingMessages['day']
   texts: SimulatorMessages['app']['day']
@@ -389,7 +395,7 @@ function DayComparison({ m, day, texts, intlLocale }: {
         {m.intro}
       </p>
       <div className="mt-10">
-        <CleaningSimulation texts={texts} m={day} intlLocale={intlLocale} />
+        <CleaningSimulation texts={texts} m={day} intlLocale={intlLocale} simulatorHref={simulatorHref} />
       </div>
       {/* Simulator Phase 3 (26.09.2026): derselbe Rechenkern mit den Zahlen des eigenen Hauses. */}
       <div className="mt-8 flex flex-col items-center gap-3 rounded-2xl border border-edge bg-surface-elevated px-6 py-6 text-center sm:flex-row sm:text-left">
@@ -399,7 +405,7 @@ function DayComparison({ m, day, texts, intlLocale }: {
             {m.simulatorText}
           </p>
         </div>
-        <Link href="/simulator"
+        <Link href={simulatorHref}
           className="shrink-0 rounded-lg bg-action px-5 py-3 font-bold text-action-foreground hover:bg-action-strong">
           {m.simulatorLink}
         </Link>
@@ -464,7 +470,7 @@ function UseCases({ m, intl }: { m: M['useCases']; intl: string }) {
 
 /* ── Preise und Nutzen ──────────────────────────────────────────── */
 
-function Pricing({ m, roi, intlLocale }: { m: M['pricing']; roi: LandingMessages['roi']; intlLocale: string }) {
+function Pricing({ m, roi, intlLocale, signupHref }: { m: M['pricing']; roi: LandingMessages['roi']; intlLocale: string; signupHref: string }) {
   const label = (c: string) => <span className="font-semibold text-ink-soft">{c}</span>
   return (
     <section id="preise" className="mx-auto w-full max-w-5xl scroll-mt-20 px-4 py-16">
@@ -505,7 +511,7 @@ function Pricing({ m, roi, intlLocale }: { m: M['pricing']; roi: LandingMessages
             </p>
           </div>
           <Link
-            href="/registrieren"
+            href={signupHref}
             className="mt-6 rounded-xl bg-action px-4 py-2.5 text-center font-bold text-action-foreground hover:bg-action-strong"
           >
             {m.start}
@@ -541,7 +547,7 @@ function Faq({ m, intl }: { m: M['faq']; intl: string }) {
   )
 }
 
-function SignupTeaser({ m }: { m: M['signup'] }) {
+function SignupTeaser({ m, signupHref }: { m: M['signup']; signupHref: string }) {
   return (
     <section id="registrierung" className="mx-auto w-full max-w-5xl scroll-mt-20 px-4 py-16">
       <div className="rounded-2xl border border-action-tint-edge bg-action-tint p-8 text-center sm:p-12">
@@ -553,7 +559,7 @@ function SignupTeaser({ m }: { m: M['signup'] }) {
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <Link
-            href="/registrieren"
+            href={signupHref}
             className="rounded-xl bg-action px-6 py-3 font-bold text-action-foreground hover:bg-action-strong"
           >
             {m.start}

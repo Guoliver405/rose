@@ -9,6 +9,7 @@ import LanguageSwitch from '@/components/LanguageSwitch'
 import { getAdminLocale } from '@/utils/locale'
 import { RoseLogo } from '@/components/brand/RoseLogo'
 import { stripeReady } from '@/utils/stripe'
+import { affiliateEnabled, refFromParam } from '@/lib/affiliate'
 
 /**
  * Self-Service-Registrierung (Phase 6b).
@@ -17,8 +18,8 @@ import { stripeReady } from '@/utils/stripe'
  * ins Zimmer-Setup. Wer schon angemeldet ist, hat hier nichts zu suchen und
  * wird wie auf der Anmeldeseite weitergeleitet.
  */
-export default async function RegistrierenPage() {
-  const ziel = await landingRoute()
+export default async function RegistrierenPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const [ziel, sp] = await Promise.all([landingRoute(), searchParams])
   if (ziel) redirect(ziel)
   const locale = await getAdminLocale()
   const m = getMessages(locale).auth.signup
@@ -36,7 +37,8 @@ export default async function RegistrierenPage() {
         {stripeReady() && <p className="mt-0.5 text-xs font-semibold text-ink-soft">{m.step}</p>}
       </div>
 
-      <SignupForm m={m} />
+      {/* Partnerprogramm: der Code aus dem Link füllt „Empfohlen von“ vor — ohne Cookie. */}
+      <SignupForm m={m} affiliate={affiliateEnabled()} refCode={refFromParam(sp.ref)} />
 
       <p className="text-sm text-ink-muted">
         <Rich

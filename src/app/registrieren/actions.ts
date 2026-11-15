@@ -4,7 +4,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/service'
 import { einrichtungStart } from '@/lib/lotsen'
-import { checkInviteCode, createHotelAccount } from '@/utils/hotel-account'
+import { createHotelAccount } from '@/utils/hotel-account'
+import { checkSignupAccess } from '@/utils/affiliate'
 import { format, getMessages } from '@/lib/i18n'
 import { getAdminLocale } from '@/utils/locale'
 
@@ -42,6 +43,7 @@ const MIN_PASSWORT = 8
 
 export async function signupAction(formData: FormData): Promise<Result> {
   const code = ((formData.get('code') as string) ?? '').trim()
+  const ref = ((formData.get('ref') as string) ?? '').trim()
   const email = ((formData.get('email') as string) ?? '').trim().toLowerCase()
   const password = ((formData.get('password') as string) ?? '').trim()
   const hotelName = ((formData.get('hotelName') as string) ?? '').trim()
@@ -50,8 +52,10 @@ export async function signupAction(formData: FormData): Promise<Result> {
   const e = getMessages(await getAdminLocale()).auth.errors
 
   // ── Riegel ───────────────────────────────────────────────────────────────
-  const codeError = await checkInviteCode(code)
-  if (codeError) return { error: codeError }
+  //    Einladungscode oder der Code eines freigeschalteten Partners; der
+  //    Partner-Code ordnet das Konto zugleich zu (Partnerprogramm).
+  const access = await checkSignupAccess({ inviteCode: code, partnerCode: ref })
+  if (access.error) return { error: access.error }
 
   // ── Eingaben ─────────────────────────────────────────────────────────────
   if (!/^\S+@\S+\.\S+$/.test(email)) return { error: e.invalidEmail }
@@ -78,7 +82,7 @@ export async function signupAction(formData: FormData): Promise<Result> {
 
   // ── 2–7) Konto, Haus, Profil, Inhaberschaft, Beispiel-Services, Stripe-Kunde —
   //         gemeinsam mit der Umwandlung eines Simulator-Kontos (`createHotelAccount`).
-  const created = await createHotelAccount({ userId, hotelName, displayName })
+  const created = await createHotelAccount({ userId, hotelName, displayName, referredBy: access.affiliateId })
   if (created.error || !created.slug) {
     // Den Auth-Nutzer hat dieser Aufruf angelegt — also räumt er ihn auch ab.
     await admin.auth.admin.deleteUser(userId)

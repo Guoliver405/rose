@@ -9,7 +9,12 @@ import Rich from '@/components/i18n/Rich'
 const feldKlasse =
   'rounded-lg border border-edge bg-surface px-3 py-2.5 text-ink outline-none focus:border-active'
 
-export default function SignupForm({ m }: { m: AuthMessages['signup'] }) {
+export default function SignupForm({ m, affiliate, refCode }: {
+  m: AuthMessages['signup']
+  /** Partnerprogramm an: Feld „Empfohlen von“, der Einladungscode ist dann nicht mehr Pflicht. */
+  affiliate: boolean
+  refCode: string
+}) {
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -30,12 +35,27 @@ export default function SignupForm({ m }: { m: AuthMessages['signup'] }) {
         <span className="text-sm font-semibold text-ink-soft">{m.inviteCode}</span>
         <input
           name="code"
-          required
+          required={!affiliate}
           autoComplete="off"
           className={feldKlasse}
         />
-        <span className="text-xs text-ink-muted">{m.inviteCodeHint}</span>
+        <span className="text-xs text-ink-muted">{affiliate ? m.inviteCodeOrRefHint : m.inviteCodeHint}</span>
       </label>
+
+      {affiliate && (
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-semibold text-ink-soft">{m.referredBy}</span>
+          <input
+            name="ref"
+            defaultValue={refCode}
+            autoComplete="off"
+            spellCheck={false}
+            autoCapitalize="characters"
+            className={`${feldKlasse} font-mono uppercase`}
+          />
+          <span className="text-xs text-ink-muted">{m.referredByHint}</span>
+        </label>
+      )}
 
       <label className="flex flex-col gap-1">
         <span className="text-sm font-semibold text-ink-soft">{m.houseName}</span>

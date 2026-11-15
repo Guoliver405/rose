@@ -19,11 +19,14 @@ const field = 'rounded-lg border border-edge bg-surface px-3 py-2.5 text-ink out
  * Konto gibt (siehe `@/utils/sim-account`). Deshalb wie bei „Passwort
  * vergessen" nur ein Countdown, kein Zustellstatus.
  */
-export default function SimSignupForm({ linkExpired, mailReady, m, marketingText }: {
+export default function SimSignupForm({ linkExpired, mailReady, m, marketingText, affiliate, refCode }: {
   linkExpired: boolean
   mailReady: boolean
   m: SimulatorMessages['account']['signup']
   marketingText: SimulatorMessages['account']['marketing']
+  /** Partnerprogramm an: Feld „Empfohlen von“, vorausgefüllt aus dem Link. */
+  affiliate: boolean
+  refCode: string
 }) {
   const [error, setError] = useState<string | null>(null)
   const [sent, setSent] = useState<string | null>(null)
@@ -116,6 +119,14 @@ export default function SimSignupForm({ linkExpired, mailReady, m, marketingText
         <input name="password" type="password" required minLength={MIN_PASSWORD} autoComplete="new-password" className={field} />
         <span className="text-xs text-ink-muted">{format(m.passwordHint, { min: MIN_PASSWORD })}</span>
       </label>
+      {affiliate && (
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-semibold text-ink-soft">{m.referredBy}</span>
+          <input name="ref" defaultValue={refCode} autoComplete="off" spellCheck={false} autoCapitalize="characters"
+            className={`${field} font-mono uppercase`} />
+          <span className="text-xs text-ink-muted">{m.referredByHint}</span>
+        </label>
+      )}
       <label className="flex items-start gap-2.5 rounded-lg border border-edge p-3">
         <input name="marketing" type="checkbox" className="mt-1 h-4 w-4 shrink-0 accent-[var(--color-action)]" />
         <span className="text-sm text-ink">{marketingText.text} <span className="text-ink-muted">{marketingText.optional}</span></span>

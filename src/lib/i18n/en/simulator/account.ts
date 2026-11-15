@@ -19,6 +19,8 @@ export const account = {
     email: 'Email',
     password: 'Password',
     passwordHint: 'At least {min} characters.',
+    referredBy: 'Referred by',
+    referredByHint: 'Referral code, if you received one.',
     submit: 'Register for free',
     submitting: 'Creating …',
     terms:
@@ -77,6 +79,7 @@ export const account = {
     houseName: 'Property name',
     yourName: 'Your name',
     inviteCode: 'Invitation code',
+    referredBy: 'Referred by',
     take: 'Taken from the simulator',
     rooms: {
       one: '{rooms} rooms on one floor, numbered 101, 102 … — can be changed at any time in the room setup',

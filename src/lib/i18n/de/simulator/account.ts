@@ -28,6 +28,8 @@ export const account = {
     email: 'E-Mail',
     password: 'Passwort',
     passwordHint: 'Mindestens {min} Zeichen.',
+    referredBy: 'Empfohlen von',
+    referredByHint: 'Empfehlungscode, falls Sie einen bekommen haben.',
     submit: 'Kostenlos registrieren',
     submitting: 'Wird angelegt …',
     terms:
@@ -88,6 +90,7 @@ export const account = {
     houseName: 'Name des Hauses',
     yourName: 'Ihr Name',
     inviteCode: 'Einladungscode',
+    referredBy: 'Empfohlen von',
     take: 'Aus dem Simulator übernehmen',
     /** Mehrzahl nach der Zahl der Etagen (`{count}`); `{rooms}` = Zimmerzahl. */
     rooms: {

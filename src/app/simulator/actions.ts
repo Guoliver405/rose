@@ -5,7 +5,8 @@ import { createClient } from '@/utils/supabase/server'
 import { getSimContext } from '@/utils/auth'
 import { currentIpHash } from '@/utils/login-throttle'
 import { convertSimAccount, deleteSimAccount, registerSimAccount, resendSimConfirmation, setSimMarketing } from '@/utils/sim-account'
-import { MAX_ROOMS_AT_SIGNUP, checkInviteCode } from '@/utils/hotel-account'
+import { MAX_ROOMS_AT_SIGNUP } from '@/utils/hotel-account'
+import { checkSignupAccess, resolveReferral } from '@/utils/affiliate'
 import { policiesFromForm, roomsFromForm } from '@/lib/sim-convert'
 import { einrichtungStart } from '@/lib/lotsen'
 import type { Policy } from '@/lib/cleaning-sim'
@@ -26,7 +27,11 @@ async function messages() { return (await texts()).errors }
 export async function simSignupAction(formData: FormData): Promise<{ sent?: true; error?: string }> {
   const { input, error } = parseSignup(formData, await messages())
   if (!input) return { error }
-  return registerSimAccount(input, await currentIpHash())
+  // Partnerprogramm: der Code aus dem Link wird am Simulator-Konto abgelegt —
+  // bis zur Umwandlung in ein Hotelkonto ist die URL längst weg.
+  const referral = await resolveReferral(String(formData.get('ref') ?? ''))
+  if (referral.error) return { error: referral.error }
+  return registerSimAccount({ ...input, referredBy: referral.affiliateId }, await currentIpHash())
 }
 
 export async function simResendAction(email: string): Promise<{ sent?: true; error?: string }> {
@@ -90,6 +95,8 @@ export async function deleteScenarioAction(id: string): Promise<{ error?: string
 
 export async function convertToHotelAction(input: {
   code: string
+  /** „Empfohlen von“ — vorausgefüllt mit dem Partner aus der Registrierung. */
+  ref?: string
   hotelName: string
   displayName: string
   form: SimForm
@@ -101,8 +108,8 @@ export async function convertToHotelAction(input: {
   const ctx = await getSimContext()
   if (!ctx) return { error: e.signInAgain }
   if (ctx.kind !== 'sim') return { error: e.convertExists }
-  const codeError = await checkInviteCode(input.code)
-  if (codeError) return { error: codeError }
+  const access = await checkSignupAccess({ inviteCode: input.code, partnerCode: input.ref ?? '', actingUserId: ctx.userId })
+  if (access.error) return { error: access.error }
   const hotelName = input.hotelName.trim()
   const displayName = input.displayName.trim()
   if (hotelName.length < 2) return { error: e.convertHouseName }
@@ -116,7 +123,7 @@ export async function convertToHotelAction(input: {
   }
   const policies = input.takeRules ? policiesFromForm(form, input.policy === 'onDemand' ? 'onDemand' : 'routine') : undefined
 
-  const res = await convertSimAccount(ctx.userId, { hotelName, displayName, rooms, policies })
+  const res = await convertSimAccount(ctx.userId, { hotelName, displayName, rooms, policies, referredBy: access.affiliateId })
   if (res.error || !res.slug) return { error: res.error ?? e.convertFailed }
   // Wie nach der Registrierung: mit Stripe erst der Zahlungsweg, sonst der Einrichtungs-Lotse.
   redirect(res.stripe ? `/admin/abrechnung/zahlungsweg?neu=${res.slug}` : einrichtungStart(res.slug))

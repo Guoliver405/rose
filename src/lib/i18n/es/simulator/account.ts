@@ -19,6 +19,8 @@ export const account = {
     email: 'Correo electrónico',
     password: 'Contraseña',
     passwordHint: 'Al menos {min} caracteres.',
+    referredBy: 'Recomendado por',
+    referredByHint: 'Código de recomendación, si ha recibido uno.',
     submit: 'Registrarse gratis',
     submitting: 'Creando…',
     terms:
@@ -77,6 +79,7 @@ export const account = {
     houseName: 'Nombre del establecimiento',
     yourName: 'Su nombre',
     inviteCode: 'Código de invitación',
+    referredBy: 'Recomendado por',
     take: 'Tomado del simulador',
     rooms: {
       one: '{rooms} habitaciones en una planta, numeradas 101, 102…; se puede cambiar en cualquier momento en la configuración de habitaciones',

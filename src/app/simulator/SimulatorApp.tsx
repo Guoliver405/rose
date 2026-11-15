@@ -66,7 +66,7 @@ type Fmt = ReturnType<typeof formatters>
 export default function SimulatorApp({ initialScenarios = [], convert, m, day, intlLocale }: {
   initialScenarios?: ScenarioItem[]
   /** Nur eigene Simulator-Konten: „Als Hotel bei RoSe starten“ (Phase 4); `open` = Registrierung freigeschaltet. */
-  convert?: { open: boolean; m: SimulatorMessages['account']['convert'] }
+  convert?: { open: boolean; m: SimulatorMessages['account']['convert']; affiliate: boolean; refCode: string }
   m: M
   /** Oberfläche des Tagesbilds (Legende, Spaltentitel) — `landing.day` der Sprachdatei. */
   day: LandingMessages['day']
@@ -377,7 +377,7 @@ export default function SimulatorApp({ initialScenarios = [], convert, m, day, i
 
       {compared && <Comparison items={compared} policy={policy} onPolicy={setPolicy} onClose={() => setCompared(null)} m={m} fmt={fmt} />}
       {result && <Results result={result} policy={policy} onPolicy={setPolicy} m={m} day={day} fmt={fmt} intlLocale={intlLocale} />}
-      {convert && <ConvertCard form={form} policy={policy} signupOpen={convert.open} m={convert.m} intlLocale={intlLocale} />}
+      {convert && <ConvertCard form={form} policy={policy} signupOpen={convert.open} affiliate={convert.affiliate} refCode={convert.refCode} m={convert.m} intlLocale={intlLocale} />}
     </div>
   )
 }

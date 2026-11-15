@@ -17,10 +17,13 @@ const field = 'rounded-lg border border-edge bg-surface px-3 py-2 text-ink outli
  * Solange die Registrierung geschlossen ist, braucht es den Einladungscode
  * wie auf `/registrieren`.
  */
-export default function ConvertCard({ form, policy, signupOpen, m, intlLocale }: {
+export default function ConvertCard({ form, policy, signupOpen, affiliate, refCode, m, intlLocale }: {
   form: SimForm
   policy: Policy
   signupOpen: boolean
+  /** Partnerprogramm an: Feld „Empfohlen von“, der Einladungscode ist dann nicht mehr Pflicht. */
+  affiliate: boolean
+  refCode: string
   m: SimulatorMessages['account']['convert']
   intlLocale: string
 }) {
@@ -65,6 +68,7 @@ export default function ConvertCard({ form, policy, signupOpen, m, intlLocale }:
           startTransition(async () => {
             const res = await convertToHotelAction({
               code: String(fd.get('code') ?? ''),
+              ref: String(fd.get('ref') ?? ''),
               hotelName: String(fd.get('hotelName') ?? ''),
               displayName: String(fd.get('displayName') ?? ''),
               form, policy, takeRooms, takeRules,
@@ -72,7 +76,7 @@ export default function ConvertCard({ form, policy, signupOpen, m, intlLocale }:
             if (res?.error) setError(res.error)
           })
         }}>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className={`grid gap-3 ${affiliate ? 'sm:grid-cols-2' : 'sm:grid-cols-3'}`}>
             <label className="flex flex-col gap-1">
               <span className="text-sm font-semibold text-ink-soft">{m.houseName}</span>
               <input name="hotelName" required minLength={2} className={field} />
@@ -83,8 +87,15 @@ export default function ConvertCard({ form, policy, signupOpen, m, intlLocale }:
             </label>
             <label className="flex flex-col gap-1">
               <span className="text-sm font-semibold text-ink-soft">{m.inviteCode}</span>
-              <input name="code" required autoComplete="off" spellCheck={false} autoCapitalize="none" className={field} />
+              <input name="code" required={!affiliate} autoComplete="off" spellCheck={false} autoCapitalize="none" className={field} />
             </label>
+            {affiliate && (
+              <label className="flex flex-col gap-1">
+                <span className="text-sm font-semibold text-ink-soft">{m.referredBy}</span>
+                <input name="ref" defaultValue={refCode} autoComplete="off" spellCheck={false} autoCapitalize="characters"
+                  className={`${field} font-mono uppercase`} />
+              </label>
+            )}
           </div>
 
           <fieldset className="flex flex-col gap-2">

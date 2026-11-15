@@ -28,6 +28,8 @@ export type HotelAccountInput = {
   policies?: Record<string, unknown>
   /** Zimmer, die gleich mit angelegt werden. */
   rooms?: { floor: number; number: string }[]
+  /** Partner, dem das Konto zugeordnet wird (Partnerprogramm) — nur hier, beim Anlegen. */
+  referredBy?: string | null
 }
 
 export type HotelAccountResult = { accountId?: string; hotelId?: string; slug?: string; stripe?: boolean; error?: string }
@@ -68,7 +70,9 @@ export async function createHotelAccount(input: HotelAccountInput): Promise<Hote
   const rollback = async (accountId: string) => { await admin.from('accounts').delete().eq('id', accountId) }
 
   // ── Konto ────────────────────────────────────────────────────────────────
-  const { data: account, error: accErr } = await admin.from('accounts').insert({ name: hotelName }).select('id').single()
+  const { data: account, error: accErr } = await admin.from('accounts')
+    .insert({ name: hotelName, ...(input.referredBy ? { referred_by: input.referredBy, referred_at: new Date().toISOString() } : {}) })
+    .select('id').single()
   if (accErr || !account) return { error: format(e.createAccountFailed, { detail: accErr?.message ?? '' }) }
 
   // ── Erstes Haus. Slugs sind GLOBAL eindeutig (URL-Schlüssel).

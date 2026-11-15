@@ -85,7 +85,9 @@ function reducedMotion(): boolean {
 }
 const noSubscribe = () => () => {}
 
-export default function CleaningSimulation({ scenario = SCENARIO, caption, policy: controlled, detailLog = false, texts, m, intlLocale }: {
+export default function CleaningSimulation({ scenario = SCENARIO, caption, policy: controlled, detailLog = false, texts, m, intlLocale, simulatorHref = '/simulator' }: {
+  /** Ziel des Verweises auf den Simulator — die Landing Page hängt den Partner-Code an. */
+  simulatorHref?: string
   /** Texte aus der Rechnung (Hinweise, Protokoll, Beschreibung) — `simulator.app.day` der Sprachdatei. */
   texts: SimulatorMessages['app']['day']
   /** Oberfläche, Legende und Spaltentitel — `landing.day` der Sprachdatei. */
@@ -303,7 +305,7 @@ export default function CleaningSimulation({ scenario = SCENARIO, caption, polic
           notBefore: Math.round(GUEST.notBefore * 100),
           dnd: Math.round(GUEST.dndMorning * 100),
         }} tags={{
-          link: c => <a href="/simulator" className="font-semibold text-action-strong hover:underline">{c}</a>,
+          link: c => <a href={simulatorHref} className="font-semibold text-action-strong hover:underline">{c}</a>,
         }} />
       </p>}
     </div>

@@ -43,6 +43,24 @@ export function isPartnerCode(code: string): boolean {
   return CODE_RE.test(code)
 }
 
+/**
+ * Hängt den Code an einen internen Link — so reist er von der Landing Page
+ * bis zur Registrierung in der URL, ohne Cookie. Was kein Code sein kann,
+ * wird nicht weitergetragen.
+ */
+export function withRef(href: string, ref: string | null | undefined): string {
+  const code = normalizePartnerCode(ref)
+  if (!isPartnerCode(code)) return href
+  const [path, hash] = href.split('#')
+  return `${path}${path.includes('?') ? '&' : '?'}ref=${code}${hash ? `#${hash}` : ''}`
+}
+
+/** Der Code aus `?ref=…` in gespeicherter Form, oder leer. */
+export function refFromParam(value: string | string[] | undefined): string {
+  const code = normalizePartnerCode(Array.isArray(value) ? value[0] : value)
+  return isPartnerCode(code) ? code : ''
+}
+
 // ── Beträge ─────────────────────────────────────────────────────────────────
 
 /** Provision auf einen bezahlten Nettobetrag, kaufmännisch gerundet. */

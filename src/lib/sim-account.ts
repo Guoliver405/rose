@@ -51,7 +51,11 @@ export const SIGNUP_WINDOW_MS = 60 * 60_000
 /** Unbestätigte Konten verfallen nach so vielen Tagen. */
 export const UNCONFIRMED_DAYS = 7
 
-export type SimSignupInput = { email: string; password: string; marketing: boolean }
+export type SimSignupInput = {
+  email: string; password: string; marketing: boolean
+  /** Partner, über dessen Link die Registrierung kam — reist bis zur Umwandlung mit. */
+  referredBy?: string | null
+}
 
 /** Prüfmeldungen der Registrierung — aus der Sprachdatei (`simulator.account.errors`). */
 export type SignupErrorTexts = { emailInvalid: string; passwordShort: string; passwordLong: string }

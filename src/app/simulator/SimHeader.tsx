@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { withRef } from '@/lib/affiliate'
 import { simulatorName } from '@/lib/sim-account'
 import { getMessages } from '@/lib/i18n'
 import { getAdminLocale } from '@/utils/locale'
@@ -8,10 +9,12 @@ import { ADMIN_LOCALES } from '@/lib/i18n/locales'
 import { RoseLogo } from '@/components/brand/RoseLogo'
 
 /** Kopfzeile aller Seiten des Housekeeping-Simulators. */
-export default async function SimHeader({ signedIn, hotel = false }: {
+export default async function SimHeader({ signedIn, hotel = false, refCode = '' }: {
   signedIn: boolean
   /** Zugang mit Hotelkonto: Rückweg ins Portal. */
   hotel?: boolean
+  /** Partner-Code aus dem Link — reist zur Registrierung mit. */
+  refCode?: string
 }) {
   const locale = await getAdminLocale()
   const m = getMessages(locale).simulator.app.header
@@ -45,7 +48,7 @@ export default async function SimHeader({ signedIn, hotel = false }: {
               <Link href="/login" className="rounded-lg border border-edge px-3 py-1.5 font-semibold text-ink hover:border-edge-strong">
                 {m.signIn}
               </Link>
-              <Link href="/simulator/registrieren" className="hidden rounded-lg bg-action px-3 py-1.5 font-semibold text-action-foreground hover:bg-action-strong sm:block">
+              <Link href={withRef('/simulator/registrieren', refCode)} className="hidden rounded-lg bg-action px-3 py-1.5 font-semibold text-action-foreground hover:bg-action-strong sm:block">
                 {m.signup}
               </Link>
             </>

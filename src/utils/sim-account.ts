@@ -188,6 +188,7 @@ export async function registerSimAccount(
     user_id: p.userId,
     marketing_opt_in: input.marketing,
     marketing_text_version: input.marketing ? marketingTextVersion(await getAdminLocale()) : null,
+    referred_by: input.referredBy ?? null,
   })
   if (insErr) {
     // Nur ein in diesem Aufruf angelegter Nutzer wird zurückgerollt — und nie
@@ -316,7 +317,7 @@ export type ConvertInput = {
  * Anmeldung, Szenarien bleiben. Nur bestätigte, noch nicht umgewandelte
  * Simulator-Konten ohne jede Rolle im Hotelprodukt.
  */
-export async function convertSimAccount(userId: string, input: ConvertInput): Promise<{ slug?: string; stripe?: boolean; error?: string }> {
+export async function convertSimAccount(userId: string, input: ConvertInput & { referredBy?: string | null }): Promise<{ slug?: string; stripe?: boolean; error?: string }> {
   const e = await messages()
   const admin = createAdminClient()
   const { data: sim } = await admin.from('sim_accounts').select('confirmed_at, converted_account_id').eq('user_id', userId).maybeSingle()

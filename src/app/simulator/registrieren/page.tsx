@@ -8,6 +8,7 @@ import { format, getMessages } from '@/lib/i18n'
 import { getAdminLocale } from '@/utils/locale'
 import SimHeader from '../SimHeader'
 import SimSignupForm from './SimSignupForm'
+import { affiliateEnabled, refFromParam } from '@/lib/affiliate'
 
 export async function generateMetadata(): Promise<Metadata> {
   const m = getMessages(await getAdminLocale()).simulator.account.signup
@@ -22,13 +23,14 @@ export default async function SimRegistrierenPage({ searchParams }: { searchPara
 
   return (
     <>
-      <SimHeader signedIn={false} />
+      <SimHeader signedIn={false} refCode={affiliateEnabled() ? refFromParam(sp.ref) : ''} />
       <main className="flex flex-1 flex-col items-center gap-6 px-4 py-10">
         <div className="max-w-md text-center">
           <h1 className="text-2xl font-black text-ink">{simulatorName(locale)}</h1>
           <p className="mt-2 text-sm text-ink-soft">{m.signup.intro}</p>
         </div>
-        <SimSignupForm linkExpired={sp.fehler === 'link'} mailReady={mailReady()} m={m.signup} marketingText={m.marketing} />
+        <SimSignupForm linkExpired={sp.fehler === 'link'} mailReady={mailReady()} m={m.signup} marketingText={m.marketing}
+          affiliate={affiliateEnabled()} refCode={refFromParam(sp.ref)} />
       </main>
       <LegalFooter />
     </>

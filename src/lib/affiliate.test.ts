@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_RATE_BPS, HOLD_DAYS, PARTNER_CODE_ALPHABET, PARTNER_CODE_LENGTH,
   availableAt, commissionCents, isPartnerCode, isSelfReferral, normalizePartnerCode,
-  reversalCents, summarize, type CommissionEntry,
+  refFromParam, reversalCents, summarize, withRef, type CommissionEntry,
 } from './affiliate'
 import { generatePartnerCode } from './ids'
 import { MIN_MONTHLY_CENTS } from './pricing'
@@ -97,6 +97,28 @@ describe('Partner-Code', () => {
     expect(isPartnerCode('ABCDEFG0')).toBe(false)
     expect(isPartnerCode('abcdefgh')).toBe(false)
     expect(isPartnerCode('')).toBe(false)
+  })
+})
+
+describe('Code im Link', () => {
+  it('hängt den Code an interne Links', () => {
+    expect(withRef('/registrieren', 'ABCDEFGH')).toBe('/registrieren?ref=ABCDEFGH')
+    expect(withRef('/simulator?x=1', 'abcd-efgh')).toBe('/simulator?x=1&ref=ABCDEFGH')
+    expect(withRef('/#preise', 'ABCDEFGH')).toBe('/?ref=ABCDEFGH#preise')
+  })
+
+  it('trägt nichts weiter, was kein Code sein kann', () => {
+    expect(withRef('/registrieren', '')).toBe('/registrieren')
+    expect(withRef('/registrieren', null)).toBe('/registrieren')
+    expect(withRef('/registrieren', '"><script>')).toBe('/registrieren')
+    expect(withRef('/registrieren', 'ABC')).toBe('/registrieren')
+  })
+
+  it('liest den Code aus dem Parameter', () => {
+    expect(refFromParam('abcdefgh')).toBe('ABCDEFGH')
+    expect(refFromParam(['ABCDEFGH', 'ZZZZZZZZ'])).toBe('ABCDEFGH')
+    expect(refFromParam(undefined)).toBe('')
+    expect(refFromParam('nicht ein code')).toBe('')
   })
 })
 

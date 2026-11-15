@@ -11,6 +11,8 @@ import { format } from '@/lib/i18n/format'
 import { getAdminLocale } from '@/utils/locale'
 import Rich from '@/components/i18n/Rich'
 import SimHeader from './SimHeader'
+import { affiliateEnabled, refFromParam, withRef } from '@/lib/affiliate'
+import { referralCodeForSimUser } from '@/utils/affiliate'
 import SimulatorApp from './SimulatorApp'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -32,11 +34,16 @@ export default async function SimulatorPage({ searchParams }: { searchParams: Pr
   const messages = getMessages(locale).simulator
   const day = getMessages(locale).landing.day
   const m = messages.app
-  const scenarios = ctx ? await listScenarios(ctx.userId) : []
+  const [scenarios, referredCode] = await Promise.all([
+    ctx ? listScenarios(ctx.userId) : [],
+    ctx?.kind === 'sim' ? referralCodeForSimUser(ctx.userId) : '',
+  ])
+  // Partnerprogramm: der Code aus dem Link reist in der URL weiter zur Registrierung.
+  const ref = affiliateEnabled() ? refFromParam(sp.ref) : ''
 
   return (
     <>
-      <SimHeader signedIn={!!ctx} hotel={ctx?.kind === 'hotel'} />
+      <SimHeader signedIn={!!ctx} hotel={ctx?.kind === 'hotel'} refCode={ref} />
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8">
         {sp.willkommen && ctx && (
           <p className="flex items-center gap-2 rounded-xl border border-positive-pill-edge bg-positive-tint px-4 py-3 text-sm font-semibold text-positive-deep">
@@ -56,15 +63,17 @@ export default async function SimulatorPage({ searchParams }: { searchParams: Pr
         </div>
         {ctx
           ? <SimulatorApp initialScenarios={scenarios} m={m} day={day} intlLocale={intlLocale(locale)}
-              convert={ctx.kind === 'sim' ? { open: hotelSignupOpen(), m: messages.account.convert } : undefined} />
-          : <Intro m={m.page.teaser} />}
+              convert={ctx.kind === 'sim'
+                ? { open: hotelSignupOpen(), m: messages.account.convert, affiliate: affiliateEnabled(), refCode: referredCode }
+                : undefined} />
+          : <Intro m={m.page.teaser} signupHref={withRef('/simulator/registrieren', ref)} />}
       </main>
       <LegalFooter />
     </>
   )
 }
 
-function Intro({ m }: { m: SimulatorMessages['app']['page']['teaser'] }) {
+function Intro({ m, signupHref }: { m: SimulatorMessages['app']['page']['teaser']; signupHref: string }) {
   const points = m.points
   return (
     <section className="grid gap-6 rounded-2xl border border-edge bg-surface-elevated p-6 md:grid-cols-[1fr_auto] md:items-center">
@@ -82,7 +91,7 @@ function Intro({ m }: { m: SimulatorMessages['app']['page']['teaser'] }) {
         </p>
       </div>
       <div className="flex flex-col gap-2">
-        <Link href="/simulator/registrieren"
+        <Link href={signupHref}
           className="rounded-lg bg-action px-5 py-3 text-center font-bold text-action-foreground hover:bg-action-strong">
           {m.signup}
         </Link>
