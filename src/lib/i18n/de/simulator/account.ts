@@ -71,6 +71,7 @@ export const account = {
       titleHotel: 'Simulator-Daten löschen',
       textSim: 'Löscht Ihren Zugang, gespeicherte Szenarien und die Einwilligung sofort und endgültig.',
       textHotel: 'Löscht Ihre gespeicherten Szenarien und die Einwilligung. Ihr Hotelzugang bleibt bestehen.',
+      partnerNote: 'Sie sind Partner im Partnerprogramm. Mit dem Löschen endet die Partnerschaft, und Ihre noch nicht ausgezahlte Provision ({amount}) verfällt.',
       /** `{phrase}` = Bestätigungswort aus `phrase`. */
       confirmLabel: 'Zur Bestätigung „{phrase}“ eintippen',
       submit: 'Endgültig löschen',

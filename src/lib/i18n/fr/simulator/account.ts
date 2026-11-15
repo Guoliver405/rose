@@ -62,6 +62,7 @@ export const account = {
       titleHotel: 'Supprimer les données du simulateur',
       textSim: 'Supprime immédiatement et définitivement votre accès, vos scénarios enregistrés et votre consentement.',
       textHotel: 'Supprime vos scénarios enregistrés et votre consentement. Votre accès à l’établissement est conservé.',
+      partnerNote: 'Vous êtes partenaire du programme partenaires. La suppression met fin au partenariat, et votre commission non encore versée ({amount}) est perdue.',
       confirmLabel: 'Saisissez « {phrase} » pour confirmer',
       submit: 'Supprimer définitivement',
     },

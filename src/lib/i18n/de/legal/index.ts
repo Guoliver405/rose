@@ -2,6 +2,7 @@ import { agb } from './agb'
 import { datenschutz } from './datenschutz'
 import { impressum } from './impressum'
 import { simulatorUse } from './simulatorUse'
+import { partnerTerms } from './partnerTerms'
 
 /**
  * Rechtstexte (Route-Gruppe `(legal)`), je Seite eine Datei, dazu Kopfzeile,
@@ -30,6 +31,7 @@ export const legal = {
   datenschutz,
   agb,
   simulatorUse,
+  partnerTerms,
 }
 
 export type LegalMessages = typeof legal

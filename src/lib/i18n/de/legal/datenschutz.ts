@@ -109,6 +109,22 @@ export const datenschutz: LegalPage = {
       ],
     },
     {
+      title: '7a. Partnerprogramm',
+      id: 'partner',
+      blocks: [
+        'Am Partnerprogramm nehmen Sie freiwillig teil; es gelten die <partnerbedingungen>Partnerbedingungen</partnerbedingungen>. Verantwortlich sind wir als Anbieter (Abschnitt 1). Wir verarbeiten:',
+        {
+          list: [
+            'Ihren <b>Partner-Eintrag</b>: die Verknüpfung mit Ihrem Zugang, Ihren Code, den Provisionssatz, Zeitpunkt und Fassung Ihrer Zustimmung zu den Partnerbedingungen und gegebenenfalls die Freischaltung (Art. 6 Abs. 1 lit. b DSGVO).',
+            'Die <b>Zuordnung</b>: An einem Kundenkonto, das sich mit Ihrem Code registriert, wird vermerkt, dass es von Ihnen empfohlen wurde. Der Code wird im Link übertragen; ein Cookie wird dafür nicht gesetzt.',
+            'Das <b>Provisionsbuch</b>: je bezahlter Rechnung eines zugeordneten Kontos eine Buchung mit Leistungsmonat, Betrag und Satz. Als Abrechnungsunterlage bewahren wir es nach den handels- und steuerrechtlichen Pflichten auf (Art. 6 Abs. 1 lit. c DSGVO).',
+          ],
+        },
+        '<b>Was ein Partner über zugeordnete Kunden sieht:</b> die Zahl der zugeordneten Konten, die abgerechnete Zimmerzahl und seine Provision je Monat – keine Namen der Häuser und keine Inhalte der Konten. Bei wenigen zugeordneten Konten kann ein Partner aus diesen Zahlen auf Zimmerzahl und Rechnungsbetrag eines einzelnen Hauses schließen, das er durch seine Empfehlung kennt. Rechtsgrundlage ist unser berechtigtes Interesse und das des Partners an einer nachprüfbaren Abrechnung der Provision (Art. 6 Abs. 1 lit. f DSGVO).',
+        'Mit dem Löschen Ihres Zugangs wird Ihr Partner-Eintrag gelöscht; die Buchungen bleiben als Abrechnungsunterlage ohne Bezug zu Ihrer Person erhalten.',
+      ],
+    },
+    {
       title: '8. Übermittlung in Drittländer',
       blocks: [
         'Die genannten Dienstleister haben ihren Sitz außerhalb der EU; die Daten von RoSe werden in der EU gespeichert (Datenbank und Serverfunktionen in Irland). Soweit dennoch ein Zugriff aus einem Drittland möglich ist (etwa Support oder das weltweite Auslieferungsnetz des Hosters), stützt sich die Übermittlung auf die EU-Standardvertragsklauseln (Art. 46 Abs. 2 lit. c DSGVO) und – soweit der Dienstleister zertifiziert ist – auf den Angemessenheitsbeschluss zum EU-US Data Privacy Framework (Art. 45 DSGVO). Stripe Payments Europe hat seinen Sitz in Irland und kann Daten innerhalb der Stripe-Gruppe an Stripe, Inc. (USA) übermitteln; auch dafür gelten Standardvertragsklauseln und das EU-US Data Privacy Framework. Mit Vercel, Supabase und Resend bestehen Auftragsverarbeitungsverträge; Stripe handelt für die in Abschnitt 6 genannten Zwecke als eigener Verantwortlicher.',

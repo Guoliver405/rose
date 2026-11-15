@@ -420,7 +420,7 @@ export async function getStaffDeletionImpactAction(
     return { error: e.ownerOnlyManagers }
   }
 
-  const [log, cleanings, checkIns, ordersDone, card, cleaning, firstRow, lastRow, otherRows, ownerRow] =
+  const [log, cleanings, checkIns, ordersDone, card, cleaning, firstRow, lastRow, otherRows, ownerRow, partnerRow] =
     await Promise.all([
       admin.from('staff_log').select('*', { count: 'exact', head: true }).eq('profile_id', userId),
       admin.from('staff_log').select('*', { count: 'exact', head: true }).eq('profile_id', userId).eq('kind', 'clean_done'),
@@ -432,6 +432,8 @@ export async function getStaffDeletionImpactAction(
       admin.from('staff_log').select('at').eq('profile_id', userId).order('at', { ascending: false }).limit(1).maybeSingle(),
       admin.from('hotel_members').select('hotel_id').eq('user_id', userId).neq('hotel_id', ctx.hotelId),
       admin.from('account_members').select('account_id').eq('user_id', userId).limit(1),
+      // Partnerprogramm: ein Partner behält sein Anmeldekonto (und landet im Partnerbereich).
+      admin.from('affiliates').select('id').eq('user_id', userId).limit(1),
     ])
 
   let cleaningRoom: string | null = null
@@ -450,7 +452,7 @@ export async function getStaffDeletionImpactAction(
   // hängt — dann gibt es nichts zu verlieren und der Abtipp-Riegel wäre
   // Ritual statt Schutz.
   const accountKept =
-    staff.kind !== 'maid' && (hatVorgaenge || otherHotels > 0 || (ownerRow.data ?? []).length > 0)
+    staff.kind !== 'maid' && (hatVorgaenge || otherHotels > 0 || (ownerRow.data ?? []).length > 0 || (partnerRow.data ?? []).length > 0)
   const requiresPhrase = staff.kind === 'maid' && logEntries > 0
   const phrase = staff.kind === 'maid' ? (staff.username ?? '') : staff.displayName
 

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { DEFAULT_RATE_BPS, HOLD_DAYS } from '@/lib/affiliate'
 import Rich from '@/components/i18n/Rich'
 import { format, type LegalMessages, type Vars } from '@/lib/i18n'
 import type { LegalBlock, LegalPage, LegalText } from '@/lib/i18n/de/legal'
@@ -38,6 +39,9 @@ export function legalVars(): Vars {
     pricePerRoom: formatCents(PRICE_PER_ROOM_CENTS),
     minMonthly: formatCents(MIN_MONTHLY_CENTS),
     simulatorName: SIMULATOR_NAME,
+    // Partnerprogramm: Satz und Haltefrist aus `lib/affiliate.ts`, nie aus dem Text.
+    partnerRate: new Intl.NumberFormat('de-DE', { style: 'percent', maximumFractionDigits: 2 }).format(DEFAULT_RATE_BPS / 10000),
+    holdDays: HOLD_DAYS,
   }
 }
 
@@ -70,6 +74,8 @@ function richTags(strongLinks: boolean) {
     datenschutz: internal('/datenschutz'),
     impressum: internal('/impressum'),
     simulatorDatenschutz: internal('/datenschutz#simulator'),
+    partnerDatenschutz: internal('/datenschutz#partner'),
+    partnerbedingungen: internal('/partnerbedingungen'),
     website: (c: string) => <a href={PROVIDER.website} className={linkClass} rel="noopener">{c}</a>,
     stripePrivacy: (c: string) => (
       <a href="https://stripe.com/de/privacy" target="_blank" rel="noopener" className={linkClass}>{c}</a>

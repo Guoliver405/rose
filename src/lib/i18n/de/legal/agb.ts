@@ -90,6 +90,7 @@ export const agb: LegalPage = {
         '(2) Der Anbieter setzt als Unterauftragsverarbeiter Dienstleister für Datenbank und Anmeldung (Supabase), Hosting (Vercel) und E-Mail-Versand (Resend) ein; Einzelheiten und Speicherorte nennt die <datenschutz>Datenschutzerklärung</datenschutz>. Über Wechsel informiert der Anbieter vorab; der Kunde kann aus wichtigem Grund widersprechen.',
         '(3) Der Dienst ist so gestaltet, dass Gäste anonym bleiben (kein Name, keine Kontaktdaten). Der Kunde ist dafür verantwortlich, diese Gestaltung nicht durch eigene Eintragungen zu unterlaufen.',
         '(4) Fügt der Kunde einer Meldung an den Support ein Bildschirmfoto bei, beschränkt er es auf das, was für die Meldung nötig ist. Zeigt es personenbezogene Daten, verarbeitet der Anbieter sie im Rahmen der Auftragsverarbeitung ausschließlich zur Bearbeitung der Meldung und löscht das Bild mit deren Abschluss.',
+        '(5) Hat sich der Kunde über die Empfehlung eines Partners des Anbieters registriert, wird das Konto diesem Partner zugeordnet. Der Partner erhält zur Abrechnung seiner Provision Kennzahlen (Zahl der Zimmer, Provision je Monat), jedoch weder den Namen des Kunden noch Inhalte des Kontos; Einzelheiten nennt die <datenschutz>Datenschutzerklärung</datenschutz>, Abschnitt 7a.',
       ],
     },
     {

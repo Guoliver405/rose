@@ -62,6 +62,7 @@ export const account = {
       titleHotel: 'Delete simulator data',
       textSim: 'Deletes your access, saved scenarios, and consent immediately and permanently.',
       textHotel: 'Deletes your saved scenarios and consent. Your property access remains.',
+      partnerNote: 'You are a partner in the partner program. Deleting ends the partnership, and your commission that hasn’t been paid out yet ({amount}) is forfeited.',
       confirmLabel: 'Type “{phrase}” to confirm',
       submit: 'Delete permanently',
     },

@@ -275,7 +275,17 @@ am Ende nach `verify` und Integrationstests.
   seit 15.11. zusätzlich `charge.refunded`, `charge.dispute.funds_withdrawn`
   und `charge.dispute.funds_reinstated`. **Beim Wechsel auf das Live-Konto
   braucht der dortige Endpunkt dieselben drei Ereignisse.**
-- **Offen:** Schritt 4–6. Eine echte Erstattung von Stripe bis ins Buch lässt
+- **Schritt 4 und 5 gebaut** (15.11., `fb2ded3` und der Commit zu Schritt 5):
+  Partnerbereich `/partner`, Wege dorthin, Löschwege, Partnerbedingungen
+  (`/partnerbedingungen`, Entwurf, Fassung `2026-11`), Datenschutz Abschnitt
+  7a, AGB § 8 Abs. 5, Stand der Rechtstexte „November 2026“.
+- **Abweichungen vom Plan:** kein eigener Knopf zum Speichern des QR-Codes
+  (Rechtsklick oder langer Druck); die Löschung eines **Kontos oder Hauses**
+  braucht keinen Verfall-Hinweis, weil ein Partner seinen Zugang dabei behält
+  (`nochGebraucht`, ebenso beim Löschen von Personal) — der Hinweis mit Betrag
+  steht nur beim Löschen des Simulator-Kontos, dem einzigen Weg, auf dem ein
+  Partner seinen Zugang selbst löscht.
+- **Offen:** Schritt 6 (Integrationstests, Doku in AGENTS.md). Eine echte Erstattung von Stripe bis ins Buch lässt
   sich erst nach dem Deploy prüfen (der Webhook zeigt auf Produktion).
 
 ## 11. Entschieden (User, 15.11.2026)

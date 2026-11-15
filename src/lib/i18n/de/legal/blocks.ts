@@ -7,7 +7,7 @@
  * Texte dürfen Platzhalter tragen (`{name}`, `{email}`, `{pricePerRoom}` …,
  * Werte aus `provider.ts`, `pricing.ts`, `sim-account.ts`) und flache Tags für
  * Hervorhebung, Code und Links (`<b>`, `<code>`, `<agb>`, `<datenschutz>`,
- * `<impressum>`, `<simulatorDatenschutz>`, `<stripePrivacy>`, `<website>`).
+ * `<impressum>`, `<simulatorDatenschutz>`, `<partnerDatenschutz>`, `<partnerbedingungen>`, `<stripePrivacy>`, `<website>`).
  */
 
 /** Bedingung an Anbieter-Daten: Zeile erscheint nur, wenn der Wert gesetzt (bzw. nicht gesetzt) ist. */

@@ -13,8 +13,8 @@ describe('Rechtstexte – Schreibweise (deutsch)', () => {
   const all = flattenMessages(legal).map(([k, t]) => [`legal.${k}`, t] as const)
   const hits = (re: RegExp) => all.filter(([, t]) => re.test(t))
 
-  it('enthält Texte aus allen vier Seiten', () => {
-    for (const page of ['impressum', 'datenschutz', 'agb', 'simulatorUse']) {
+  it('enthält Texte aus allen fünf Seiten', () => {
+    for (const page of ['impressum', 'datenschutz', 'agb', 'simulatorUse', 'partnerTerms']) {
       expect(all.some(([k]) => k.startsWith(`legal.${page}.sections.`))).toBe(true)
     }
   })

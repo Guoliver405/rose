@@ -75,12 +75,16 @@ async function userIdsOfHotels(admin: SupabaseClient, hotelIds: string[]): Promi
  * Nutzer zeigt, gehört zu einem anderen Haus oder Konto und ist tabu.
  */
 async function nochGebraucht(admin: SupabaseClient, userId: string): Promise<boolean> {
-  const [{ data: profile }, { data: member }, { data: owner }] = await Promise.all([
+  // Partnerprogramm (15.11.2026): Ein Partner behält seinen Zugang auch ohne
+  // Haus — sonst nähme die Löschung des Hauses seine Partnerschaft und die
+  // gesammelte Provision mit. Er landet danach im Partnerbereich.
+  const [{ data: profile }, { data: member }, { data: owner }, { data: partner }] = await Promise.all([
     admin.from('profiles').select('id').eq('id', userId).limit(1),
     admin.from('hotel_members').select('user_id').eq('user_id', userId).limit(1),
     admin.from('account_members').select('user_id').eq('user_id', userId).limit(1),
+    admin.from('affiliates').select('id').eq('user_id', userId).limit(1),
   ])
-  return (profile ?? []).length > 0 || (member ?? []).length > 0 || (owner ?? []).length > 0
+  return (profile ?? []).length > 0 || (member ?? []).length > 0 || (owner ?? []).length > 0 || (partner ?? []).length > 0
 }
 
 async function count(admin: SupabaseClient, table: string, hotelIds: string[]): Promise<number> {

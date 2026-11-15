@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { formatCents } from '@/lib/money'
 import { useState, useTransition } from 'react'
 import { Trash2 } from 'lucide-react'
 import type { SimulatorMessages } from '@/lib/i18n'
@@ -10,7 +11,9 @@ import { simDeleteAccountAction, simMarketingAction } from '../actions'
 
 const card = 'rounded-2xl border border-edge bg-surface-elevated p-5'
 
-export default function KontoForms({ email, kind, marketingOptInAt, m, marketing, deletePhrase, intlLocale }: {
+export default function KontoForms({ email, kind, marketingOptInAt, partnerForfeitCents, m, marketing, deletePhrase, intlLocale }: {
+  /** Partner im Partnerprogramm, dessen Zugang mit dem Löschen verschwindet: was an Provision verfällt. `null` = betrifft ihn nicht. */
+  partnerForfeitCents: number | null
   email: string
   kind: 'sim' | 'hotel'
   marketingOptInAt: string | null
@@ -73,6 +76,11 @@ export default function KontoForms({ email, kind, marketingOptInAt, m, marketing
         <p className="mt-2 text-sm text-ink-soft">
           {kind === 'sim' ? m.delete.textSim : m.delete.textHotel}
         </p>
+        {partnerForfeitCents !== null && (
+          <p className="mt-2 rounded-lg border border-caution-tint-edge bg-caution-tint px-3 py-2 text-sm text-ink">
+            {format(m.delete.partnerNote, { amount: formatCents(partnerForfeitCents, intlLocale) })}
+          </p>
+        )}
         <form className="mt-3 flex flex-wrap items-end gap-2" onSubmit={e => {
           e.preventDefault()
           setDelError(null)
