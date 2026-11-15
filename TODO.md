@@ -256,6 +256,18 @@ geprüft – ohne Befund. Protokoll des Agenten: `RoSe-Blindtest/protokoll.md`
 - [ ] **Hotel zwischen Konten verschieben** (Betreiberwechsel) — bisher außen
       vor. (6d-Plan, Abschnitt 14)
 
+## Partnerprogramm (26.10./15.11.2026)
+
+- [ ] **Erster Bauabschnitt: Zuordnung, Provisionsbuch, Partnerbereich** —
+      Bauplan [Affiliate-Plan-2026-11-15.md](Sessions/Affiliate-Plan-2026-11-15.md),
+      Grundlage [Affiliate-Notizen-2026-10-26.md](Sessions/Affiliate-Notizen-2026-10-26.md).
+      Nichts gebaut. Entschieden am 15.11. (Abschnitt 11): Reinigungskräfte
+      über ein Simulator-Konto, Haltefrist 60 Tage, Partner-Code ersetzt den
+      Einladungscode nach Freischaltung, keine nachträgliche Zuordnung.
+- [ ] **Auszahlung** (zweiter Abschnitt) — hängt an Stripe Global Payouts
+      (Private Preview anfragen), Steuerberater (Gutschrift, Reverse Charge,
+      private Partner), Mindestauszahlung, Partnerbedingungen.
+
 ## Produkt-Ausbau (Wunschliste 04.09.2026)
 
 Mittelfristig umzusetzen; Reihenfolge noch offen. Die Punkte zur
