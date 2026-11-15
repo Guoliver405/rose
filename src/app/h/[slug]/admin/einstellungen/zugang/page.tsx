@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import PartnerEntry from '@/components/partner/PartnerEntry'
 import { redirect } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { getManagementContext } from '@/utils/auth'
@@ -78,6 +79,9 @@ export default async function ZugangPage({
         <div><LanguageSwitch current={locale} offered={ADMIN_LOCALES} inline /></div>
         <p className="text-xs text-ink-muted">{m.myAccess.language.hint}</p>
       </section>
+
+      {/* Partnerprogramm (15.11.2026) — für jede Rolle, auch die Rezeption. */}
+      <PartnerEntry />
     </div>
   )
 }

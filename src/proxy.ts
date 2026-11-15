@@ -69,5 +69,7 @@ export const config = {
     '/simulator', '/simulator/:path*',
     // Support-Seite des RoSe-Teams (19.10.2026), Default-Cookies wie die Verwaltung.
     '/support', '/support/:path*',
+    // Partnerbereich (Partnerprogramm, 15.11.2026), Default-Cookies wie die Verwaltung.
+    '/partner', '/partner/:path*',
   ],
 }

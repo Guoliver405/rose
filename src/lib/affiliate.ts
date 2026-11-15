@@ -21,6 +21,15 @@ export const DEFAULT_RATE_BPS = 2000
  */
 export const HOLD_DAYS = 60
 
+/**
+ * Fassung der Partnerbedingungen (`/partnerbedingungen`), der ein Partner
+ * zugestimmt hat. Wortlaut ändern heißt Fassung hochzählen.
+ */
+export const PARTNER_TERMS_VERSION = '2026-11'
+
+/** Wohin sich ein Partner wendet (Freischaltung). Öffentliche Adresse, bewusst nicht `SUPPORT_MAIL_TO`. */
+export const PARTNER_CONTACT = 'support@rose-roomservice.app'
+
 // ── Partner-Code ────────────────────────────────────────────────────────────
 
 /** Ohne verwechselbare Zeichen: kein 0/O, kein 1/I/L. */

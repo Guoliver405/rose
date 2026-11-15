@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import PartnerEntry from '@/components/partner/PartnerEntry'
 import { redirect } from 'next/navigation'
 import LegalFooter from '@/components/LegalFooter'
 import { createClient } from '@/utils/supabase/server'
@@ -33,6 +34,8 @@ export default async function SimKontoPage() {
         <h1 className="text-2xl font-black text-ink">{m.konto.title}</h1>
         <KontoForms email={data.user?.email ?? ''} kind={ctx.kind} marketingOptInAt={ctx.marketingOptInAt}
           m={m.konto} marketing={m.marketing} deletePhrase={m.deletePhrase} intlLocale={intlLocale(locale)} />
+        {/* Partnerprogramm (15.11.2026) — auch ohne Haus, etwa für Reinigungskräfte mit eigenem Konto. */}
+        <PartnerEntry />
       </main>
       <LegalFooter />
     </>

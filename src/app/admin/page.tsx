@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import PartnerEntry from '@/components/partner/PartnerEntry'
 import { redirect } from 'next/navigation'
 import { BarChart3, Building2, ChevronRight, ConciergeBell, CreditCard, Sparkles } from 'lucide-react'
 import { listAccessibleHotels, getAccountContext } from '@/utils/auth'
@@ -282,6 +283,9 @@ export default async function HotelPickerPage() {
           <ChevronRight className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden />
         </Link>
       )}
+
+      {/* Partnerprogramm (15.11.2026) — Inhaber und Manager; die Rezeption findet es unter „Mein Zugang“. */}
+      <PartnerEntry />
 
       {/* Löschbegehren — nur der Kontoinhaber, bewusst ganz unten. */}
       {account && (

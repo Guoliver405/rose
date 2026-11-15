@@ -1,4 +1,5 @@
 import { cache } from 'react'
+import { affiliateEnabled } from '@/lib/affiliate'
 import { createClient } from '@/utils/supabase/server'
 import { parseSupportIds } from '@/lib/tickets'
 import { createAdminClient } from '@/utils/supabase/service'
@@ -253,7 +254,9 @@ export async function landingRoute(): Promise<string | null> {
     // Ein Konto des RoSe-Teams ohne eigenes Haus (19.10.2026): direkt zu den Meldungen.
     const userId = await getAuthUserId()
     if (userId && parseSupportIds(process.env.SUPPORT_USER_IDS).includes(userId.toLowerCase())) return '/support'
-    return (await getSimContext())?.kind === 'sim' ? '/simulator' : null
+    if ((await getSimContext())?.kind === 'sim') return '/simulator'
+    // Nur noch Partner (das Haus ist gelöscht, der Zugang blieb): in den Partnerbereich.
+    return (await getPartnerContext())?.partner ? '/partner' : null
   }
   const nurRezeption = hotels.every(h => h.role === 'reception')
   return nurRezeption ? `/h/${hotels[0].slug}/admin` : '/admin'
@@ -335,4 +338,42 @@ export const getSimContext = cache(async (): Promise<SimContext | null> => {
   if (hotels.some(h => h.role !== 'reception')) return { userId, kind: 'hotel', marketingOptInAt }
   if (sim?.confirmed_at) return { userId, kind: 'sim', marketingOptInAt }
   return null
+})
+
+/**
+ * Partnerbereich `/partner` (Partnerprogramm, 15.11.2026). Partner werden
+ * kann, wer sich in der Verwaltung anmeldet — Inhaber, Manager, Rezeption —
+ * oder ein bestätigtes Simulator-Konto hat; Reinigungskräfte kommen über ein
+ * Simulator-Konto (ihr Zugang am Board hängt am Haus und hat keine eigene
+ * Adresse). Wer schon Partner ist, behält den Zugang auch ohne Haus.
+ *
+ * Ohne `AFFILIATE_ENABLED` gibt es den Bereich nicht.
+ */
+export type PartnerContext = {
+  userId: string
+  /** Wohin „zurück“ führt; `null` = nur noch Partner. */
+  home: { kind: 'houses' } | { kind: 'house'; slug: string } | { kind: 'simulator' } | null
+  partner: { id: string; code: string; rateBps: number; approved: boolean } | null
+}
+
+export const getPartnerContext = cache(async (): Promise<PartnerContext | null> => {
+  if (!affiliateEnabled()) return null
+  const userId = await getAuthUserId()
+  if (!userId) return null
+  const admin = createAdminClient()
+  const [{ data: row }, { data: sim }, hotels] = await Promise.all([
+    admin.from('affiliates').select('id, code, rate_bps, approved_at').eq('user_id', userId).maybeSingle(),
+    admin.from('sim_accounts').select('confirmed_at').eq('user_id', userId).maybeSingle(),
+    listAccessibleHotels(),
+  ])
+  const home: PartnerContext['home'] = hotels.some(h => h.role !== 'reception')
+    ? { kind: 'houses' }
+    : hotels.length > 0 ? { kind: 'house', slug: hotels[0].slug }
+    : sim?.confirmed_at ? { kind: 'simulator' } : null
+  if (!home && !row) return null
+  return {
+    userId,
+    home,
+    partner: row ? { id: row.id, code: row.code, rateBps: row.rate_bps, approved: row.approved_at !== null } : null,
+  }
 })

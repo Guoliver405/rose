@@ -2,8 +2,10 @@ import { createAdminClient } from '@/utils/supabase/service'
 import { getMessages } from '@/lib/i18n'
 import { getAdminLocale } from '@/utils/locale'
 import {
-  affiliateEnabled, availableAt, commissionCents, isPartnerCode, isSelfReferral, normalizePartnerCode, reversalCents,
+  PARTNER_TERMS_VERSION, affiliateEnabled, availableAt, commissionCents, isPartnerCode, isSelfReferral,
+  normalizePartnerCode, reversalCents, summarize, type CommissionEntry, type CommissionSummary,
 } from '@/lib/affiliate'
+import { generatePartnerCode } from '@/lib/ids'
 import { checkInviteCode, hotelSignupOpen, normalizeCode } from '@/utils/hotel-account'
 
 /*
@@ -244,4 +246,69 @@ export async function recordReversal(input: ReversalInput): Promise<'recorded' |
     throw new Error(`affiliate_commissions: ${error.message}`)
   }
   return 'recorded'
+}
+
+// ── Partnerbereich ──────────────────────────────────────────────────────────
+
+/**
+ * Legt den Partner-Eintrag an. Der Code ist zufällig; trifft er einen
+ * vergebenen, wird neu gezogen. Gibt es den Eintrag schon (Doppelklick,
+ * zweites Fenster), ist das kein Fehler.
+ */
+export async function becomePartner(userId: string): Promise<{ error?: true }> {
+  const admin = createAdminClient()
+  for (let versuch = 0; versuch < 5; versuch++) {
+    const { error } = await admin.from('affiliates')
+      .insert({ user_id: userId, code: generatePartnerCode(), terms_version: PARTNER_TERMS_VERSION })
+    if (!error) return {}
+    if (error.code !== '23505') { console.error('[affiliate] affiliates:', error.message); return { error: true } }
+    const { data: schonDa } = await admin.from('affiliates').select('id').eq('user_id', userId).maybeSingle()
+    if (schonDa) return {}
+  }
+  return { error: true }
+}
+
+export type PartnerOverview = {
+  /** Konten, die diesem Partner heute zugeordnet sind. */
+  accounts: number
+  /** Davon mit mindestens einer bezahlten Rechnung. */
+  accountsPaying: number
+  /** Zimmer im zuletzt abgerechneten Monat — über alle geworbenen Konten. */
+  rooms: { periodStart: string; count: number } | null
+  summary: CommissionSummary
+}
+
+/**
+ * Zahlen für den Partnerbereich — ausdrücklich OHNE Namen der geworbenen
+ * Häuser. Bei wenigen Konten lässt sich aus den Monatszahlen trotzdem auf ein
+ * einzelnes Haus schließen; das steht in den Partnerbedingungen.
+ */
+export async function getPartnerOverview(affiliateId: string, now: Date = new Date()): Promise<PartnerOverview> {
+  const admin = createAdminClient()
+  const [{ data: accounts }, { data: entries }, { data: invoices }] = await Promise.all([
+    admin.from('accounts').select('id').eq('referred_by', affiliateId),
+    admin.from('affiliate_commissions')
+      .select('kind, invoice_id, account_id, period_start, amount_cents, available_at')
+      .eq('affiliate_id', affiliateId),
+    admin.from('invoices').select('period_start, rooms')
+      .eq('affiliate_id', affiliateId).not('stripe_invoice_id', 'is', null)
+      .order('period_start', { ascending: false }).limit(200),
+  ])
+  const ids = new Set((accounts ?? []).map(a => a.id as string))
+  const zahlend = new Set((entries ?? []).filter(e => e.kind === 'commission' && ids.has(e.account_id as string)).map(e => e.account_id as string))
+  const letzte = (invoices ?? [])[0]?.period_start as string | undefined
+  return {
+    accounts: ids.size,
+    accountsPaying: zahlend.size,
+    rooms: letzte
+      ? { periodStart: letzte, count: (invoices ?? []).filter(i => i.period_start === letzte).reduce((s, i) => s + (i.rooms as number), 0) }
+      : null,
+    summary: summarize((entries ?? []).map(e => ({
+      kind: e.kind as CommissionEntry['kind'],
+      invoiceId: e.invoice_id as string | null,
+      periodStart: e.period_start as string,
+      amountCents: e.amount_cents as number,
+      availableAt: e.available_at as string | null,
+    })), now),
+  }
 }

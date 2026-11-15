@@ -12,7 +12,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: ['/', '/impressum', '/datenschutz', '/agb', '/login', '/registrieren', '/simulator', '/simulator-nutzung'],
-      disallow: ['/admin', '/h/', '/guest', '/service', '/auth/', '/passwort-neu', '/passwort-vergessen', '/simulator/konto'],
+      disallow: ['/admin', '/h/', '/guest', '/service', '/auth/', '/passwort-neu', '/passwort-vergessen', '/simulator/konto', '/partner', '/support'],
     },
     sitemap: `${siteUrl()}/sitemap.xml`,
   }

@@ -10,6 +10,10 @@ import { help } from './de/help'
 import { symbols } from './de/symbols'
 import { landing } from './de/landing'
 import { legal } from './de/legal'
+import { partner } from './de/partner'
+import { partner as enPartner } from './en/partner'
+import { partner as frPartner } from './fr/partner'
+import { partner as esPartner } from './es/partner'
 import { guest as enGuest } from './en/guest'
 import { service as enService } from './en/service'
 import { admin as enAdmin } from './en/admin'
@@ -72,13 +76,14 @@ export type { HelpMessages } from './de/help'
 export type { SymbolsMessages } from './de/symbols'
 export type { LandingMessages } from './de/landing'
 export type { LegalMessages } from './de/legal'
+export type { PartnerMessages } from './de/partner'
 
 export {
   ADMIN_LOCALES, DEFAULT_LOCALE, GUEST_LOCALES, SERVICE_LOCALES, INTL_LOCALES, LOCALE_COOKIE, LOCALE_NAMES, LOCALES,
   isLocale, matchAcceptLanguage, parseFallbackLanguage, parseHomeLanguage, resolveLocale, type Locale,
 } from './locales'
 
-const de = { guest, service, mail, print, admin, auth, account, simulator, help, symbols, landing, legal }
+const de = { guest, service, mail, print, admin, auth, account, simulator, help, symbols, landing, legal, partner }
 export type Messages = typeof de
 
 /**
@@ -87,9 +92,9 @@ export type Messages = typeof de
  */
 const MESSAGES: Record<Locale, Messages> = {
   de,
-  en: { ...de, guest: enGuest, service: enService, admin: enAdmin, mail: enMail, print: enPrint, help: enHelp, symbols: enSymbols, account: enAccount, auth: enAuth, simulator: enSimulator, landing: enLanding, legal: { ...de.legal, common: enLegalCommon } },
-  fr: { ...de, guest: frGuest, service: frService, admin: frAdmin, mail: frMail, print: frPrint, help: frHelp, symbols: frSymbols, account: frAccount, auth: frAuth, simulator: frSimulator, landing: frLanding, legal: { ...de.legal, common: frLegalCommon } },
-  es: { ...de, guest: esGuest, service: esService, admin: esAdmin, mail: esMail, print: esPrint, help: esHelp, symbols: esSymbols, account: esAccount, auth: esAuth, simulator: esSimulator, landing: esLanding, legal: { ...de.legal, common: esLegalCommon } },
+  en: { ...de, guest: enGuest, service: enService, admin: enAdmin, mail: enMail, print: enPrint, help: enHelp, symbols: enSymbols, account: enAccount, auth: enAuth, simulator: enSimulator, landing: enLanding, partner: enPartner, legal: { ...de.legal, common: enLegalCommon } },
+  fr: { ...de, guest: frGuest, service: frService, admin: frAdmin, mail: frMail, print: frPrint, help: frHelp, symbols: frSymbols, account: frAccount, auth: frAuth, simulator: frSimulator, landing: frLanding, partner: frPartner, legal: { ...de.legal, common: frLegalCommon } },
+  es: { ...de, guest: esGuest, service: esService, admin: esAdmin, mail: esMail, print: esPrint, help: esHelp, symbols: esSymbols, account: esAccount, auth: esAuth, simulator: esSimulator, landing: esLanding, partner: esPartner, legal: { ...de.legal, common: esLegalCommon } },
 }
 
 export function getMessages(locale: Locale = DEFAULT_LOCALE): Messages {

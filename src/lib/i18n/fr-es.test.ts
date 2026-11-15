@@ -10,7 +10,7 @@ import { buildGuestSheet } from '../guest-guide'
  * keine deutschen Reste, Typografie, Anrede (Glossar
  * `Sessions/Glossar-fr-es-2026-10-19.md`) und wortgleiche Knöpfe.
  */
-const AREAS = ['guest', 'service', 'admin', 'mail', 'print', 'auth', 'account', 'simulator', 'help', 'symbols', 'landing'] as const
+const AREAS = ['guest', 'service', 'admin', 'mail', 'print', 'auth', 'account', 'simulator', 'help', 'symbols', 'landing', 'partner'] as const
 const DATA_KEY = /\.(art|id|ton|icon|href)$/
 const de = getMessages('de')
 
