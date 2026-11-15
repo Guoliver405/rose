@@ -257,6 +257,27 @@ am Ende nach `verify` und Integrationstests.
 6. Integrationstests, Nachweis in der Sandbox (Rechnung bezahlen, erstatten),
    Doku in AGENTS.md und Protokoll.
 
+### Stand (15.11.2026)
+
+- **Schritt 1–3 gebaut**, lokal committet (`2d9a772`, `4d45db8`, `aa2f0f7`),
+  **nicht gepusht**. Migration `2026-11-15_affiliate.sql` ist eingespielt
+  (noch nicht nach `archive/` verschoben). `AFFILIATE_ENABLED=1` steht nur in
+  `.env.local`, nicht in Vercel.
+- **Über den Plan hinaus:** Der Abgleich bucht bezahlte Rechnungen der letzten
+  90 Tage nach, die einen Partner, aber keine Buchung haben
+  (`bookMissingCommissions`) – sonst ginge eine Provision nach einem
+  verpassten Webhook still verloren.
+- **Weg Zahlung → Rechnung nachgemessen** (Sandbox, nur lesend):
+  `invoicePayments.list({ payment: { type: 'payment_intent', … } })` führt zur
+  Rechnung zurück. Geprüft an der einen bezahlten Rechnung dort (Überweisung);
+  Karte und Lastschrift stehen aus.
+- **Webhook-Endpunkt der I²D-Sandbox** (`we_1UFD1P3kzuRmE571rh3jVklq`) meldet
+  seit 15.11. zusätzlich `charge.refunded`, `charge.dispute.funds_withdrawn`
+  und `charge.dispute.funds_reinstated`. **Beim Wechsel auf das Live-Konto
+  braucht der dortige Endpunkt dieselben drei Ereignisse.**
+- **Offen:** Schritt 4–6. Eine echte Erstattung von Stripe bis ins Buch lässt
+  sich erst nach dem Deploy prüfen (der Webhook zeigt auf Produktion).
+
 ## 11. Entschieden (User, 15.11.2026)
 
 1. **Reinigungskräfte werden Partner über ein Simulator-Konto** mit eigener
