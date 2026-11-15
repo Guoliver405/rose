@@ -285,7 +285,16 @@ am Ende nach `verify` und Integrationstests.
   (`nochGebraucht`, ebenso beim Löschen von Personal) — der Hinweis mit Betrag
   steht nur beim Löschen des Simulator-Kontos, dem einzigen Weg, auf dem ein
   Partner seinen Zugang selbst löscht.
-- **Offen:** Schritt 6 (Integrationstests, Doku in AGENTS.md). Eine echte Erstattung von Stripe bis ins Buch lässt
+- **Schritt 6 gebaut** (15.11.): `tests/integration/affiliate.test.ts`, 24
+  Fälle; ganze Suite grün (108 Integrationstests, 814 Unit-Tests). Doku in
+  AGENTS.md und TODO.md, Migration nach `archive/` verschoben.
+- **Nicht durch Tests gedeckt:** `nochGebraucht` und `accountKept` (Partner
+  behält den Zugang beim Löschen von Haus, Konto, Personal), der Löschdialog
+  mit Verfall-Hinweis, die Webhook-Zweige für Erstattung und Rückbuchung
+  (nur `recordReversal` selbst ist getestet), die Ansicht des Partnerbereichs
+  mit Zahlen im Browser.
+- **Offen:** Einschalten in Vercel, Freischaltung des ersten Partners,
+  Auszahlung (zweiter Abschnitt). Eine echte Erstattung von Stripe bis ins Buch lässt
   sich erst nach dem Deploy prüfen (der Webhook zeigt auf Produktion).
 
 ## 11. Entschieden (User, 15.11.2026)

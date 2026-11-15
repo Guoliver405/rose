@@ -258,12 +258,24 @@ geprüft – ohne Befund. Protokoll des Agenten: `RoSe-Blindtest/protokoll.md`
 
 ## Partnerprogramm (26.10./15.11.2026)
 
-- [ ] **Erster Bauabschnitt: Zuordnung, Provisionsbuch, Partnerbereich** —
-      Bauplan [Affiliate-Plan-2026-11-15.md](Sessions/Affiliate-Plan-2026-11-15.md),
-      Grundlage [Affiliate-Notizen-2026-10-26.md](Sessions/Affiliate-Notizen-2026-10-26.md).
-      Nichts gebaut. Entschieden am 15.11. (Abschnitt 11): Reinigungskräfte
-      über ein Simulator-Konto, Haltefrist 60 Tage, Partner-Code ersetzt den
-      Einladungscode nach Freischaltung, keine nachträgliche Zuordnung.
+- [x] ~~**Erster Bauabschnitt: Zuordnung, Provisionsbuch, Partnerbereich**~~ —
+      15.11.2026 gebaut ([Bauplan](Sessions/Affiliate-Plan-2026-11-15.md),
+      Stand in Abschnitt 10), hinter `AFFILIATE_ENABLED`.
+- [ ] **Partnerprogramm einschalten** — `AFFILIATE_ENABLED=1` in Vercel setzen,
+      sobald die Partnerbedingungen gelesen bzw. geprüft sind; ersten Partner
+      per SQL freischalten (`update affiliates set approved_at = now() …`).
+      Danach in Produktion prüfen: Registrierung über einen Partner-Link,
+      bezahlte Testrechnung ⇒ Buchung, **Erstattung in der Sandbox ⇒
+      Rücknahme** (Webhook, erst nach dem Deploy prüfbar).
+- [ ] **Partnerbedingungen: drei Stellen entscheiden** — Abschnitt 5 (kein
+      Auszahlungstermin, bis der Weg feststeht), Abschnitt 9 (wir können mit
+      30 Tagen Frist beenden), Abschnitt 11 (Änderungen per E-Mail ankündigen —
+      diese Mail gibt es im Code noch nicht).
+- [ ] **Kleinere Lücken** — Freischalten über `/support` statt SQL, Flyer aus
+      den Druckblättern, teilbares Simulator-Szenario mit Partner-Link, Hinweis
+      auf das Programm im Reinigungsboard, Abgleich des Zahlungsmittels gegen
+      Selbstwerbung; beim Wechsel aufs Live-Konto drei Webhook-Ereignisse
+      ergänzen (siehe Bauplan).
 - [ ] **Auszahlung** (zweiter Abschnitt) — hängt an Stripe Global Payouts
       (Private Preview anfragen), Steuerberater (Gutschrift, Reverse Charge,
       private Partner), Mindestauszahlung, Partnerbedingungen.
