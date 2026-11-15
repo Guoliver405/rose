@@ -377,6 +377,9 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       **13.09.: Sandbox auf das I²D-Konto umgezogen** (Tax, Registrierung,
       Zahlungsmethoden, Webhook per API, Nachweis in Produktion; siehe
       [2026-09-13_Stripe-Umzug-I2D-Sandbox.md](Sessions/2026-09-13_Stripe-Umzug-I2D-Sandbox.md)).
+      **15.11.: Teamzugang da, Live-Konto verifiziert, Steuer-Registrierung DE
+      angelegt, Zahlungsarten bereinigt; es fehlen Bernds Angaben für
+      Banküberweisung und SEPA** ([2026-11-15_Stripe-Live-Vorbereitung.md](Sessions/2026-11-15_Stripe-Live-Vorbereitung.md)).
       **Offen:** Live-Übergabe — Bernds fünf Punkte (Teamzugang, Verifizierung,
       Rechtsperson, Dashboard-Einstellungen inkl. Präfix `RS` und Kunden-Mails,
       Live-Schlüssel; Mail-Entwurf [Mail-Bernd-Stripe-Live-2026-09-13.md](Sessions/Mail-Bernd-Stripe-Live-2026-09-13.md)),
