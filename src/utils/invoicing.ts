@@ -1,6 +1,7 @@
 import type Stripe from 'stripe'
 import { createAdminClient } from '@/utils/supabase/service'
 import { ensureBillingSnapshots } from '@/utils/billing'
+import { recordCommissionForInvoice } from '@/utils/affiliate'
 import {
   billingDetailsComplete, getAccountBilling, stripeClient, stripeReady, type AccountBilling,
 } from '@/utils/stripe'
@@ -232,7 +233,7 @@ export async function ensureInvoiceForPeriod(
   const snap = await ensureBillingSnapshots(accountId)
   if (snap.error) throw new Error(`Snapshot: ${snap.error}`)
 
-  const { data: acc } = await admin.from('accounts').select('created_at').eq('id', accountId).maybeSingle()
+  const { data: acc } = await admin.from('accounts').select('created_at, referred_by').eq('id', accountId).maybeSingle()
   if (!acc) throw new Error('Konto nicht gefunden.')
   const rooms = opts.rooms ?? await roomsFromSnapshots(accountId, period)
   const line = billingLine(rooms, new Date(acc.created_at as string), period.start)
@@ -243,7 +244,12 @@ export async function ensureInvoiceForPeriod(
   if (!mirror) {
     const { data: inserted, error } = await admin
       .from('invoices')
-      .insert({ account_id: accountId, period_start: pk, rooms, net_cents: line.cents, status: 'draft' })
+      // Partnerprogramm: der Partner wird an der Rechnung eingefroren — die
+      // Schlussrechnung wird bezahlt, wenn das Konto schon gelöscht ist.
+      .insert({
+        account_id: accountId, period_start: pk, rooms, net_cents: line.cents, status: 'draft',
+        affiliate_id: (acc.referred_by as string | null) ?? null,
+      })
       .select('id, account_id, period_start, status, stripe_invoice_id, due_at')
       .single()
     if (error) {
@@ -281,11 +287,23 @@ export async function ensureInvoiceForPeriod(
     })
     const { error } = await admin.from('invoices').update(gatewayUpdate(inv)).eq('id', mirror.id)
     if (error) throw new Error(`invoices: ${error.message}`)
+    // Sofort gelungener Einzug: die Rechnung ist schon bezahlt, der Abgleich
+    // unten sähe sie nicht mehr — die Provision deshalb gleich hier buchen.
+    if (inv.status === 'paid') await bookCommission(mirror.id)
     return 'created'
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     await admin.from('invoices').update({ last_error: msg, updated_at: new Date().toISOString() }).eq('id', mirror.id)
     throw err
+  }
+}
+
+/** Provision buchen, ohne dass ein Fehler dort die Rechnung aufhält — der Webhook und der nächste Abgleich holen sie nach. */
+async function bookCommission(invoiceId: string): Promise<void> {
+  try {
+    await recordCommissionForInvoice(invoiceId)
+  } catch (err) {
+    console.error('[invoicing] Provision nicht gebucht:', invoiceId, err instanceof Error ? err.message : err)
   }
 }
 
@@ -309,12 +327,36 @@ export async function reconcileOpenInvoices(opts: RunOptions = {}): Promise<numb
     try {
       const inv = await gateway.retrieveInvoice(row.stripe_invoice_id as string)
       await admin.from('invoices').update(gatewayUpdate(inv)).eq('id', row.id)
+      if (inv.status === 'paid') await bookCommission(row.id as string)
       n++
     } catch (err) {
       console.error('[invoicing] Abgleich fehlgeschlagen:', row.stripe_invoice_id, err instanceof Error ? err.message : err)
     }
   }
+  await bookMissingCommissions(opts.accountIds)
   return n
+}
+
+/**
+ * Netz für das Provisionsbuch: bezahlte Rechnungen mit Partner, zu denen
+ * keine Buchung existiert (verpasster Webhook, Fehler beim Buchen). Nur die
+ * letzten 90 Tage — älter ist entweder gebucht oder bewusst ohne Provision
+ * (Partner gelöscht, Selbstwerbung); `recordCommissionForInvoice` ist
+ * idempotent und prüft beides erneut.
+ */
+async function bookMissingCommissions(accountIds?: string[]): Promise<void> {
+  const admin = createAdminClient()
+  const seit = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
+  let q = admin.from('invoices').select('id')
+    .eq('status', 'paid').not('affiliate_id', 'is', null).gte('paid_at', seit)
+  if (accountIds) q = q.in('account_id', accountIds)
+  const { data: paid } = await q
+  const ids = (paid ?? []).map(r => r.id as string)
+  if (ids.length === 0) return
+  const { data: booked } = await admin
+    .from('affiliate_commissions').select('invoice_id').eq('kind', 'commission').in('invoice_id', ids)
+  const gebucht = new Set((booked ?? []).map(r => r.invoice_id as string))
+  for (const id of ids) if (!gebucht.has(id)) await bookCommission(id)
 }
 
 /**

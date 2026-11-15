@@ -3,6 +3,7 @@ import type Stripe from 'stripe'
 import { createAdminClient } from '@/utils/supabase/service'
 import { deleteStripeCustomer, savePaymentMethodFromSetupIntent, stripeClient, stripeReady } from '@/utils/stripe'
 import { dateKeyFromUnix, mapStripeInvoiceStatus } from '@/lib/invoice'
+import { recordCommissionForInvoice, recordReversal } from '@/utils/affiliate'
 
 /**
  * Stripe-Webhook — spiegelt Rechnungs- und Kundenereignisse nach RoSe.
@@ -68,6 +69,21 @@ export async function POST(request: Request) {
   return NextResponse.json({ received: true })
 }
 
+/**
+ * Rechnung zu einer Zahlung. In der verwendeten Stripe-API hängt die Rechnung
+ * nicht mehr an der Zahlung selbst; der Bezug läuft über die Zahlungen der
+ * Rechnung (`invoicePayments`). Zahlungen ohne Rechnung liefern `null`.
+ */
+async function invoiceIdForPayment(pi: string | Stripe.PaymentIntent | null): Promise<string | null> {
+  const paymentIntent = typeof pi === 'string' ? pi : pi?.id
+  if (!paymentIntent) return null
+  const { data } = await stripeClient().invoicePayments.list({
+    payment: { type: 'payment_intent', payment_intent: paymentIntent }, limit: 1,
+  })
+  const invoice = data[0]?.invoice
+  return typeof invoice === 'string' ? invoice : invoice?.id ?? null
+}
+
 async function handle(event: Stripe.Event): Promise<void> {
   const admin = createAdminClient()
 
@@ -96,6 +112,8 @@ async function handle(event: Stripe.Event): Promise<void> {
       const { data: byId } = await admin.from('invoices').select('id').eq('stripe_invoice_id', inv.id).maybeSingle()
       if (byId) {
         await admin.from('invoices').update(update).eq('id', byId.id)
+        // Partnerprogramm: bezahlt ⇒ Provision buchen (idempotent).
+        if (update.status === 'paid') await recordCommissionForInvoice(byId.id as string)
         await aufraeumenNachLoeschung(admin, inv, accountId)
         return
       }
@@ -106,16 +124,52 @@ async function handle(event: Stripe.Event): Promise<void> {
       // (das tat der frühere Upsert und setzte `rooms` auf 0).
       const { data: byPeriod } = await admin.from('invoices').select('id')
         .eq('account_id', accountId).eq('period_start', periodStart).maybeSingle()
+      let mirrorId: string | null = null
       if (byPeriod) {
         await admin.from('invoices').update({ stripe_invoice_id: inv.id, ...update }).eq('id', byPeriod.id)
+        mirrorId = byPeriod.id as string
       } else {
         // Rechnung aus dem Dashboard oder aus einem Lauf ohne Spiegel-Zeile.
-        await admin.from('invoices').insert({
+        const { data: acc } = await admin.from('accounts').select('referred_by').eq('id', accountId).maybeSingle()
+        const { data: inserted } = await admin.from('invoices').insert({
           account_id: accountId, period_start: periodStart,
           rooms: 0, net_cents: inv.subtotal ?? 0,
+          affiliate_id: (acc?.referred_by as string | null) ?? null,
           stripe_invoice_id: inv.id, ...update,
-        })
+        }).select('id').maybeSingle()
+        mirrorId = (inserted?.id as string | undefined) ?? null
       }
+      if (mirrorId && update.status === 'paid') await recordCommissionForInvoice(mirrorId)
+      return
+    }
+
+    // ── Partnerprogramm: geht die Zahlung einer Rechnung zurück, geht auch die
+    //    Provision zurück — als eigene, negative Buchung.
+    case 'charge.refunded': {
+      const charge = event.data.object as Stripe.Charge
+      const stripeInvoiceId = await invoiceIdForPayment(charge.payment_intent)
+      if (!stripeInvoiceId) return
+      await recordReversal({
+        kind: 'refund', stripeInvoiceId, chargeId: charge.id,
+        paidCents: charge.amount, refundedCents: charge.amount_refunded,
+      })
+      return
+    }
+
+    case 'charge.dispute.funds_withdrawn':
+    case 'charge.dispute.funds_reinstated': {
+      const dispute = event.data.object as Stripe.Dispute
+      const stripeInvoiceId = await invoiceIdForPayment(dispute.payment_intent)
+      if (!stripeInvoiceId) return
+      if (event.type === 'charge.dispute.funds_reinstated') {
+        await recordReversal({ kind: 'dispute_reinstated', stripeInvoiceId, disputeId: dispute.id, paidCents: dispute.amount })
+        return
+      }
+      const charge = typeof dispute.charge === 'string' ? await stripeClient().charges.retrieve(dispute.charge) : dispute.charge
+      await recordReversal({
+        kind: 'dispute_withdrawn', stripeInvoiceId, disputeId: dispute.id,
+        paidCents: charge.amount, disputedCents: dispute.amount,
+      })
       return
     }
 
