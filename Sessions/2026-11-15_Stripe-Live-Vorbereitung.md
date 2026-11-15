@@ -26,6 +26,9 @@ Live-Schlüssel liegen in `.env.live` (von Git ignoriert), **nicht** in
 
 ## 2. Was Bernd noch tun muss
 
+Mail-Entwurf dazu: [Mail-Bernd-Stripe-Live-2026-11-15.md](Mail-Bernd-Stripe-Live-2026-11-15.md)
+(Oliver verschickt sie am 15.11., Antwort frühestens am 16.11.).
+
 1. **Verifizierungsseite** (Einstellungen → Unternehmen → Kontodetails):
    Gründungsdatum der Gesellschaft, seine persönliche Identifikationsnummer,
    Bestätigung der Geschäftsführer. Erst danach lassen sich Banküberweisung
