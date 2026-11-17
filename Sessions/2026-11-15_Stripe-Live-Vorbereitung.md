@@ -77,9 +77,50 @@ vollständig**:
 - Unverändert: Rechnung `AYGX4AHF-0001` offen, Firmenname
   „Internetinformationsdienste  UG“, Zeitzone Paris, kein Webhook.
 
+### Stand am Abend des 17.11.
+
+Bernd hat im Lauf des Tages nachgezogen (Dashboard-Screenshots von Oliver,
+per API gegengeprüft):
+
+- **Nutzungsbedingungen neu bestätigt**, Aufgabe „Angaben zu einem
+  Kontovertreter (Bernd Köhl)“ erledigt und aus der Liste verschwunden.
+- Unter Einstellungen → Unternehmen → **Kontostatus** stehen nur noch zwei
+  Aufgaben, beide „Wird überprüft“: „Eigentumsrechte an Ihrem Unternehmen
+  überprüfen“ und „Firmenadresse angeben“. **Frist 01.12.2026** — sonst
+  pausiert Stripe Zahlungen und Auszahlungen.
+- **SEPA-Lastschrift:** `pending`, `currently_due` leer — hängt nur noch an
+  Stripes Prüfung.
+- **Banküberweisung** (`bank_transfer_payments`,
+  `sepa_bank_transfer_payments`): weiter `unrequested`. Dafür fehlen
+  Gründungsdatum und die persönliche Identifikationsnummer von **zwei**
+  Personen (`person_1UFDia…` = Bernd, `person_1UcsTh…` = neu eingetragen,
+  vermutlich wirtschaftlich Berechtigter). **Dafür gibt es im Dashboard
+  noch keine Aufgabe** — sie erscheint erst, wenn die Banküberweisung
+  beantragt ist. Bernd kann das heute nirgends eintragen.
+- **Gründungsdatum der Gesellschaft: 28.10.2015** (von Oliver).
+- Kontoname im Dashboard: „I²D UG(haftungsbeschränkt)“ — Leerzeichen vor
+  der Klammer fehlt. Zeitzone weiter Paris. Beides auf „Kontodetails“.
+
+**Zwei Lehren für die Arbeit am Stripe-Konto:**
+
+- Firmendaten des eigenen Kontos lassen sich **nicht per API** ändern
+  (`POST /v1/accounts/<id>`: „only on connected accounts“) — nur im
+  Dashboard.
+- Die API sagt, *was* fehlt, nicht *wo* es im Dashboard steht. Klickwege
+  für Bernd nicht raten, sondern am Screenshot ablesen; Anforderungen
+  einer nicht beantragten Zahlungsart haben gar keinen Ort.
+
 ## 🔖 Wiederaufnahme
 
-Warten auf Bernd (Abschnitt 2, Punkt 1). Prüfen, ob es so weit ist:
-`GET /v1/account/capabilities` mit dem Live-Schlüssel —
-`sepa_debit_payments` und `sepa_bank_transfer_payments` müssen ohne
-`currently_due` dastehen. Dann Abschnitt 3.
+Gespräch mit Bernd am 18.11. Für ihn offen, ohne Eile: Tippfehler in der
+Support-Mail, Testrechnung `AYGX4AHF-0001` stornieren, Leerzeichen im
+Kontonamen, Zeitzone Berlin.
+
+1. Warten, bis Stripe die zwei Prüfungen abschließt (Frist 01.12.).
+   Nachmessen: `GET /v1/accounts/acct_1UFBIU3gxzXGCjFv/capabilities/sepa_debit_payments`
+   mit dem Live-Schlüssel aus `.env.live` — `active` und
+   `pending_verification` leer.
+2. Banküberweisung unter den Zahlungsmethoden aktivieren (Dashboard). Dann
+   erscheint unter „Kontostatus“ eine neue Aufgabe für Bernd:
+   Gründungsdatum 28.10.2015 und die Steuer-IDs beider Personen.
+3. Wenn beide Zahlungsarten `active` sind: Abschnitt 3.
