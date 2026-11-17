@@ -57,6 +57,26 @@ Mail-Entwurf dazu: [Mail-Bernd-Stripe-Live-2026-11-15.md](Mail-Bernd-Stripe-Live
 4. Folge: alle Konten bekommen neue Stripe-Kunden, Zahlungswege neu
    hinterlegen.
 
+## 4. Nachprüfung 17.11.2026
+
+Bernd meldet „alles nachgetragen“. Per API nachgemessen — **noch nicht
+vollständig**:
+
+- **Angekommen:** Unterlagen zur Gesellschaft (Adresse, Name, Steuernummer,
+  Dokument, Nachweis der wirtschaftlich Berechtigten) stehen bei Stripe auf
+  „wird geprüft“. Support-Mail ist gesetzt.
+- **Fehlt weiter:** Gründungsdatum der Gesellschaft
+  (`company.registration_date`) und Bernds persönliche Identifikationsnummer
+  (`person_….id_number`) — beide „überfällig“ für Banküberweisung.
+- **Neu:** Weil die Steuernummer geändert wurde, verlangt Stripe die
+  **erneute Zustimmung zu den Nutzungsbedingungen** (`tos_acceptance`) —
+  das blockiert jetzt auch die SEPA-Lastschrift (`pending`). Das kann nur
+  Bernd im Dashboard bestätigen.
+- **Tippfehler in der Support-Mail:** `help@internetinformatonsdiense.de`
+  statt `…internetinformationsdienste.de` — sie steht auf Rechnungen.
+- Unverändert: Rechnung `AYGX4AHF-0001` offen, Firmenname
+  „Internetinformationsdienste  UG“, Zeitzone Paris, kein Webhook.
+
 ## 🔖 Wiederaufnahme
 
 Warten auf Bernd (Abschnitt 2, Punkt 1). Prüfen, ob es so weit ist:
