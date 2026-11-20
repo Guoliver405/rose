@@ -110,16 +110,40 @@ per API gegengeprüft):
   für Bernd nicht raten, sondern am Screenshot ablesen; Anforderungen
   einer nicht beantragten Zahlungsart haben gar keinen Ort.
 
+## 5. Nachtrag 20.11.2026
+
+**Mail von Stripe an Bernd:** „Wir konnten Ihre Domäne
+internetinformationsdienste.de nicht verifizieren“. Kein Fehler an Website
+oder Postfach und kein Hindernis für den Live-Start: Unter Einstellungen →
+Kunden-E-Mails ist die Domain als **eigene Absender-Domain** eingetragen,
+die dafür nötigen DNS-Einträge wurden aber nie angelegt. Nachgemessen
+(Nameserver bei united-domains, `ns.udag.*`): im DNS stehen nur SPF und
+eine Google-Verifizierung, kein `stripe-verification`-TXT, kein
+`bounce`-CNAME. Empfehlung an Bernd (Antwort-Mail von Oliver): Domain bei
+Stripe wieder entfernen — Rechnungen kommen dann von einer Stripe-Adresse
+mit dem Firmennamen als Absender, wie in der Sandbox. Die eigene
+Absender-Domain ist Kosmetik und jederzeit nachholbar.
+
+**Stand des Kontos, per API nachgemessen:**
+
+- **SEPA-Lastschrift ist `active`**, die Prüfungen sind abgeschlossen:
+  keine offenen Anforderungen, keine Frist mehr, Zahlungen und Auszahlungen
+  frei.
+- **Banküberweisung** weiter nicht beantragt (`customer_balance` in der
+  Zahlungsmethoden-Konfiguration `off`, nicht verfügbar) — das ist jetzt
+  der nächste Schritt.
+- Unverändert offen: Tippfehler in der Support-Mail
+  (`help@internetinformatonsdiense.de`), Rechnung `AYGX4AHF-0001`,
+  Kontoname ohne Leerzeichen, Zeitzone Paris, kein Webhook.
+
 ## 🔖 Wiederaufnahme
 
 Gespräch mit Bernd am 18.11. Für ihn offen, ohne Eile: Tippfehler in der
 Support-Mail, Testrechnung `AYGX4AHF-0001` stornieren, Leerzeichen im
 Kontonamen, Zeitzone Berlin.
 
-1. Warten, bis Stripe die zwei Prüfungen abschließt (Frist 01.12.).
-   Nachmessen: `GET /v1/accounts/acct_1UFBIU3gxzXGCjFv/capabilities/sepa_debit_payments`
-   mit dem Live-Schlüssel aus `.env.live` — `active` und
-   `pending_verification` leer.
+1. ~~Warten, bis Stripe die zwei Prüfungen abschließt~~ — erledigt, SEPA-Lastschrift
+   seit 20.11. `active` (Abschnitt 5).
 2. Banküberweisung unter den Zahlungsmethoden aktivieren (Dashboard). Dann
    erscheint unter „Kontostatus“ eine neue Aufgabe für Bernd:
    Gründungsdatum 28.10.2015 und die Steuer-IDs beider Personen.
