@@ -126,9 +126,8 @@ Absender-Domain ist Kosmetik und jederzeit nachholbar.
 
 **Stand des Kontos, per API nachgemessen:**
 
-- **SEPA-Lastschrift ist `active`**, die Prüfungen sind abgeschlossen:
-  keine offenen Anforderungen, keine Frist mehr, Zahlungen und Auszahlungen
-  frei.
+- **SEPA-Lastschrift ist `active`**, Zahlungen und Auszahlungen frei —
+  **aber die Prüfung ist nicht bestanden**, siehe „Korrektur“ unten.
 - **Banküberweisung** weiter nicht beantragt (`customer_balance` in der
   Zahlungsmethoden-Konfiguration `off`, nicht verfügbar) — das ist jetzt
   der nächste Schritt.
@@ -144,9 +143,35 @@ verfügbar ist sie damit nicht (`available: false`), und die Capabilities
 **nicht per API** („only on connected accounts“) — nur im Dashboard unter
 Einstellungen → Zahlungsmethoden. Fehlend laut API: Gründungsdatum und die
 Identifikationsnummern beider Personen (überfällig), dazu Firmenname,
-Steuernummer und Dokument der Gesellschaft. Die letzten drei stehen auch
-bei der aktiven SEPA-Lastschrift als „fällig“ ohne Frist — vermutlich die
-laufende Nachprüfung, nicht neu einzureichen.
+Steuernummer und Dokument der Gesellschaft.
+
+**Korrektur am selben Tag — Stripes Prüfung ist gescheitert, nicht
+abgeschlossen.** Ich hatte „keine offenen Anforderungen, keine Frist“
+gemeldet; das war falsch gelesen: `GET /v1/accounts/<id>` liefert für das
+eigene Konto **gar kein** `requirements`-Feld, leer hieß „nicht geliefert“.
+Maßgeblich sind die Capability-Endpunkte
+(`…/capabilities/card_payments`) und der Kontostatus im Dashboard. Dort
+(Screenshot von Oliver) stehen zwei aktive Aufgaben, **Frist 01.12.2026,
+sonst pausieren Zahlungen und Auszahlungen**:
+
+- „Eigentumsrechte an Ihrem Unternehmen überprüfen“ — das hochgeladene
+  Dokument zu den wirtschaftlich Berechtigten ist **kein akzeptierter
+  Dokumenttyp** (`verification_document_type_not_supported`).
+- „Nachweis über Ihr Unternehmen vorlegen“ — zur **Steuernummer** findet
+  Stripe nichts (`verification_failed_other`), und das Firmendokument
+  **passt nicht zur angegebenen Nummer**
+  (`verification_failed_id_number_match`). Fällig: `company.name`,
+  `company.tax_id`, `company.verification.document`.
+
+Stripe bietet als Alternative zu Name + Steuernummer an: Name, Adresse und
+ein Nachweis der wirtschaftlich Berechtigten. Naheliegende Ursache (nicht
+belegt): Firmenname „Internetinformationsdienste  UG“ gegen die
+Registerschreibweise, und Steuernummer statt Handelsregisternummer
+(HRB 102734, Amtsgericht Saarbrücken) im Feld. Das Formular „Banküberweisungen
+aktivieren“ (Zahlungsmethoden → Banküberweisungen → … → Aktivieren) fragt
+genau diese Firmendaten ab: Firmenname laut Register, HRB-Nummer,
+Amtsgericht, Registrierungsdatum, danach Identitätsprüfung mit Ausweis und
+Selfie. Oliver hat es nicht ausgefüllt — Bernds Daten.
 
 ## 🔖 Wiederaufnahme
 
@@ -154,8 +179,10 @@ Gespräch mit Bernd am 18.11. Für ihn offen, ohne Eile: Tippfehler in der
 Support-Mail, Testrechnung `AYGX4AHF-0001` stornieren, Leerzeichen im
 Kontonamen, Zeitzone Berlin.
 
-1. ~~Warten, bis Stripe die zwei Prüfungen abschließt~~ — erledigt, SEPA-Lastschrift
-   seit 20.11. `active` (Abschnitt 5).
+1. **Bernd, bis 01.12.:** die zwei Aufgaben unter „Kontostatus“ (Abschnitt 5,
+   „Korrektur“) — Firmenname laut Register, HRB 102734, akzeptierte
+   Dokumente. Nachmessen über `…/capabilities/card_payments`:
+   `currently_due` und `errors` leer.
 2. Banküberweisung unter den Zahlungsmethoden aktivieren — **nur im
    Dashboard**, per API geht es nicht (Abschnitt 5). Dann
    erscheint unter „Kontostatus“ eine neue Aufgabe für Bernd:
