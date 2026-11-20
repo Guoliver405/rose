@@ -173,6 +173,10 @@ genau diese Firmendaten ab: Firmenname laut Register, HRB-Nummer,
 Amtsgericht, Registrierungsdatum, danach Identitätsprüfung mit Ausweis und
 Selfie. Oliver hat es nicht ausgefüllt — Bernds Daten.
 
+Mail an Bernd dazu: [Mail-Bernd-Stripe-Live-2026-11-20.md](Mail-Bernd-Stripe-Live-2026-11-20.md).
+Die Antwort an ihn zur Absender-Domain ging getrennt heraus. **Stand: Warten
+auf Bernds Rückmeldung.**
+
 ## 🔖 Wiederaufnahme
 
 Gespräch mit Bernd am 18.11. Für ihn offen, ohne Eile: Tippfehler in der
