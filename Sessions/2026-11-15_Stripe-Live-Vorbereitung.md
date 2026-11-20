@@ -136,6 +136,18 @@ Absender-Domain ist Kosmetik und jederzeit nachholbar.
   (`help@internetinformatonsdiense.de`), Rechnung `AYGX4AHF-0001`,
   Kontoname ohne Leerzeichen, Zeitzone Paris, kein Webhook.
 
+**Banküberweisung per API (20.11.):** In der Zahlungsmethoden-Konfiguration
+`pmc_1UFBJ53gxzXGCjFvyeu5id5v` steht `customer_balance` jetzt auf `on` —
+verfügbar ist sie damit nicht (`available: false`), und die Capabilities
+`bank_transfer_payments`/`sepa_bank_transfer_payments` bleiben
+`unrequested`. Beantragen lässt sich eine Capability des eigenen Kontos
+**nicht per API** („only on connected accounts“) — nur im Dashboard unter
+Einstellungen → Zahlungsmethoden. Fehlend laut API: Gründungsdatum und die
+Identifikationsnummern beider Personen (überfällig), dazu Firmenname,
+Steuernummer und Dokument der Gesellschaft. Die letzten drei stehen auch
+bei der aktiven SEPA-Lastschrift als „fällig“ ohne Frist — vermutlich die
+laufende Nachprüfung, nicht neu einzureichen.
+
 ## 🔖 Wiederaufnahme
 
 Gespräch mit Bernd am 18.11. Für ihn offen, ohne Eile: Tippfehler in der
@@ -144,7 +156,8 @@ Kontonamen, Zeitzone Berlin.
 
 1. ~~Warten, bis Stripe die zwei Prüfungen abschließt~~ — erledigt, SEPA-Lastschrift
    seit 20.11. `active` (Abschnitt 5).
-2. Banküberweisung unter den Zahlungsmethoden aktivieren (Dashboard). Dann
+2. Banküberweisung unter den Zahlungsmethoden aktivieren — **nur im
+   Dashboard**, per API geht es nicht (Abschnitt 5). Dann
    erscheint unter „Kontostatus“ eine neue Aufgabe für Bernd:
    Gründungsdatum 28.10.2015 und die Steuer-IDs beider Personen.
 3. Wenn beide Zahlungsarten `active` sind: Abschnitt 3.
