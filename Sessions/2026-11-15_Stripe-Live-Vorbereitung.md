@@ -222,6 +222,13 @@ Per API nachgemessen (Capability-Endpunkte):
   fortlaufend auf Kontoebene, nächste Live-Nummer 2). Per API nicht
   prüfbar — das Kontoobjekt liefert das Präfix nicht; sichtbar an der
   ersten Live-Rechnung (`RS-0002`).
+- **Kontoname im Dashboard** dem Firmennamen angeglichen (Oliver; per API
+  bestätigt, `settings.dashboard.display_name`).
+- **Banküberweisung ist `active`** (`sepa_bank_transfer_payments`, kurz
+  nach dem Antrag). Damit sind Karte, SEPA-Lastschrift und Banküberweisung
+  aktiv — die Prüfung der Firmenunterlagen läuft aber weiter
+  (`pending_verification` unverändert, Frist 01.12.); scheitert sie,
+  pausiert Stripe Zahlungen und Auszahlungen.
 - **Lehre:** „Personen“ in der API sind die Personen der Gesellschaft
   (Einstellungen → Unternehmen → Kontodetails → „Management und
   Eigentum“), nicht die Teammitglieder unter „Personal und Sicherheit“.
@@ -230,13 +237,12 @@ Per API nachgemessen (Capability-Endpunkte):
 ## 🔖 Wiederaufnahme
 
 **Stand 24.11.2026 abends:** Von unserer Seite ist im Live-Konto alles
-erledigt (Abschnitt 6). Es wartet nur noch **Stripes Prüfung der
-Firmenunterlagen** — Frist im Konto 01.12.2026.
+erledigt (Abschnitt 6), **alle drei Zahlungsarten sind aktiv**. Es läuft
+nur noch Stripes Prüfung der Firmenunterlagen — Frist im Konto 01.12.2026.
 
-1. **Nachmessen** (Skript-Muster: `GET /v1/accounts/<id>/capabilities/<name>`
-   mit dem Schlüssel aus `.env.live`): `pending_verification` und `errors`
-   leer, `sepa_bank_transfer_payments` `active`. Meldet Stripe wieder
-   Fehler, steht der Grund in `errors` und die Aufgabe unter
+1. **Nachmessen** (`GET /v1/accounts/<id>/capabilities/<name>` mit dem
+   Schlüssel aus `.env.live`): `pending_verification` und `errors` leer.
+   Meldet Stripe Fehler, steht der Grund in `errors` und die Aufgabe unter
    Einstellungen → Unternehmen → Kontostatus (Bernd).
 2. **Dann umschalten** (Abschnitt 3): Kunden-Mails im Dashboard, Webhook
    per API (zehn Ereignisse plus die drei des Partnerprogramms), Schlüssel
@@ -244,10 +250,5 @@ Firmenunterlagen** — Frist im Konto 01.12.2026.
    Zahlungswege der Konten neu hinterlegen.
 3. **Daran prüfen:** Die erste Live-Rechnung muss `RS-0002` heißen.
 
-Kosmetik, ohne Eile: Der Kontoname im Dashboard
-(„Internetinformationsdienste UG (haftungsbeschränkt)“) lautet anders als
-der Firmenname auf den Rechnungen („I² D Internet Informationsdienste UG
-(haftungsbeschränkt)“). Er ist nur im Dashboard sichtbar, nie für Kunden;
-angleichen kann ihn jeder Administrator.
 Später: Oliver als Kontovertreter (Kontodetails → „Kontovertreter/in
 ändern“; dann Steuer-ID, Ausweis und Selfie von Oliver).
