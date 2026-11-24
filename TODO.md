@@ -380,6 +380,10 @@ zusammen und gehören vor den ersten zahlenden Kunden.
       **15.11.: Teamzugang da, Live-Konto verifiziert, Steuer-Registrierung DE
       angelegt, Zahlungsarten bereinigt; es fehlen Bernds Angaben für
       Banküberweisung und SEPA** ([2026-11-15_Stripe-Live-Vorbereitung.md](Sessions/2026-11-15_Stripe-Live-Vorbereitung.md)).
+      **24.11.: Bernds Angaben vollständig, Banküberweisung beantragt,
+      SEPA-Lastschrift aktiv, Präfix `RS`, Zeitzone Berlin, Testrechnung
+      storniert — es wartet nur Stripes Prüfung der Firmenunterlagen
+      (Frist 01.12.), danach umschalten.**
       **Offen:** Live-Übergabe — Bernds fünf Punkte (Teamzugang, Verifizierung,
       Rechtsperson, Dashboard-Einstellungen inkl. Präfix `RS` und Kunden-Mails,
       Live-Schlüssel; Mail-Entwurf [Mail-Bernd-Stripe-Live-2026-09-13.md](Sessions/Mail-Bernd-Stripe-Live-2026-09-13.md)),

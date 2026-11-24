@@ -229,21 +229,23 @@ Per API nachgemessen (Capability-Endpunkte):
 
 ## 🔖 Wiederaufnahme
 
-**Stand 24.11. abends:** Bernds Teil ist erledigt. Warten auf Stripes
-Prüfung; nachmessen, ob `pending_verification` leer und
-`sepa_bank_transfer_payments` `active` ist — dann Abschnitt 3. Die Punkte
-1 und 2 unten sind damit überholt.
+**Stand 24.11.2026 abends:** Von unserer Seite ist im Live-Konto alles
+erledigt (Abschnitt 6). Es wartet nur noch **Stripes Prüfung der
+Firmenunterlagen** — Frist im Konto 01.12.2026.
 
-Gespräch mit Bernd am 18.11. Für ihn offen, ohne Eile: Tippfehler in der
-Support-Mail, Testrechnung `AYGX4AHF-0001` stornieren, Leerzeichen im
-Kontonamen, Zeitzone Berlin.
+1. **Nachmessen** (Skript-Muster: `GET /v1/accounts/<id>/capabilities/<name>`
+   mit dem Schlüssel aus `.env.live`): `pending_verification` und `errors`
+   leer, `sepa_bank_transfer_payments` `active`. Meldet Stripe wieder
+   Fehler, steht der Grund in `errors` und die Aufgabe unter
+   Einstellungen → Unternehmen → Kontostatus (Bernd).
+2. **Dann umschalten** (Abschnitt 3): Kunden-Mails im Dashboard, Webhook
+   per API (zehn Ereignisse plus die drei des Partnerprogramms), Schlüssel
+   in Vercel tauschen, redeployen, Sandbox-Webhook deaktivieren;
+   Zahlungswege der Konten neu hinterlegen.
+3. **Daran prüfen:** Die erste Live-Rechnung muss `RS-0002` heißen.
 
-1. **Bernd, bis 01.12.:** die zwei Aufgaben unter „Kontostatus“ (Abschnitt 5,
-   „Korrektur“) — Firmenname laut Register, HRB 102734, akzeptierte
-   Dokumente. Nachmessen über `…/capabilities/card_payments`:
-   `currently_due` und `errors` leer.
-2. Banküberweisung unter den Zahlungsmethoden aktivieren — **nur im
-   Dashboard**, per API geht es nicht (Abschnitt 5). Dann
-   erscheint unter „Kontostatus“ eine neue Aufgabe für Bernd:
-   Gründungsdatum 28.10.2015 und die Steuer-IDs beider Personen.
-3. Wenn beide Zahlungsarten `active` sind: Abschnitt 3.
+Für Bernd noch offen, ohne Eile: Leerzeichen im Kontonamen des Dashboards
+(„Internetinformationsdienste UG (haftungsbeschränkt)“ gegen den
+Firmennamen „I² D Internet Informationsdienste UG (haftungsbeschränkt)“).
+Später: Oliver als Kontovertreter (Kontodetails → „Kontovertreter/in
+ändern“; dann Steuer-ID, Ausweis und Selfie von Oliver).
