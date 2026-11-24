@@ -177,6 +177,28 @@ Mail an Bernd dazu: [Mail-Bernd-Stripe-Live-2026-11-20.md](Mail-Bernd-Stripe-Liv
 Die Antwort an ihn zur Absender-Domain ging getrennt heraus. **Stand: Warten
 auf Bernds Rückmeldung.**
 
+## 6. Nachprüfung 24.11.2026
+
+Per API nachgemessen (Capability-Endpunkte):
+
+- **Bernd hat neu eingereicht:** Die Fehler vom 20.11. sind weg (`errors`
+  leer, `currently_due` für Karte leer). Firmenname, Steuernummer,
+  Firmendokument, Adresse und Nachweis der wirtschaftlich Berechtigten
+  stehen auf **„wird geprüft“** — entschieden hat Stripe noch nicht, die
+  **Frist 01.12.** steht weiter im Konto.
+- **Neu fällig:** Eine dritte Person ist eingetragen
+  (`person_1UfNpP…`), für sie fehlt die **Identitätsprüfung mit Selfie**
+  (`verification.proof_of_liveness`) — bereits für die SEPA-Lastschrift
+  fällig.
+- **Erledigt:** Support-Mail ohne Tippfehler
+  (`help@internetinformationsdienste.de`), Firmenname „I² D Internet
+  Informationsdienste UG (haftungsbeschränkt)“.
+- **Banküberweisung weiter nicht beantragt** (`unrequested`). Fehlend:
+  Gründungsdatum, Identifikationsnummern von jetzt **drei** Personen,
+  Selfie-Prüfung der dritten.
+- Unverändert: Rechnung `AYGX4AHF-0001` offen, Zeitzone Paris, kein
+  Webhook.
+
 ## 🔖 Wiederaufnahme
 
 Gespräch mit Bernd am 18.11. Für ihn offen, ohne Eile: Tippfehler in der
