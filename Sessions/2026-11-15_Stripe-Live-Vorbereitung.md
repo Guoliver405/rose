@@ -218,6 +218,10 @@ Per API nachgemessen (Capability-Endpunkte):
   (`pending_verification`, Frist 01.12.).
 - **Testrechnung `AYGX4AHF-0001` storniert** (per API, `void`).
 - **Zeitzone auf Europe/Berlin** gestellt (Oliver, im Dashboard).
+- **Rechnungspräfix `RS`** (Oliver, Einstellungen → Billing → Rechnungen;
+  fortlaufend auf Kontoebene, nächste Live-Nummer 2). Per API nicht
+  prüfbar — das Kontoobjekt liefert das Präfix nicht; sichtbar an der
+  ersten Live-Rechnung (`RS-0002`).
 - **Lehre:** „Personen“ in der API sind die Personen der Gesellschaft
   (Einstellungen → Unternehmen → Kontodetails → „Management und
   Eigentum“), nicht die Teammitglieder unter „Personal und Sicherheit“.
