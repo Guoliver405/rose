@@ -244,8 +244,10 @@ Firmenunterlagen** — Frist im Konto 01.12.2026.
    Zahlungswege der Konten neu hinterlegen.
 3. **Daran prüfen:** Die erste Live-Rechnung muss `RS-0002` heißen.
 
-Für Bernd noch offen, ohne Eile: Leerzeichen im Kontonamen des Dashboards
-(„Internetinformationsdienste UG (haftungsbeschränkt)“ gegen den
-Firmennamen „I² D Internet Informationsdienste UG (haftungsbeschränkt)“).
+Kosmetik, ohne Eile: Der Kontoname im Dashboard
+(„Internetinformationsdienste UG (haftungsbeschränkt)“) lautet anders als
+der Firmenname auf den Rechnungen („I² D Internet Informationsdienste UG
+(haftungsbeschränkt)“). Er ist nur im Dashboard sichtbar, nie für Kunden;
+angleichen kann ihn jeder Administrator.
 Später: Oliver als Kontovertreter (Kontodetails → „Kontovertreter/in
 ändern“; dann Steuer-ID, Ausweis und Selfie von Oliver).
