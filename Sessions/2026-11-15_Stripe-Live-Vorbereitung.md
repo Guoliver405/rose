@@ -217,6 +217,7 @@ Per API nachgemessen (Capability-Endpunkte):
 - Alles hängt jetzt an **Stripes Prüfung der Firmenunterlagen**
   (`pending_verification`, Frist 01.12.).
 - **Testrechnung `AYGX4AHF-0001` storniert** (per API, `void`).
+- **Zeitzone auf Europe/Berlin** gestellt (Oliver, im Dashboard).
 - **Lehre:** „Personen“ in der API sind die Personen der Gesellschaft
   (Einstellungen → Unternehmen → Kontodetails → „Management und
   Eigentum“), nicht die Teammitglieder unter „Personal und Sicherheit“.
