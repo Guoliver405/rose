@@ -199,7 +199,34 @@ Per API nachgemessen (Capability-Endpunkte):
 - Unverändert: Rechnung `AYGX4AHF-0001` offen, Zeitzone Paris, kein
   Webhook.
 
+### Am Abend des 24.11. — Personen bereinigt, Banküberweisung beantragt
+
+- Die dritte Person war **Oliver**: Bernd hatte ihn am 24.11. als
+  Kontovertreter eingetragen. Zurückgestellt (mit Bernds Okay, von Oliver
+  im Dashboard): **Bernd ist Kontovertreter und Inhaber**, sein doppelter
+  Inhaber-Eintrag vom 17.11. ist entfernt, das Land seiner Adresse steht
+  auf Frankreich (vorher „Sarreguemines DE“). Oliver bleibt als Person
+  **ohne Rolle** gelistet — ein Entfernen-Knopf fehlt, Stripe verlangt für
+  ihn nichts; er soll die Rolle später übernehmen („Ändern“).
+- **Banküberweisung beantragt:** Gründungsdatum von Oliver eingetragen,
+  Steuer-ID von Bernd selbst. `sepa_bank_transfer_payments` ist
+  `requested`, Status **`pending`**, nichts mehr fällig; `customer_balance`
+  in der Zahlungsmethoden-Konfiguration `available: true`.
+  `bank_transfer_payments` (ohne SEPA) bleibt `unrequested` — RoSe nutzt
+  `eu_bank_transfer`.
+- Alles hängt jetzt an **Stripes Prüfung der Firmenunterlagen**
+  (`pending_verification`, Frist 01.12.).
+- **Lehre:** „Personen“ in der API sind die Personen der Gesellschaft
+  (Einstellungen → Unternehmen → Kontodetails → „Management und
+  Eigentum“), nicht die Teammitglieder unter „Personal und Sicherheit“.
+  Auslesen geht per `GET /v1/accounts/<id>/persons`.
+
 ## 🔖 Wiederaufnahme
+
+**Stand 24.11. abends:** Bernds Teil ist erledigt. Warten auf Stripes
+Prüfung; nachmessen, ob `pending_verification` leer und
+`sepa_bank_transfer_payments` `active` ist — dann Abschnitt 3. Die Punkte
+1 und 2 unten sind damit überholt.
 
 Gespräch mit Bernd am 18.11. Für ihn offen, ohne Eile: Tippfehler in der
 Support-Mail, Testrechnung `AYGX4AHF-0001` stornieren, Leerzeichen im
